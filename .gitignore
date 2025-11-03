@@ -1,0 +1,6 @@
+# IDE
+.idea/
+.cursor/
+
+# OS
+.DS_Store
