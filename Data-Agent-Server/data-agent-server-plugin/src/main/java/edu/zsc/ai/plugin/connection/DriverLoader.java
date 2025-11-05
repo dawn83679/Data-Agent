@@ -7,13 +7,11 @@ import edu.zsc.ai.plugin.model.ConnectionConfig;
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.sql.Driver;
-import java.sql.DriverManager;
-import java.sql.DriverPropertyInfo;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
+import java.sql.*;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Logger;
 
 /**
  * Utility class for loading JDBC drivers.
@@ -77,58 +75,51 @@ public final class DriverLoader {
     }
 
     /**
-     * Driver proxy to use custom class loader
-     */
-    private static class DriverProxy implements Driver {
-        private final Driver delegate;
-        private final ClassLoader classLoader;
-
-        DriverProxy(Driver delegate, ClassLoader classLoader) {
-            this.delegate = delegate;
-            this.classLoader = classLoader;
-        }
+         * Driver proxy to use custom class loader
+         */
+        private record DriverProxy(Driver delegate, ClassLoader classLoader) implements Driver {
 
         @Override
-        public java.sql.Connection connect(String url, java.util.Properties info) throws SQLException {
-            Thread currentThread = Thread.currentThread();
-            ClassLoader originalLoader = currentThread.getContextClassLoader();
-            try {
-                currentThread.setContextClassLoader(classLoader);
-                return delegate.connect(url, info);
-            } finally {
-                currentThread.setContextClassLoader(originalLoader);
+            public Connection connect(String url, Properties info) throws SQLException {
+                Thread currentThread = Thread.currentThread();
+                ClassLoader originalLoader = currentThread.getContextClassLoader();
+                try {
+                    currentThread.setContextClassLoader(classLoader);
+                    return delegate.connect(url, info);
+                } finally {
+                    currentThread.setContextClassLoader(originalLoader);
+                }
+            }
+
+            @Override
+            public boolean acceptsURL(String url) throws SQLException {
+                return delegate.acceptsURL(url);
+            }
+
+            @Override
+            public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException {
+                return delegate.getPropertyInfo(url, info);
+            }
+
+            @Override
+            public int getMajorVersion() {
+                return delegate.getMajorVersion();
+            }
+
+            @Override
+            public int getMinorVersion() {
+                return delegate.getMinorVersion();
+            }
+
+            @Override
+            public boolean jdbcCompliant() {
+                return delegate.jdbcCompliant();
+            }
+
+            @Override
+            public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+                return delegate.getParentLogger();
             }
         }
-
-        @Override
-        public boolean acceptsURL(String url) throws SQLException {
-            return delegate.acceptsURL(url);
-        }
-
-        @Override
-        public DriverPropertyInfo[] getPropertyInfo(String url, java.util.Properties info) throws SQLException {
-            return delegate.getPropertyInfo(url, info);
-        }
-
-        @Override
-        public int getMajorVersion() {
-            return delegate.getMajorVersion();
-        }
-
-        @Override
-        public int getMinorVersion() {
-            return delegate.getMinorVersion();
-        }
-
-        @Override
-        public boolean jdbcCompliant() {
-            return delegate.jdbcCompliant();
-        }
-
-        @Override
-        public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException {
-            return delegate.getParentLogger();
-        }
-    }
 }
 
