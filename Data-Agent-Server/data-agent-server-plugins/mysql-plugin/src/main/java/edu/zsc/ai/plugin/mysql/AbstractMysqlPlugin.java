@@ -14,6 +14,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
+import java.util.logging.Logger;
 
 /**
  * Abstract base class for MySQL database plugins.
@@ -21,6 +22,8 @@ import java.util.Properties;
  * Implements ConnectionProvider capability for all MySQL plugins.
  */
 public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin implements SqlPlugin, ConnectionProvider {
+
+    private static final Logger logger = Logger.getLogger(AbstractMysqlPlugin.class.getName());
 
     /**
      * Connection builder - can be reused across all connection attempts
@@ -70,7 +73,7 @@ public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin impleme
             // Step 4: Establish connection
             Connection connection = DriverManager.getConnection(jdbcUrl, properties);
             
-            logInfo(String.format("Successfully connected to MySQL database at %s:%d/%s",
+            logger.info(String.format("Successfully connected to MySQL database at %s:%d/%s",
                 config.getHost(), 
                 config.getPort() != null ? config.getPort() : getDefaultPort(),
                 config.getDatabase() != null ? config.getDatabase() : ""));
@@ -83,14 +86,14 @@ public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin impleme
                 config.getPort() != null ? config.getPort() : getDefaultPort(),
                 config.getDatabase() != null ? config.getDatabase() : "",
                 e.getMessage());
-            logError(errorMsg, e);
+            logger.severe(errorMsg);
             throw new PluginException(PluginErrorCode.CONNECTION_FAILED, errorMsg, e);
         } catch (PluginException e) {
             // Re-throw PluginException as-is
             throw e;
         } catch (Exception e) {
             String errorMsg = String.format("Unexpected error while connecting to MySQL database: %s", e.getMessage());
-            logError(errorMsg, e);
+            logger.severe(errorMsg);
             throw new PluginException(PluginErrorCode.CONNECTION_FAILED, errorMsg, e);
         }
     }
@@ -105,7 +108,7 @@ public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin impleme
             }
             return false;
         } catch (Exception e) {
-            logWarn(String.format("Connection test failed: %s", e.getMessage()));
+            logger.warning(String.format("Connection test failed: %s", e.getMessage()));
             return false;
         }
     }

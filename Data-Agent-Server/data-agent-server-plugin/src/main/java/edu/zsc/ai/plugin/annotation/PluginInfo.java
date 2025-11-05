@@ -53,12 +53,12 @@ public @interface PluginInfo {
     /**
      * Minimum supported database version (e.g., "5.7.0", "8.0.0")
      */
-    String minDatabaseVersion() default "";
+    String supportMinVersion() default "";
     
     /**
      * Maximum supported database version (e.g., "5.7.99", "8.9.99").
      * Empty string means supporting all future versions.
      */
-    String maxDatabaseVersion() default "";
+    String supportMaxVersion() default "";
 }
 

@@ -67,17 +67,11 @@ public interface Plugin {
     String getWebsite();
     
     // Database Version Support
-    String getMinimumDatabaseVersion();
-    String getMaximumDatabaseVersion();
+    String getSupportMinVersion();
+    String getSupportMaxVersion();
     
     // Capability Discovery
     Set<String> getSupportedCapabilities();
-    
-    // Lifecycle Methods
-    void initialize(PluginContext context) throws PluginException;
-    void start() throws PluginException;
-    void stop() throws PluginException;
-    void destroy() throws PluginException;
 }
 ```
 
@@ -103,7 +97,7 @@ Declares plugin metadata on the plugin class:
     version = "0.0.1",
     dbType = DbType.MYSQL,
     description = "MySQL 8.0+ database plugin",
-    minDatabaseVersion = "8.0.0"
+    supportMinVersion = "8.0.0"
 )
 public class Mysql8Plugin extends AbstractMysqlPlugin {
     // ...
@@ -132,8 +126,7 @@ Provides default implementation for all database plugins:
 **Features**:
 - Automatically reads `@PluginInfo` annotation to implement metadata methods
 - Automatically collects capabilities from implemented interfaces marked with `@CapabilityMarker`
-- Provides default lifecycle method implementations
-- Provides logging helper methods
+- Lightweight and stateless design
 
 **Usage**:
 ```java
@@ -253,6 +246,60 @@ public class ConnectionConfig {
 }
 ```
 
+## Plugin Manager
+
+### 1. Overview
+
+PluginManager provides centralized plugin management with the following features:
+- **Auto Loading**: Plugins are automatically loaded via SPI in static initializer
+- **Plugin Lookup**: By database type or capability
+- **Thread Safety**: Concurrent access with ConcurrentHashMap
+- **Framework Independence**: Can be used in Spring or standalone applications
+- **Lightweight**: Stateless design with minimal overhead
+
+### 2. Usage Examples
+
+#### Basic Usage
+
+```java
+// Create PluginManager (plugins auto-loaded)
+PluginManager manager = new DefaultPluginManager();
+
+// Query plugins by database type
+List<Plugin> mysqlPlugins = manager.getPluginsByDbType(DbType.MYSQL);
+// Returns: [Mysql8Plugin, Mysql57Plugin] (sorted by version, newest first)
+
+// Query plugins by capability
+List<Plugin> connectionPlugins = manager.getPluginsByCapability("CONNECTION");
+
+// Get all plugins
+List<Plugin> allPlugins = manager.getAllPlugins();
+```
+
+#### Spring Integration (Optional)
+
+```java
+@Configuration
+public class PluginConfig {
+    
+    @Bean
+    public PluginManager pluginManager() {
+        return new DefaultPluginManager();
+    }
+}
+```
+
+#### Find Specific Plugin
+
+```java
+// Find MySQL 8 plugin
+List<Plugin> mysqlPlugins = manager.getPluginsByDbType(DbType.MYSQL);
+Plugin mysql8 = mysqlPlugins.stream()
+    .filter(p -> "mysql-8".equals(p.getPluginId()))
+    .findFirst()
+    .orElse(null);
+```
+
 ## SPI Service Discovery
 
 ### 1. Service Registration
@@ -264,16 +311,22 @@ edu.zsc.ai.plugin.mysql.Mysql57Plugin
 edu.zsc.ai.plugin.mysql.Mysql8Plugin
 ```
 
-### 2. Plugin Loading
+### 2. Plugin Loading and Management
 
-Load plugins at runtime:
+Use PluginManager for centralized plugin management:
 
 ```java
-ServiceLoader<Plugin> loader = ServiceLoader.load(Plugin.class);
-for (Plugin plugin : loader) {
-    System.out.println("Loaded: " + plugin.getDisplayName());
-    System.out.println("Capabilities: " + plugin.getSupportedCapabilities());
-}
+// Create PluginManager (plugins auto-loaded in static initializer)
+PluginManager pluginManager = new DefaultPluginManager();
+
+// Query plugins by database type
+List<Plugin> mysqlPlugins = pluginManager.getPluginsByDbType(DbType.MYSQL);
+
+// Query plugins by capability
+List<Plugin> connectionPlugins = pluginManager.getPluginsByCapability("CONNECTION");
+
+// Get all plugins
+List<Plugin> allPlugins = pluginManager.getAllPlugins();
 ```
 
 ### 3. Application Integration
@@ -359,13 +412,12 @@ Update `data-agent-server-plugins/pom.xml`:
     version = "0.0.1",
     dbType = DbType.POSTGRESQL,
     description = "PostgreSQL database plugin",
-    minDatabaseVersion = "12.0"
+    supportMinVersion = "12.0"
 )
 public class PostgresqlPlugin extends AbstractDatabasePlugin 
         implements SqlPlugin, ConnectionProvider {
     
     // Implement ConnectionProvider methods
-    // Optionally override lifecycle methods
 }
 ```
 
@@ -390,7 +442,7 @@ The plugin is now automatically available to the application!
 1. **DriverLoader** - Works for all JDBC-based databases
 2. **ConnectionConfig** - Generic connection configuration
 3. **AbstractDatabasePlugin** - Base class for all plugins
-4. **PluginContext** - Runtime context interface
+4. **PluginManager** - Centralized plugin management
 
 ### Database-Specific Components
 

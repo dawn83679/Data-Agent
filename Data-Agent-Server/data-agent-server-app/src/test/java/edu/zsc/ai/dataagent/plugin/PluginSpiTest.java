@@ -1,24 +1,26 @@
 package edu.zsc.ai.dataagent.plugin;
 
 import edu.zsc.ai.plugin.Plugin;
+import edu.zsc.ai.plugin.manager.DefaultPluginManager;
+import edu.zsc.ai.plugin.manager.PluginManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.ServiceLoader;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Test for plugin SPI loading and capability collection.
+ * Test for plugin SPI loading and capability collection using PluginManager.
  */
 public class PluginSpiTest {
     
+    private final PluginManager pluginManager = new DefaultPluginManager();
+    
     @Test
     public void testSpiLoading() {
-        ServiceLoader<Plugin> loader = ServiceLoader.load(Plugin.class);
-        
         int count = 0;
-        for (Plugin plugin : loader) {
+        for (Plugin plugin : pluginManager.getAllPlugins()) {
             count++;
             System.out.println("=".repeat(50));
             System.out.println("Loaded plugin: " + plugin.getClass().getName());
@@ -30,8 +32,8 @@ public class PluginSpiTest {
             System.out.println("Description: " + plugin.getDescription());
             System.out.println("Vendor: " + plugin.getVendor());
             System.out.println("Website: " + plugin.getWebsite());
-            System.out.println("Min DB Version: " + plugin.getMinimumDatabaseVersion());
-            System.out.println("Max DB Version: " + plugin.getMaximumDatabaseVersion());
+            System.out.println("Min DB Version: " + plugin.getSupportMinVersion());
+            System.out.println("Max DB Version: " + plugin.getSupportMaxVersion());
             
             // Test capability collection
             Set<String> capabilities = plugin.getSupportedCapabilities();
@@ -56,9 +58,7 @@ public class PluginSpiTest {
     
     @Test
     public void testCapabilityCollection() {
-        ServiceLoader<Plugin> loader = ServiceLoader.load(Plugin.class);
-        
-        for (Plugin plugin : loader) {
+        for (Plugin plugin : pluginManager.getAllPlugins()) {
             Set<String> capabilities = plugin.getSupportedCapabilities();
             
             System.out.println(plugin.getPluginId() + " capabilities: " + capabilities);
