@@ -3,7 +3,6 @@ package edu.zsc.ai.plugin.base;
 import edu.zsc.ai.plugin.Plugin;
 import edu.zsc.ai.plugin.annotation.CapabilityMarker;
 import edu.zsc.ai.plugin.annotation.PluginInfo;
-import edu.zsc.ai.plugin.context.PluginContext;
 import edu.zsc.ai.plugin.enums.DbType;
 import edu.zsc.ai.plugin.enums.PluginType;
 import edu.zsc.ai.plugin.exception.PluginErrorCode;
@@ -24,11 +23,6 @@ public abstract class AbstractDatabasePlugin implements Plugin {
      * Plugin metadata from annotation
      */
     private final PluginInfo pluginInfo;
-    
-    /**
-     * Plugin runtime context
-     */
-    protected PluginContext context;
     
     /**
      * Constructor that reads and validates plugin metadata from annotation
@@ -90,13 +84,13 @@ public abstract class AbstractDatabasePlugin implements Plugin {
     // ========== Database Version Support ==========
     
     @Override
-    public String getMinimumDatabaseVersion() {
-        return pluginInfo.minDatabaseVersion();
+    public String getSupportMinVersion() {
+        return pluginInfo.supportMinVersion();
     }
     
     @Override
-    public String getMaximumDatabaseVersion() {
-        return pluginInfo.maxDatabaseVersion();
+    public String getSupportMaxVersion() {
+        return pluginInfo.supportMaxVersion();
     }
     
     /**
@@ -135,92 +129,6 @@ public abstract class AbstractDatabasePlugin implements Plugin {
         
         // Recursively scan parent class
         collectCapabilities(clazz.getSuperclass(), capabilities);
-    }
-    
-    // ========== Lifecycle Methods (can be overridden by subclasses) ==========
-    
-    @Override
-    public void initialize(PluginContext context) throws PluginException {
-        this.context = context;
-        if (context != null) {
-            context.logInfo("Initializing plugin: " + getDisplayName() + " v" + getVersion());
-        }
-    }
-    
-    @Override
-    public void start() throws PluginException {
-        if (context != null) {
-            context.logInfo("Starting plugin: " + getDisplayName());
-        }
-    }
-    
-    @Override
-    public void stop() throws PluginException {
-        if (context != null) {
-            context.logInfo("Stopping plugin: " + getDisplayName());
-        }
-    }
-    
-    @Override
-    public void destroy() throws PluginException {
-        if (context != null) {
-            context.logInfo("Destroying plugin: " + getDisplayName());
-        }
-        this.context = null;
-    }
-    
-    /**
-     * Get plugin context
-     *
-     * @return plugin context
-     */
-    protected PluginContext getContext() {
-        return context;
-    }
-    
-    /**
-     * Log info message using plugin context
-     *
-     * @param message log message
-     */
-    protected void logInfo(String message) {
-        if (context != null) {
-            context.logInfo("[" + getPluginId() + "] " + message);
-        }
-    }
-    
-    /**
-     * Log warning message using plugin context
-     *
-     * @param message log message
-     */
-    protected void logWarn(String message) {
-        if (context != null) {
-            context.logWarn("[" + getPluginId() + "] " + message);
-        }
-    }
-    
-    /**
-     * Log error message using plugin context
-     *
-     * @param message log message
-     */
-    protected void logError(String message) {
-        if (context != null) {
-            context.logError("[" + getPluginId() + "] " + message);
-        }
-    }
-    
-    /**
-     * Log error message with exception using plugin context
-     *
-     * @param message log message
-     * @param throwable exception
-     */
-    protected void logError(String message, Throwable throwable) {
-        if (context != null) {
-            context.logError("[" + getPluginId() + "] " + message, throwable);
-        }
     }
 }
 

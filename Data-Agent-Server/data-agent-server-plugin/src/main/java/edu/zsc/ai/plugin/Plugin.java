@@ -1,9 +1,7 @@
 package edu.zsc.ai.plugin;
 
-import edu.zsc.ai.plugin.context.PluginContext;
 import edu.zsc.ai.plugin.enums.DbType;
 import edu.zsc.ai.plugin.enums.PluginType;
-import edu.zsc.ai.plugin.exception.PluginException;
 
 import java.util.Set;
 
@@ -79,7 +77,7 @@ public interface Plugin {
      *
      * @return minimum database version (e.g., "5.7.0")
      */
-    String getMinimumDatabaseVersion();
+    String getSupportMinVersion();
     
     /**
      * Get maximum supported database version.
@@ -87,7 +85,7 @@ public interface Plugin {
      *
      * @return maximum database version (e.g., "5.7.99"), or empty string
      */
-    String getMaximumDatabaseVersion();
+    String getSupportMaxVersion();
     
     /**
      * Get all supported capabilities of this plugin.
@@ -96,48 +94,5 @@ public interface Plugin {
      * @return set of capability identifiers
      */
     Set<String> getSupportedCapabilities();
-    
-    // ========== Lifecycle Methods ==========
-    
-    /**
-     * Initialize plugin with context.
-     * Called once when plugin is loaded.
-     *
-     * @param context plugin runtime context
-     * @throws PluginException if initialization fails
-     */
-    default void initialize(PluginContext context) throws PluginException {
-        // Default empty implementation
-    }
-    
-    /**
-     * Start plugin.
-     * Called after initialization.
-     *
-     * @throws PluginException if start fails
-     */
-    default void start() throws PluginException {
-        // Default empty implementation
-    }
-    
-    /**
-     * Stop plugin.
-     * Called before plugin unload.
-     *
-     * @throws PluginException if stop fails
-     */
-    default void stop() throws PluginException {
-        // Default empty implementation
-    }
-    
-    /**
-     * Destroy plugin and release all resources.
-     * Called when plugin is being unloaded.
-     *
-     * @throws PluginException if destroy fails
-     */
-    default void destroy() throws PluginException {
-        // Default empty implementation
-    }
 }
 
