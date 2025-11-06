@@ -66,10 +66,10 @@
                 <artifactId>commons-collections4</artifactId>
                 <version>${commons-collections4.version}</version>
             </dependency>
-            <!-- MyBatis-Plus -->
+            <!-- MyBatis-Plus for Spring Boot 3.x -->
             <dependency>
                 <groupId>com.baomidou</groupId>
-                <artifactId>mybatis-plus-boot-starter</artifactId>
+                <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
                 <version>${mybatis-plus.version}</version>
             </dependency>
             <!-- MyBatis-Plus JSqlParser (Required for Pagination Plugin since 3.5.9) -->
