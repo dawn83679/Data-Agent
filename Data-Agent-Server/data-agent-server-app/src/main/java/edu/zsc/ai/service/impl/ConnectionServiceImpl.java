@@ -1,8 +1,9 @@
 package edu.zsc.ai.service.impl;
 
-import edu.zsc.ai.exception.BusinessException;
+import edu.zsc.ai.converter.ConnectionConfigConverter;
 import edu.zsc.ai.model.dto.request.ConnectRequest;
 import edu.zsc.ai.model.dto.response.ConnectionTestResponse;
+import edu.zsc.ai.model.dto.response.OpenConnectionResponse;
 import edu.zsc.ai.model.enums.ConnectionTestStatus;
 import edu.zsc.ai.plugin.Plugin;
 import edu.zsc.ai.plugin.capability.ConnectionProvider;
@@ -14,11 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Connection Service Implementation
@@ -32,50 +28,25 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class ConnectionServiceImpl implements ConnectionService {
 
-    private final PluginManager pluginManager;
-
-    /**
-     * Active connections registry: connectionId -> Connection
-     */
-    private final Map<String, Connection> activeConnections = new ConcurrentHashMap<>();
-
-    /**
-     * Connection metadata registry: connectionId -> ConnectionMetadata
-     */
-    private final Map<String, ConnectionMetadata> connectionMetadata = new ConcurrentHashMap<>();
-
     @Override
     public ConnectionTestResponse testConnection(ConnectRequest request) {
         Connection connection = null;
         long startTime = System.currentTimeMillis();
-        // Get any available plugin for the database type
-        ConnectionProvider provider = getConnectionProviderByDbType(request.getDbType());
+        // Get ConnectionProvider for the database type
+        ConnectionProvider provider = PluginManager.getConnectionProvider(request.getDbType());
         // Convert request to ConnectionConfig
-        ConnectionConfig config = buildConnectionConfig(request);
+        ConnectionConfig config = ConnectionConfigConverter.convert(request);
 
+        try {
         // Establish connection to get detailed information
         connection = provider.connect(config);
 
         // Calculate ping time
         long ping = System.currentTimeMillis() - startTime;
 
-        // Get database metadata
-        DatabaseMetaData metaData;
-        try {
-            metaData = connection.getMetaData();
-            // Build response
-            String dbmsInfo = String.format("%s (ver. %s)",
-                    metaData.getDatabaseProductName(),
-                    metaData.getDatabaseProductVersion());
-
-            String driverInfo = String.format("%s (ver. %s, JDBC%d.%d)",
-                    metaData.getDriverName(),
-                    metaData.getDriverVersion(),
-                    metaData.getJDBCMajorVersion(),
-                    metaData.getJDBCMinorVersion());
-
-            // Close connection
-            provider.closeConnection(connection);
+            // Get database and driver information using ConnectionProvider
+            String dbmsInfo = provider.getDbmsInfo(connection);
+            String driverInfo = provider.getDriverInfo(connection);
 
             return ConnectionTestResponse.builder()
                     .status(ConnectionTestStatus.SUCCEEDED)
@@ -83,86 +54,80 @@ public class ConnectionServiceImpl implements ConnectionService {
                     .driverInfo(driverInfo)
                     .ping(ping)
                     .build();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        } finally {
+            // Ensure connection is closed
+            if (connection != null) {
+                try {
+                    provider.closeConnection(connection);
+                } catch (Exception e) {
+                    log.warn("Failed to close connection", e);
+                }
+            }
+        }
+    }
+
+    @Override
+    public OpenConnectionResponse openConnection(ConnectRequest request) {
+        // Get ConnectionProvider for initial connection (to get database version)
+        ConnectionProvider currentProvider = PluginManager.getConnectionProvider(request.getDbType());
+        Plugin initialPlugin = (Plugin) currentProvider;
+
+        // Convert request to ConnectionConfig
+        ConnectionConfig config = ConnectionConfigConverter.convert(request);
+
+        // Establish connection first
+        Connection connection = currentProvider.connect(config);
+
+        try {
+            // Get database version from connection using ConnectionProvider
+            String databaseVersion = currentProvider.getDatabaseProductVersion(connection);
+            
+            // Select appropriate plugin based on database version
+            Plugin selectedPlugin = PluginManager.selectPluginByDbVersion(request.getDbType(), databaseVersion);
+            
+            // Close the initial connection and reconnect with the selected plugin if needed
+            if (!selectedPlugin.getPluginId().equals(initialPlugin.getPluginId())) {
+                // If plugin changed, close current connection and reconnect with new plugin
+                currentProvider.closeConnection(connection);
+                ConnectionProvider selectedProvider = (ConnectionProvider) selectedPlugin;
+                connection = selectedProvider.connect(config);
+                currentProvider = selectedProvider; // Update current provider for error handling
+            }
+            
+            // Store connection in ConnectionManager with selected plugin's ID
+            String connectionId = ConnectionManager.openConnection(request, connection, selectedPlugin.getPluginId());
+
+        // Get metadata for response
+            ConnectionManager.ConnectionMetadata metadata = ConnectionManager.getConnectionMetadata(connectionId);
+
+        // Build response
+        return OpenConnectionResponse.builder()
+                .connectionId(connectionId)
+                .dbType(request.getDbType())
+                .host(request.getHost())
+                .port(request.getPort())
+                .database(request.getDatabase())
+                .username(request.getUsername())
+                .connected(true)
+                .createdAt(metadata.createdAt())
+                .build();
+        } catch (Exception e) {
+            // Close connection on error before rethrowing
+            // Use currentProvider which might have been updated if plugin changed
+            if (connection != null) {
+                try {
+                    currentProvider.closeConnection(connection);
+                } catch (Exception closeException) {
+                    log.warn("Failed to close connection after error", closeException);
+                }
+            }
+            throw e;
         }
     }
 
     @Override
     public void closeConnection(String connectionId) {
-        // Get connection
-        Connection connection = activeConnections.get(connectionId);
-        if (connection == null) {
-            return;
-        }
-
-        // Get metadata for logging
-        ConnectionMetadata metadata = connectionMetadata.get(connectionId);
-
-        try {
-            // Get plugin to close connection properly
-            ConnectionProvider provider = getConnectionProviderByDbType(metadata.dbType());
-
-            // Close connection
-            provider.closeConnection(connection);
-
-            log.info("Connection closed: connectionId={}, dbType={}, host={}",
-                    connectionId, metadata.dbType(), metadata.host());
-
-        } finally {
-            // Always remove from registry
-            activeConnections.remove(connectionId);
-            connectionMetadata.remove(connectionId);
-        }
+        ConnectionManager.closeConnection(connectionId);
     }
-
-    /**
-     * Get ConnectionProvider by database type.
-     * Simply gets the first available plugin for the database type.
-     * All plugins implementing ConnectionProvider have connection capability.
-     *
-     * @param dbTypeCode database type code string (e.g., "MYSQL", "mysql")
-     * @return ConnectionProvider instance
-     * @throws BusinessException if no plugin found for database type
-     */
-    private ConnectionProvider getConnectionProviderByDbType(String dbTypeCode) {
-        // Get plugins by database type code (directly, no enum conversion needed)
-        List<Plugin> plugins = pluginManager.getPluginsByDbTypeCode(dbTypeCode);
-        if (plugins.isEmpty()) {
-            throw new BusinessException(404,
-                    "No plugin available for database type: " + dbTypeCode);
-        }
-
-        // Get first available plugin (all plugins have connection capability)
-        Plugin plugin = plugins.get(0);
-
-        // Cast to ConnectionProvider (all plugins with this dbType implement it)
-        return (ConnectionProvider) plugin;
-    }
-
-    /**
-     * Build ConnectionConfig from request DTO.
-     *
-     * @param request connect request
-     * @return ConnectionConfig instance
-     */
-    private ConnectionConfig buildConnectionConfig(ConnectRequest request) {
-        ConnectionConfig config = new ConnectionConfig();
-        config.setHost(request.getHost());
-        config.setPort(request.getPort());
-        config.setDatabase(request.getDatabase());
-        config.setUsername(request.getUsername());
-        config.setPassword(request.getPassword());
-        config.setDriverJarPath(request.getDriverJarPath());
-        config.setTimeout(request.getTimeout());
-        config.setProperties(request.getProperties());
-        return config;
-    }
-
-
-    /**
-     * Internal class to store connection metadata.
-     */
-    private record ConnectionMetadata(String dbType, String host) {}
 }
 

@@ -5,6 +5,7 @@ import edu.zsc.ai.model.dto.request.ConnectionCreateRequest;
 import edu.zsc.ai.model.dto.response.ApiResponse;
 import edu.zsc.ai.model.dto.response.ConnectionResponse;
 import edu.zsc.ai.model.dto.response.ConnectionTestResponse;
+import edu.zsc.ai.model.dto.response.OpenConnectionResponse;
 import edu.zsc.ai.service.ConnectionService;
 import edu.zsc.ai.service.DbConnectionService;
 import jakarta.validation.Valid;
@@ -48,12 +49,28 @@ public class ConnectionController {
     }
 
     /**
+     * Open a new database connection and store it in the active connections registry.
+     * Establishes a persistent connection that can be reused for queries.
+     *
+     * @param request connection request with connection parameters
+     * @return open connection response with connectionId and connection details
+     */
+    @PostMapping("/open")
+    public ApiResponse<OpenConnectionResponse> openConnection(@Valid @RequestBody ConnectRequest request) {
+        log.info("Opening connection: dbType={}, host={}, database={}",
+                request.getDbType(), request.getHost(), request.getDatabase());
+
+        OpenConnectionResponse response = connectionService.openConnection(request);
+        return ApiResponse.success(response);
+    }
+
+    /**
      * Create a new database connection.
      *
      * @param request connection creation request
      * @return created connection response
      */
-    @PostMapping
+    @PostMapping("/create")
     public ApiResponse<ConnectionResponse> createConnection(
             @Valid @RequestBody ConnectionCreateRequest request) {
         log.info("Creating connection: name={}, dbType={}, host={}",
