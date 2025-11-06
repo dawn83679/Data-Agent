@@ -147,16 +147,16 @@ public class ConnectionServiceImpl implements ConnectionService {
      * @return ConnectionConfig instance
      */
     private ConnectionConfig buildConnectionConfig(ConnectRequest request) {
-        return ConnectionConfig.builder()
-                .host(request.getHost())
-                .port(request.getPort())
-                .database(request.getDatabase())
-                .username(request.getUsername())
-                .password(request.getPassword())
-                .driverJarPath(request.getDriverJarPath())
-                .timeout(request.getTimeout())
-                .properties(request.getProperties())
-                .build();
+        ConnectionConfig config = new ConnectionConfig();
+        config.setHost(request.getHost());
+        config.setPort(request.getPort());
+        config.setDatabase(request.getDatabase());
+        config.setUsername(request.getUsername());
+        config.setPassword(request.getPassword());
+        config.setDriverJarPath(request.getDriverJarPath());
+        config.setTimeout(request.getTimeout());
+        config.setProperties(request.getProperties());
+        return config;
     }
 
 

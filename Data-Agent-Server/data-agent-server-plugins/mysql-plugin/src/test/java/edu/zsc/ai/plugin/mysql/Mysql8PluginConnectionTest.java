@@ -24,13 +24,12 @@ public class Mysql8PluginConnectionTest {
     public void testConnect() throws Exception {
         Mysql8Plugin plugin = new Mysql8Plugin();
 
-        ConnectionConfig config = ConnectionConfig.builder()
-            .host(HOST)
-            .port(PORT)
-            .username(USERNAME)
-            .password(PASSWORD)
-            .driverJarPath(DRIVER_JAR_PATH)
-            .build();
+        ConnectionConfig config = new ConnectionConfig();
+        config.setHost(HOST);
+        config.setPort(PORT);
+        config.setUsername(USERNAME);
+        config.setPassword(PASSWORD);
+        config.setDriverJarPath(DRIVER_JAR_PATH);
 
         Connection connection = null;
         try {
@@ -57,14 +56,13 @@ public class Mysql8PluginConnectionTest {
     public void testConnectWithDatabase() throws Exception {
         Mysql8Plugin plugin = new Mysql8Plugin();
 
-        ConnectionConfig config = ConnectionConfig.builder()
-            .host(HOST)
-            .port(PORT)
-            .database("mysql")
-            .username(USERNAME)
-            .password(PASSWORD)
-            .driverJarPath(DRIVER_JAR_PATH)
-            .build();
+        ConnectionConfig config = new ConnectionConfig();
+        config.setHost(HOST);
+        config.setPort(PORT);
+        config.setDatabase("mysql");
+        config.setUsername(USERNAME);
+        config.setPassword(PASSWORD);
+        config.setDriverJarPath(DRIVER_JAR_PATH);
 
         Connection connection = null;
         try {
@@ -91,13 +89,12 @@ public class Mysql8PluginConnectionTest {
         Mysql8Plugin plugin = new Mysql8Plugin();
 
         // Build properties map
-        ConnectionConfig config = ConnectionConfig.builder()
-            .host(HOST)
-            .port(PORT)
-            .username(USERNAME)
-            .password(PASSWORD)
-            .driverJarPath(DRIVER_JAR_PATH)
-            .build();
+        ConnectionConfig config = new ConnectionConfig();
+        config.setHost(HOST);
+        config.setPort(PORT);
+        config.setUsername(USERNAME);
+        config.setPassword(PASSWORD);
+        config.setDriverJarPath(DRIVER_JAR_PATH);
         
         // Add custom properties
         config.addProperty("useSSL", "false");
@@ -123,13 +120,12 @@ public class Mysql8PluginConnectionTest {
     public void testTestConnection() {
         Mysql8Plugin plugin = new Mysql8Plugin();
 
-        ConnectionConfig config = ConnectionConfig.builder()
-            .host(HOST)
-            .port(PORT)
-            .username(USERNAME)
-            .password(PASSWORD)
-            .driverJarPath(DRIVER_JAR_PATH)
-            .build();
+        ConnectionConfig config = new ConnectionConfig();
+        config.setHost(HOST);
+        config.setPort(PORT);
+        config.setUsername(USERNAME);
+        config.setPassword(PASSWORD);
+        config.setDriverJarPath(DRIVER_JAR_PATH);
 
         boolean result = plugin.testConnection(config);
         assertTrue(result, "Connection test should succeed");
@@ -141,13 +137,12 @@ public class Mysql8PluginConnectionTest {
     public void testTestConnectionFailure() {
         Mysql8Plugin plugin = new Mysql8Plugin();
 
-        ConnectionConfig config = ConnectionConfig.builder()
-            .host(HOST)
-            .port(PORT)
-            .username(USERNAME)
-            .password("wrong_password")
-            .driverJarPath(DRIVER_JAR_PATH)
-            .build();
+        ConnectionConfig config = new ConnectionConfig();
+        config.setHost(HOST);
+        config.setPort(PORT);
+        config.setUsername(USERNAME);
+        config.setPassword("wrong_password");
+        config.setDriverJarPath(DRIVER_JAR_PATH);
 
         boolean result = plugin.testConnection(config);
         assertFalse(result, "Connection test should fail with wrong password");
