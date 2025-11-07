@@ -101,10 +101,10 @@ public interface Plugin {
     /**
      * Get Maven coordinates for the JDBC driver.
      * Plugin determines the appropriate groupId and artifactId based on the version.
-     * Returns null if the plugin does not support the given version or doesn't provide Maven coordinates.
      *
      * @param driverVersion driver version (e.g., "8.0.33", "5.1.49"), or null for default version
-     * @return Maven coordinates (groupId, artifactId, version), or null if not available/supported
+     * @return Maven coordinates (groupId, artifactId, version)
+     * @throws edu.zsc.ai.plugin.exception.PluginException if the plugin does not support the given version or doesn't provide Maven coordinates
      */
     MavenCoordinates getDriverMavenCoordinates(String driverVersion);
 }

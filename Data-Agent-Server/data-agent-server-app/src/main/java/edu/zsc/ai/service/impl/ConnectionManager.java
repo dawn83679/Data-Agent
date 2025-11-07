@@ -109,7 +109,7 @@ public class ConnectionManager {
             ConnectionMetadata metadata = connectionMetadata.get(connectionId);
 
             // Get plugin to close connection properly
-            ConnectionProvider provider = PluginManager.getConnectionProviderByPluginId(metadata.pluginId());
+            ConnectionProvider provider = PluginManager.selectConnectionProviderByPluginId(metadata.pluginId());
 
             // Close connection
             provider.closeConnection(connection);

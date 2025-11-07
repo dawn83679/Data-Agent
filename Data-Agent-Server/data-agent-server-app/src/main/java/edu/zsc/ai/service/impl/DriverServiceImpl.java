@@ -3,11 +3,11 @@ package edu.zsc.ai.service.impl;
 import edu.zsc.ai.exception.BusinessException;
 import edu.zsc.ai.model.dto.response.AvailableDriverResponse;
 import edu.zsc.ai.model.dto.response.InstalledDriverResponse;
+import edu.zsc.ai.plugin.Plugin;
 import edu.zsc.ai.plugin.connection.DriverStorageManager;
 import edu.zsc.ai.plugin.connection.MavenDriverDownloader;
 import edu.zsc.ai.plugin.connection.MavenMetadataClient;
 import edu.zsc.ai.plugin.enums.DbType;
-import edu.zsc.ai.plugin.exception.PluginException;
 import edu.zsc.ai.plugin.manager.PluginManager;
 import edu.zsc.ai.plugin.model.MavenCoordinates;
 import edu.zsc.ai.service.DriverService;
@@ -38,66 +38,42 @@ public class DriverServiceImpl implements DriverService {
 
     @Override
     public Path downloadDriver(String databaseType, String version) {
-        // Step 1: Parse database type and find plugins
-        DbType dbType;
-        dbType = DbType.fromCode(databaseType.toLowerCase());
+        // Step 1: Select the first plugin for the database type
+        Plugin plugin = PluginManager.selectFirstPluginByDbType(databaseType.toLowerCase());
 
-        // Step 2: Get Maven coordinates from PluginManager
-        MavenCoordinates downloadCoordinates = PluginManager.getDriverMavenCoordinates(dbType, version);
-        if (downloadCoordinates == null) {
-            throw new BusinessException(404,
-                    "No plugin found that supports driver version: " + version + " for database type: " + databaseType);
-        }
+        // Step 2: Get Maven coordinates from selected plugin
+        MavenCoordinates downloadCoordinates = plugin.getDriverMavenCoordinates(version);
 
         // Step 3: Download driver
-        try {
-            Path driverPath = MavenDriverDownloader.downloadDriver(
-                    downloadCoordinates,
-                    dbType,
-                    null,  // Use default storage directory
-                    null   // Use default Maven Central URL
-            );
+        DbType dbType = plugin.getDbType();
+        Path driverPath = MavenDriverDownloader.downloadDriver(
+                downloadCoordinates,
+                dbType,
+                null,  // Use default storage directory
+                null   // Use default Maven Central URL
+        );
 
-            log.info("Successfully downloaded driver for database type {}: {}", databaseType, driverPath);
-            return driverPath;
-
-        } catch (PluginException e) {
-            log.error("Failed to download driver for database type {}: {}", databaseType, e.getMessage(), e);
-            throw new BusinessException(500, "Failed to download driver: " + e.getMessage());
-        }
+        log.info("Successfully downloaded driver for database type {}: {}", databaseType, driverPath);
+        return driverPath;
     }
 
     @Override
     public List<AvailableDriverResponse> listAvailableDrivers(String databaseType) {
-        // Parse database type
-        DbType dbType;
-        try {
-            dbType = DbType.fromCode(databaseType.toLowerCase());
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(400, "Unknown database type: " + databaseType);
-        }
+        // Select the first plugin for the database type
+        Plugin plugin = PluginManager.selectFirstPluginByDbType(databaseType.toLowerCase());
 
-        // Get default driver coordinates from PluginManager
-        MavenCoordinates coordinates = PluginManager.getDriverMavenCoordinates(dbType, null);
-        if (coordinates == null) {
-            throw new BusinessException(404, "No plugins found for database type: " + databaseType);
-        }
+        // Get default driver coordinates from selected plugin
+        MavenCoordinates coordinates = plugin.getDriverMavenCoordinates(null);
 
         // Query Maven Central for all available versions
-        List<String> versions;
-        try {
-            versions = MavenMetadataClient.queryVersions(
-                    coordinates.getGroupId(),
-                    coordinates.getArtifactId(),
-                    null  // Use default Maven Central URL
-            );
-        } catch (PluginException e) {
-            log.error("Failed to query Maven Central for versions: {}", e.getMessage(), e);
-            throw new BusinessException(500,
-                    "Failed to query available driver versions: " + e.getMessage());
-        }
+        List<String> versions = MavenMetadataClient.queryVersions(
+                coordinates.getGroupId(),
+                coordinates.getArtifactId(),
+                null  // Use default Maven Central URL
+        );
 
         // Check which versions are installed locally
+        DbType dbType = plugin.getDbType();
         Set<String> installedVersions = getInstalledVersionStrings(dbType, coordinates.getArtifactId());
 
         // Build response list
@@ -168,14 +144,9 @@ public class DriverServiceImpl implements DriverService {
         }
 
         // Step 3: Delete file
-        try {
-            Path driverFilePath = Path.of(targetDriver.getFilePath());
-            DriverStorageManager.deleteDriver(driverFilePath);
-            log.info("Successfully deleted driver: {}", driverFilePath);
-        } catch (PluginException e) {
-            log.error("Failed to delete driver: {}", e.getMessage(), e);
-            throw new BusinessException(500, "Failed to delete driver: " + e.getMessage());
-        }
+        Path driverFilePath = Path.of(targetDriver.getFilePath());
+        DriverStorageManager.deleteDriver(driverFilePath);
+        log.info("Successfully deleted driver: {}", driverFilePath);
     }
 }
 

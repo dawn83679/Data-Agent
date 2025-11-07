@@ -40,23 +40,17 @@ public final class MavenDriverDownloader {
             String baseStorageDir,
             String mavenRepositoryUrl) throws PluginException {
         
-        // Step 1: Validate coordinates
-        if (!coordinates.isComplete()) {
-            throw new PluginException(PluginErrorCode.CONNECTION_FAILED,
-                "Maven coordinates are incomplete: " + coordinates.toCoordinateString());
-        }
-        
-        // Step 2: Determine storage directory and file path
+        // Step 1: Determine storage directory and file path
         Path storageDir = DriverStorageManager.getStorageDirectory(baseStorageDir, dbType);
         Path driverFilePath = DriverStorageManager.getDriverFilePath(baseStorageDir, dbType, coordinates);
         
-        // Step 3: Check if driver already exists (cache check)
+        // Step 2: Check if driver already exists (cache check)
         if (DriverStorageManager.driverExists(driverFilePath)) {
             logger.info("Driver already exists, skipping download: " + driverFilePath);
             return driverFilePath;
         }
         
-        // Step 4: Build download URL
+        // Step 3: Build download URL
         String repoUrl = mavenRepositoryUrl != null && !mavenRepositoryUrl.isEmpty()
             ? mavenRepositoryUrl
             : DriverConstants.MAVEN_CENTRAL_URL;
@@ -64,10 +58,10 @@ public final class MavenDriverDownloader {
         java.net.URL downloadUrl = MavenUrlBuilder.buildDownloadUrl(coordinates, repoUrl);
         logger.info("Downloading driver from: " + downloadUrl);
         
-        // Step 5: Ensure storage directory exists
+        // Step 4: Ensure storage directory exists
         DriverStorageManager.ensureDirectoryExists(storageDir);
         
-        // Step 6: Download file via HTTP
+        // Step 5: Download file via HTTP
         try {
             HttpDownloader.download(downloadUrl, driverFilePath);
         } catch (PluginException e) {
@@ -82,7 +76,7 @@ public final class MavenDriverDownloader {
             throw e;
         }
         
-        // Step 7: Validate downloaded JAR file
+        // Step 6: Validate downloaded JAR file
         try {
             JarFileValidator.validate(driverFilePath);
         } catch (PluginException e) {

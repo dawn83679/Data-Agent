@@ -137,7 +137,8 @@ public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin impleme
      * - MySQL 5.x and below → mysql:mysql-connector-java
      *
      * @param driverVersion driver version (nullable, uses default if null)
-     * @return Maven coordinates for MySQL driver, or null if version not supported
+     * @return Maven coordinates for MySQL driver
+     * @throws PluginException if version is not supported
      */
     @Override
     public MavenCoordinates getDriverMavenCoordinates(String driverVersion) {
@@ -162,7 +163,8 @@ public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin impleme
             );
         }
         
-        // Unsupported version
-        return null;
+        // Unsupported version - throw exception instead of returning null
+        throw new PluginException(PluginErrorCode.DRIVER_NOT_SUPPORTED,
+                String.format("Unsupported MySQL driver version: %s. Supported versions: 2.x-7.x, 8.x, 9.x", driverVersion));
     }
 }

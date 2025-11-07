@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import edu.zsc.ai.exception.BusinessException;
 import edu.zsc.ai.model.dto.response.ApiResponse;
+import edu.zsc.ai.plugin.exception.PluginException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,6 +30,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(ApiResponse.error(e.getCode(), e.getMessage()));
+    }
+
+    /**
+     * Handle plugin exceptions
+     */
+    @ExceptionHandler(PluginException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePluginException(PluginException e) {
+        log.error("Plugin exception: {}", e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.error(500, e.getMessage()));
     }
 
     /**

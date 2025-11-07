@@ -1,16 +1,13 @@
 package edu.zsc.ai.plugin.model;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
+import lombok.Getter;
 /**
  * Maven coordinates for a JDBC driver.
  * Contains groupId, artifactId, and version information.
  */
-@Data
-@NoArgsConstructor
 @AllArgsConstructor
+@Getter
 public class MavenCoordinates {
     
     /**
@@ -35,17 +32,6 @@ public class MavenCoordinates {
      */
     public String toCoordinateString() {
         return String.format("%s:%s:%s", groupId, artifactId, version);
-    }
-    
-    /**
-     * Check if coordinates are complete (all fields are non-null and non-empty).
-     *
-     * @return true if all fields are present
-     */
-    public boolean isComplete() {
-        return groupId != null && !groupId.isEmpty()
-            && artifactId != null && !artifactId.isEmpty()
-            && version != null && !version.isEmpty();
     }
 }
 

@@ -66,6 +66,11 @@ public class PluginErrorCode {
      */
     public static final String INVALID_CONFIGURATION = "INVALID_CONFIGURATION";
     
+    /**
+     * Driver version not supported
+     */
+    public static final String DRIVER_NOT_SUPPORTED = "DRIVER_NOT_SUPPORTED";
+    
     private PluginErrorCode() {
         // Private constructor to prevent instantiation
     }

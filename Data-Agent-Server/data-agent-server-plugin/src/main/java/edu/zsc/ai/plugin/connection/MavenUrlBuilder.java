@@ -25,11 +25,6 @@ public final class MavenUrlBuilder {
      * @throws PluginException if URL construction fails
      */
     public static URL buildDownloadUrl(MavenCoordinates coordinates, String baseUrl) throws PluginException {
-        if (!coordinates.isComplete()) {
-            throw new PluginException(PluginErrorCode.CONNECTION_FAILED,
-                "Maven coordinates are incomplete: " + coordinates.toCoordinateString());
-        }
-        
         String urlString = String.format("%s/%s/%s/%s/%s-%s.jar",
             baseUrl != null ? baseUrl : DriverConstants.MAVEN_CENTRAL_URL,
             coordinates.getGroupId().replace('.', '/'),
