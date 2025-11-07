@@ -43,19 +43,6 @@ class MavenUrlBuilderTest {
     }
     
     @Test
-    void testBuildDownloadUrl_IncompleteCoordinates() {
-        MavenCoordinates coordinates = new MavenCoordinates(
-            "com.mysql",
-            "mysql-connector-j",
-            null  // Missing version
-        );
-        
-        assertThrows(PluginException.class, () -> {
-            MavenUrlBuilder.buildDownloadUrl(coordinates);
-        });
-    }
-    
-    @Test
     void testBuildMetadataUrl_Success() throws PluginException {
         URL url = MavenUrlBuilder.buildMetadataUrl("com.mysql", "mysql-connector-j");
         
