@@ -100,5 +100,16 @@ public class ApiResponse<T> implements Serializable {
     public static <T> ApiResponse<T> error(ErrorCode errorCode, String message) {
         return new ApiResponse<>(errorCode.getCode(), null, message);
     }
+
+    /**
+     * 失败（仅消息,使用默认系统错误码）
+     *
+     * @param message 错误消息
+     * @param <T> 数据类型
+     * @return 错误响应
+     */
+    public static <T> ApiResponse<T> error(String message) {
+        return new ApiResponse<>(ErrorCode.SYSTEM_ERROR.getCode(), null, message);
+    }
 }
 

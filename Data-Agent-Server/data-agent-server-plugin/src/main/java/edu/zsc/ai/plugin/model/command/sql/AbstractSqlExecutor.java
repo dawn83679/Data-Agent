@@ -1,8 +1,6 @@
 package edu.zsc.ai.plugin.model.command.sql;
 
 import edu.zsc.ai.plugin.capability.CommandExecutor;
-import edu.zsc.ai.plugin.value.ValueProcessor;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,16 +12,23 @@ import java.util.List;
  * <p>Inspired by Chat2DB's design, this class separates SQL execution logic
  * from type handling logic, making it easier to extend and test.
  *
+ * <p><b>Note:</b> This executor does NOT close the connection. The caller is
+ * responsible for managing the connection lifecycle.
+ *
  * @author Data-Agent Team
  */
 public abstract class AbstractSqlExecutor implements CommandExecutor<SqlCommandRequest, SqlCommandResult> {
 
     /**
-     * Get the value processor for handling database-specific type conversions.
+     * Extract value from ResultSet at the specified column.
      *
-     * @return the value processor instance
+     * @param resultSet the ResultSet to extract from
+     * @param columnIndex the column index (1-based)
+     * @param sqlType the SQL type from java.sql.Types
+     * @return the extracted value
+     * @throws SQLException if value extraction fails
      */
-    protected abstract ValueProcessor getValueProcessor();
+    protected abstract Object extractValue(ResultSet resultSet, int columnIndex, int sqlType) throws SQLException;
 
     @Override
     public SqlCommandResult executeCommand(SqlCommandRequest command) {
@@ -32,63 +37,109 @@ public abstract class AbstractSqlExecutor implements CommandExecutor<SqlCommandR
         result.setSuccess(true);
         result.setOriginalSql(command.getOriginalSql());
         result.setExecutedSql(command.getExecuteSql());
-        try (Statement statement = connection.createStatement()) {
+
+        boolean originalAutoCommit = true;
+
+        try {
+            // 保存原始 autoCommit 状态
+            originalAutoCommit = connection.getAutoCommit();
+
             if (command.isNeedTransaction()) {
                 connection.setAutoCommit(false);
             }
-            String sql = command.getExecuteSql();
-            long start = System.currentTimeMillis();
-            boolean execute = statement.execute(sql);
-            result.setExecutionTime(System.currentTimeMillis() - start);
 
-            if (command.isNeedTransaction()) {
-                connection.commit();
-            }
+            try (Statement statement = connection.createStatement()) {
+                String sql = command.getExecuteSql();
+                long start = System.currentTimeMillis();
+                boolean isQuery = statement.execute(sql);
+                result.setExecutionTime(System.currentTimeMillis() - start);
 
-            result.setQuery(execute);
-            if (!execute) {
-                // not query
-                int updateCount = statement.getUpdateCount();
-                result.setAffectedRows(updateCount);
-            } else {
-                // query
-                List<String> headers = new ArrayList<>();
-                try (ResultSet resultSet = statement.getResultSet()) {
-                    ResultSetMetaData metaData = resultSet.getMetaData();
-                    int columnCount = metaData.getColumnCount();
-                    for (int i = 0; i < columnCount; i++) {
-                        String header = metaData.getColumnName(i + 1);
-                        headers.add(header);
-                    }
-                    List<List<Object>> rows = new ArrayList<>();
-                    while (resultSet.next()) {
-                        List<Object> row = new ArrayList<>();
-                        for (int i = 1; i <= columnCount; i++) {
-                            // Use ValueProcessor for database-specific type conversion
-                            String columnTypeName = metaData.getColumnTypeName(i);
-                            int sqlType = metaData.getColumnType(i);
-                            Object value = getValueProcessor().getJdbcValue(
-                                    resultSet, i, sqlType, columnTypeName);
-                            row.add(value);
-                        }
-                        rows.add(row);
-                    }
-                    result.setHeaders(headers);
-                    result.setRows(rows);
+                result.setQuery(isQuery);
+                if (!isQuery) {
+                    // DML 操作
+                    int updateCount = statement.getUpdateCount();
+                    result.setAffectedRows(updateCount);
+                } else {
+                    // 查询操作
+                    processQueryResult(statement, result);
+                }
+
+                // 提交事务
+                if (command.isNeedTransaction()) {
+                    connection.commit();
                 }
             }
+
             return result;
-        } catch (Exception e) {
-            try {
-                if (command.isNeedTransaction() && !connection.isClosed()) {
-                    connection.rollback();
+
+        } catch (SQLException e) {
+            // 回滚事务
+            if (command.isNeedTransaction()) {
+                try {
+                    if (!connection.isClosed()) {
+                        connection.rollback();
+                    }
+                } catch (SQLException rollbackEx) {
+                    // 记录回滚失败,但不影响原始异常
+                    e.addSuppressed(rollbackEx);
                 }
-                result.setSuccess(false);
-                result.setErrorMessage(e.getMessage());
-                return result;
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
             }
+
+            result.setSuccess(false);
+            result.setErrorMessage(
+                    e.getClass().getSimpleName() + ": " + (e.getMessage() != null ? e.getMessage() : "Unknown error"));
+            return result;
+
+        } finally {
+            // 恢复原始 autoCommit 状态
+            if (command.isNeedTransaction()) {
+                try {
+                    if (!connection.isClosed()) {
+                        connection.setAutoCommit(originalAutoCommit);
+                    }
+                } catch (SQLException e) {
+                    // 记录但不抛出异常
+                    System.err.println("Failed to restore autoCommit: " + e.getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * 处理查询结果
+     *
+     * @param statement SQL 语句
+     * @param result 结果对象
+     * @throws SQLException SQL 异常
+     */
+    private void processQueryResult(Statement statement, SqlCommandResult result) throws SQLException {
+        List<String> headers = new ArrayList<>();
+
+        try (ResultSet resultSet = statement.getResultSet()) {
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            int columnCount = metaData.getColumnCount();
+
+            // 获取列名 (统一使用 1-based 索引)
+            for (int i = 1; i <= columnCount; i++) {
+                String header = metaData.getColumnName(i);
+                headers.add(header);
+            }
+
+            // 获取数据行
+            List<List<Object>> rows = new ArrayList<>();
+            while (resultSet.next()) {
+                List<Object> row = new ArrayList<>();
+                for (int i = 1; i <= columnCount; i++) {
+                    String columnTypeName = metaData.getColumnTypeName(i);
+                    int sqlType = metaData.getColumnType(i);
+                    Object value = extractValue(resultSet, i, sqlType);
+                    row.add(value);
+                }
+                rows.add(row);
+            }
+
+            result.setHeaders(headers);
+            result.setRows(rows);
         }
     }
 }
