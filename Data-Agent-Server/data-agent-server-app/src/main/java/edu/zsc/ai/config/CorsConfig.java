@@ -5,8 +5,8 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * CORS Configuration
- * Allows cross-origin requests from frontend
+ * CORS 配置
+ * 允许来自前端的跨域请求
  */
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {
