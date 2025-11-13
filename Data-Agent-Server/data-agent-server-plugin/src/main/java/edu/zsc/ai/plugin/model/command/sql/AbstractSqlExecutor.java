@@ -1,12 +1,29 @@
 package edu.zsc.ai.plugin.model.command.sql;
 
 import edu.zsc.ai.plugin.capability.CommandExecutor;
+import edu.zsc.ai.plugin.value.ValueProcessor;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AbstractSqlExecutor implements CommandExecutor<SqlCommandRequest, SqlCommandResult> {
+/**
+ * Abstract SQL executor that provides common SQL execution logic.
+ * Uses ValueProcessor for database-specific type conversions.
+ *
+ * <p>Inspired by Chat2DB's design, this class separates SQL execution logic
+ * from type handling logic, making it easier to extend and test.
+ *
+ * @author Data-Agent Team
+ */
+public abstract class AbstractSqlExecutor implements CommandExecutor<SqlCommandRequest, SqlCommandResult> {
+
+    /**
+     * Get the value processor for handling database-specific type conversions.
+     *
+     * @return the value processor instance
+     */
+    protected abstract ValueProcessor getValueProcessor();
 
     @Override
     public SqlCommandResult executeCommand(SqlCommandRequest command) {
@@ -47,7 +64,12 @@ public class AbstractSqlExecutor implements CommandExecutor<SqlCommandRequest, S
                     while (resultSet.next()) {
                         List<Object> row = new ArrayList<>();
                         for (int i = 1; i <= columnCount; i++) {
-                            row.add(resultSet.getObject(i));
+                            // Use ValueProcessor for database-specific type conversion
+                            String columnTypeName = metaData.getColumnTypeName(i);
+                            int sqlType = metaData.getColumnType(i);
+                            Object value = getValueProcessor().getJdbcValue(
+                                    resultSet, i, sqlType, columnTypeName);
+                            row.add(value);
                         }
                         rows.add(row);
                     }

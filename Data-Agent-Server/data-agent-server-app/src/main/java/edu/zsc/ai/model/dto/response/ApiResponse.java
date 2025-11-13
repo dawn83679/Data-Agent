@@ -1,67 +1,104 @@
 package edu.zsc.ai.model.dto.response;
 
-import lombok.AllArgsConstructor;
+import edu.zsc.ai.common.ErrorCode;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
 
 /**
- * Unified API Response Format
- * 
- * @param <T> Data type
+ * 通用返回类
+ *
+ * @param <T> 数据类型
+ * @author Data-Agent Team
  */
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class ApiResponse<T> {
-    
+public class ApiResponse<T> implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
     /**
-     * Response code (200 for success)
+     * 状态码
      */
-    private Integer code;
-    
+    private int code;
+
     /**
-     * Response message
-     */
-    private String message;
-    
-    /**
-     * Response data
+     * 数据
      */
     private T data;
-    
+
     /**
-     * Create success response with data
+     * 消息
+     */
+    private String message;
+
+    public ApiResponse(int code, T data, String message) {
+        this.code = code;
+        this.data = data;
+        this.message = message;
+    }
+
+    public ApiResponse(int code, T data) {
+        this(code, data, "");
+    }
+
+    public ApiResponse(ErrorCode errorCode) {
+        this(errorCode.getCode(), null, errorCode.getMessage());
+    }
+
+    /**
+     * 成功
+     *
+     * @param data 数据
+     * @param <T> 数据类型
+     * @return 成功响应
      */
     public static <T> ApiResponse<T> success(T data) {
-        return new ApiResponse<>(200, "success", data);
+        return new ApiResponse<>(0, data, "ok");
     }
-    
+
     /**
-     * Create success response without data
+     * 成功（无数据）
+     *
+     * @param <T> 数据类型
+     * @return 成功响应
      */
     public static <T> ApiResponse<T> success() {
-        return new ApiResponse<>(200, "success", null);
+        return new ApiResponse<>(0, null, "ok");
     }
-    
+
     /**
-     * Create success response with custom message
+     * 失败
+     *
+     * @param errorCode 错误码枚举
+     * @param <T> 数据类型
+     * @return 错误响应
      */
-    public static <T> ApiResponse<T> success(String message, T data) {
-        return new ApiResponse<>(200, message, data);
+    public static <T> ApiResponse<T> error(ErrorCode errorCode) {
+        return new ApiResponse<>(errorCode);
     }
-    
+
     /**
-     * Create error response
+     * 失败
+     *
+     * @param code 错误码
+     * @param message 错误消息
+     * @param <T> 数据类型
+     * @return 错误响应
      */
-    public static <T> ApiResponse<T> error(Integer code, String message) {
-        return new ApiResponse<>(code, message, null);
+    public static <T> ApiResponse<T> error(int code, String message) {
+        return new ApiResponse<>(code, null, message);
     }
-    
+
     /**
-     * Create error response with default code (500)
+     * 失败（自定义消息）
+     *
+     * @param errorCode 错误码枚举
+     * @param message 自定义错误消息
+     * @param <T> 数据类型
+     * @return 错误响应
      */
-    public static <T> ApiResponse<T> error(String message) {
-        return new ApiResponse<>(500, message, null);
+    public static <T> ApiResponse<T> error(ErrorCode errorCode, String message) {
+        return new ApiResponse<>(errorCode.getCode(), null, message);
     }
 }
 

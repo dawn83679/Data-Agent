@@ -1,5 +1,9 @@
 package edu.zsc.ai.exception.handler;
 
+import edu.zsc.ai.common.ErrorCode;
+import edu.zsc.ai.exception.BusinessException;
+import edu.zsc.ai.model.dto.response.ApiResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
@@ -7,65 +11,74 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import edu.zsc.ai.exception.BusinessException;
-import edu.zsc.ai.model.dto.response.ApiResponse;
-
-import lombok.extern.slf4j.Slf4j;
 
 /**
- * Global Exception Handler
- * Handles all exceptions and returns unified response format
+ * 全局异常处理器
+ *
+ * @author Data-Agent Team
  */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     /**
-     * Handle business exceptions
+     * 处理业务异常
+     *
+     * @param e 业务异常
+     * @return 统一响应格式
      */
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException e) {
-        log.error("Business exception: {}", e.getMessage());
+        log.error("业务异常: {}", e.getMessage());
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(ApiResponse.error(e.getCode(), e.getMessage()));
     }
 
     /**
-     * Handle validation exceptions
+     * 处理参数验证异常
+     *
+     * @param e 参数验证异常
+     * @return 统一响应格式
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleValidationException(MethodArgumentNotValidException e) {
         FieldError fieldError = e.getBindingResult().getFieldError();
-        String message = fieldError != null ? fieldError.getDefaultMessage() : "Validation failed";
-        log.error("Validation exception: {}", message);
+        String message = fieldError != null ? fieldError.getDefaultMessage() : "参数验证失败";
+        log.error("参数验证异常: {}", message);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(400, message));
+                .body(ApiResponse.error(ErrorCode.PARAMS_ERROR, message));
     }
 
     /**
-     * Handle bind exceptions
+     * 处理绑定异常
+     *
+     * @param e 绑定异常
+     * @return 统一响应格式
      */
     @ExceptionHandler(BindException.class)
     public ResponseEntity<ApiResponse<Void>> handleBindException(BindException e) {
         FieldError fieldError = e.getBindingResult().getFieldError();
-        String message = fieldError != null ? fieldError.getDefaultMessage() : "Bind error";
-        log.error("Bind exception: {}", message);
+        String message = fieldError != null ? fieldError.getDefaultMessage() : "参数绑定失败";
+        log.error("绑定异常: {}", message);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(400, message));
+                .body(ApiResponse.error(ErrorCode.PARAMS_ERROR, message));
     }
 
     /**
-     * Handle all other exceptions
+     * 处理所有其他未捕获的异常
+     *
+     * @param e 异常
+     * @return 统一响应格式
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
-        log.error("Unexpected exception: ", e);
+        log.error("系统异常: ", e);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error(500, "Internal server error: " + e.getMessage()));
+                .body(ApiResponse.error(ErrorCode.SYSTEM_ERROR, "系统内部异常: " + e.getMessage()));
     }
 }
 
