@@ -18,8 +18,6 @@ import edu.zsc.ai.plugin.value.ValueProcessor;
  * Abstract SQL executor that provides common SQL execution logic.
  * Uses ValueProcessor for database-specific type conversions.
  *
- * <p>Inspired by Chat2DB's design, this class separates SQL execution logic
- * from type handling logic, making it easier to extend and test.
  *
  * <p><b>Note:</b> This executor does NOT close the connection. The caller is
  * responsible for managing the connection lifecycle.

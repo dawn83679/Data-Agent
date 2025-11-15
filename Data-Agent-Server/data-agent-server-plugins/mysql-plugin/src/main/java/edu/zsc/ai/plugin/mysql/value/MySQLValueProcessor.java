@@ -12,7 +12,6 @@ import edu.zsc.ai.plugin.value.DefaultValueProcessor;
 
 /**
  * MySQL-specific value processor that handles MySQL data type conversions.
- * Delegates to type-specific processors via factory, following Chat2DB's design.
  *
  * @author hhz
  */
