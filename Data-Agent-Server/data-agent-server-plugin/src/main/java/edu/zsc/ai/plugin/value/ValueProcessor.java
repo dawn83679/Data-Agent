@@ -5,13 +5,12 @@ import java.sql.SQLException;
 
 /**
  * Value processor interface for handling database-specific type conversions.
- * Inspired by Chat2DB's design, this interface separates type handling logic
- * from SQL execution logic.
+ *  * from SQL execution logic.
  *
  * <p>Each database type should provide its own implementation to handle
  * special types like BLOB, CLOB, JSON, UUID, etc.
  *
- * @author Data-Agent Team
+ * @author hhz
  */
 public interface ValueProcessor {
 

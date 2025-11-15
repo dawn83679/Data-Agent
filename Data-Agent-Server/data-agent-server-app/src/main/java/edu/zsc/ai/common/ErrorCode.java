@@ -4,195 +4,204 @@ import lombok.Getter;
 
 /**
  * 自定义错误码
+ * 使用国际化 key 作为消息
  *
- * @author Data-Agent Team
+ * @author hhz
  */
 @Getter
 public enum ErrorCode {
 
-    SUCCESS(0, "ok"),
-    PARAMS_ERROR(40000, "请求参数错误"),
-    NOT_LOGIN_ERROR(40100, "未登录"),
-    NO_AUTH_ERROR(40101, "无权限"),
-    NOT_FOUND_ERROR(40400, "请求数据不存在"),
-    FORBIDDEN_ERROR(40300, "禁止访问"),
-    SYSTEM_ERROR(50000, "系统内部异常"),
-    OPERATION_ERROR(50001, "操作失败"),
+    SUCCESS(0, "error.success"),
+    PARAMS_ERROR(40000, "error.params"),
+    NOT_LOGIN_ERROR(40100, "error.not.login"),
+    NO_AUTH_ERROR(40101, "error.no.auth"),
+    NOT_FOUND_ERROR(40400, "error.not.found"),
+    FORBIDDEN_ERROR(40300, "error.forbidden"),
+    SYSTEM_ERROR(50000, "error.system"),
+    OPERATION_ERROR(50001, "error.operation"),
 
-    // ==================== 数据库连接相关 (50100-50199) ====================
+    // ==================== Database Connection (50100-50199) ====================
 
     /**
-     * 数据库连接失败
+     * Database connection failed
      */
-    DB_CONNECTION_ERROR(50100, "数据库连接失败"),
+    DB_CONNECTION_ERROR(50100, "error.db.connection"),
 
     /**
-     * 数据库连接超时
+     * Database connection timeout
      */
-    DB_CONNECTION_TIMEOUT(50101, "数据库连接超时"),
+    DB_CONNECTION_TIMEOUT(50101, "error.db.connection.timeout"),
 
     /**
-     * 数据库连接不存在
+     * Database connection not found
      */
-    DB_CONNECTION_NOT_FOUND(50102, "数据库连接不存在"),
+    DB_CONNECTION_NOT_FOUND(50102, "error.db.connection.not.found"),
 
     /**
-     * 数据库连接已存在
+     * Database connection already exists
      */
-    DB_CONNECTION_ALREADY_EXISTS(50103, "数据库连接已存在"),
+    DB_CONNECTION_ALREADY_EXISTS(50103, "error.db.connection.already.exists"),
 
     /**
-     * 数据库连接配置错误
+     * Database connection configuration error
      */
-    DB_CONNECTION_CONFIG_ERROR(50104, "数据库连接配置错误"),
+    DB_CONNECTION_CONFIG_ERROR(50104, "error.db.connection.config"),
 
-    // ==================== 驱动相关 (50200-50299) ====================
+    // ==================== Driver (50200-50299) ====================
 
     /**
-     * 驱动文件不存在
+     * Driver file not found
      */
-    DRIVER_NOT_FOUND(50200, "驱动文件不存在"),
+    DRIVER_NOT_FOUND(50200, "error.driver.not.found"),
 
     /**
-     * 驱动加载失败
+     * Driver loading failed
      */
-    DRIVER_LOAD_ERROR(50201, "驱动加载失败"),
+    DRIVER_LOAD_ERROR(50201, "error.driver.load"),
 
     /**
-     * 驱动下载失败
+     * Driver download failed
      */
-    DRIVER_DOWNLOAD_ERROR(50202, "驱动下载失败"),
+    DRIVER_DOWNLOAD_ERROR(50202, "error.driver.download"),
 
     /**
-     * 驱动版本不支持
+     * Driver version not supported
      */
-    DRIVER_VERSION_NOT_SUPPORTED(50203, "驱动版本不支持"),
+    DRIVER_VERSION_NOT_SUPPORTED(50203, "error.driver.version.not.supported"),
 
     /**
-     * 驱动文件损坏
+     * Driver file corrupted
      */
-    DRIVER_FILE_CORRUPTED(50204, "驱动文件损坏"),
+    DRIVER_FILE_CORRUPTED(50204, "error.driver.file.corrupted"),
 
-    // ==================== SQL 执行相关 (50300-50399) ====================
+    // ==================== SQL Execution (50300-50399) ====================
 
     /**
-     * SQL 语法错误
+     * SQL syntax error
      */
-    SQL_SYNTAX_ERROR(50300, "SQL 语法错误"),
+    SQL_SYNTAX_ERROR(50300, "error.sql.syntax"),
 
     /**
-     * SQL 执行失败
+     * SQL execution failed
      */
-    SQL_EXECUTION_ERROR(50301, "SQL 执行失败"),
+    SQL_EXECUTION_ERROR(50301, "error.sql.execution"),
 
     /**
-     * SQL 执行超时
+     * SQL execution timeout
      */
-    SQL_TIMEOUT_ERROR(50302, "SQL 执行超时"),
+    SQL_TIMEOUT_ERROR(50302, "error.sql.timeout"),
 
     /**
-     * 事务提交失败
+     * Transaction commit failed
      */
-    TRANSACTION_COMMIT_ERROR(50303, "事务提交失败"),
+    TRANSACTION_COMMIT_ERROR(50303, "error.transaction.commit"),
 
     /**
-     * 事务回滚失败
+     * Transaction rollback failed
      */
-    TRANSACTION_ROLLBACK_ERROR(50304, "事务回滚失败"),
+    TRANSACTION_ROLLBACK_ERROR(50304, "error.transaction.rollback"),
 
-    // ==================== 插件相关 (50400-50499) ====================
+    // ==================== Plugin (50400-50499) ====================
 
     /**
-     * 插件不存在
+     * Plugin not found
      */
-    PLUGIN_NOT_FOUND(50400, "插件不存在"),
+    PLUGIN_NOT_FOUND(50400, "error.plugin.not.found"),
 
     /**
-     * 插件加载失败
+     * Plugin loading failed
      */
-    PLUGIN_LOAD_ERROR(50401, "插件加载失败"),
+    PLUGIN_LOAD_ERROR(50401, "error.plugin.load"),
 
     /**
-     * 插件不支持该功能
+     * Plugin does not support this feature
      */
-    PLUGIN_NOT_SUPPORT(50402, "插件不支持该功能"),
+    PLUGIN_NOT_SUPPORT(50402, "error.plugin.not.support"),
 
     /**
-     * 插件初始化失败
+     * Plugin initialization failed
      */
-    PLUGIN_INIT_ERROR(50403, "插件初始化失败"),
+    PLUGIN_INIT_ERROR(50403, "error.plugin.init"),
 
-    // ==================== 文件操作相关 (50500-50599) ====================
+    // ==================== File Operation (50500-50599) ====================
 
     /**
-     * 文件不存在
+     * File not found
      */
-    FILE_NOT_FOUND(50500, "文件不存在"),
+    FILE_NOT_FOUND(50500, "error.file.not.found"),
 
     /**
-     * 文件读取失败
+     * File reading failed
      */
-    FILE_READ_ERROR(50501, "文件读取失败"),
+    FILE_READ_ERROR(50501, "error.file.read"),
 
     /**
-     * 文件写入失败
+     * File writing failed
      */
-    FILE_WRITE_ERROR(50502, "文件写入失败"),
+    FILE_WRITE_ERROR(50502, "error.file.write"),
 
     /**
-     * 文件删除失败
+     * File deletion failed
      */
-    FILE_DELETE_ERROR(50503, "文件删除失败"),
+    FILE_DELETE_ERROR(50503, "error.file.delete"),
 
     /**
-     * 文件格式不支持
+     * File format not supported
      */
-    FILE_FORMAT_NOT_SUPPORTED(50504, "文件格式不支持"),
+    FILE_FORMAT_NOT_SUPPORTED(50504, "error.file.format.not.supported"),
 
     /**
-     * 文件大小超出限制
+     * File size exceeded limit
      */
-    FILE_SIZE_EXCEEDED(50505, "文件大小超出限制"),
+    FILE_SIZE_EXCEEDED(50505, "error.file.size.exceeded"),
 
-    // ==================== 数据验证相关 (50600-50699) ====================
+    // ==================== Data Validation (50600-50699) ====================
 
     /**
-     * 数据验证失败
+     * Data validation failed
      */
-    VALIDATION_ERROR(50600, "数据验证失败"),
+    VALIDATION_ERROR(50600, "error.validation"),
 
     /**
-     * 必填字段为空
+     * Required field is empty
      */
-    REQUIRED_FIELD_EMPTY(50601, "必填字段为空"),
+    REQUIRED_FIELD_EMPTY(50601, "error.required.field.empty"),
 
     /**
-     * 字段格式错误
+     * Field format error
      */
-    FIELD_FORMAT_ERROR(50602, "字段格式错误"),
+    FIELD_FORMAT_ERROR(50602, "error.field.format"),
 
     /**
-     * 字段长度超出限制
+     * Field length exceeded limit
      */
-    FIELD_LENGTH_EXCEEDED(50603, "字段长度超出限制"),
+    FIELD_LENGTH_EXCEEDED(50603, "error.field.length.exceeded"),
 
     /**
-     * 字段值超出范围
+     * Field value out of range
      */
-    FIELD_VALUE_OUT_OF_RANGE(50604, "字段值超出范围");
+    FIELD_VALUE_OUT_OF_RANGE(50604, "error.field.value.out.of.range");
 
     /**
-     * 状态码
+     * Status code
      */
     private final int code;
 
     /**
-     * 信息
+     * I18n message key
      */
-    private final String message;
+    private final String messageKey;
 
-    ErrorCode(int code, String message) {
+    ErrorCode(int code, String messageKey) {
         this.code = code;
-        this.message = message;
+        this.messageKey = messageKey;
+    }
+
+    /**
+     * Get i18n message key
+     * Compatible with old code using getMessage()
+     */
+    public String getMessage() {
+        return messageKey;
     }
 }
