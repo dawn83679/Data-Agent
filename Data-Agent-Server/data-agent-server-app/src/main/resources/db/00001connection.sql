@@ -1,4 +1,4 @@
--- 数据库连接信息表
+-- Table storing saved database connection profiles
 CREATE TABLE IF NOT EXISTS db_connections (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
@@ -15,11 +15,11 @@ CREATE TABLE IF NOT EXISTS db_connections (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 索引定义
+-- Supporting indexes
 CREATE INDEX IF NOT EXISTS idx_db_connections_type ON db_connections(db_type);
 CREATE INDEX IF NOT EXISTS idx_db_connections_host_port ON db_connections(host, port);
 
--- 表注释
+-- Column descriptions
 COMMENT ON TABLE db_connections IS 'Database connection information table';
 COMMENT ON COLUMN db_connections.id IS 'Primary key';
 COMMENT ON COLUMN db_connections.name IS 'Connection name, must be unique';

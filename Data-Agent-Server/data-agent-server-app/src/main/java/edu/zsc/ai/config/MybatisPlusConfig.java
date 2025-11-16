@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * MyBatis-Plus Configuration
+ * MyBatis-Plus configuration.
  *
  * @author Data-Agent
  * @since 0.0.1
@@ -16,8 +16,8 @@ import org.springframework.context.annotation.Configuration;
 public class MybatisPlusConfig {
 
     /**
-     * Configure MyBatis-Plus pagination plugin
-     * Starting from v3.5.9, pagination plugin requires separate mybatis-plus-jsqlparser dependency
+     * Configure the pagination interceptor.
+     * Since v3.5.9 the pagination plugin requires the mybatis-plus-jsqlparser dependency.
      *
      * @return MybatisPlusInterceptor
      */
@@ -25,8 +25,8 @@ public class MybatisPlusConfig {
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
 
-        // Add pagination plugin, specify database type as PostgreSQL
-        // Note: If configuring multiple plugins, pagination plugin must be placed last
+        // Add the pagination interceptor and target PostgreSQL.
+        // When you register multiple inner interceptors, pagination must be added last.
         interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.POSTGRE_SQL));
 
         return interceptor;

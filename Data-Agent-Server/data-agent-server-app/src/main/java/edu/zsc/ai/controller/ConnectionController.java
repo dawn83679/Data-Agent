@@ -16,8 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * Connection Controller
- * Provides REST API endpoints for database connection management.
+ * REST controller that exposes CRUD endpoints for database connections.
  *
  * @author Data-Agent
  * @since 0.0.1
@@ -32,11 +31,11 @@ public class ConnectionController {
     private final DbConnectionService dbConnectionService;
 
     /**
-     * Test database connection without establishing persistent connection.
-     * Returns detailed connection information including DBMS version, driver info, ping time, etc.
+     * Test a database connection without creating a persistent session.
+     * The response includes DBMS version, driver metadata, latency, etc.
      *
-     * @param request connect request
-     * @return connection test response with detailed information
+     * @param request payload describing how to connect to the database
+     * @return enriched diagnostic results for the attempted connection
      */
     @PostMapping("/test")
     public ApiResponse<ConnectionTestResponse> testConnection(
@@ -49,11 +48,10 @@ public class ConnectionController {
     }
 
     /**
-     * Open a new database connection and store it in the active connections registry.
-     * Establishes a persistent connection that can be reused for queries.
+     * Open a long-lived connection and register it so subsequent calls can reuse it.
      *
-     * @param request connection request with connection parameters
-     * @return open connection response with connectionId and connection details
+     * @param request connection properties to establish the session
+     * @return result containing the assigned connectionId and metadata
      */
     @PostMapping("/open")
     public ApiResponse<OpenConnectionResponse> openConnection(@Valid @RequestBody ConnectRequest request) {
@@ -65,10 +63,10 @@ public class ConnectionController {
     }
 
     /**
-     * Create a new database connection.
+     * Persist a new reusable connection profile.
      *
-     * @param request connection creation request
-     * @return created connection response
+     * @param request desired connection attributes
+     * @return the stored connection profile
      */
     @PostMapping("/create")
     public ApiResponse<ConnectionResponse> createConnection(
@@ -80,9 +78,9 @@ public class ConnectionController {
     }
 
     /**
-     * Get list of database connections.
+     * Retrieve every stored connection profile.
      *
-     * @return connection list
+     * @return list of connection profiles
      */
     @GetMapping
     public ApiResponse<List<ConnectionResponse>> getConnections() {
@@ -92,10 +90,10 @@ public class ConnectionController {
     }
 
     /**
-     * Get database connection by ID.
+     * Fetch a single connection profile by its id.
      *
-     * @param id connection ID
-     * @return connection response
+     * @param id connection profile identifier
+     * @return connection profile details
      */
     @GetMapping("/{id}")
     public ApiResponse<ConnectionResponse> getConnection(@PathVariable Long id) {
@@ -110,11 +108,11 @@ public class ConnectionController {
     }
 
     /**
-     * Update database connection.
+     * Update the properties of an existing connection profile.
      *
-     * @param id      connection ID
-     * @param request update request
-     * @return updated connection response
+     * @param id      connection profile identifier
+     * @param request updated connection attributes
+     * @return connection profile after the update
      */
     @PutMapping("/{id}")
     public ApiResponse<ConnectionResponse> updateConnection(
@@ -131,10 +129,10 @@ public class ConnectionController {
     }
 
     /**
-     * Delete database connection.
+     * Delete a stored connection profile.
      *
-     * @param id connection ID
-     * @return success response
+     * @param id connection profile identifier
+     * @return success response wrapper
      */
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteConnection(@PathVariable Long id) {
@@ -149,10 +147,10 @@ public class ConnectionController {
     }
 
     /**
-     * Close an active database connection.
+     * Terminate an active registered connection.
      *
-     * @param connectionId unique connection identifier
-     * @return success response
+     * @param connectionId identifier assigned when the connection was opened
+     * @return success response wrapper
      */
     @DeleteMapping("/active/{connectionId}")
     public ApiResponse<Void> closeConnection(@PathVariable String connectionId) {

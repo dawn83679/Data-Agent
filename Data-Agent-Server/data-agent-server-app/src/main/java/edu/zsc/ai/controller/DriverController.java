@@ -16,8 +16,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Driver Controller
- * Provides REST API endpoints for JDBC driver management.
+ * REST controller that manages JDBC driver discovery, download, and cleanup.
  *
  * @author Data-Agent
  * @since 0.0.1
@@ -31,11 +30,11 @@ public class DriverController {
     private final DriverService driverService;
     
     /**
-     * List all available driver versions from Maven Central that can be downloaded.
-     * This queries the remote Maven repository to show all downloadable versions.
+     * List driver versions that can be downloaded from Maven Central.
+     * The service queries the remote repository to build the list.
      *
-     * @param databaseType database type (e.g., "mysql")
-     * @return list of available driver versions from Maven Central
+     * @param databaseType database product name (for example "mysql")
+     * @return available driver versions from Maven Central
      */
     @GetMapping("/available")
     public ApiResponse<List<AvailableDriverResponse>> listAvailableDrivers(
@@ -46,11 +45,11 @@ public class DriverController {
     }
     
     /**
-     * List locally installed/downloaded driver files.
-     * This scans the local drivers directory to show what's already on disk.
+     * List drivers that have already been downloaded to the local disk.
+     * The driver directory is scanned to present the cached artifacts.
      *
-     * @param databaseType database type (e.g., "mysql")
-     * @return list of installed drivers on local disk
+     * @param databaseType database product name (for example "mysql")
+     * @return drivers currently installed on the local machine
      */
     @GetMapping("/installed")
     public ApiResponse<List<InstalledDriverResponse>> listInstalledDrivers(
@@ -61,10 +60,10 @@ public class DriverController {
     }
     
     /**
-     * Download a driver from Maven Central.
+     * Download a driver artifact from Maven Central.
      *
-     * @param request download request (databaseType, optional version)
-     * @return download response with driver path
+     * @param request download request that includes databaseType and optional version
+     * @return details about the downloaded artifact and its filesystem path
      */
     @PostMapping("/download")
     public ApiResponse<DownloadDriverResponse> downloadDriver(
@@ -73,11 +72,11 @@ public class DriverController {
         
         Path driverPath = driverService.downloadDriver(request.getDatabaseType(), request.getVersion());
         
-        // Extract information from path
+        // Derive database type and filename metadata from the downloaded path
         String fileName = driverPath.getFileName().toString();
         String databaseType = driverPath.getParent().getFileName().toString();
         
-        // Extract version from filename using utility
+        // Extract driver version from the filename
         String version = DriverFileUtil.extractVersionFromFileName(fileName);
         
         DownloadDriverResponse response = DownloadDriverResponse.builder()
@@ -91,11 +90,11 @@ public class DriverController {
     }
     
     /**
-     * Delete a locally installed driver.
+     * Delete a driver that was downloaded previously.
      *
-     * @param databaseType database type (e.g., "MySQL")
-     * @param version driver version
-     * @return success response
+     * @param databaseType database product name (for example "MySQL")
+     * @param version driver version string
+     * @return success response wrapper
      */
     @DeleteMapping("/{databaseType}/{version}")
     public ApiResponse<Void> deleteDriver(

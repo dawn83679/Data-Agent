@@ -10,17 +10,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Health Check Controller
- * Provides basic health check endpoint
+ * Basic health check controller that exposes a liveness endpoint.
  */
 @RestController
 @RequestMapping("/api/health")
 public class HealthController {
 
     /**
-     * Health check endpoint
-     * 
-     * @return Service status information
+     * Liveness probe endpoint.
+     *
+     * @return service status details
      */
     @GetMapping
     public ApiResponse<Map<String, Object>> health() {
