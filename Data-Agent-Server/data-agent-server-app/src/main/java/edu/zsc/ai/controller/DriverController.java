@@ -16,8 +16,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * 驱动控制器
- * 提供用于 JDBC 驱动管理的 REST API 接口。
+ * REST controller that manages JDBC driver discovery, download, and cleanup.
  *
  * @author Data-Agent
  * @since 0.0.1
@@ -31,11 +30,11 @@ public class DriverController {
     private final DriverService driverService;
     
     /**
-     * 列出可从 Maven Central 下载的所有可用驱动版本。
-     * 会查询远程 Maven 仓库以展示可下载版本列表。
+     * List driver versions that can be downloaded from Maven Central.
+     * The service queries the remote repository to build the list.
      *
-     * @param databaseType 数据库类型（例如 "mysql"）
-     * @return 来自 Maven Central 的可用驱动版本列表
+     * @param databaseType database product name (for example "mysql")
+     * @return available driver versions from Maven Central
      */
     @GetMapping("/available")
     public ApiResponse<List<AvailableDriverResponse>> listAvailableDrivers(
@@ -46,11 +45,11 @@ public class DriverController {
     }
     
     /**
-     * 列出本地已安装/已下载的驱动文件。
-     * 会扫描本地驱动目录以展示当前磁盘上已有的内容。
+     * List drivers that have already been downloaded to the local disk.
+     * The driver directory is scanned to present the cached artifacts.
      *
-     * @param databaseType 数据库类型（例如 "mysql"）
-     * @return 本地磁盘上已安装驱动的列表
+     * @param databaseType database product name (for example "mysql")
+     * @return drivers currently installed on the local machine
      */
     @GetMapping("/installed")
     public ApiResponse<List<InstalledDriverResponse>> listInstalledDrivers(
@@ -61,10 +60,10 @@ public class DriverController {
     }
     
     /**
-     * 从 Maven Central 下载驱动。
+     * Download a driver artifact from Maven Central.
      *
-     * @param request 下载请求（databaseType，可选的 version）
-     * @return 包含驱动路径的下载结果
+     * @param request download request that includes databaseType and optional version
+     * @return details about the downloaded artifact and its filesystem path
      */
     @PostMapping("/download")
     public ApiResponse<DownloadDriverResponse> downloadDriver(
@@ -73,11 +72,11 @@ public class DriverController {
         
         Path driverPath = driverService.downloadDriver(request.getDatabaseType(), request.getVersion());
         
-        // 从路径中提取信息
+        // Derive database type and filename metadata from the downloaded path
         String fileName = driverPath.getFileName().toString();
         String databaseType = driverPath.getParent().getFileName().toString();
         
-        // 使用工具从文件名中提取版本号
+        // Extract driver version from the filename
         String version = DriverFileUtil.extractVersionFromFileName(fileName);
         
         DownloadDriverResponse response = DownloadDriverResponse.builder()
@@ -91,11 +90,11 @@ public class DriverController {
     }
     
     /**
-     * 删除本地已安装的驱动。
+     * Delete a driver that was downloaded previously.
      *
-     * @param databaseType 数据库类型（例如 "MySQL"）
-     * @param version 驱动版本
-     * @return 成功响应
+     * @param databaseType database product name (for example "MySQL")
+     * @param version driver version string
+     * @return success response wrapper
      */
     @DeleteMapping("/{databaseType}/{version}")
     public ApiResponse<Void> deleteDriver(

@@ -1,6 +1,5 @@
 /**
- * HTTP 请求工具
- * 封装 fetch，提供统一的请求方法
+ * HTTP request utilities that wrap fetch behind a shared interface.
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
@@ -12,7 +11,7 @@ export interface ApiResponse<T> {
 }
 
 /**
- * 发送 HTTP 请求
+ * Dispatch an HTTP request and return the parsed payload.
  */
 async function request<T>(
   url: string,
@@ -44,7 +43,7 @@ async function request<T>(
 }
 
 /**
- * GET 请求
+ * Convenience wrapper for GET requests.
  */
 export function get<T>(url: string, params?: Record<string, any>): Promise<ApiResponse<T>> {
   let queryString = ''
@@ -55,7 +54,7 @@ export function get<T>(url: string, params?: Record<string, any>): Promise<ApiRe
 }
 
 /**
- * POST 请求
+ * Convenience wrapper for POST requests.
  */
 export function post<T>(url: string, data?: any): Promise<ApiResponse<T>> {
   return request<T>(url, {
@@ -65,7 +64,7 @@ export function post<T>(url: string, data?: any): Promise<ApiResponse<T>> {
 }
 
 /**
- * PUT 请求
+ * Convenience wrapper for PUT requests.
  */
 export function put<T>(url: string, data?: any): Promise<ApiResponse<T>> {
   return request<T>(url, {
@@ -75,7 +74,7 @@ export function put<T>(url: string, data?: any): Promise<ApiResponse<T>> {
 }
 
 /**
- * DELETE 请求
+ * Convenience wrapper for DELETE requests.
  */
 export function del<T>(url: string): Promise<ApiResponse<T>> {
   return request<T>(url, { method: 'DELETE' })

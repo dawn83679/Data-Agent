@@ -70,8 +70,8 @@ async function handleFilterChange() {
   if (selectedDatabaseType.value) {
     await driverStore.fetchInstalledDrivers(selectedDatabaseType.value)
   } else {
-    // 如果选择"全部"，需要获取所有类型的驱动
-    // 这里简化处理，可以后续优化
+    // When "All" is selected we should load every driver type.
+    // For now we only load MySQL as a placeholder until the backend supports it.
     await driverStore.fetchInstalledDrivers('MySQL')
   }
 }
@@ -83,48 +83,64 @@ async function handleRefresh() {
 }
 
 onMounted(async () => {
-  // 初始加载 MySQL 驱动列表作为示例
+  // Preload the MySQL driver list as a default example.
   await driverStore.fetchInstalledDrivers('MySQL')
 })
 </script>
 
 <style scoped>
 .driver-view {
-  padding: 20px;
+  padding: var(--spacing-xl);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.driver-view h2 {
+  font-size: 32px;
+  margin-bottom: var(--spacing-lg);
+  color: var(--color-text);
 }
 
 .driver-container {
-  margin-top: 20px;
+  margin-top: var(--spacing-lg);
 }
 
 .filter-section {
-  margin: 20px 0;
+  margin: var(--spacing-lg) 0;
+  padding: var(--spacing-lg);
+  background: var(--color-bg);
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
 }
 
 .filter-section label {
-  font-weight: bold;
+  font-weight: 600;
+  color: var(--color-text);
 }
 
 .filter-section select {
-  padding: 5px 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  min-width: 200px;
 }
 
 .btn-refresh {
-  padding: 5px 15px;
-  background-color: #2196f3;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--color-primary);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   cursor: pointer;
+  font-weight: 500;
+  transition: var(--transition);
 }
 
 .btn-refresh:hover {
-  background-color: #1976d2;
+  background: var(--color-primary-dark);
 }
 </style>
 

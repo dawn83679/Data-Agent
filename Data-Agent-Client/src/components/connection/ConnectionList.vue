@@ -70,63 +70,85 @@ function handleDelete(id: number) {
 
 <style scoped>
 .connection-list {
-  margin-top: 20px;
+  margin-top: var(--spacing-lg);
+}
+
+.connection-list h3 {
+  font-size: 20px;
+  margin-bottom: var(--spacing-md);
+  color: var(--color-text);
 }
 
 .connection-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 10px;
+  margin-top: var(--spacing-md);
+  background: var(--color-bg);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
 .connection-table th,
 .connection-table td {
-  padding: 10px;
+  padding: var(--spacing-md);
   text-align: left;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .connection-table th {
-  background-color: #f5f5f5;
-  font-weight: bold;
+  background: var(--color-bg-secondary);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.connection-table tbody tr:hover {
+  background: var(--color-bg-hover);
 }
 
 .btn-edit {
-  padding: 5px 10px;
-  background-color: #2196f3;
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: var(--color-primary);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  margin-right: 5px;
+  margin-right: var(--spacing-xs);
+  font-size: 14px;
+  transition: var(--transition);
 }
 
 .btn-edit:hover {
-  background-color: #1976d2;
+  background: var(--color-primary-dark);
 }
 
 .btn-delete {
-  padding: 5px 10px;
-  background-color: #f44336;
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: var(--color-danger);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   cursor: pointer;
+  font-size: 14px;
+  transition: var(--transition);
 }
 
 .btn-delete:hover {
-  background-color: #d32f2f;
+  background: var(--color-danger-dark);
 }
 
 .loading,
 .error,
 .empty {
-  padding: 20px;
+  padding: var(--spacing-xl);
   text-align: center;
+  color: var(--color-text-secondary);
 }
 
 .error {
-  color: #f44336;
+  color: var(--color-danger);
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: var(--radius-md);
 }
 </style>
 

@@ -132,72 +132,102 @@ function handleCancel() {
 
 <style scoped>
 .connection-form {
-  margin-top: 20px;
+  margin-top: var(--spacing-lg);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.connection-form h3 {
+  font-size: 20px;
+  margin-bottom: var(--spacing-lg);
+  color: var(--color-text);
 }
 
 .form {
-  max-width: 600px;
-  margin-top: 10px;
+  max-width: 700px;
+  margin-top: var(--spacing-md);
 }
 
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
 }
 
 .form-group label {
-  display: inline-block;
-  width: 150px;
-  font-weight: bold;
+  min-width: 150px;
+  font-weight: 500;
+  color: var(--color-text);
 }
 
 .form-group input,
 .form-group select {
-  width: 300px;
-  padding: 5px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  flex: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  transition: var(--transition);
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .form-actions {
-  margin-top: 20px;
+  margin-top: var(--spacing-xl);
   display: flex;
-  gap: 10px;
+  gap: var(--spacing-md);
 }
 
 .btn-submit {
-  padding: 8px 20px;
-  background-color: #4caf50;
+  padding: var(--spacing-sm) var(--spacing-xl);
+  background: var(--color-success);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   cursor: pointer;
+  font-weight: 500;
+  transition: var(--transition);
 }
 
 .btn-submit:hover:not(:disabled) {
-  background-color: #45a049;
+  background: var(--color-success-dark);
 }
 
 .btn-submit:disabled {
-  background-color: #cccccc;
+  background: var(--color-text-muted);
   cursor: not-allowed;
 }
 
 .btn-cancel {
-  padding: 8px 20px;
-  background-color: #757575;
-  color: white;
-  border: none;
-  border-radius: 4px;
+  padding: var(--spacing-sm) var(--spacing-xl);
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   cursor: pointer;
+  font-weight: 500;
+  transition: var(--transition);
 }
 
 .btn-cancel:hover {
-  background-color: #616161;
+  background: var(--color-bg-hover);
 }
 
 .error {
-  color: #f44336;
-  margin-top: 10px;
+  color: var(--color-danger);
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm);
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: var(--radius-md);
 }
 </style>
 

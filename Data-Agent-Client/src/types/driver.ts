@@ -1,9 +1,9 @@
 /**
- * 驱动相关类型定义
+ * Driver-related DTO definitions.
  */
 
 /**
- * 可用驱动响应
+ * Represents a driver that can be downloaded.
  */
 export interface AvailableDriverResponse {
   databaseType: string
@@ -15,7 +15,7 @@ export interface AvailableDriverResponse {
 }
 
 /**
- * 已安装驱动响应
+ * Represents a driver that already exists on disk.
  */
 export interface InstalledDriverResponse {
   databaseType: string
@@ -27,7 +27,7 @@ export interface InstalledDriverResponse {
 }
 
 /**
- * 下载驱动请求
+ * Request payload used when downloading a driver.
  */
 export interface DownloadDriverRequest {
   databaseType: string
@@ -35,7 +35,7 @@ export interface DownloadDriverRequest {
 }
 
 /**
- * 下载驱动响应
+ * Response payload returned after a download completes.
  */
 export interface DownloadDriverResponse {
   driverPath: string

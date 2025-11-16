@@ -1,5 +1,5 @@
 /**
- * 连接管理 Store
+ * Pinia store that orchestrates connection profiles and sessions.
  */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
@@ -11,13 +11,13 @@ import type {
 } from '@/types/connection'
 
 export const useConnectionStore = defineStore('connection', () => {
-  // 状态
+  // Reactive state for connection data
   const connections = ref<ConnectionResponse[]>([])
   const currentConnection = ref<ConnectionResponse | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  // 获取所有连接
+  // Fetch every saved connection profile
   async function fetchConnections() {
     loading.value = true
     error.value = null
@@ -32,7 +32,7 @@ export const useConnectionStore = defineStore('connection', () => {
     }
   }
 
-  // 根据 ID 获取连接
+  // Fetch a single connection profile by id
   async function fetchConnection(id: number) {
     loading.value = true
     error.value = null
@@ -48,13 +48,13 @@ export const useConnectionStore = defineStore('connection', () => {
     }
   }
 
-  // 创建连接
+  // Create and persist a new connection profile
   async function createConnection(request: ConnectionCreateRequest) {
     loading.value = true
     error.value = null
     try {
       const response = await connectionApi.createConnection(request)
-      // 创建成功后刷新列表
+      // Refresh list after creation so cached state stays current
       await fetchConnections()
       return response.data
     } catch (err: any) {
@@ -65,13 +65,13 @@ export const useConnectionStore = defineStore('connection', () => {
     }
   }
 
-  // 更新连接
+  // Update an existing connection profile
   async function updateConnection(id: number, request: ConnectionCreateRequest) {
     loading.value = true
     error.value = null
     try {
       const response = await connectionApi.updateConnection(id, request)
-      // 更新成功后刷新列表
+      // Refresh list after updates to keep state in sync
       await fetchConnections()
       return response.data
     } catch (err: any) {
@@ -82,13 +82,13 @@ export const useConnectionStore = defineStore('connection', () => {
     }
   }
 
-  // 删除连接
+  // Remove a saved connection profile
   async function removeConnection(id: number) {
     loading.value = true
     error.value = null
     try {
       await connectionApi.deleteConnection(id)
-      // 删除成功后刷新列表
+      // Refresh list once the profile is deleted
       await fetchConnections()
     } catch (err: any) {
       error.value = err.message || '删除连接失败'
@@ -98,7 +98,7 @@ export const useConnectionStore = defineStore('connection', () => {
     }
   }
 
-  // 测试连接
+  // Test connectivity without creating a persistent session
   async function testConnection(request: ConnectRequest) {
     loading.value = true
     error.value = null
@@ -113,7 +113,7 @@ export const useConnectionStore = defineStore('connection', () => {
     }
   }
 
-  // 打开连接
+  // Open a persistent connection session
   async function openConnection(request: ConnectRequest) {
     loading.value = true
     error.value = null
@@ -128,7 +128,7 @@ export const useConnectionStore = defineStore('connection', () => {
     }
   }
 
-  // 关闭连接
+  // Close an existing persistent session
   async function closeConnection(connectionId: string) {
     loading.value = true
     error.value = null
@@ -143,12 +143,12 @@ export const useConnectionStore = defineStore('connection', () => {
   }
 
   return {
-    // 状态
+    // Expose state
     connections,
     currentConnection,
     loading,
     error,
-    // 方法
+    // Expose actions
     fetchConnections,
     fetchConnection,
     createConnection,

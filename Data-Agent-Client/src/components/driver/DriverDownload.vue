@@ -58,7 +58,7 @@ async function handleDownload() {
   try {
     emit('download', form.value.databaseType, form.value.version)
     success.value = true
-    // 重置表单
+    // Reset form state so the next download starts clean
     form.value = {
       databaseType: '',
       version: '',
@@ -73,58 +73,90 @@ async function handleDownload() {
 
 <style scoped>
 .driver-download {
-  margin-top: 20px;
+  margin-top: var(--spacing-lg);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.driver-download h3 {
+  font-size: 20px;
+  margin-bottom: var(--spacing-md);
+  color: var(--color-text);
 }
 
 .download-form {
-  max-width: 500px;
-  margin-top: 10px;
+  max-width: 600px;
+  margin-top: var(--spacing-md);
 }
 
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
 }
 
 .form-group label {
-  display: inline-block;
-  width: 120px;
-  font-weight: bold;
+  min-width: 120px;
+  font-weight: 500;
+  color: var(--color-text);
 }
 
 .form-group select,
 .form-group input {
-  width: 200px;
-  padding: 5px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  flex: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  transition: var(--transition);
+}
+
+.form-group select:focus,
+.form-group input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .btn-download {
-  padding: 8px 20px;
-  background-color: #4caf50;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--color-success);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   cursor: pointer;
+  font-weight: 500;
+  transition: var(--transition);
+  margin-top: var(--spacing-sm);
 }
 
 .btn-download:hover:not(:disabled) {
-  background-color: #45a049;
+  background: var(--color-success-dark);
 }
 
 .btn-download:disabled {
-  background-color: #cccccc;
+  background: var(--color-text-muted);
   cursor: not-allowed;
 }
 
 .error {
-  color: #f44336;
-  margin-top: 10px;
+  color: var(--color-danger);
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm);
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: var(--radius-md);
 }
 
 .success {
-  color: #4caf50;
-  margin-top: 10px;
+  color: var(--color-success);
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm);
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: var(--radius-md);
 }
 </style>
 

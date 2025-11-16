@@ -1,5 +1,5 @@
 /**
- * API 通用类型定义
+ * Shared API response typings.
  */
 
 export interface ApiResponse<T> {

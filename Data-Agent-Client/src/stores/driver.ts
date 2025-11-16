@@ -1,5 +1,5 @@
 /**
- * 驱动管理 Store
+ * Pinia store for managing JDBC driver metadata.
  */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
@@ -10,13 +10,13 @@ import type {
 } from '@/types/driver'
 
 export const useDriverStore = defineStore('driver', () => {
-  // 状态
+  // Reactive state
   const availableDrivers = ref<AvailableDriverResponse[]>([])
   const installedDrivers = ref<InstalledDriverResponse[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  // 获取可用驱动列表
+  // Fetch available driver versions from the backend
   async function fetchAvailableDrivers(databaseType: string) {
     loading.value = true
     error.value = null
@@ -31,7 +31,7 @@ export const useDriverStore = defineStore('driver', () => {
     }
   }
 
-  // 获取已安装驱动列表
+  // Fetch drivers already downloaded to disk
   async function fetchInstalledDrivers(databaseType: string) {
     loading.value = true
     error.value = null
@@ -46,7 +46,7 @@ export const useDriverStore = defineStore('driver', () => {
     }
   }
 
-  // 下载驱动
+  // Download a driver and persist it locally
   async function downloadDriver(databaseType: string, version?: string) {
     loading.value = true
     error.value = null
@@ -55,7 +55,7 @@ export const useDriverStore = defineStore('driver', () => {
         databaseType,
         version,
       })
-      // 下载成功后刷新已安装列表
+      // Refresh the installed list so the UI reflects the new artifact
       await fetchInstalledDrivers(databaseType)
       return response.data
     } catch (err: any) {
@@ -66,13 +66,13 @@ export const useDriverStore = defineStore('driver', () => {
     }
   }
 
-  // 删除驱动
+  // Remove a driver from disk
   async function removeDriver(databaseType: string, version: string) {
     loading.value = true
     error.value = null
     try {
       await driverApi.deleteDriver(databaseType, version)
-      // 删除成功后刷新已安装列表
+      // Refresh the installed list after deletion
       await fetchInstalledDrivers(databaseType)
     } catch (err: any) {
       error.value = err.message || '删除驱动失败'
@@ -83,12 +83,12 @@ export const useDriverStore = defineStore('driver', () => {
   }
 
   return {
-    // 状态
+    // Expose state
     availableDrivers,
     installedDrivers,
     loading,
     error,
-    // 方法
+    // Expose actions
     fetchAvailableDrivers,
     fetchInstalledDrivers,
     downloadDriver,

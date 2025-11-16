@@ -1,5 +1,5 @@
 /**
- * API 统一导出
+ * Centralized API exports for the frontend.
  */
 export * from './driver'
 export * from './connection'

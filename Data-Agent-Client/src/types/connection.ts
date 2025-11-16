@@ -1,9 +1,9 @@
 /**
- * 连接相关类型定义
+ * Connection-related DTO definitions.
  */
 
 /**
- * 连接请求
+ * Connection request payload sent to the backend.
  */
 export interface ConnectRequest {
   dbType: string
@@ -18,7 +18,7 @@ export interface ConnectRequest {
 }
 
 /**
- * 创建连接请求
+ * Payload for creating or updating a stored connection profile.
  */
 export interface ConnectionCreateRequest {
   name: string
@@ -34,7 +34,7 @@ export interface ConnectionCreateRequest {
 }
 
 /**
- * 连接响应
+ * Response describing a stored connection profile.
  */
 export interface ConnectionResponse {
   id: number
@@ -52,7 +52,7 @@ export interface ConnectionResponse {
 }
 
 /**
- * 连接测试响应
+ * Result returned by the connection test endpoint.
  */
 export interface ConnectionTestResponse {
   success: boolean
@@ -63,7 +63,7 @@ export interface ConnectionTestResponse {
 }
 
 /**
- * 打开连接响应
+ * Response returned after successfully opening a connection.
  */
 export interface OpenConnectionResponse {
   connectionId: string

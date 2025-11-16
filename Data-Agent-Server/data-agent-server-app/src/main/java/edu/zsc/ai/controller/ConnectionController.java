@@ -16,8 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 连接控制器
- * 提供用于数据库连接管理的 REST API 接口。
+ * REST controller that exposes CRUD endpoints for database connections.
  *
  * @author Data-Agent
  * @since 0.0.1
@@ -32,11 +31,11 @@ public class ConnectionController {
     private final DbConnectionService dbConnectionService;
 
     /**
-     * 测试数据库连接（不建立持久连接）。
-     * 返回包含 DBMS 版本、驱动信息、延迟等在内的详细连接信息。
+     * Test a database connection without creating a persistent session.
+     * The response includes DBMS version, driver metadata, latency, etc.
      *
-     * @param request 连接测试请求
-     * @return 带有详细信息的连接测试结果
+     * @param request payload describing how to connect to the database
+     * @return enriched diagnostic results for the attempted connection
      */
     @PostMapping("/test")
     public ApiResponse<ConnectionTestResponse> testConnection(
@@ -49,11 +48,10 @@ public class ConnectionController {
     }
 
     /**
-     * 打开一个新的数据库连接，并将其存入活动连接注册表。
-     * 建立可复用的持久连接，以支持后续查询。
+     * Open a long-lived connection and register it so subsequent calls can reuse it.
      *
-     * @param request 携带连接参数的请求
-     * @return 打开连接的结果，包含 connectionId 及连接详情
+     * @param request connection properties to establish the session
+     * @return result containing the assigned connectionId and metadata
      */
     @PostMapping("/open")
     public ApiResponse<OpenConnectionResponse> openConnection(@Valid @RequestBody ConnectRequest request) {
@@ -65,10 +63,10 @@ public class ConnectionController {
     }
 
     /**
-     * 创建一个新的数据库连接配置。
+     * Persist a new reusable connection profile.
      *
-     * @param request 连接创建请求
-     * @return 已创建的连接配置
+     * @param request desired connection attributes
+     * @return the stored connection profile
      */
     @PostMapping("/create")
     public ApiResponse<ConnectionResponse> createConnection(
@@ -80,9 +78,9 @@ public class ConnectionController {
     }
 
     /**
-     * 获取数据库连接配置列表。
+     * Retrieve every stored connection profile.
      *
-     * @return 连接配置列表
+     * @return list of connection profiles
      */
     @GetMapping
     public ApiResponse<List<ConnectionResponse>> getConnections() {
@@ -92,10 +90,10 @@ public class ConnectionController {
     }
 
     /**
-     * 根据 ID 获取数据库连接配置。
+     * Fetch a single connection profile by its id.
      *
-     * @param id 连接配置 ID
-     * @return 连接配置详情
+     * @param id connection profile identifier
+     * @return connection profile details
      */
     @GetMapping("/{id}")
     public ApiResponse<ConnectionResponse> getConnection(@PathVariable Long id) {
@@ -110,11 +108,11 @@ public class ConnectionController {
     }
 
     /**
-     * 更新数据库连接配置。
+     * Update the properties of an existing connection profile.
      *
-     * @param id      连接配置 ID
-     * @param request 更新请求
-     * @return 更新后的连接配置
+     * @param id      connection profile identifier
+     * @param request updated connection attributes
+     * @return connection profile after the update
      */
     @PutMapping("/{id}")
     public ApiResponse<ConnectionResponse> updateConnection(
@@ -131,10 +129,10 @@ public class ConnectionController {
     }
 
     /**
-     * 删除数据库连接配置。
+     * Delete a stored connection profile.
      *
-     * @param id 连接配置 ID
-     * @return 成功响应
+     * @param id connection profile identifier
+     * @return success response wrapper
      */
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteConnection(@PathVariable Long id) {
@@ -149,10 +147,10 @@ public class ConnectionController {
     }
 
     /**
-     * 关闭一个活动的数据库连接。
+     * Terminate an active registered connection.
      *
-     * @param connectionId 活动连接的唯一标识
-     * @return 成功响应
+     * @param connectionId identifier assigned when the connection was opened
+     * @return success response wrapper
      */
     @DeleteMapping("/active/{connectionId}")
     public ApiResponse<Void> closeConnection(@PathVariable String connectionId) {

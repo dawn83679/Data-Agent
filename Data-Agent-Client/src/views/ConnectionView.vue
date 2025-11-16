@@ -85,43 +85,56 @@ onMounted(async () => {
 
 <style scoped>
 .connection-view {
-  padding: 20px;
+  padding: var(--spacing-xl);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.connection-view h2 {
+  font-size: 32px;
+  margin-bottom: var(--spacing-lg);
+  color: var(--color-text);
 }
 
 .connection-container {
-  margin-top: 20px;
+  margin-top: var(--spacing-lg);
 }
 
 .action-bar {
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-lg);
   display: flex;
-  gap: 10px;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
 }
 
 .btn-create {
-  padding: 8px 20px;
-  background-color: #4caf50;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--color-success);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   cursor: pointer;
+  font-weight: 500;
+  transition: var(--transition);
 }
 
 .btn-create:hover {
-  background-color: #45a049;
+  background: var(--color-success-dark);
 }
 
 .btn-refresh {
-  padding: 8px 20px;
-  background-color: #2196f3;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--color-primary);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   cursor: pointer;
+  font-weight: 500;
+  transition: var(--transition);
 }
 
 .btn-refresh:hover {
-  background-color: #1976d2;
+  background: var(--color-primary-dark);
 }
 </style>
 

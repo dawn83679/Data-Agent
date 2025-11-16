@@ -1,5 +1,5 @@
 /**
- * 驱动管理 API
+ * Driver management API helpers.
  */
 import { get, post, del } from '@/utils/request'
 import type {
@@ -10,7 +10,7 @@ import type {
 } from '@/types/driver'
 
 /**
- * 获取可用驱动列表
+ * Fetch downloadable driver versions.
  */
 export function listAvailableDrivers(databaseType: string) {
   return get<AvailableDriverResponse[]>('/api/drivers/available', {
@@ -19,7 +19,7 @@ export function listAvailableDrivers(databaseType: string) {
 }
 
 /**
- * 获取已安装驱动列表
+ * Fetch drivers that already exist on disk.
  */
 export function listInstalledDrivers(databaseType: string) {
   return get<InstalledDriverResponse[]>('/api/drivers/installed', {
@@ -28,14 +28,14 @@ export function listInstalledDrivers(databaseType: string) {
 }
 
 /**
- * 下载驱动
+ * Trigger a driver download.
  */
 export function downloadDriver(request: DownloadDriverRequest) {
   return post<DownloadDriverResponse>('/api/drivers/download', request)
 }
 
 /**
- * 删除驱动
+ * Delete a downloaded driver artifact.
  */
 export function deleteDriver(databaseType: string, version: string) {
   return del<void>(`/api/drivers/${databaseType}/${version}`)
