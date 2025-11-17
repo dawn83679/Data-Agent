@@ -6,7 +6,7 @@ spring:
     name: DataAgent
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/haizi
+    url: jdbc:postgresql://localhost:5432/data_agent
     username: postgres
     password: postgres
 
