@@ -1,0 +1,12 @@
+package edu.zsc.ai.service;
+
+import com.baomidou.mybatisplus.extension.service.IService;
+import edu.zsc.ai.model.entity.SysSessions;
+
+/**
+ * Service interface for sys_sessions operations
+ *
+ * @author zgq
+ */
+public interface SysSessionsService extends IService<SysSessions> {
+}
