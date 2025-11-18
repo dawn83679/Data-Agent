@@ -126,3 +126,27 @@ COMMENT ON COLUMN ai_compression_record.updated_at IS 'Updated time';
 CREATE INDEX idx_ai_compression_record_conversation_id ON ai_compression_record(conversation_id);
 CREATE INDEX idx_ai_compression_record_status ON ai_compression_record(status);
 CREATE INDEX idx_ai_compression_record_created_at ON ai_compression_record(created_at);
+
+-- ===============================================
+-- ai_todo_task Table
+-- ===============================================
+
+-- Table DDL
+CREATE TABLE ai_todo_task (
+    id BIGSERIAL PRIMARY KEY,
+    conversation_id BIGINT NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table and column comments
+COMMENT ON TABLE ai_todo_task IS 'AI conversation todo task table';
+COMMENT ON COLUMN ai_todo_task.id IS 'Primary key ID for task';
+COMMENT ON COLUMN ai_todo_task.conversation_id IS 'Associated conversation ID';
+COMMENT ON COLUMN ai_todo_task.content IS 'JSON array of task objects stored as text';
+COMMENT ON COLUMN ai_todo_task.created_at IS 'Created time';
+COMMENT ON COLUMN ai_todo_task.updated_at IS 'Updated time';
+
+-- Table indexes
+CREATE INDEX idx_ai_todo_task_conversation_id ON ai_todo_task(conversation_id);
