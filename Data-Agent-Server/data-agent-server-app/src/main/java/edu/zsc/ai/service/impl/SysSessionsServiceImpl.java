@@ -1,0 +1,17 @@
+package edu.zsc.ai.service.impl;
+
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import edu.zsc.ai.mapper.SysSessionsMapper;
+import edu.zsc.ai.model.entity.SysSessions;
+import edu.zsc.ai.service.SysSessionsService;
+import org.springframework.stereotype.Service;
+
+/**
+ * Service implementation for sys_sessions operations
+ *
+ * @author zgq
+ */
+@Service
+public class SysSessionsServiceImpl extends ServiceImpl<SysSessionsMapper, SysSessions>
+        implements SysSessionsService {
+}
