@@ -1,11 +1,11 @@
-package edu.zsc.ai.utils;
-
-import java.util.Locale;
+package edu.zsc.ai.util;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
+
+import java.util.Locale;
 
 /**
  * Internationalization utility class
