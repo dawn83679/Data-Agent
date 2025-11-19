@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import edu.zsc.ai.converter.ConversationConverter;
-import edu.zsc.ai.enums.DeleteStatusEnum;
 import edu.zsc.ai.mapper.AiConversationMapper;
 import edu.zsc.ai.model.dto.request.*;
 import edu.zsc.ai.model.dto.response.ConversationResponse;
@@ -55,7 +54,6 @@ public class AiConversationServiceImpl extends ServiceImpl<AiConversationMapper,
         // Build query wrapper
         LambdaQueryWrapper<AiConversation> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(AiConversation::getUserId, userId)
-                   .eq(AiConversation::getDeleteFlag, DeleteStatusEnum.NORMAL.getValue())
                    .orderByDesc(AiConversation::getUpdatedAt);
 
         // Add title filter if provided
@@ -93,8 +91,7 @@ public class AiConversationServiceImpl extends ServiceImpl<AiConversationMapper,
         // Build query wrapper
         LambdaQueryWrapper<AiConversation> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(AiConversation::getUserId, userId)
-                   .eq(AiConversation::getId, request.getId())
-                   .eq(AiConversation::getDeleteFlag, DeleteStatusEnum.NORMAL.getValue());
+                   .eq(AiConversation::getId, request.getId());
 
         AiConversation conversation = this.getOne(queryWrapper);
         if (conversation == null) {
@@ -115,7 +112,6 @@ public class AiConversationServiceImpl extends ServiceImpl<AiConversationMapper,
         LambdaUpdateWrapper<AiConversation> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(AiConversation::getUserId, userId)
                     .eq(AiConversation::getId, request.getId())
-                    .eq(AiConversation::getDeleteFlag, DeleteStatusEnum.NORMAL.getValue())
                     .set(AiConversation::getTitle, request.getTitle())
                     .set(AiConversation::getUpdatedAt, LocalDateTime.now());
 
@@ -136,16 +132,13 @@ public class AiConversationServiceImpl extends ServiceImpl<AiConversationMapper,
         // Get current user ID from sa-token
         Long userId = StpUtil.getLoginIdAsLong();
 
-        // Create update wrapper with conditions and set values for soft delete
-        LambdaUpdateWrapper<AiConversation> updateWrapper = new LambdaUpdateWrapper<>();
-        updateWrapper.eq(AiConversation::getUserId, userId)
-                    .eq(AiConversation::getId, request.getId())
-                    .eq(AiConversation::getDeleteFlag, DeleteStatusEnum.NORMAL.getValue())
-                    .set(AiConversation::getDeleteFlag, DeleteStatusEnum.DELETED.getValue())
-                    .set(AiConversation::getUpdatedAt, LocalDateTime.now());
+        // Create query wrapper for delete conditions
+        LambdaQueryWrapper<AiConversation> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(AiConversation::getUserId, userId)
+                   .eq(AiConversation::getId, request.getId());
 
-        boolean updated = this.update(updateWrapper);
-        if (!updated) {
+        boolean deleted = this.remove(queryWrapper);
+        if (!deleted) {
             log.warn("Conversation not found for delete: userId={}, id={}", userId, request.getId());
             return;
         }

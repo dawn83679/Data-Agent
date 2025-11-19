@@ -43,12 +43,6 @@ public class AiConversation {
     private Integer tokenCount;
 
     /**
-     * Soft delete flag, 0: normal 1: deleted
-     */
-    @TableField("delete_flag")
-    private Integer deleteFlag;
-
-    /**
      * Created time
      */
     @TableField(value = "created_at")
