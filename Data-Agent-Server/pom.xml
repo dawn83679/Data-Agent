@@ -29,6 +29,9 @@
         <mybatis-plus.version>3.5.14</mybatis-plus.version>
         <mybatis-plus-jsqlparser.version>3.5.14</mybatis-plus-jsqlparser.version>
         <postgresql.version>42.7.2</postgresql.version>
+        <knife4j.version>4.4.0</knife4j.version>
+        <jjwt.version>0.12.5</jjwt.version>
+        <spring-security-crypto.version>6.2.1</spring-security-crypto.version>
     </properties>
 
     <dependencyManagement>
@@ -83,6 +86,34 @@
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
                 <version>${postgresql.version}</version>
+            </dependency>
+            <!-- Knife4j for API documentation -->
+            <dependency>
+                <groupId>com.github.xiaoymin</groupId>
+                <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
+                <version>${knife4j.version}</version>
+            </dependency>
+            <!-- JWT -->
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <!-- Spring Security Crypto for BCrypt -->
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-crypto</artifactId>
+                <version>${spring-security-crypto.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -9,6 +9,14 @@ spring:
     url: jdbc:postgresql://localhost:5432/data_agent
     username: postgres
     password: postgres
+    # HikariCP connection pool configuration
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-test-query: SELECT 1
 
 # MyBatis-Plus configuration
 mybatis-plus:
@@ -22,3 +30,38 @@ mybatis-plus:
       logic-not-delete-value: 0
   mapper-locations: classpath:mapper/*.xml
 
+
+# Knife4j configuration
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: edu.zsc.ai.controller
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+    enable-swagger-models: true
+    enable-document-manage: true
+    swagger-model-name: 实体类列表
+  basic:
+    enable: false
+
+# JWT configuration
+jwt:
+  secret: data-agent-secret-key-please-change-this-in-production-environment-min-256-bits-required
+  access-token-expiration: 3600000  # 1 hour in milliseconds
+  refresh-token-expiration: 2592000000  # 30 days in milliseconds
+
+# Security configuration
+security:
+  login:
+    max-attempts: 5  # Maximum failed login attempts before blocking
+    block-duration-minutes: 5  # Block duration in minutes after max attempts reached

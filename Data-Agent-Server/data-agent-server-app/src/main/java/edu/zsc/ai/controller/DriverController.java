@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.*;
 import java.nio.file.Path;
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 /**
  * Driver Controller
  * Provides REST API endpoints for JDBC driver management.
@@ -22,6 +25,7 @@ import java.util.List;
  * @author Data-Agent
  * @since 0.0.1
  */
+@Tag(name = "Driver Management", description = "JDBC driver management APIs")
 @Slf4j
 @RestController
 @RequestMapping("/api/drivers")
@@ -30,13 +34,7 @@ public class DriverController {
     
     private final DriverService driverService;
     
-    /**
-     * List all available driver versions from Maven Central that can be downloaded.
-     * This queries the remote Maven repository to show all downloadable versions.
-     *
-     * @param databaseType database type (e.g., "mysql")
-     * @return list of available driver versions from Maven Central
-     */
+    @Operation(summary = "List Available Drivers", description = "List all available driver versions from Maven Central")
     @GetMapping("/available")
     public ApiResponse<List<AvailableDriverResponse>> listAvailableDrivers(
             @RequestParam String databaseType) {
@@ -45,13 +43,7 @@ public class DriverController {
         return ApiResponse.success(drivers);
     }
     
-    /**
-     * List locally installed/downloaded driver files.
-     * This scans the local drivers directory to show what's already on disk.
-     *
-     * @param databaseType database type (e.g., "mysql")
-     * @return list of installed drivers on local disk
-     */
+    @Operation(summary = "List Installed Drivers", description = "List locally installed/downloaded driver files")
     @GetMapping("/installed")
     public ApiResponse<List<InstalledDriverResponse>> listInstalledDrivers(
             @RequestParam String databaseType) {
@@ -60,12 +52,7 @@ public class DriverController {
         return ApiResponse.success(drivers);
     }
     
-    /**
-     * Download a driver from Maven Central.
-     *
-     * @param request download request (databaseType, optional version)
-     * @return download response with driver path
-     */
+    @Operation(summary = "Download Driver", description = "Download a JDBC driver from Maven Central")
     @PostMapping("/download")
     public ApiResponse<DownloadDriverResponse> downloadDriver(
             @Valid @RequestBody DownloadDriverRequest request) {
@@ -90,13 +77,7 @@ public class DriverController {
         return ApiResponse.success(response);
     }
     
-    /**
-     * Delete a locally installed driver.
-     *
-     * @param databaseType database type (e.g., "MySQL")
-     * @param version driver version
-     * @return success response
-     */
+    @Operation(summary = "Delete Driver", description = "Delete a locally installed JDBC driver")
     @DeleteMapping("/{databaseType}/{version}")
     public ApiResponse<Void> deleteDriver(
             @PathVariable String databaseType,
