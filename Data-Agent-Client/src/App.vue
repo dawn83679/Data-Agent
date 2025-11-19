@@ -1,5 +1,17 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterLink, RouterView, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { computed } from 'vue'
+
+const router = useRouter()
+const authStore = useAuthStore()
+
+const username = computed(() => authStore.user?.username || '')
+
+async function handleLogout() {
+  await authStore.logout()
+  router.push('/login')
+}
 </script>
 
 <template>
@@ -15,6 +27,10 @@ import { RouterLink, RouterView } from 'vue-router'
           <RouterLink to="/connections" class="nav-link">连接管理</RouterLink>
           <RouterLink to="/about" class="nav-link">关于</RouterLink>
         </nav>
+        <div v-if="authStore.isAuthenticated" class="user-section">
+          <span class="username">{{ username }}</span>
+          <button @click="handleLogout" class="btn-logout">登出</button>
+        </div>
       </div>
     </header>
 
@@ -90,6 +106,34 @@ import { RouterLink, RouterView } from 'vue-router'
   background: var(--color-bg-secondary);
 }
 
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.username {
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.btn-logout {
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: var(--color-danger);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.btn-logout:hover {
+  background: var(--color-danger-dark);
+}
+
 @media (max-width: 768px) {
   .header-content {
     flex-direction: column;
@@ -103,6 +147,11 @@ import { RouterLink, RouterView } from 'vue-router'
 
   .logo {
     font-size: 20px;
+  }
+
+  .user-section {
+    flex-direction: column;
+    gap: var(--spacing-sm);
   }
 }
 </style>

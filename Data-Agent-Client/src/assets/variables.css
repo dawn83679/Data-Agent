@@ -1,0 +1,55 @@
+/**
+ * CSS 变量定义
+ * 统一的设计系统变量
+ */
+:root {
+  /* 颜色系统 */
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-primary-light: #3b82f6;
+  
+  --color-success: #10b981;
+  --color-success-dark: #059669;
+  
+  --color-danger: #ef4444;
+  --color-danger-dark: #dc2626;
+  
+  --color-warning: #f59e0b;
+  --color-warning-dark: #d97706;
+  
+  --color-info: #06b6d4;
+  --color-info-dark: #0891b2;
+  
+  /* 中性色 */
+  --color-text: #1f2937;
+  --color-text-secondary: #6b7280;
+  --color-text-muted: #9ca3af;
+  
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f9fafb;
+  --color-bg-hover: #f3f4f6;
+  
+  --color-border: #e5e7eb;
+  --color-border-dark: #d1d5db;
+  
+  /* 间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  /* 圆角 */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  
+  /* 阴影 */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  
+  /* 过渡动画 */
+  --transition: all 0.2s ease-in-out;
+}
+

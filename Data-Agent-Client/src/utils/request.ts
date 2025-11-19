@@ -4,10 +4,92 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 
+// Token存储键名
+const ACCESS_TOKEN_KEY = 'access_token'
+const REFRESH_TOKEN_KEY = 'refresh_token'
+
 export interface ApiResponse<T> {
   code: number
   message: string
   data: T
+}
+
+/**
+ * 获取存储的Access Token
+ */
+export function getAccessToken(): string | null {
+  return localStorage.getItem(ACCESS_TOKEN_KEY)
+}
+
+/**
+ * 获取存储的Refresh Token
+ */
+export function getRefreshToken(): string | null {
+  return localStorage.getItem(REFRESH_TOKEN_KEY)
+}
+
+/**
+ * 设置Token
+ */
+export function setTokens(accessToken: string, refreshToken: string) {
+  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken)
+  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
+}
+
+/**
+ * 清除Token
+ */
+export function clearTokens() {
+  localStorage.removeItem(ACCESS_TOKEN_KEY)
+  localStorage.removeItem(REFRESH_TOKEN_KEY)
+}
+
+/**
+ * 刷新Token
+ */
+let isRefreshing = false
+let refreshPromise: Promise<string> | null = null
+
+async function refreshAccessToken(): Promise<string> {
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise
+  }
+
+  isRefreshing = true
+  refreshPromise = (async () => {
+    try {
+      const refreshToken = getRefreshToken()
+      if (!refreshToken) {
+        throw new Error('No refresh token available')
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Token refresh failed')
+      }
+
+      const data: ApiResponse<{ accessToken: string; refreshToken: string }> = await response.json()
+      
+      if (data.code !== 200) {
+        throw new Error(data.message || 'Token refresh failed')
+      }
+
+      setTokens(data.data.accessToken, data.data.refreshToken)
+      return data.data.accessToken
+    } finally {
+      isRefreshing = false
+      refreshPromise = null
+    }
+  })()
+
+  return refreshPromise
 }
 
 /**
@@ -17,17 +99,47 @@ async function request<T>(
   url: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
-  const defaultHeaders: HeadersInit = {
+  const defaultHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
   }
 
-  const response = await fetch(`${API_BASE_URL}${url}`, {
+  // 添加Access Token到请求头
+  const accessToken = getAccessToken()
+  if (accessToken) {
+    defaultHeaders['Authorization'] = `Bearer ${accessToken}`
+  }
+
+  let response = await fetch(`${API_BASE_URL}${url}`, {
     ...options,
     headers: {
       ...defaultHeaders,
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     },
   })
+
+  // 如果返回401，尝试刷新Token
+  if (response.status === 401 && accessToken && url !== '/api/auth/refresh') {
+    try {
+      const newAccessToken = await refreshAccessToken()
+      // 使用新Token重试请求
+      const retryHeaders: Record<string, string> = {
+        ...defaultHeaders,
+        'Authorization': `Bearer ${newAccessToken}`,
+        ...(options.headers as Record<string, string>),
+      }
+      response = await fetch(`${API_BASE_URL}${url}`, {
+        ...options,
+        headers: retryHeaders,
+      })
+    } catch (error) {
+      // 刷新失败，清除Token并跳转到登录页
+      clearTokens()
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
+      throw error
+    }
+  }
 
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`)

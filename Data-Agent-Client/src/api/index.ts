@@ -3,4 +3,5 @@
  */
 export * from './driver'
 export * from './connection'
+export * from './auth'
 
