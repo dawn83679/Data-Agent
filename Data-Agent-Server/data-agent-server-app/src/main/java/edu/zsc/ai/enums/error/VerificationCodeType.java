@@ -1,4 +1,4 @@
-package edu.zsc.ai.common;
+package edu.zsc.ai.enums.error;
 
 /**
  * Verification Code Type Enum

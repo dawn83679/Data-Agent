@@ -1,8 +1,15 @@
 package edu.zsc.ai.service.impl;
 
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import edu.zsc.ai.common.ErrorCode;
+
+import edu.zsc.ai.enums.error.ErrorCode;
 import edu.zsc.ai.exception.BusinessException;
 import edu.zsc.ai.mapper.EmailVerificationCodeMapper;
 import edu.zsc.ai.model.entity.EmailVerificationCode;
@@ -10,11 +17,6 @@ import edu.zsc.ai.service.EmailService;
 import edu.zsc.ai.service.VerificationCodeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.security.SecureRandom;
-import java.time.LocalDateTime;
 
 /**
  * Verification Code Service Implementation
