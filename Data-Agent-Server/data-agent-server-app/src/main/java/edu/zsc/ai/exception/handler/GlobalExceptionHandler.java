@@ -9,10 +9,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import edu.zsc.ai.common.ErrorCode;
+import edu.zsc.ai.enums.error.ErrorCode;
 import edu.zsc.ai.exception.BusinessException;
-import edu.zsc.ai.model.dto.response.ApiResponse;
-import edu.zsc.ai.utils.I18nUtils;
+import edu.zsc.ai.model.dto.response.base.ApiResponse;
+import edu.zsc.ai.util.I18nUtils;
 import lombok.extern.slf4j.Slf4j;
 
 /**
