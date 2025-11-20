@@ -1,15 +1,14 @@
 package edu.zsc.ai.plugin.mysql.value;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Objects;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import edu.zsc.ai.plugin.mysql.value.template.MySQLValueProcessorFactory;
 import edu.zsc.ai.plugin.value.DefaultValueProcessor;
 import edu.zsc.ai.plugin.value.JdbcValueContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Objects;
 
 /**
  * MySQL-specific value processor that handles MySQL data type conversions.
@@ -17,6 +16,12 @@ import edu.zsc.ai.plugin.value.JdbcValueContext;
  * @author hhz
  */
 public class MySQLValueProcessor extends DefaultValueProcessor {
+
+    public static final MySQLValueProcessor INSTANCE = new MySQLValueProcessor();
+
+    private MySQLValueProcessor (){
+
+    }
 
     private static final Logger log = LoggerFactory.getLogger(MySQLValueProcessor.class);
 

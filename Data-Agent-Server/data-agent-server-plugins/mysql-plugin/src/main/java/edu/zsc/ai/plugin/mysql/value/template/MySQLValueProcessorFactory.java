@@ -1,10 +1,10 @@
 package edu.zsc.ai.plugin.mysql.value.template;
 
-import java.util.EnumMap;
-import java.util.Map;
-
 import edu.zsc.ai.plugin.mysql.value.MySQLDataType;
 import edu.zsc.ai.plugin.value.DefaultValueProcessor;
+
+import java.util.EnumMap;
+import java.util.Map;
 
 /**
  * Factory for creating type-specific value processors for MySQL.
@@ -32,13 +32,9 @@ public class MySQLValueProcessorFactory {
     private static final MySQLDateTimeProcessor DATETIME_PROCESSOR = new MySQLDateTimeProcessor();
     private static final MySQLTimestampProcessor TIMESTAMP_PROCESSOR = new MySQLTimestampProcessor();
     private static final MySQLYearProcessor YEAR_PROCESSOR = new MySQLYearProcessor();
-    private static final MySQLStringProcessor STRING_PROCESSOR = new MySQLStringProcessor();
     private static final MySQLTextProcessor TEXT_PROCESSOR = new MySQLTextProcessor();
     private static final MySQLBinaryProcessor BINARY_PROCESSOR = new MySQLBinaryProcessor();
     private static final MySQLBlobProcessor BLOB_PROCESSOR = new MySQLBlobProcessor();
-    private static final MySQLJsonProcessor JSON_PROCESSOR = new MySQLJsonProcessor();
-    private static final MySQLEnumProcessor ENUM_PROCESSOR = new MySQLEnumProcessor();
-    private static final MySQLSetProcessor SET_PROCESSOR = new MySQLSetProcessor();
     private static final MySQLBitProcessor BIT_PROCESSOR = new MySQLBitProcessor();
     private static final MySQLBooleanProcessor BOOLEAN_PROCESSOR = new MySQLBooleanProcessor();
 
@@ -66,9 +62,7 @@ public class MySQLValueProcessorFactory {
         PROCESSOR_MAP.put(MySQLDataType.TIMESTAMP, TIMESTAMP_PROCESSOR);
         PROCESSOR_MAP.put(MySQLDataType.YEAR, YEAR_PROCESSOR);
         
-        PROCESSOR_MAP.put(MySQLDataType.CHAR, STRING_PROCESSOR);
-        PROCESSOR_MAP.put(MySQLDataType.VARCHAR, STRING_PROCESSOR);
-        
+
         PROCESSOR_MAP.put(MySQLDataType.TEXT, TEXT_PROCESSOR);
         PROCESSOR_MAP.put(MySQLDataType.TINYTEXT, TEXT_PROCESSOR);
         PROCESSOR_MAP.put(MySQLDataType.MEDIUMTEXT, TEXT_PROCESSOR);
@@ -80,9 +74,6 @@ public class MySQLValueProcessorFactory {
         // BLOB type (all BLOB variants are handled by MySQLDataType.BLOB)
         PROCESSOR_MAP.put(MySQLDataType.BLOB, BLOB_PROCESSOR);
         
-        PROCESSOR_MAP.put(MySQLDataType.JSON, JSON_PROCESSOR);
-        PROCESSOR_MAP.put(MySQLDataType.ENUM, ENUM_PROCESSOR);
-        PROCESSOR_MAP.put(MySQLDataType.SET, SET_PROCESSOR);
         PROCESSOR_MAP.put(MySQLDataType.BIT, BIT_PROCESSOR);
         PROCESSOR_MAP.put(MySQLDataType.BOOLEAN, BOOLEAN_PROCESSOR);
         PROCESSOR_MAP.put(MySQLDataType.BOOL, BOOLEAN_PROCESSOR);  // Alias
@@ -145,12 +136,5 @@ public class MySQLValueProcessorFactory {
         return fullTypeName != null && fullTypeName.toUpperCase().contains("UNSIGNED");
     }
 
-    /**
-     * Check if a type has ZEROFILL attribute.
-     * @param fullTypeName the full type name
-     * @return true if ZEROFILL
-     */
-    public static boolean isZeroFill(String fullTypeName) {
-        return fullTypeName != null && fullTypeName.toUpperCase().contains("ZEROFILL");
-    }
+
 }

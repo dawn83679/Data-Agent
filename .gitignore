@@ -1,6 +1,7 @@
 # IDE
 .idea/
 .cursor/
+.claude
 
 # OS
 .DS_Store
