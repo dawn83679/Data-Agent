@@ -1,11 +1,13 @@
 package edu.zsc.ai.service.impl;
 
-import edu.zsc.ai.common.ErrorCode;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import edu.zsc.ai.enums.error.ErrorCode;
 import edu.zsc.ai.event.LoginEvent;
 import edu.zsc.ai.exception.BusinessException;
-import edu.zsc.ai.service.LoginAttemptService;
 import edu.zsc.ai.model.dto.request.LoginRequest;
-import org.springframework.context.ApplicationEventPublisher;
 import edu.zsc.ai.model.dto.request.RegisterRequest;
 import edu.zsc.ai.model.dto.response.TokenPairResponse;
 import edu.zsc.ai.model.dto.response.UserInfoResponse;
@@ -13,6 +15,7 @@ import edu.zsc.ai.model.entity.RefreshToken;
 import edu.zsc.ai.model.entity.Session;
 import edu.zsc.ai.model.entity.User;
 import edu.zsc.ai.service.AuthService;
+import edu.zsc.ai.service.LoginAttemptService;
 import edu.zsc.ai.service.RefreshTokenService;
 import edu.zsc.ai.service.SessionService;
 import edu.zsc.ai.service.UserService;
@@ -23,8 +26,6 @@ import edu.zsc.ai.util.PasswordUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Authentication Service Implementation

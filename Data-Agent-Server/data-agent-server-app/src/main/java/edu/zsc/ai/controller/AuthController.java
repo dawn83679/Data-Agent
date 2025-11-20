@@ -1,12 +1,18 @@
 package edu.zsc.ai.controller;
 
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import edu.zsc.ai.model.dto.request.EmailCodeLoginRequest;
 import edu.zsc.ai.model.dto.request.LoginRequest;
 import edu.zsc.ai.model.dto.request.RefreshTokenRequest;
 import edu.zsc.ai.model.dto.request.RegisterRequest;
 import edu.zsc.ai.model.dto.request.SendVerificationCodeRequest;
-import edu.zsc.ai.model.dto.response.ApiResponse;
 import edu.zsc.ai.model.dto.response.TokenPairResponse;
+import edu.zsc.ai.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.service.AuthService;
 import edu.zsc.ai.service.VerificationCodeService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,7 +21,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
 
 /**
  * Authentication Controller
