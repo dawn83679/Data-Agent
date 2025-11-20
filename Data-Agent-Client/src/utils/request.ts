@@ -2,7 +2,7 @@
  * HTTP request utilities that wrap fetch behind a shared interface.
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081'
 
 // Token存储键名
 const ACCESS_TOKEN_KEY = 'access_token'
@@ -141,14 +141,26 @@ async function request<T>(
     }
   }
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`)
+  // 尝试解析响应体（无论HTTP状态码如何，后端可能返回JSON格式的错误）
+  let data: ApiResponse<T>
+  try {
+    data = await response.json()
+  } catch (e) {
+    // 如果响应不是JSON格式，根据HTTP状态码抛出错误
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    throw new Error('响应格式错误')
   }
-
-  const data: ApiResponse<T> = await response.json()
   
+  // 检查业务状态码（后端统一使用ApiResponse格式，即使HTTP状态码是200也可能业务失败）
   if (data.code !== 200) {
     throw new Error(data.message || '请求失败')
+  }
+
+  // 如果HTTP状态码不是200但业务状态码是200，也抛出错误（这种情况不应该发生）
+  if (!response.ok) {
+    throw new Error(data.message || `HTTP error! status: ${response.status}`)
   }
 
   return data
