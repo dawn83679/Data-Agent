@@ -3,8 +3,10 @@ package edu.zsc.ai.service.ai.parse;
 import edu.zsc.ai.model.dto.response.ai.ParseResult;
 import edu.zsc.ai.service.ai.parse.rule.ParseRule;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -57,7 +59,7 @@ public class LLMStreamParser {
     /**
      * 处理流式数据块
      */
-    public void processChunk(String chunk) {
+    public List<ParseResult> processChunk(String chunk) {
         String beforeBuffer = buffer.toString();
         buffer.append(chunk);
         log.info("收到新分片: [{}]，拼接前buffer: [{}]，拼接后buffer内容: [{}]", chunk, beforeBuffer, buffer);
@@ -75,7 +77,11 @@ public class LLMStreamParser {
                 log.info("规则[{}]命中，被移除内容: [{}]，剩余buffer: [{}]",
                         rule.getName(), beforeUpdate.substring(0, result.getEndPos()), buffer);
             }
+            if (CollectionUtils.isNotEmpty(results)) {
+                return results;
+            }
         }
+        return Collections.emptyList();
     }
 
     public String getBuffer() {

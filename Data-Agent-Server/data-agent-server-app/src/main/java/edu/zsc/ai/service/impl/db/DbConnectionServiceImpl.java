@@ -54,7 +54,7 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
         BeanUtils.copyProperties(request, connection);
 
         // Convert properties Map to JSON string using JsonUtil
-        connection.setProperties(JsonUtil.mapToJson(request.getProperties()));
+        connection.setProperties(JsonUtil.map2Json(request.getProperties()));
 
         // Save connection
         this.save(connection);
@@ -81,7 +81,7 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
         existingConnection.setId(id);
 
         // Convert properties Map to JSON string using JsonUtil
-        existingConnection.setProperties(JsonUtil.mapToJson(request.getProperties()));
+        existingConnection.setProperties(JsonUtil.map2Json(request.getProperties()));
 
         this.updateById(existingConnection);
 
@@ -124,7 +124,7 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
         BeanUtils.copyProperties(connection, response);
 
         // Convert properties JSON string to Map using JsonUtil
-        response.setProperties(JsonUtil.jsonToMap(connection.getProperties()));
+        response.setProperties(JsonUtil.json2Map(connection.getProperties()));
 
         return response;
     }

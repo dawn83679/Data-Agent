@@ -97,7 +97,7 @@ public class ToolUseXmlParseRule extends AbstractParseRule {
         Matcher toolParamsMatcher = toolParamsPattern.matcher(content);
         if (toolParamsMatcher.find()) {
             String paramsContent = toolParamsMatcher.group(1);
-            Map<String, String> params = parseToolParams(paramsContent);
+            Map<String, Object> params = parseToolParams(paramsContent);
             builder.toolParams(params);
         } else {
             builder.toolParams(new HashMap<>());
@@ -109,8 +109,8 @@ public class ToolUseXmlParseRule extends AbstractParseRule {
     /**
      * Parse tool parameters
      */
-    private Map<String, String> parseToolParams(String paramsContent) {
-        Map<String, String> params = new HashMap<>();
+    private Map<String, Object> parseToolParams(String paramsContent) {
+        Map<String, Object> params = new HashMap<>();
 
         // Use regex to match all parameter tags
         Pattern paramPattern = Pattern.compile("<([^>]+)>(.*?)</\\1>", Pattern.DOTALL);
@@ -118,7 +118,7 @@ public class ToolUseXmlParseRule extends AbstractParseRule {
 
         while (paramMatcher.find()) {
             String paramName = paramMatcher.group(1).trim();
-            String paramValue = paramMatcher.group(2).trim();
+            Object paramValue = paramMatcher.group(2).trim();
             params.put(paramName, paramValue);
         }
 
@@ -132,6 +132,6 @@ public class ToolUseXmlParseRule extends AbstractParseRule {
     @Builder
     public static class ToolUseData {
         private String toolName;
-        private Map<String, String> toolParams;
+        private Map<String, Object> toolParams;
     }
 }
