@@ -1,6 +1,7 @@
 package edu.zsc.ai.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+
 import edu.zsc.ai.model.entity.Session;
 
 /**
@@ -39,6 +40,11 @@ public interface SessionService extends IService<Session> {
      * Get session by access token hash
      */
     Session getByAccessTokenHash(String accessTokenHash);
+
+    /**
+     * Get session by access token (for Sa-Token integration)
+     */
+    Session getByAccessToken(String accessToken);
 
     /**
      * Clean expired sessions

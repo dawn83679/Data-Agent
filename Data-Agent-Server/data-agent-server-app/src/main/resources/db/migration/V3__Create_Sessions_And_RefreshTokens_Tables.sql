@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS sessions (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,
-    access_token_hash VARCHAR(64) NOT NULL,
+    access_token_hash VARCHAR(512) NOT NULL,
     ip_address VARCHAR(45),
     user_agent TEXT,
     device_info VARCHAR(255),
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,
     session_id BIGINT NOT NULL,
-    token_hash VARCHAR(64) NOT NULL,
+    token_hash VARCHAR(512) NOT NULL,
     expires_at TIMESTAMP NOT NULL,
     status INTEGER DEFAULT 0,
     used_at TIMESTAMP,
@@ -48,11 +48,11 @@ CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at ON refresh_tokens(expir
 
 -- Add comments
 COMMENT ON TABLE sessions IS 'User session table';
-COMMENT ON COLUMN sessions.access_token_hash IS 'SHA-256 hash of access token';
+COMMENT ON COLUMN sessions.access_token_hash IS 'Access token (JWT) or SHA-256 hash - supports up to 512 characters';
 COMMENT ON COLUMN sessions.status IS 'Session status (0: active, 1: expired, 2: revoked)';
 COMMENT ON INDEX idx_sessions_access_token_hash IS 'Optimize session validation by token hash';
 
 COMMENT ON TABLE refresh_tokens IS 'Refresh token table';
-COMMENT ON COLUMN refresh_tokens.token_hash IS 'SHA-256 hash of refresh token';
+COMMENT ON COLUMN refresh_tokens.token_hash IS 'Refresh token hash or value - supports up to 512 characters';
 COMMENT ON COLUMN refresh_tokens.status IS 'Token status (0: active, 1: used, 2: revoked)';
 COMMENT ON INDEX idx_refresh_tokens_token_hash IS 'Optimize refresh token validation';

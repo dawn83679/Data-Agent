@@ -7,9 +7,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import edu.zsc.ai.model.dto.request.EmailCodeLoginRequest;
+import edu.zsc.ai.model.dto.request.GoogleLoginRequest;
 import edu.zsc.ai.model.dto.request.LoginRequest;
 import edu.zsc.ai.model.dto.request.RefreshTokenRequest;
 import edu.zsc.ai.model.dto.request.RegisterRequest;
+import edu.zsc.ai.model.dto.request.ResetPasswordRequest;
 import edu.zsc.ai.model.dto.request.SendVerificationCodeRequest;
 import edu.zsc.ai.model.dto.response.TokenPairResponse;
 import edu.zsc.ai.model.dto.response.base.ApiResponse;
@@ -115,6 +117,31 @@ public class AuthController {
         log.debug("User logout attempt");
         boolean result = authService.logout(token);
         return ApiResponse.success(result);
+    }
+
+    /**
+     * Reset password
+     * Public endpoint - requires verification code
+     */
+    @Operation(summary = "Reset Password", description = "Reset password with verification code")
+    @PostMapping("/reset-password")
+    public ApiResponse<Boolean> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        log.info("Password reset attempt: email={}", request.getEmail());
+        boolean result = authService.resetPassword(request.getEmail(), request.getCode(), request.getNewPassword());
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * Google OAuth login
+     * Public endpoint - exchanges Google authorization code for tokens
+     */
+    @Operation(summary = "Google OAuth Login", description = "Login with Google OAuth authorization code")
+    @PostMapping("/google/login")
+    public ApiResponse<TokenPairResponse> googleLogin(@Valid @RequestBody GoogleLoginRequest request,
+                                                      HttpServletRequest httpRequest) {
+        log.info("Google OAuth login attempt");
+        TokenPairResponse tokenPair = authService.googleLogin(request.getCode(), httpRequest);
+        return ApiResponse.success(tokenPair);
     }
 
     /**
