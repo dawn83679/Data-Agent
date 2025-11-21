@@ -1,17 +1,17 @@
 package edu.zsc.ai.service.impl;
 
+import java.time.LocalDateTime;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+
 import edu.zsc.ai.exception.BusinessException;
 import edu.zsc.ai.mapper.RefreshTokenMapper;
 import edu.zsc.ai.model.entity.RefreshToken;
 import edu.zsc.ai.service.RefreshTokenService;
 import edu.zsc.ai.util.HashUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
 
 /**
  * Refresh Token Service Implementation
@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
  * @author Data-Agent Team
  */
 @Slf4j
-@Service
+// @Service // Disabled: Using CachedRefreshTokenServiceImpl instead
 public class RefreshTokenServiceImpl extends ServiceImpl<RefreshTokenMapper, RefreshToken> implements RefreshTokenService {
 
     @Override

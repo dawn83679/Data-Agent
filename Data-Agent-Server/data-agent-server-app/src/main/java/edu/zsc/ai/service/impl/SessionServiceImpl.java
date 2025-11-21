@@ -1,15 +1,15 @@
 package edu.zsc.ai.service.impl;
 
+import java.time.LocalDateTime;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+
 import edu.zsc.ai.mapper.SessionMapper;
 import edu.zsc.ai.model.entity.Session;
 import edu.zsc.ai.service.SessionService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
 
 /**
  * Session Service Implementation
@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
  * @author Data-Agent Team
  */
 @Slf4j
-@Service
+// @Service // Disabled: Using CachedSessionServiceImpl instead
 public class SessionServiceImpl extends ServiceImpl<SessionMapper, Session> implements SessionService {
 
     @Override
@@ -74,6 +74,15 @@ public class SessionServiceImpl extends ServiceImpl<SessionMapper, Session> impl
     public Session getByAccessTokenHash(String accessTokenHash) {
         return this.getOne(new LambdaQueryWrapper<Session>()
                 .eq(Session::getAccessTokenHash, accessTokenHash)
+                .eq(Session::getStatus, 0) // Only active sessions
+                .last("LIMIT 1"));
+    }
+
+    @Override
+    public Session getByAccessToken(String accessToken) {
+        // For Sa-Token integration, we store the token directly in accessTokenHash field
+        return this.getOne(new LambdaQueryWrapper<Session>()
+                .eq(Session::getAccessTokenHash, accessToken)
                 .eq(Session::getStatus, 0) // Only active sessions
                 .last("LIMIT 1"));
     }

@@ -4,11 +4,13 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import cn.dev33.satoken.stp.StpUtil;
 import edu.zsc.ai.enums.error.ErrorCode;
 import edu.zsc.ai.event.LoginEvent;
 import edu.zsc.ai.exception.BusinessException;
 import edu.zsc.ai.model.dto.request.LoginRequest;
 import edu.zsc.ai.model.dto.request.RegisterRequest;
+import edu.zsc.ai.model.dto.response.GoogleUserInfo;
 import edu.zsc.ai.model.dto.response.TokenPairResponse;
 import edu.zsc.ai.model.dto.response.UserInfoResponse;
 import edu.zsc.ai.model.entity.RefreshToken;
@@ -20,8 +22,6 @@ import edu.zsc.ai.service.RefreshTokenService;
 import edu.zsc.ai.service.SessionService;
 import edu.zsc.ai.service.UserService;
 import edu.zsc.ai.service.VerificationCodeService;
-import edu.zsc.ai.util.HashUtil;
-import edu.zsc.ai.util.JwtUtil;
 import edu.zsc.ai.util.PasswordUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +40,6 @@ public class AuthServiceImpl implements AuthService {
     private final UserService userService;
     private final SessionService sessionService;
     private final RefreshTokenService refreshTokenService;
-    private final JwtUtil jwtUtil;
     private final LoginAttemptService loginAttemptService;
     private final ApplicationEventPublisher eventPublisher;
     private final VerificationCodeService verificationCodeService;
@@ -104,20 +103,20 @@ public class AuthServiceImpl implements AuthService {
         loginAttemptService.loginSucceeded(email);
         loginAttemptService.loginSucceeded(ipAddress);
 
-        // 6. Generate Access Token (JWT) - outside transaction
-        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail());
-        String accessTokenHash = HashUtil.sha256(accessToken);
+        // 6. Generate Access Token using Sa-Token
+        StpUtil.login(user.getId());
+        String accessToken = StpUtil.getTokenValue();
 
         // 7. Create Session and Refresh Token in transaction
-        return createSessionAndTokens(user, accessTokenHash, ipAddress, userAgent, email, accessToken);
+        return createSessionAndTokens(user, accessToken, ipAddress, userAgent, email);
     }
 
     @Transactional
-    protected TokenPairResponse createSessionAndTokens(User user, String accessTokenHash, 
+    protected TokenPairResponse createSessionAndTokens(User user, String accessToken, 
                                                       String ipAddress, String userAgent, 
-                                                      String email, String accessToken) {
-        // Create Session record
-        Session session = sessionService.createSession(user.getId(), accessTokenHash, ipAddress, userAgent);
+                                                      String email) {
+        // Create Session record (store AccessToken directly)
+        Session session = sessionService.createSession(user.getId(), accessToken, ipAddress, userAgent);
 
         // Generate Refresh Token
         String refreshToken = refreshTokenService.createRefreshToken(user.getId(), session.getId());
@@ -130,7 +129,7 @@ public class AuthServiceImpl implements AuthService {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
-                .expiresIn(3600L) // 1 hour
+                .expiresIn(7200L) // 2 hours (matching Sa-Token config)
                 .build();
     }
 
@@ -170,8 +169,8 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public UserInfoResponse getCurrentUser(String token) {
-        // 1. Parse token to get user ID
-        Long userId = jwtUtil.getUserIdFromToken(token);
+        // 1. Get user ID from Sa-Token
+        Long userId = StpUtil.getLoginIdAsLong();
 
         // 2. Get user from database
         User user = userService.getById(userId);
@@ -202,22 +201,22 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "User not found");
         }
 
-        // 3. Generate new Access Token (JWT) - outside transaction
-        String newAccessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail());
-        String newAccessTokenHash = HashUtil.sha256(newAccessToken);
+        // 3. Generate new Access Token using Sa-Token
+        StpUtil.login(user.getId());
+        String newAccessToken = StpUtil.getTokenValue();
 
         // 4. Update session and tokens in transaction
-        return updateSessionAndTokens(refreshTokenPlain, refreshToken, newAccessTokenHash, user, newAccessToken);
+        return updateSessionAndTokens(refreshTokenPlain, refreshToken, newAccessToken, user);
     }
 
     @Transactional
     protected TokenPairResponse updateSessionAndTokens(String refreshTokenPlain, RefreshToken refreshToken, 
-                                                      String newAccessTokenHash, User user, String newAccessToken) {
+                                                      String newAccessToken, User user) {
         // Immediately revoke old Refresh Token (one-time use)
         refreshTokenService.revoke(refreshTokenPlain);
 
-        // Update Session record (new Access Token hash)
-        sessionService.updateRefreshTime(refreshToken.getSessionId(), newAccessTokenHash);
+        // Update Session record (new Access Token)
+        sessionService.updateRefreshTime(refreshToken.getSessionId(), newAccessToken);
 
         // Generate new Refresh Token
         String newRefreshToken = refreshTokenService.createRefreshToken(user.getId(), refreshToken.getSessionId());
@@ -229,7 +228,7 @@ public class AuthServiceImpl implements AuthService {
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
                 .tokenType("Bearer")
-                .expiresIn(3600L) // 1 hour
+                .expiresIn(7200L) // 2 hours (matching Sa-Token config)
                 .build();
     }
 
@@ -237,16 +236,19 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public boolean logout(String token) {
         try {
-            // 1. Parse token to get user ID
-            Long userId = jwtUtil.getUserIdFromToken(token);
-            String tokenHash = HashUtil.sha256(token);
+            // 1. Get user ID and token from Sa-Token
+            Long userId = StpUtil.getLoginIdAsLong();
+            String accessToken = StpUtil.getTokenValue();
 
-            // 2. Find and revoke session
-            Session session = sessionService.getByAccessTokenHash(tokenHash);
+            // 2. Logout from Sa-Token
+            StpUtil.logout();
+
+            // 3. Find and revoke session
+            Session session = sessionService.getByAccessToken(accessToken);
             if (session != null) {
                 sessionService.revokeSession(session.getId());
                 
-                // 3. Revoke all refresh tokens for this session
+                // 4. Revoke all refresh tokens for this session
                 refreshTokenService.revokeAllUserTokens(userId);
             }
 
@@ -301,12 +303,12 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "Account is disabled");
         }
 
-        // 4. Generate Access Token (JWT) - outside transaction
-        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail());
-        String accessTokenHash = HashUtil.sha256(accessToken);
+        // 4. Generate Access Token using Sa-Token
+        StpUtil.login(user.getId());
+        String accessToken = StpUtil.getTokenValue();
 
         // 5. Create Session and Refresh Token in transaction
-        TokenPairResponse response = createSessionAndTokens(user, accessTokenHash, ipAddress, userAgent, email, accessToken);
+        TokenPairResponse response = createSessionAndTokens(user, accessToken, ipAddress, userAgent, email);
 
         log.info("User logged in by email code: email={}", email);
         return response;
@@ -328,6 +330,74 @@ public class AuthServiceImpl implements AuthService {
         }
 
         log.info("Auto-registered user: email={}", email);
+        return user;
+    }
+
+    @Override
+    public boolean resetPassword(String email, String code, String newPassword) {
+        // 1. Verify code
+        boolean valid = verificationCodeService.verifyCode(email, code, "RESET_PASSWORD");
+        if (!valid) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "Invalid or expired verification code");
+        }
+
+        // 2. Check if user exists
+        User user = userService.getByEmail(email);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "User not found");
+        }
+
+        // 3. Reset password (this will also invalidate all sessions and tokens)
+        boolean success = userService.resetPassword(email, newPassword);
+
+        log.info("Password reset successfully for user: email={}", email);
+        return success;
+    }
+
+    @Override
+    public TokenPairResponse googleLogin(String code, HttpServletRequest httpRequest) {
+        // TODO: Implement Google OAuth token exchange
+        // 1. Exchange authorization code for access token with Google
+        // 2. Use access token to get user info from Google
+        // For now, this is a placeholder implementation
+        
+        log.warn("Google OAuth login attempted but not yet implemented. Code: {}", code);
+        throw new BusinessException(ErrorCode.OPERATION_ERROR, 
+            "Google OAuth login is not yet implemented. Please configure Google OAuth credentials and implement token exchange.");
+        
+        // Future implementation:
+        // String ipAddress = getClientIp(httpRequest);
+        // String userAgent = httpRequest.getHeader("User-Agent");
+        // GoogleUserInfo googleUserInfo = exchangeCodeForUserInfo(code);
+        // User user = userService.getByEmail(googleUserInfo.getEmail());
+        // if (user == null) {
+        //     user = createUserFromGoogleInfo(googleUserInfo);
+        // }
+        // StpUtil.login(user.getId());
+        // String accessToken = StpUtil.getTokenValue();
+        // return createSessionAndTokens(user, accessToken, ipAddress, userAgent, user.getEmail());
+    }
+
+    /**
+     * Create user from Google OAuth info
+     * This is a helper method for Google OAuth login
+     */
+    @Transactional
+    protected User createUserFromGoogleInfo(GoogleUserInfo googleUserInfo) {
+        User user = new User();
+        user.setEmail(googleUserInfo.getEmail());
+        user.setUsername(googleUserInfo.getName() != null ? googleUserInfo.getName() : googleUserInfo.getEmail().split("@")[0]);
+        user.setAvatar(googleUserInfo.getPicture());
+        user.setEmailVerified(Boolean.TRUE.equals(googleUserInfo.getEmailVerified()));
+        user.setStatus(0); // Normal status
+        // No password for OAuth users
+
+        boolean saved = userService.save(user);
+        if (!saved) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "Failed to create user from Google OAuth");
+        }
+
+        log.info("Created user from Google OAuth: email={}", user.getEmail());
         return user;
     }
 }
