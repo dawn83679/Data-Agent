@@ -1,9 +1,9 @@
 package edu.zsc.ai.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import edu.zsc.ai.model.dto.request.ConnectionCreateRequest;
-import edu.zsc.ai.model.dto.response.ConnectionResponse;
-import edu.zsc.ai.model.entity.DbConnection;
+import edu.zsc.ai.model.dto.request.db.ConnectionCreateRequest;
+import edu.zsc.ai.model.dto.response.db.ConnectionResponse;
+import edu.zsc.ai.model.entity.db.DbConnection;
 
 import java.util.List;
 

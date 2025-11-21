@@ -2,12 +2,16 @@ package edu.zsc.ai.plugin.mysql;
 
 import edu.zsc.ai.plugin.SqlPlugin;
 import edu.zsc.ai.plugin.base.AbstractDatabasePlugin;
+import edu.zsc.ai.plugin.capability.CommandExecutor;
 import edu.zsc.ai.plugin.capability.ConnectionProvider;
 import edu.zsc.ai.plugin.driver.DriverLoader;
 import edu.zsc.ai.plugin.connection.JdbcConnectionBuilder;
 import edu.zsc.ai.plugin.connection.ConnectionConfig;
 import edu.zsc.ai.plugin.driver.MavenCoordinates;
+import edu.zsc.ai.plugin.model.command.sql.SqlCommandRequest;
+import edu.zsc.ai.plugin.model.command.sql.SqlCommandResult;
 import edu.zsc.ai.plugin.mysql.connection.MysqlJdbcConnectionBuilder;
+import edu.zsc.ai.plugin.mysql.executor.MySQLSqlExecutor;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -18,9 +22,10 @@ import java.util.logging.Logger;
 /**
  * Abstract base class for MySQL database plugins.
  * Provides common functionality for different MySQL versions.
- * Implements ConnectionProvider capability for all MySQL plugins.
+ * Implements ConnectionProvider and CommandExecutor capabilities for all MySQL plugins.
  */
-public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin implements SqlPlugin, ConnectionProvider {
+public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin
+        implements SqlPlugin, ConnectionProvider, CommandExecutor<SqlCommandRequest, SqlCommandResult> {
 
     private static final Logger logger = Logger.getLogger(AbstractMysqlPlugin.class.getName());
 
@@ -28,6 +33,11 @@ public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin impleme
      * Connection builder - can be reused across all connection attempts
      */
     private final JdbcConnectionBuilder connectionBuilder = new MysqlJdbcConnectionBuilder();
+
+    /**
+     * SQL executor - can be reused for all SQL command executions
+     */
+    private final MySQLSqlExecutor sqlExecutor = new MySQLSqlExecutor();
     
     /**
      * Get MySQL-specific JDBC driver class name.
@@ -125,7 +135,14 @@ public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin impleme
             throw new RuntimeException("Failed to close database connection: " + e.getMessage(), e);
         }
     }
-    
+
+    // ========== CommandExecutor Implementation ==========
+
+    @Override
+    public SqlCommandResult executeCommand(SqlCommandRequest command) {
+        return sqlExecutor.executeCommand(command);
+    }
+
     // ========== Driver Maven Coordinates ==========
     
     /**

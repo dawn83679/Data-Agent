@@ -1,7 +1,7 @@
 package edu.zsc.ai.service;
 
-import edu.zsc.ai.model.dto.response.AvailableDriverResponse;
-import edu.zsc.ai.model.dto.response.InstalledDriverResponse;
+import edu.zsc.ai.model.dto.response.db.AvailableDriverResponse;
+import edu.zsc.ai.model.dto.response.db.InstalledDriverResponse;
 
 import java.nio.file.Path;
 import java.util.List;

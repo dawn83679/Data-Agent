@@ -1,8 +1,8 @@
 package edu.zsc.ai.service;
 
-import edu.zsc.ai.model.dto.request.ConnectRequest;
-import edu.zsc.ai.model.dto.response.ConnectionTestResponse;
-import edu.zsc.ai.model.dto.response.OpenConnectionResponse;
+import edu.zsc.ai.model.dto.request.db.ConnectRequest;
+import edu.zsc.ai.model.dto.response.db.ConnectionTestResponse;
+import edu.zsc.ai.model.dto.response.db.OpenConnectionResponse;
 
 /**
  * Connection Service Interface
