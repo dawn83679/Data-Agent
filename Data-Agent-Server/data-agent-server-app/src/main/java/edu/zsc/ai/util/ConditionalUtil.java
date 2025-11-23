@@ -8,19 +8,17 @@ import java.util.function.Supplier;
 /**
  * Conditional utility class
  * Provides concise conditional checking and assignment operations
- * 
+ *
  * @author zgq
  */
 public class ConditionalUtil {
 
     /**
      * If string is not blank, execute setter operation
-     * 
-     * @param value Value to check
+     *
+     * @param value  Value to check
      * @param setter Setter method (usually object's setter)
-     * 
-     * @example
-     * ConditionalUtil.setIfNotBlank(user.getName(), target::setUsername);
+     * @example ConditionalUtil.setIfNotBlank(user.getName (), target::setUsername);
      */
     public static void setIfNotBlank(String value, Consumer<String> setter) {
         if (StringUtils.isNotBlank(value)) {
@@ -30,13 +28,11 @@ public class ConditionalUtil {
 
     /**
      * If string is not blank, execute setter operation, otherwise use default value
-     * 
-     * @param value Value to check
+     *
+     * @param value        Value to check
      * @param defaultValue Default value
-     * @param setter Setter method
-     * 
-     * @example
-     * ConditionalUtil.setIfNotBlankOrElse(user.getName(), "Anonymous", target::setUsername);
+     * @param setter       Setter method
+     * @example ConditionalUtil.setIfNotBlankOrElse(user.getName (), "Anonymous", target::setUsername);
      */
     public static void setIfNotBlankOrElse(String value, String defaultValue, Consumer<String> setter) {
         setter.accept(StringUtils.isNotBlank(value) ? value : defaultValue);
@@ -44,16 +40,14 @@ public class ConditionalUtil {
 
     /**
      * If string is not blank, execute setter operation, otherwise use default value supplier
-     * 
-     * @param value Value to check
+     *
+     * @param value           Value to check
      * @param defaultSupplier Default value supplier
-     * @param setter Setter method
-     * 
-     * @example
-     * ConditionalUtil.setIfNotBlankOrElse(
-     *     user.getName(), 
-     *     () -> user.getEmail().split("@")[0], 
-     *     target::setUsername
+     * @param setter          Setter method
+     * @example ConditionalUtil.setIfNotBlankOrElse(
+     *user.getName (),
+     * () -> user.getEmail().split("@")[0],
+     * target::setUsername
      * );
      */
     public static void setIfNotBlankOrElse(String value, Supplier<String> defaultSupplier, Consumer<String> setter) {
@@ -62,13 +56,11 @@ public class ConditionalUtil {
 
     /**
      * If object is not null, execute setter operation
-     * 
-     * @param value Value to check
+     *
+     * @param value  Value to check
      * @param setter Setter method
-     * @param <T> Value type
-     * 
-     * @example
-     * ConditionalUtil.setIfNotNull(user.getAge(), target::setAge);
+     * @param <T>    Value type
+     * @example ConditionalUtil.setIfNotNull(user.getAge (), target::setAge);
      */
     public static <T> void setIfNotNull(T value, Consumer<T> setter) {
         if (value != null) {
@@ -78,14 +70,12 @@ public class ConditionalUtil {
 
     /**
      * If object is not null, execute setter operation, otherwise use default value
-     * 
-     * @param value Value to check
+     *
+     * @param value        Value to check
      * @param defaultValue Default value
-     * @param setter Setter method
-     * @param <T> Value type
-     * 
-     * @example
-     * ConditionalUtil.setIfNotNullOrElse(user.getAge(), 18, target::setAge);
+     * @param setter       Setter method
+     * @param <T>          Value type
+     * @example ConditionalUtil.setIfNotNullOrElse(user.getAge (), 18, target::setAge);
      */
     public static <T> void setIfNotNullOrElse(T value, T defaultValue, Consumer<T> setter) {
         setter.accept(value != null ? value : defaultValue);
@@ -93,17 +83,15 @@ public class ConditionalUtil {
 
     /**
      * If object is not null, execute setter operation, otherwise use default value supplier
-     * 
-     * @param value Value to check
+     *
+     * @param value           Value to check
      * @param defaultSupplier Default value supplier
-     * @param setter Setter method
-     * @param <T> Value type
-     * 
-     * @example
-     * ConditionalUtil.setIfNotNullOrElse(
-     *     user.getAge(), 
-     *     () -> calculateDefaultAge(), 
-     *     target::setAge
+     * @param setter          Setter method
+     * @param <T>             Value type
+     * @example ConditionalUtil.setIfNotNullOrElse(
+     *user.getAge (),
+     * () -> calculateDefaultAge(),
+     * target::setAge
      * );
      */
     public static <T> void setIfNotNullOrElse(T value, Supplier<T> defaultSupplier, Consumer<T> setter) {
@@ -112,14 +100,12 @@ public class ConditionalUtil {
 
     /**
      * If condition is true, execute setter operation
-     * 
+     *
      * @param condition Condition
-     * @param value Value to set
-     * @param setter Setter method
-     * @param <T> Value type
-     * 
-     * @example
-     * ConditionalUtil.setIf(user.isVip(), "VIP", target::setLevel);
+     * @param value     Value to set
+     * @param setter    Setter method
+     * @param <T>       Value type
+     * @example ConditionalUtil.setIf(user.isVip (), "VIP", target::setLevel);
      */
     public static <T> void setIf(boolean condition, T value, Consumer<T> setter) {
         if (condition) {
@@ -129,15 +115,13 @@ public class ConditionalUtil {
 
     /**
      * Set different values based on condition
-     * 
-     * @param condition Condition
-     * @param trueValue Value when condition is true
+     *
+     * @param condition  Condition
+     * @param trueValue  Value when condition is true
      * @param falseValue Value when condition is false
-     * @param setter Setter method
-     * @param <T> Value type
-     * 
-     * @example
-     * ConditionalUtil.setByCondition(user.isVip(), "VIP", "Normal", target::setLevel);
+     * @param setter     Setter method
+     * @param <T>        Value type
+     * @example ConditionalUtil.setByCondition(user.isVip (), "VIP", "Normal", target::setLevel);
      */
     public static <T> void setByCondition(boolean condition, T trueValue, T falseValue, Consumer<T> setter) {
         setter.accept(condition ? trueValue : falseValue);
@@ -145,15 +129,13 @@ public class ConditionalUtil {
 
     /**
      * If object is not null, execute action (not assignment, but execute a piece of logic)
-     * 
-     * @param value Value to check
+     *
+     * @param value  Value to check
      * @param action Action to execute
-     * @param <T> Value type
-     * 
-     * @example
-     * ConditionalUtil.ifNotNull(session, s -> {
-     *     s.setActive(false);
-     *     sessionService.updateById(s);
+     * @param <T>    Value type
+     * @example ConditionalUtil.ifNotNull(session, s - > {
+     *s.setActive ( false);
+     * sessionService.updateById(s);
      * });
      */
     public static <T> void ifNotNull(T value, Consumer<T> action) {
@@ -164,12 +146,10 @@ public class ConditionalUtil {
 
     /**
      * If string is not blank, execute action
-     * 
-     * @param value Value to check
+     *
+     * @param value  Value to check
      * @param action Action to execute
-     * 
-     * @example
-     * ConditionalUtil.ifNotBlank(email, e -> sendEmail(e));
+     * @example ConditionalUtil.ifNotBlank(email, e - > sendEmail ( e));
      */
     public static void ifNotBlank(String value, Consumer<String> action) {
         if (StringUtils.isNotBlank(value)) {
@@ -179,12 +159,10 @@ public class ConditionalUtil {
 
     /**
      * If condition is true, execute action
-     * 
+     *
      * @param condition Condition
-     * @param action Action to execute
-     * 
-     * @example
-     * ConditionalUtil.ifTrue(user.isVip(), () -> sendVipEmail(user));
+     * @param action    Action to execute
+     * @example ConditionalUtil.ifTrue(user.isVip (), () -> sendVipEmail(user));
      */
     public static void ifTrue(boolean condition, Runnable action) {
         if (condition) {
@@ -195,15 +173,13 @@ public class ConditionalUtil {
     /**
      * Chained conditional setter builder
      * Supports chained calls with multiple conditions
-     * 
+     *
      * @param <T> Target object type
-     * 
-     * @example
-     * ConditionalUtil.builder(user)
-     *     .setIfNotBlank(request.getName(), User::setUsername)
-     *     .setIfNotBlank(request.getPicture(), User::setAvatarUrl)
-     *     .setIfNotNull(request.getAge(), User::setAge)
-     *     .build();
+     * @example ConditionalUtil.builder(user)
+     * .setIfNotBlank(request.getName(), User::setUsername)
+     * .setIfNotBlank(request.getPicture(), User::setAvatarUrl)
+     * .setIfNotNull(request.getAge(), User::setAge)
+     * .build();
      */
     public static <T> ConditionalBuilder<T> builder(T target) {
         return new ConditionalBuilder<>(target);

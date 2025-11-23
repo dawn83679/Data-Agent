@@ -7,5 +7,6 @@ package edu.zsc.ai.enums.ai;
  */
 public enum ChatStatusEnum {
     PROCESSING,
-    QUEUED
+    QUEUED,
+    SUCCESS
 }

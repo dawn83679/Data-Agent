@@ -2,8 +2,8 @@ package edu.zsc.ai.service.impl.manager;
 
 import cn.dev33.satoken.stp.StpUtil;
 import edu.zsc.ai.model.entity.ai.AiConversation;
-import edu.zsc.ai.service.AiConversationService;
-import edu.zsc.ai.service.manager.ConversationManager;
+import edu.zsc.ai.service.ai.AiConversationService;
+import edu.zsc.ai.service.ai.manager.ConversationManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

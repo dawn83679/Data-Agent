@@ -1,4 +1,4 @@
-package edu.zsc.ai.service;
+package edu.zsc.ai.service.db;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import edu.zsc.ai.model.dto.request.db.ConnectionCreateRequest;

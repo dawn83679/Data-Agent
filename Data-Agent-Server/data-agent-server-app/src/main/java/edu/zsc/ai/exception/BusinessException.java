@@ -4,7 +4,7 @@ import edu.zsc.ai.enums.error.ErrorCode;
 import lombok.Getter;
 
 /**
- * 自定义业务异常类
+ * Custom business exception class
  *
  * @author Data-Agent Team
  */
@@ -12,14 +12,14 @@ import lombok.Getter;
 public class BusinessException extends RuntimeException {
 
     /**
-     * 错误码
+     * Error code
      */
     private final int code;
 
     /**
-     * 构造函数：使用错误码枚举
+     * Constructor: using error code enum
      *
-     * @param errorCode 错误码枚举
+     * @param errorCode error code enum
      */
     public BusinessException(ErrorCode errorCode) {
         super(errorCode.getMessage());
@@ -27,10 +27,10 @@ public class BusinessException extends RuntimeException {
     }
 
     /**
-     * 构造函数：使用错误码枚举和自定义消息
+     * Constructor: using error code enum and custom message
      *
-     * @param errorCode 错误码枚举
-     * @param message 自定义错误消息
+     * @param errorCode error code enum
+     * @param message custom error message
      */
     public BusinessException(ErrorCode errorCode, String message) {
         super(message);
@@ -38,11 +38,11 @@ public class BusinessException extends RuntimeException {
     }
 
     /**
-     * 构造函数：使用错误码枚举、自定义消息和异常原因
+     * Constructor: using error code enum, custom message and exception cause
      *
-     * @param errorCode 错误码枚举
-     * @param message 自定义错误消息
-     * @param cause 异常原因
+     * @param errorCode error code enum
+     * @param message custom error message
+     * @param cause exception cause
      */
     public BusinessException(ErrorCode errorCode, String message, Throwable cause) {
         super(message, cause);
@@ -50,10 +50,10 @@ public class BusinessException extends RuntimeException {
     }
 
     /**
-     * 构造函数：直接指定错误码和消息（兼容旧代码）
+     * Constructor: directly specify error code and message (compatible with legacy code)
      *
-     * @param code 错误码
-     * @param message 错误消息
+     * @param code error code
+     * @param message error message
      */
     public BusinessException(int code, String message) {
         super(message);

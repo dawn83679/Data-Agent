@@ -3,7 +3,7 @@ package edu.zsc.ai.service.impl.sys;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import edu.zsc.ai.mapper.sys.SysRefreshTokensMapper;
 import edu.zsc.ai.model.entity.sys.SysRefreshTokens;
-import edu.zsc.ai.service.SysRefreshTokensService;
+import edu.zsc.ai.service.sys.SysRefreshTokensService;
 import org.springframework.stereotype.Service;
 
 /**
