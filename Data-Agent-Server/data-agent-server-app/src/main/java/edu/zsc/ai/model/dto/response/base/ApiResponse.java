@@ -6,9 +6,9 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * 通用返回类
+ * Common response class
  *
- * @param <T> 数据类型
+ * @param <T> data type
  * @author Data-Agent Team
  */
 @Data
@@ -17,17 +17,17 @@ public class ApiResponse<T> implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 状态码
+     * Status code
      */
     private int code;
 
     /**
-     * 数据
+     * Data
      */
     private T data;
 
     /**
-     * 消息
+     * Message
      */
     private String message;
 
@@ -46,67 +46,67 @@ public class ApiResponse<T> implements Serializable {
     }
 
     /**
-     * 成功
+     * Success
      *
-     * @param data 数据
-     * @param <T> 数据类型
-     * @return 成功响应
+     * @param data data
+     * @param <T> data type
+     * @return success response
      */
     public static <T> ApiResponse<T> success(T data) {
         return new ApiResponse<>(0, data, "ok");
     }
 
     /**
-     * 成功（无数据）
+     * Success (no data)
      *
-     * @param <T> 数据类型
-     * @return 成功响应
+     * @param <T> data type
+     * @return success response
      */
     public static <T> ApiResponse<T> success() {
         return new ApiResponse<>(0, null, "ok");
     }
 
     /**
-     * 失败
+     * Error
      *
-     * @param errorCode 错误码枚举
-     * @param <T> 数据类型
-     * @return 错误响应
+     * @param errorCode error code enum
+     * @param <T> data type
+     * @return error response
      */
     public static <T> ApiResponse<T> error(ErrorCode errorCode) {
         return new ApiResponse<>(errorCode);
     }
 
     /**
-     * 失败
+     * Error
      *
-     * @param code 错误码
-     * @param message 错误消息
-     * @param <T> 数据类型
-     * @return 错误响应
+     * @param code error code
+     * @param message error message
+     * @param <T> data type
+     * @return error response
      */
     public static <T> ApiResponse<T> error(int code, String message) {
         return new ApiResponse<>(code, null, message);
     }
 
     /**
-     * 失败（自定义消息）
+     * Error (custom message)
      *
-     * @param errorCode 错误码枚举
-     * @param message 自定义错误消息
-     * @param <T> 数据类型
-     * @return 错误响应
+     * @param errorCode error code enum
+     * @param message custom error message
+     * @param <T> data type
+     * @return error response
      */
     public static <T> ApiResponse<T> error(ErrorCode errorCode, String message) {
         return new ApiResponse<>(errorCode.getCode(), null, message);
     }
 
     /**
-     * 失败（仅消息,使用默认系统错误码）
+     * Error (message only, using default system error code)
      *
-     * @param message 错误消息
-     * @param <T> 数据类型
-     * @return 错误响应
+     * @param message error message
+     * @param <T> data type
+     * @return error response
      */
     public static <T> ApiResponse<T> error(String message) {
         return new ApiResponse<>(ErrorCode.SYSTEM_ERROR.getCode(), null, message);

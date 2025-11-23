@@ -10,7 +10,7 @@ import edu.zsc.ai.plugin.driver.MavenMetadataClient;
 import edu.zsc.ai.plugin.enums.DbType;
 import edu.zsc.ai.plugin.manager.PluginManager;
 import edu.zsc.ai.plugin.driver.MavenCoordinates;
-import edu.zsc.ai.service.DriverService;
+import edu.zsc.ai.service.db.DriverService;
 import edu.zsc.ai.util.DriverFileUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

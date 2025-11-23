@@ -9,7 +9,7 @@ import edu.zsc.ai.plugin.Plugin;
 import edu.zsc.ai.plugin.capability.ConnectionProvider;
 import edu.zsc.ai.plugin.manager.PluginManager;
 import edu.zsc.ai.plugin.connection.ConnectionConfig;
-import edu.zsc.ai.service.ConnectionService;
+import edu.zsc.ai.service.db.ConnectionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

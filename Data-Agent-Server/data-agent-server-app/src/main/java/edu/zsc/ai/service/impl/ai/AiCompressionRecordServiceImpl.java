@@ -3,7 +3,7 @@ package edu.zsc.ai.service.impl.ai;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import edu.zsc.ai.mapper.AiCompressionRecordMapper;
 import edu.zsc.ai.model.entity.ai.AiCompressionRecord;
-import edu.zsc.ai.service.AiCompressionRecordService;
+import edu.zsc.ai.service.ai.AiCompressionRecordService;
 import org.springframework.stereotype.Service;
 
 /**

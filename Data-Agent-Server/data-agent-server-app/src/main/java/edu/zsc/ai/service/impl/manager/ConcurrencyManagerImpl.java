@@ -1,7 +1,7 @@
 package edu.zsc.ai.service.impl.manager;
 
 import edu.zsc.ai.model.dto.request.ai.ChatRequest;
-import edu.zsc.ai.service.manager.ConcurrencyManager;
+import edu.zsc.ai.service.ai.manager.ConcurrencyManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

@@ -4,11 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.ai.chat.messages.Message;
 
 import java.util.List;
 
 /**
- * History context response with messages and total token count
+ * Optimized history context response
  *
  * @author zgq
  */
@@ -18,13 +19,8 @@ import java.util.List;
 @AllArgsConstructor
 public class HistoryContextResponse {
 
-    /**
-     * List of history messages with token information
-     */
-    private List<HistoryMessage> messages;
+    private List<Message> messages;
 
-    /**
-     * Total token count for the entire context
-     */
-    private Integer totalTokenCount;
+    private int totalTokenCount;
+
 }

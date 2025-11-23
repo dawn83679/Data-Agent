@@ -3,11 +3,10 @@ package edu.zsc.ai.util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
+import jakarta.validation.constraints.NotBlank;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,14 +23,8 @@ public class JsonUtil {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    /**
-     * Convert Map<String, String> to JSON string
-     *
-     * @param map the map to convert, can be null or empty
-     * @return JSON string representation, or "{}" if input is null/empty or
-     *         conversion fails
-     */
-    public static String mapToJson(Map<String, String> map) {
+
+    public static String map2Json(Map map) {
         if (MapUtils.isEmpty(map)) {
             return "{}";
         }
@@ -44,14 +37,8 @@ public class JsonUtil {
         }
     }
 
-    /**
-     * Convert JSON string to Map<String, String>
-     *
-     * @param json the JSON string to convert, can be null or empty
-     * @return Map with string key-value pairs, or empty map if input is null/empty
-     *         or parsing fails
-     */
-    public static Map<String, String> jsonToMap(String json) {
+
+    public static Map<String, String> json2Map(String json) {
         if (StringUtils.isBlank(json)) {
             return new HashMap<>();
         }
@@ -62,6 +49,26 @@ public class JsonUtil {
         } catch (JsonProcessingException e) {
             log.warn("Failed to parse JSON string to map: {}", json, e);
             return new HashMap<>();
+        }
+    }
+
+    public static String object2json(Object obj) {
+        if (obj == null) {
+            return "{}";
+        }
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to convert object to JSON string", e);
+            return "{}";
+        }
+    }
+
+    public static <T> T json2Object(@NotBlank String json, Class<T> clazz) {
+        try {
+            return objectMapper.readValue(json, clazz);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
     }
 }

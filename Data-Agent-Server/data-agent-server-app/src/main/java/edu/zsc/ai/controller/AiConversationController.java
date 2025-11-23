@@ -9,7 +9,7 @@ import edu.zsc.ai.model.dto.request.ai.conversation.UpdateConversationRequest;
 import edu.zsc.ai.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.model.dto.response.ai.conversation.ConversationResponse;
 import edu.zsc.ai.model.dto.response.base.PageResponse;
-import edu.zsc.ai.service.AiConversationService;
+import edu.zsc.ai.service.ai.AiConversationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;

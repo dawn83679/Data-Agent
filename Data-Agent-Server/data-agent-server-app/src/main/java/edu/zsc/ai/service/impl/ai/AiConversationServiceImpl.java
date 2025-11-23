@@ -11,7 +11,7 @@ import edu.zsc.ai.model.dto.request.ai.conversation.*;
 import edu.zsc.ai.model.dto.response.ai.conversation.ConversationResponse;
 import edu.zsc.ai.model.dto.response.base.PageResponse;
 import edu.zsc.ai.model.entity.ai.AiConversation;
-import edu.zsc.ai.service.AiConversationService;
+import edu.zsc.ai.service.ai.AiConversationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;

@@ -1,4 +1,4 @@
-package edu.zsc.ai.service.manager;
+package edu.zsc.ai.service.ai.manager;
 
 public interface MessageStorage {
 

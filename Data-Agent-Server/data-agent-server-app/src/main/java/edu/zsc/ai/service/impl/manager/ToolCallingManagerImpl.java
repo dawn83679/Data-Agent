@@ -1,7 +1,7 @@
 package edu.zsc.ai.service.impl.manager;
 
-import edu.zsc.ai.service.manager.ToolCallingManager;
-import edu.zsc.ai.service.manager.ToolExecutor;
+import edu.zsc.ai.service.ai.manager.ToolCallingManager;
+import edu.zsc.ai.service.ai.manager.ToolExecutor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -13,12 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ToolCallingManagerImpl implements ToolCallingManager {
 
     private final Map<String, ToolExecutor> tools = new ConcurrentHashMap<>();
-
-    @Override
-    public void registerTool(String toolName, ToolExecutor executor) {
-        tools.put(toolName, executor);
-        log.info("Registered tool: {}", toolName);
-    }
 
     @Override
     public Object executeToolCall(String toolName, Map<String, Object> parameters) {
@@ -34,5 +28,10 @@ public class ToolCallingManagerImpl implements ToolCallingManager {
             log.error("Error executing tool: {}", toolName, e);
             throw new RuntimeException("Tool execution failed: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    public boolean isToolNeedUserConfirmation(String toolName, Map<String, Object> parameters) {
+        return false;
     }
 }

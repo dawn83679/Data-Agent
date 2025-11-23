@@ -1,4 +1,4 @@
-package edu.zsc.ai.service;
+package edu.zsc.ai.service.sys;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import edu.zsc.ai.model.entity.sys.SysSessions;

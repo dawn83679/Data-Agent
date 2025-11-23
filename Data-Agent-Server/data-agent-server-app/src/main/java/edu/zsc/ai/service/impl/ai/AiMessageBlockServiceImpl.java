@@ -3,7 +3,7 @@ package edu.zsc.ai.service.impl.ai;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import edu.zsc.ai.mapper.AiMessageBlockMapper;
 import edu.zsc.ai.model.entity.ai.AiMessageBlock;
-import edu.zsc.ai.service.AiMessageBlockService;
+import edu.zsc.ai.service.ai.AiMessageBlockService;
 import org.springframework.stereotype.Service;
 
 /**

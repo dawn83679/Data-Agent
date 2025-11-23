@@ -1,4 +1,4 @@
-package edu.zsc.ai.service;
+package edu.zsc.ai.service.db;
 
 import edu.zsc.ai.model.dto.request.db.ConnectRequest;
 import edu.zsc.ai.model.dto.response.db.ConnectionTestResponse;

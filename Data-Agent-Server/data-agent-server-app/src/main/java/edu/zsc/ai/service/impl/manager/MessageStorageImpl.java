@@ -3,10 +3,10 @@ package edu.zsc.ai.service.impl.manager;
 import edu.zsc.ai.enums.ai.message.MessageRoleEnum;
 import edu.zsc.ai.model.dto.request.ai.message.SaveMessageRequest;
 import edu.zsc.ai.model.entity.ai.AiMessage;
-import edu.zsc.ai.service.AiMessageService;
+import edu.zsc.ai.service.ai.AiMessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import edu.zsc.ai.service.manager.MessageStorage;
+import edu.zsc.ai.service.ai.manager.MessageStorage;
 
 @Component
 @RequiredArgsConstructor

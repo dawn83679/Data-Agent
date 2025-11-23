@@ -3,8 +3,8 @@ package edu.zsc.ai.enums.error;
 import lombok.Getter;
 
 /**
- * 自定义错误码
- * 使用国际化 key 作为消息
+ * Custom error codes
+ * Using internationalization keys as messages
  *
  * @author hhz
  */

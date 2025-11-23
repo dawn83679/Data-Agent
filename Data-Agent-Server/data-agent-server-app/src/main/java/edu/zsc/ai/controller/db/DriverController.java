@@ -5,7 +5,7 @@ import edu.zsc.ai.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.model.dto.response.db.AvailableDriverResponse;
 import edu.zsc.ai.model.dto.response.db.DownloadDriverResponse;
 import edu.zsc.ai.model.dto.response.db.InstalledDriverResponse;
-import edu.zsc.ai.service.DriverService;
+import edu.zsc.ai.service.db.DriverService;
 import edu.zsc.ai.util.DriverFileUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
