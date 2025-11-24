@@ -19,7 +19,7 @@ public class ToolCallResult {
     // Tool name
     private String toolName;
     // Tool parameters
-    private Map<String, String> toolParams;
+    private Map<String, Object> toolParams;
     // Whether successful
     private boolean success;
     // Error message
@@ -35,11 +35,11 @@ public class ToolCallResult {
      */
     private String toolCallResultType;
 
-    public static ToolCallResult toolCallError(String toolName, Map<String, String> params) {
+    public static ToolCallResult toolCallError(String toolName, Map<String, Object> params) {
         return toolCallError(toolName, params, null);
     }
 
-    public static ToolCallResult toolCallError(String toolName, Map<String, String> params, String errorMessage) {
+    public static ToolCallResult toolCallError(String toolName, Map<String, Object> params, String errorMessage) {
         ToolCallResult toolCallResult = new ToolCallResult();
         toolCallResult.setToolName(toolName);
         toolCallResult.setToolParams(params);
@@ -61,13 +61,13 @@ public class ToolCallResult {
         return toolCallResult;
     }
 
-    public static ToolCallResult toolCallError(String toolName, Map<String, String> params, String errorMessage, Object originResult) {
+    public static ToolCallResult toolCallError(String toolName, Map<String, Object> params, String errorMessage, Object originResult) {
         ToolCallResult result = toolCallError(toolName, params, errorMessage);
         result.setOriginToolResult(originResult);
         return result;
     }
 
-    public static ToolCallResult toolCallNotFound(String toolName, Map<String, String> params) {
+    public static ToolCallResult toolCallNotFound(String toolName, Map<String, Object> params) {
         ToolCallResult toolCallResult = new ToolCallResult();
         toolCallResult.setToolName(toolName);
         toolCallResult.setToolParams(params);
@@ -88,7 +88,7 @@ public class ToolCallResult {
         return toolCallResult;
     }
 
-    public static ToolCallResult success(String toolName, Map<String, String> params, Object result) {
+    public static ToolCallResult success(String toolName, Map<String, Object> params, Object result) {
         ToolCallResult toolCallResult = new ToolCallResult();
         toolCallResult.setToolName(toolName);
         toolCallResult.setToolParams(params);
@@ -109,7 +109,7 @@ public class ToolCallResult {
         return toolCallResult;
     }
 
-    public static ToolCallResult toolCallReject(String toolName, Map<String, String> params) {
+    public static ToolCallResult toolCallReject(String toolName, Map<String, Object> params) {
         ToolCallResult toolCallResult = new ToolCallResult();
         toolCallResult.setToolName(toolName);
         toolCallResult.setToolParams(params);
@@ -130,7 +130,7 @@ public class ToolCallResult {
         return toolCallResult;
     }
 
-    public static ToolCallResult toolCallLimitExceeded(String toolName, Map<String, String> params) {
+    public static ToolCallResult toolCallLimitExceeded(String toolName, Map<String, Object> params) {
         ToolCallResult toolCallResult = new ToolCallResult();
         toolCallResult.setToolName(toolName);
         toolCallResult.setToolParams(params);
@@ -151,7 +151,7 @@ public class ToolCallResult {
         return toolCallResult;
     }
 
-    public static ToolCallResult toolCallDuplicate(String toolName, Map<String, String> params) {
+    public static ToolCallResult toolCallDuplicate(String toolName, Map<String, Object> params) {
         ToolCallResult toolCallResult = new ToolCallResult();
         toolCallResult.setToolName(toolName);
         toolCallResult.setToolParams(params);
@@ -172,7 +172,7 @@ public class ToolCallResult {
         return toolCallResult;
     }
 
-    public static ToolCallResult toolCallExtraTextError(String toolName, Map<String, String> params) {
+    public static ToolCallResult toolCallExtraTextError(String toolName, Map<String, Object> params) {
         ToolCallResult toolCallResult = new ToolCallResult();
         toolCallResult.setToolName(toolName);
         toolCallResult.setToolParams(params);
