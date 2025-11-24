@@ -6,8 +6,9 @@ import edu.zsc.ai.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.model.dto.response.db.ConnectionResponse;
 import edu.zsc.ai.model.dto.response.db.ConnectionTestResponse;
 import edu.zsc.ai.model.dto.response.db.OpenConnectionResponse;
-import edu.zsc.ai.service.ConnectionService;
-import edu.zsc.ai.service.DbConnectionService;
+
+import edu.zsc.ai.service.db.ConnectionService;
+import edu.zsc.ai.service.db.DbConnectionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;

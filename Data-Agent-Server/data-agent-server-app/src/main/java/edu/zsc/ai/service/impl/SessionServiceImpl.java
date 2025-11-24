@@ -102,4 +102,44 @@ public class SessionServiceImpl extends ServiceImpl<SessionMapper, Session> impl
             log.info("Cleaned {} expired sessions", count);
         }
     }
+
+    @Override
+    public java.util.List<Session> getUserActiveSessions(Long userId) {
+        return this.list(new LambdaQueryWrapper<Session>()
+                .eq(Session::getUserId, userId)
+                .eq(Session::getStatus, 0) // Only active sessions
+                .orderByDesc(Session::getLastActivityAt));
+    }
+
+    @Override
+    public void revokeSessionWithPermissionCheck(Long userId, Long sessionId) {
+        // First check if session exists and belongs to the user
+        Session session = this.getOne(new LambdaQueryWrapper<Session>()
+                .eq(Session::getId, sessionId)
+                .eq(Session::getUserId, userId)
+                .eq(Session::getStatus, 0) // Only active sessions
+                .last("LIMIT 1"));
+        
+        if (session == null) {
+            throw new edu.zsc.ai.exception.BusinessException(
+                edu.zsc.ai.enums.error.ErrorCode.NOT_FOUND_ERROR, 
+                "Session not found or already revoked");
+        }
+        
+        // Revoke the session
+        revokeSession(sessionId);
+        log.info("User {} revoked session: sessionId={}", userId, sessionId);
+    }
+
+    @Override
+    public void revokeOtherSessions(Long userId, Long currentSessionId) {
+        // Revoke all active sessions except the current one
+        this.update(new LambdaUpdateWrapper<Session>()
+                .eq(Session::getUserId, userId)
+                .eq(Session::getStatus, 0) // Only active sessions
+                .ne(Session::getId, currentSessionId) // Exclude current session
+                .set(Session::getStatus, 2)); // Revoked
+        
+        log.info("User {} revoked all other sessions, keeping sessionId={}", userId, currentSessionId);
+    }
 }

@@ -95,4 +95,43 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         log.info("Password reset successfully for user: email={}, userId={}", email, user.getId());
         return true;
     }
+
+    @Override
+    @Transactional
+    public boolean updateProfile(Long userId, String username, String avatar, String phone) {
+        // Get user
+        User user = this.getById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "User not found");
+        }
+
+        // Update fields if provided
+        boolean updated = false;
+        if (username != null && !username.trim().isEmpty()) {
+            user.setUsername(username.trim());
+            updated = true;
+        }
+        if (avatar != null && !avatar.trim().isEmpty()) {
+            user.setAvatar(avatar.trim());
+            updated = true;
+        }
+        if (phone != null && !phone.trim().isEmpty()) {
+            user.setPhone(phone.trim());
+            updated = true;
+        }
+
+        if (!updated) {
+            log.debug("No fields to update for user: userId={}", userId);
+            return true;
+        }
+
+        // Save changes
+        boolean result = this.updateById(user);
+        if (!result) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "Failed to update user profile");
+        }
+
+        log.info("User profile updated successfully: userId={}", userId);
+        return true;
+    }
 }

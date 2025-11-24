@@ -2,6 +2,7 @@ package edu.zsc.ai.model.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -18,7 +19,11 @@ public class RegisterRequest {
     private String email;
 
     @NotBlank(message = "Password cannot be empty")
-    @Size(min = 6, max = 20, message = "Password length must be between 6-20 characters")
+    @Size(min = 8, max = 32, message = "Password length must be between 8-32 characters")
+    @Pattern(
+        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
+        message = "Password must contain at least one uppercase letter, one lowercase letter, one number and one special character (@$!%*?&)"
+    )
     private String password;
 
     @NotBlank(message = "Username cannot be empty")

@@ -16,8 +16,8 @@ import edu.zsc.ai.service.SessionService;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Sa-Token 配置类
- * 配置 JWT 无状态模式和拦截器
+ * Sa-Token Configuration
+ * Configures JWT stateless mode and interceptors
  */
 @Configuration
 @RequiredArgsConstructor
@@ -26,7 +26,7 @@ public class SaTokenConfigure implements WebMvcConfigurer {
     private final SessionService sessionService;
 
     /**
-     * 注册 Sa-Token 的 JWT 无状态模式
+     * Register Sa-Token JWT stateless mode
      */
     @Bean
     public StpLogic getStpLogicJwt() {
@@ -34,20 +34,20 @@ public class SaTokenConfigure implements WebMvcConfigurer {
     }
 
     /**
-     * 注册 Sa-Token 拦截器
+     * Register Sa-Token interceptor
      */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        // 注册 Sa-Token 拦截器，校验登录状态和 Session
+        // Register Sa-Token interceptor to validate login status and session
         registry.addInterceptor(new SaInterceptor(handle -> {
-            // 1. 验证登录状态
+            // 1. Verify login status
             StpUtil.checkLogin();
             
-            // 2. 获取当前用户 ID 和 AccessToken
+            // 2. Get current user ID and AccessToken
             Long userId = StpUtil.getLoginIdAsLong();
             String accessToken = StpUtil.getTokenValue();
             
-            // 3. 验证 Session
+            // 3. Verify Session
             Session session = sessionService.getByAccessToken(accessToken);
             if (session == null) {
                 throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR, "Session not found");
@@ -64,9 +64,9 @@ public class SaTokenConfigure implements WebMvcConfigurer {
             // 4. Update session activity
             sessionService.updateActivity(session.getId());
         }))
-        .addPathPatterns("/**")  // 拦截所有路径
+        .addPathPatterns("/**")  // Intercept all paths
         .excludePathPatterns(
-            // 排除认证相关接口
+            // Exclude authentication endpoints
             "/api/auth/login",
             "/api/auth/register",
             "/api/auth/refresh",
@@ -75,9 +75,9 @@ public class SaTokenConfigure implements WebMvcConfigurer {
             "/api/auth/login/email-code",
             "/api/auth/google/login",
             "/api/auth/google/callback",
-            // 排除健康检查接口
+            // Exclude health check endpoints
             "/api/health",
-            // 排除 Swagger 文档接口
+            // Exclude Swagger documentation endpoints
             "/swagger-ui.html",
             "/swagger-ui/**",
             "/v3/api-docs/**",

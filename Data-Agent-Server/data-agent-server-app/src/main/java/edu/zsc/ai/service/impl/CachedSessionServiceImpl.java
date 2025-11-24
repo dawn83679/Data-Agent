@@ -135,7 +135,10 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
 
     @Override
     public Session getByAccessToken(String accessToken) {
-        String cacheKey = SESSION_PREFIX + accessToken;
+        // Note: accessToken parameter is now expected to be the hash
+        // The caller (AuthServiceImpl) should hash the token before calling this method
+        String accessTokenHash = accessToken;
+        String cacheKey = SESSION_PREFIX + accessTokenHash;
         
         // 1. Try to get from Redis cache first
         Session cachedSession = (Session) redisTemplate.opsForValue().get(cacheKey);
@@ -153,7 +156,7 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         
         // 2. If not in cache, query from database
         Session session = this.getOne(new LambdaQueryWrapper<Session>()
-                .eq(Session::getAccessTokenHash, accessToken)
+                .eq(Session::getAccessTokenHash, accessTokenHash)
                 .eq(Session::getStatus, 0) // Only active sessions
                 .last("LIMIT 1"));
         
@@ -181,5 +184,60 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         if (count > 0) {
             log.info("Cleaned {} expired sessions from database", count);
         }
+    }
+
+    @Override
+    public java.util.List<Session> getUserActiveSessions(Long userId) {
+        // Query from database (no caching for list operations)
+        return this.list(new LambdaQueryWrapper<Session>()
+                .eq(Session::getUserId, userId)
+                .eq(Session::getStatus, 0) // Only active sessions
+                .orderByDesc(Session::getLastActivityAt));
+    }
+
+    @Override
+    public void revokeSessionWithPermissionCheck(Long userId, Long sessionId) {
+        // First check if session exists and belongs to the user
+        Session session = this.getOne(new LambdaQueryWrapper<Session>()
+                .eq(Session::getId, sessionId)
+                .eq(Session::getUserId, userId)
+                .eq(Session::getStatus, 0) // Only active sessions
+                .last("LIMIT 1"));
+        
+        if (session == null) {
+            throw new edu.zsc.ai.exception.BusinessException(
+                edu.zsc.ai.enums.error.ErrorCode.NOT_FOUND_ERROR, 
+                "Session not found or already revoked");
+        }
+        
+        // Revoke the session (this will also clear cache)
+        revokeSession(sessionId);
+        log.info("User {} revoked session: sessionId={}", userId, sessionId);
+    }
+
+    @Override
+    public void revokeOtherSessions(Long userId, Long currentSessionId) {
+        // Get all user sessions except current one to remove from cache
+        var sessions = this.list(new LambdaQueryWrapper<Session>()
+                .eq(Session::getUserId, userId)
+                .eq(Session::getStatus, 0)
+                .ne(Session::getId, currentSessionId));
+        
+        // Remove all from cache
+        sessions.forEach(session -> {
+            if (session.getAccessTokenHash() != null) {
+                String cacheKey = SESSION_PREFIX + session.getAccessTokenHash();
+                redisTemplate.delete(cacheKey);
+            }
+        });
+        
+        // Update database - revoke all active sessions except the current one
+        this.update(new LambdaUpdateWrapper<Session>()
+                .eq(Session::getUserId, userId)
+                .eq(Session::getStatus, 0) // Only active sessions
+                .ne(Session::getId, currentSessionId) // Exclude current session
+                .set(Session::getStatus, 2)); // Revoked
+        
+        log.info("User {} revoked all other sessions, keeping sessionId={}", userId, currentSessionId);
     }
 }

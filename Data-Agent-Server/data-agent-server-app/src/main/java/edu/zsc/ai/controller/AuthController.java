@@ -1,10 +1,13 @@
 package edu.zsc.ai.controller;
 
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.view.RedirectView;
 
 import edu.zsc.ai.model.dto.request.EmailCodeLoginRequest;
 import edu.zsc.ai.model.dto.request.GoogleLoginRequest;
@@ -16,6 +19,7 @@ import edu.zsc.ai.model.dto.request.SendVerificationCodeRequest;
 import edu.zsc.ai.model.dto.response.TokenPairResponse;
 import edu.zsc.ai.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.service.AuthService;
+import edu.zsc.ai.service.GoogleOAuthService;
 import edu.zsc.ai.service.VerificationCodeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,6 +44,8 @@ public class AuthController {
 
     private final AuthService authService;
     private final VerificationCodeService verificationCodeService;
+    private final GoogleOAuthService googleOAuthService;
+    private final edu.zsc.ai.config.properties.GoogleOAuthProperties googleOAuthProperties;
 
     /**
      * User login
@@ -132,16 +138,98 @@ public class AuthController {
     }
 
     /**
-     * Google OAuth login
-     * Public endpoint - exchanges Google authorization code for tokens
+     * Initiate Google OAuth login
+     * Public endpoint - redirects user to Google authorization page
      */
-    @Operation(summary = "Google OAuth Login", description = "Login with Google OAuth authorization code")
+    @Operation(summary = "Initiate Google OAuth", description = "Redirect to Google authorization page")
+    @GetMapping("/google/login")
+    public RedirectView initiateGoogleLogin() {
+        log.info("Initiating Google OAuth login");
+        // Generate secure random state for CSRF protection
+        String state = ((edu.zsc.ai.service.impl.GoogleOAuthServiceImpl) googleOAuthService).generateState();
+        // Store state in Redis for validation in callback
+        googleOAuthService.storeState(state);
+        
+        String authUrl = googleOAuthService.getAuthorizationUrl(state);
+        return new RedirectView(authUrl);
+    }
+
+    /**
+     * Google OAuth callback
+     * Public endpoint - handles redirect from Google with authorization code
+     */
+    @Operation(summary = "Google OAuth Callback", description = "Handle Google OAuth callback with authorization code")
+    @GetMapping("/google/callback")
+    public RedirectView handleGoogleCallback(
+            @RequestParam String code,
+            @RequestParam(required = false) String state,
+            HttpServletRequest httpRequest) {
+        log.info("Google OAuth callback received");
+        
+        try {
+            // Validate state parameter against stored value
+            if (!googleOAuthService.validateState(state)) {
+                log.error("Invalid or expired OAuth state parameter");
+                String errorUrl = buildFrontendErrorUrl("Invalid or expired OAuth state. Please try again.");
+                return new RedirectView(errorUrl);
+            }
+            
+            // Process login and get tokens
+            TokenPairResponse tokenPair = authService.googleLogin(code, httpRequest);
+            
+            // Redirect to frontend with tokens
+            String frontendUrl = buildFrontendRedirectUrl(tokenPair);
+            log.info("Google OAuth login successful, redirecting to frontend");
+            return new RedirectView(frontendUrl);
+            
+        } catch (Exception e) {
+            log.error("Google OAuth login failed", e);
+            // Redirect to frontend error page
+            String errorUrl = buildFrontendErrorUrl(e.getMessage());
+            return new RedirectView(errorUrl);
+        }
+    }
+
+    /**
+     * Google OAuth login (API version)
+     * Public endpoint - exchanges Google authorization code for tokens
+     * This endpoint is for API clients (mobile apps, etc.) that handle OAuth flow themselves
+     */
+    @Operation(summary = "Google OAuth Login API", description = "Login with Google OAuth authorization code (API version)")
     @PostMapping("/google/login")
     public ApiResponse<TokenPairResponse> googleLogin(@Valid @RequestBody GoogleLoginRequest request,
                                                       HttpServletRequest httpRequest) {
-        log.info("Google OAuth login attempt");
+        log.info("Google OAuth login attempt (API)");
         TokenPairResponse tokenPair = authService.googleLogin(request.getCode(), httpRequest);
         return ApiResponse.success(tokenPair);
+    }
+
+    /**
+     * Verify email with verification code
+     * Public endpoint - verifies user email address
+     */
+    @Operation(summary = "Verify Email", description = "Verify email address with verification code")
+    @PostMapping("/verify-email")
+    public ApiResponse<Boolean> verifyEmail(
+            @RequestParam String email,
+            @RequestParam String code) {
+        log.info("Email verification attempt: email={}", email);
+        boolean result = authService.verifyEmail(email, code);
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * Get login history
+     * Requires authentication
+     */
+    @Operation(summary = "Get Login History", description = "Get current user's login history")
+    @PostMapping("/login-history")
+    public ApiResponse<java.util.List<edu.zsc.ai.model.entity.LoginLog>> getLoginHistory() {
+        log.debug("Get login history request");
+        Long userId = cn.dev33.satoken.stp.StpUtil.getLoginIdAsLong();
+        java.util.List<edu.zsc.ai.model.entity.LoginLog> history = 
+            authService.getLoginHistory(userId, 20);
+        return ApiResponse.success(history);
     }
 
     /**
@@ -159,5 +247,36 @@ public class AuthController {
             ip = ip.split(",")[0].trim();
         }
         return ip;
+    }
+
+    /**
+     * Build frontend redirect URL with tokens
+     */
+    private String buildFrontendRedirectUrl(TokenPairResponse tokenPair) {
+        String frontendUrl = googleOAuthProperties.getFrontendRedirectUri();
+        
+        try {
+            return frontendUrl + "?" +
+                "access_token=" + java.net.URLEncoder.encode(tokenPair.getAccessToken(), "UTF-8") +
+                "&refresh_token=" + java.net.URLEncoder.encode(tokenPair.getRefreshToken(), "UTF-8") +
+                "&token_type=" + java.net.URLEncoder.encode(tokenPair.getTokenType(), "UTF-8") +
+                "&expires_in=" + tokenPair.getExpiresIn();
+        } catch (Exception e) {
+            log.error("Failed to encode tokens in URL", e);
+            return frontendUrl + "?error=encoding_failed";
+        }
+    }
+
+    /**
+     * Build frontend error URL
+     */
+    private String buildFrontendErrorUrl(String errorMessage) {
+        String frontendUrl = googleOAuthProperties.getFrontendRedirectUri();
+        try {
+            return frontendUrl + "?error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8");
+        } catch (Exception e) {
+            log.error("Failed to encode error message", e);
+            return frontendUrl + "?error=unknown";
+        }
     }
 }

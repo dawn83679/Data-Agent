@@ -132,3 +132,18 @@ app:
     key-prefix: "data-agent:"
     # Enable Redis keyspace notifications (for key expiration events)
     enable-keyspace-notifications: false
+
+# Google OAuth configuration
+google:
+  oauth:
+    # Google OAuth Client ID (from Google Cloud Console)
+    # Get this from: https://console.cloud.google.com/apis/credentials
+    client-id: ${GOOGLE_CLIENT_ID:}
+    # Google OAuth Client Secret (from Google Cloud Console)
+    client-secret: ${GOOGLE_CLIENT_SECRET:}
+    # Backend redirect URI (must match the one registered in Google Console)
+    # This is where Google will redirect after user authorization
+    redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:8081/api/auth/google/callback}
+    # Frontend redirect URI (where to send user after successful login)
+    # Tokens will be appended as URL parameters
+    frontend-redirect-uri: ${FRONTEND_REDIRECT_URI:http://localhost:3000/auth/callback}

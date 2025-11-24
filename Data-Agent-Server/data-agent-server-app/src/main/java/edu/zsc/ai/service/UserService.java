@@ -40,4 +40,15 @@ public interface UserService extends IService<User> {
      * @return true if reset successful
      */
     boolean resetPassword(String email, String newPassword);
+
+    /**
+     * Update user profile
+     *
+     * @param userId user ID
+     * @param username new username (optional)
+     * @param avatar new avatar URL (optional)
+     * @param phone new phone number (optional)
+     * @return true if update successful
+     */
+    boolean updateProfile(Long userId, String username, String avatar, String phone);
 }

@@ -36,6 +36,8 @@
         <spring.ai.version>1.0.0</spring.ai.version>
         <spring.ai.alibaba>1.0.0.2</spring.ai.alibaba>
         <sa-token.version>1.44.0</sa-token.version>
+        <google-api-client.version>2.2.0</google-api-client.version>
+        <jqwik.version>1.7.4</jqwik.version>
     </properties>
 
     <dependencyManagement>
@@ -138,6 +140,19 @@
                 <groupId>org.springframework.security</groupId>
                 <artifactId>spring-security-crypto</artifactId>
                 <version>${spring-security-crypto.version}</version>
+            </dependency>
+            <!-- Google API Client for OAuth -->
+            <dependency>
+                <groupId>com.google.api-client</groupId>
+                <artifactId>google-api-client</artifactId>
+                <version>${google-api-client.version}</version>
+            </dependency>
+            <!-- jqwik for Property-Based Testing -->
+            <dependency>
+                <groupId>net.jqwik</groupId>
+                <artifactId>jqwik</artifactId>
+                <version>${jqwik.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

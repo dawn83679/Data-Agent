@@ -67,16 +67,12 @@ public class User {
 
     /**
      * OAuth provider (null for email/password, 'google' for Google OAuth)
-     * TODO: 第三批次实现 - 暂时不映射到数据库
      */
-    @TableField(exist = false)
     private String oauthProvider;
 
     /**
      * OAuth provider user ID
-     * TODO: 第三批次实现 - 暂时不映射到数据库
      */
-    @TableField(exist = false)
     private String oauthProviderId;
 
     /**

@@ -57,7 +57,7 @@ public class ToolCallResult {
         }
         toolCallResult.setJsonToolResult(jsonErrorMessage);
         toolCallResult.setFormatToolResult(ToolResultFormatter.formatToolCallResult(resultType,
-                ToolUseXmlParseRule.ToolUseData.builder().toolName(toolName).toolParams(params).build(), jsonErrorMessage));
+                ToolUseXmlParseRule.ToolUseData.builder().toolName(toolName).toolParams(new java.util.HashMap<>(params)).build(), jsonErrorMessage));
         return toolCallResult;
     }
 
@@ -84,7 +84,7 @@ public class ToolCallResult {
         }
         toolCallResult.setJsonToolResult(jsonResult);
         toolCallResult.setFormatToolResult(ToolResultFormatter.formatToolCallResult(resultType,
-                ToolUseXmlParseRule.ToolUseData.builder().toolName(toolName).toolParams(params).build(), jsonResult));
+                ToolUseXmlParseRule.ToolUseData.builder().toolName(toolName).toolParams(new java.util.HashMap<>(params)).build(), jsonResult));
         return toolCallResult;
     }
 
@@ -105,7 +105,7 @@ public class ToolCallResult {
         }
         toolCallResult.setJsonToolResult(jsonResult);
         toolCallResult.setFormatToolResult(ToolResultFormatter.formatToolCallResult(resultType,
-                ToolUseXmlParseRule.ToolUseData.builder().toolName(toolName).toolParams(params).build(), jsonResult));
+                ToolUseXmlParseRule.ToolUseData.builder().toolName(toolName).toolParams(new java.util.HashMap<>(params)).build(), jsonResult));
         return toolCallResult;
     }
 
@@ -126,7 +126,7 @@ public class ToolCallResult {
         }
         toolCallResult.setJsonToolResult(jsonResult);
         toolCallResult.setFormatToolResult(ToolResultFormatter.formatToolCallResult(resultType,
-                ToolUseXmlParseRule.ToolUseData.builder().toolName(toolName).toolParams(params).build(), jsonResult));
+                ToolUseXmlParseRule.ToolUseData.builder().toolName(toolName).toolParams(new java.util.HashMap<>(params)).build(), jsonResult));
         return toolCallResult;
     }
 
@@ -147,7 +147,7 @@ public class ToolCallResult {
         }
         toolCallResult.setJsonToolResult(jsonResult);
         toolCallResult.setFormatToolResult(ToolResultFormatter.formatToolCallResult(resultType,
-                ToolUseXmlParseRule.ToolUseData.builder().toolName(toolName).toolParams(params).build(), jsonResult));
+                ToolUseXmlParseRule.ToolUseData.builder().toolName(toolName).toolParams(new java.util.HashMap<>(params)).build(), jsonResult));
         return toolCallResult;
     }
 
@@ -168,7 +168,7 @@ public class ToolCallResult {
         }
         toolCallResult.setJsonToolResult(jsonResult);
         toolCallResult.setFormatToolResult(ToolResultFormatter.formatToolCallResult(resultType,
-                ToolUseXmlParseRule.ToolUseData.builder().toolName(toolName).toolParams(params).build(), jsonResult));
+                ToolUseXmlParseRule.ToolUseData.builder().toolName(toolName).toolParams(new java.util.HashMap<>(params)).build(), jsonResult));
         return toolCallResult;
     }
 
@@ -189,7 +189,7 @@ public class ToolCallResult {
         }
         toolCallResult.setJsonToolResult(jsonResult);
         toolCallResult.setFormatToolResult(ToolResultFormatter.formatToolCallResult(resultType,
-                ToolUseXmlParseRule.ToolUseData.builder().toolName(toolName).toolParams(params).build(), jsonResult));
+                ToolUseXmlParseRule.ToolUseData.builder().toolName(toolName).toolParams(new java.util.HashMap<>(params)).build(), jsonResult));
         return toolCallResult;
     }
 }

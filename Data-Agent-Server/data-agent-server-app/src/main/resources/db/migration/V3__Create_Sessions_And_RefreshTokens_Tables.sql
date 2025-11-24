@@ -48,7 +48,7 @@ CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at ON refresh_tokens(expir
 
 -- Add comments
 COMMENT ON TABLE sessions IS 'User session table';
-COMMENT ON COLUMN sessions.access_token_hash IS 'Access token (JWT) or SHA-256 hash - supports up to 512 characters';
+COMMENT ON COLUMN sessions.access_token_hash IS 'SHA-256 hash of access token for security (64 characters hex string)';
 COMMENT ON COLUMN sessions.status IS 'Session status (0: active, 1: expired, 2: revoked)';
 COMMENT ON INDEX idx_sessions_access_token_hash IS 'Optimize session validation by token hash';
 
