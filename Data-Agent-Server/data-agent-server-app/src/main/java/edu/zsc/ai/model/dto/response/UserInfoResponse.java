@@ -20,7 +20,6 @@ public class UserInfoResponse {
     private String email;
     private String phone;
     private String username;
-    private String avatar;
-    private Boolean emailVerified;
-    private Boolean phoneVerified;
+    private String avatarUrl;
+    private Boolean verified;
 }

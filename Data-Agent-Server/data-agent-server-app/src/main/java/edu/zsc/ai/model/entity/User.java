@@ -1,9 +1,14 @@
 package edu.zsc.ai.model.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
+import lombok.Data;
 
 /**
  * User Entity
@@ -11,19 +16,18 @@ import java.time.LocalDateTime;
  * @author Data-Agent Team
  */
 @Data
-@TableName("users")
+@TableName("sys_users")
 public class User {
 
     @Override
     public String toString() {
         return "User{" +
                 "id=" + id +
-                ", email='" + email + '\'' +
                 ", username='" + username + '\'' +
-                ", emailVerified=" + emailVerified +
-                ", status=" + status +
-                ", createTime=" + createTime +
-                ", updateTime=" + updateTime +
+                ", email='" + email + '\'' +
+                ", verified=" + verified +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
                 '}';
     }
 
@@ -31,9 +35,19 @@ public class User {
     private Long id;
 
     /**
-     * Email (unique, used for login)
+     * Username, can be duplicated
+     */
+    private String username;
+
+    /**
+     * Email address for login, globally unique
      */
     private String email;
+
+    /**
+     * Password hash value, encrypted by application layer
+     */
+    private String passwordHash;
 
     /**
      * Phone number
@@ -41,29 +55,14 @@ public class User {
     private String phone;
 
     /**
-     * Password (BCrypt encrypted)
+     * Avatar image URL address
      */
-    private String password;
+    private String avatarUrl;
 
     /**
-     * Username
+     * Email verification status: false=not verified, true=verified
      */
-    private String username;
-
-    /**
-     * Avatar URL
-     */
-    private String avatar;
-
-    /**
-     * Email verified flag
-     */
-    private Boolean emailVerified;
-
-    /**
-     * Phone verified flag
-     */
-    private Boolean phoneVerified;
+    private Boolean verified;
 
     /**
      * OAuth provider (null for email/password, 'google' for Google OAuth)
@@ -76,25 +75,14 @@ public class User {
     private String oauthProviderId;
 
     /**
-     * Account status (0: normal, 1: disabled)
-     */
-    private Integer status;
-
-    /**
-     * Create time
+     * Account creation time
      */
     @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
 
     /**
-     * Update time
+     * Account information last update time
      */
     @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updateTime;
-
-    /**
-     * Logical delete flag
-     */
-    @TableLogic
-    private Integer deleteFlag;
+    private LocalDateTime updatedAt;
 }

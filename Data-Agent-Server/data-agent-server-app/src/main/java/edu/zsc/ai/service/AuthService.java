@@ -74,15 +74,6 @@ public interface AuthService {
     boolean verifyEmail(String email, String code);
 
     /**
-     * Get user login history
-     *
-     * @param userId user ID
-     * @param limit maximum number of records
-     * @return login history list
-     */
-    java.util.List<edu.zsc.ai.model.entity.LoginLog> getLoginHistory(Long userId, int limit);
-
-    /**
      * Update user profile
      *
      * @param userId user ID

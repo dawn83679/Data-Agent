@@ -45,4 +45,11 @@ public interface LoginAttemptService {
      * @return seconds remaining, 0 if not blocked
      */
     long getBlockTimeRemaining(String key);
+
+    /**
+     * Clear failure count for a key (useful for testing)
+     *
+     * @param key identifier (email or IP)
+     */
+    void clearFailureCount(String key);
 }

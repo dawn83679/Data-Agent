@@ -161,12 +161,29 @@ public class AuthController {
     @Operation(summary = "Google OAuth Callback", description = "Handle Google OAuth callback with authorization code")
     @GetMapping("/google/callback")
     public RedirectView handleGoogleCallback(
-            @RequestParam String code,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String error,
+            @RequestParam(required = false) String error_description,
             @RequestParam(required = false) String state,
             HttpServletRequest httpRequest) {
         log.info("Google OAuth callback received");
         
         try {
+            // Check if Google returned an error (e.g., user denied access)
+            if (error != null) {
+                log.warn("Google OAuth error: {} - {}", error, error_description);
+                String errorMessage = error_description != null ? error_description : "Authorization failed";
+                String errorUrl = buildFrontendErrorUrl(errorMessage);
+                return new RedirectView(errorUrl);
+            }
+            
+            // Check if code parameter is present
+            if (code == null || code.isEmpty()) {
+                log.error("Missing authorization code in callback");
+                String errorUrl = buildFrontendErrorUrl("Missing authorization code");
+                return new RedirectView(errorUrl);
+            }
+            
             // Validate state parameter against stored value
             if (!googleOAuthService.validateState(state)) {
                 log.error("Invalid or expired OAuth state parameter");
@@ -218,18 +235,27 @@ public class AuthController {
         return ApiResponse.success(result);
     }
 
+
     /**
-     * Get login history
-     * Requires authentication
+     * Test callback endpoint for debugging OAuth flow
+     * This endpoint displays the OAuth result (success or error)
      */
-    @Operation(summary = "Get Login History", description = "Get current user's login history")
-    @PostMapping("/login-history")
-    public ApiResponse<java.util.List<edu.zsc.ai.model.entity.LoginLog>> getLoginHistory() {
-        log.debug("Get login history request");
-        Long userId = cn.dev33.satoken.stp.StpUtil.getLoginIdAsLong();
-        java.util.List<edu.zsc.ai.model.entity.LoginLog> history = 
-            authService.getLoginHistory(userId, 20);
-        return ApiResponse.success(history);
+    @Operation(summary = "Test OAuth Callback", description = "Test endpoint to display OAuth results")
+    @GetMapping("/test-callback")
+    public String testCallback(
+            @RequestParam(required = false) String access_token,
+            @RequestParam(required = false) String refresh_token,
+            @RequestParam(required = false) String error) {
+        if (error != null) {
+            return "<html><body><h1>OAuth Error</h1><p>" + error + "</p></body></html>";
+        }
+        if (access_token != null) {
+            return "<html><body><h1>OAuth Success!</h1>" +
+                   "<p>Access Token: " + access_token.substring(0, Math.min(20, access_token.length())) + "...</p>" +
+                   "<p>Refresh Token: " + (refresh_token != null ? refresh_token.substring(0, Math.min(20, refresh_token.length())) + "..." : "N/A") + "</p>" +
+                   "</body></html>";
+        }
+        return "<html><body><h1>OAuth Callback</h1><p>No data received</p></body></html>";
     }
 
     /**

@@ -35,8 +35,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // Only select necessary fields for login
         return this.getOne(new LambdaQueryWrapper<User>()
                 .eq(User::getEmail, email)
-                .select(User::getId, User::getEmail, User::getPassword, 
-                       User::getUsername, User::getStatus, User::getEmailVerified)
+                .select(User::getId, User::getEmail, User::getPasswordHash, 
+                       User::getUsername, User::getVerified)
                 .last("LIMIT 1"));
     }
 
@@ -45,8 +45,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // Only select necessary fields for login
         return this.getOne(new LambdaQueryWrapper<User>()
                 .eq(User::getPhone, phone)
-                .select(User::getId, User::getPhone, User::getPassword, 
-                       User::getUsername, User::getStatus, User::getPhoneVerified)
+                .select(User::getId, User::getPhone, User::getPasswordHash, 
+                       User::getUsername, User::getVerified)
                 .last("LIMIT 1"));
     }
 
@@ -79,7 +79,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String encodedPassword = PasswordUtil.encode(newPassword);
 
         // 3. Update user password
-        user.setPassword(encodedPassword);
+        user.setPasswordHash(encodedPassword);
         boolean updated = this.updateById(user);
         
         if (!updated) {
@@ -112,7 +112,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             updated = true;
         }
         if (avatar != null && !avatar.trim().isEmpty()) {
-            user.setAvatar(avatar.trim());
+            user.setAvatarUrl(avatar.trim());
             updated = true;
         }
         if (phone != null && !phone.trim().isEmpty()) {

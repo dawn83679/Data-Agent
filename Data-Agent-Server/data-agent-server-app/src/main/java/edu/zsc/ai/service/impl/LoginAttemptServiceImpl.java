@@ -54,6 +54,12 @@ public class LoginAttemptServiceImpl implements LoginAttemptService {
         // Increment attempt count
         Long attempts = redisTemplate.opsForValue().increment(attemptKey);
         
+        // Handle null case (shouldn't happen but be defensive)
+        if (attempts == null) {
+            attempts = 1L;
+            redisTemplate.opsForValue().set(attemptKey, attempts);
+        }
+        
         // Set expiration on first attempt
         if (attempts == 1) {
             redisTemplate.expire(attemptKey, ATTEMPT_TTL_MINUTES, TimeUnit.MINUTES);
@@ -66,7 +72,8 @@ public class LoginAttemptServiceImpl implements LoginAttemptService {
             String blockKey = BLOCK_PREFIX + key;
             LocalDateTime blockUntil = LocalDateTime.now().plusMinutes(blockDurationMinutes);
             
-            redisTemplate.opsForValue().set(blockKey, blockUntil);
+            // Store as timestamp (milliseconds since epoch) to avoid serialization issues
+            redisTemplate.opsForValue().set(blockKey, blockUntil.toString());
             redisTemplate.expire(blockKey, blockDurationMinutes, TimeUnit.MINUTES);
             
             log.warn("Key {} is now blocked until {}", key, blockUntil);
@@ -82,7 +89,8 @@ public class LoginAttemptServiceImpl implements LoginAttemptService {
             return false;
         }
 
-        LocalDateTime blockUntil = (LocalDateTime) blockUntilObj;
+        // Parse the stored timestamp string
+        LocalDateTime blockUntil = LocalDateTime.parse(blockUntilObj.toString());
         
         if (LocalDateTime.now().isAfter(blockUntil)) {
             // Block expired, clean up
@@ -116,8 +124,20 @@ public class LoginAttemptServiceImpl implements LoginAttemptService {
             return 0;
         }
 
-        LocalDateTime blockUntil = (LocalDateTime) blockUntilObj;
+        // Parse the stored timestamp string
+        LocalDateTime blockUntil = LocalDateTime.parse(blockUntilObj.toString());
         Duration duration = Duration.between(LocalDateTime.now(), blockUntil);
         return Math.max(0, duration.getSeconds());
+    }
+
+    @Override
+    public void clearFailureCount(String key) {
+        String attemptKey = ATTEMPT_PREFIX + key;
+        String blockKey = BLOCK_PREFIX + key;
+        
+        redisTemplate.delete(attemptKey);
+        redisTemplate.delete(blockKey);
+        
+        log.debug("Cleared failure count for key: {}", key);
     }
 }

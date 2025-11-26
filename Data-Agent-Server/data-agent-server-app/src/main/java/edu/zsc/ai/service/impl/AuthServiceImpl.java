@@ -1,12 +1,10 @@
 package edu.zsc.ai.service.impl;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import cn.dev33.satoken.stp.StpUtil;
 import edu.zsc.ai.enums.error.ErrorCode;
-import edu.zsc.ai.event.LoginEvent;
 import edu.zsc.ai.exception.BusinessException;
 import edu.zsc.ai.model.dto.request.LoginRequest;
 import edu.zsc.ai.model.dto.request.RegisterRequest;
@@ -20,7 +18,6 @@ import edu.zsc.ai.model.entity.User;
 import edu.zsc.ai.service.AuthService;
 import edu.zsc.ai.service.GoogleOAuthService;
 import edu.zsc.ai.service.LoginAttemptService;
-import edu.zsc.ai.service.LoginLogService;
 import edu.zsc.ai.service.RefreshTokenService;
 import edu.zsc.ai.service.SessionService;
 import edu.zsc.ai.service.UserService;
@@ -44,9 +41,7 @@ public class AuthServiceImpl implements AuthService {
     private final SessionService sessionService;
     private final RefreshTokenService refreshTokenService;
     private final LoginAttemptService loginAttemptService;
-    private final ApplicationEventPublisher eventPublisher;
     private final VerificationCodeService verificationCodeService;
-    private final LoginLogService loginLogService;
     private final GoogleOAuthService googleOAuthService;
 
     @Override
@@ -76,32 +71,21 @@ public class AuthServiceImpl implements AuthService {
             loginAttemptService.loginFailed(email);
             loginAttemptService.loginFailed(ipAddress);
             
-            // Publish failure event asynchronously
-            eventPublisher.publishEvent(LoginEvent.failure(this, email, ipAddress, userAgent, "User not found"));
-            
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR, "Invalid email or password");
         }
 
         // 3. Verify password
-        if (!PasswordUtil.matches(request.getPassword(), user.getPassword())) {
+        if (!PasswordUtil.matches(request.getPassword(), user.getPasswordHash())) {
             // Record failed attempt
             loginAttemptService.loginFailed(email);
             loginAttemptService.loginFailed(ipAddress);
-            
-            // Publish failure event asynchronously
-            eventPublisher.publishEvent(LoginEvent.failure(this, email, ipAddress, userAgent, "Invalid password"));
             
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR, "Invalid email or password");
         }
 
         // 3.5. Check if email is verified (enabled for security)
-        if (!Boolean.TRUE.equals(user.getEmailVerified())) {
+        if (!Boolean.TRUE.equals(user.getVerified())) {
             throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "Email not verified. Please check your email for verification code.");
-        }
-
-        // 4. Check account status
-        if (user.getStatus() != null && user.getStatus() != 0) {
-            throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "Account is disabled");
         }
 
         // 5. Login successful - clear failed attempts
@@ -129,18 +113,12 @@ public class AuthServiceImpl implements AuthService {
         // Generate Refresh Token
         String refreshToken = refreshTokenService.createRefreshToken(user.getId(), session.getId());
 
-        // Publish success event asynchronously
-        eventPublisher.publishEvent(LoginEvent.success(this, email, ipAddress, userAgent));
-        
-        // Record successful login to database
-        loginLogService.recordSuccess(user.getId(), email, ipAddress, userAgent, "PASSWORD");
-
         // Return token pair (return original token, not hash)
         return TokenPairResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
-                .expiresIn(7200L) // 2 hours (matching Sa-Token config)
+                .expiresIn(1800L) // 30 minutes (matching Sa-Token config)
                 .build();
     }
 
@@ -163,10 +141,9 @@ public class AuthServiceImpl implements AuthService {
         // Create new user
         User user = new User();
         user.setEmail(request.getEmail());
-        user.setPassword(encodedPassword);
+        user.setPasswordHash(encodedPassword);
         user.setUsername(request.getUsername());
-        user.setEmailVerified(false); // Require email verification
-        user.setStatus(0); // Normal status
+        user.setVerified(false); // Require email verification
 
         // Save to database
         boolean saved = userService.save(user);
@@ -203,9 +180,8 @@ public class AuthServiceImpl implements AuthService {
                 .email(user.getEmail())
                 .phone(user.getPhone())
                 .username(user.getUsername())
-                .avatar(user.getAvatar())
-                .emailVerified(user.getEmailVerified())
-                .phoneVerified(user.getPhoneVerified())
+                .avatarUrl(user.getAvatarUrl())
+                .verified(user.getVerified())
                 .build();
     }
 
@@ -250,7 +226,7 @@ public class AuthServiceImpl implements AuthService {
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
                 .tokenType("Bearer")
-                .expiresIn(7200L) // 2 hours (matching Sa-Token config)
+                .expiresIn(1800L) // 30 minutes (matching Sa-Token config)
                 .build();
     }
 
@@ -309,8 +285,6 @@ public class AuthServiceImpl implements AuthService {
         // 1. Verify code
         boolean valid = verificationCodeService.verifyCode(email, code, "LOGIN");
         if (!valid) {
-            // Publish failure event
-            eventPublisher.publishEvent(LoginEvent.failure(this, email, ipAddress, userAgent, "Invalid verification code"));
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "Invalid or expired verification code");
         }
 
@@ -321,20 +295,12 @@ public class AuthServiceImpl implements AuthService {
             user = autoRegisterUser(email);
         }
 
-        // 3. Check account status
-        if (user.getStatus() != null && user.getStatus() != 0) {
-            throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "Account is disabled");
-        }
-
-        // 4. Generate Access Token using Sa-Token
+        // 3. Generate Access Token using Sa-Token
         StpUtil.login(user.getId());
         String accessToken = StpUtil.getTokenValue();
 
         // 5. Create Session and Refresh Token in transaction
         TokenPairResponse response = createSessionAndTokens(user, accessToken, ipAddress, userAgent, email);
-        
-        // Record successful login to database
-        loginLogService.recordSuccess(user.getId(), email, ipAddress, userAgent, "EMAIL_CODE");
 
         log.info("User logged in by email code: email={}", email);
         return response;
@@ -346,8 +312,7 @@ public class AuthServiceImpl implements AuthService {
         User user = new User();
         user.setEmail(email);
         user.setUsername(email.split("@")[0]); // Use email prefix as username
-        user.setEmailVerified(true); // Email verified by code
-        user.setStatus(0); // Normal status
+        user.setVerified(true); // Email verified by code
         // No password for email code login users
 
         boolean saved = userService.save(user);
@@ -406,20 +371,12 @@ public class AuthServiceImpl implements AuthService {
                 updateUserFromGoogleInfo(user, googleUserInfo);
             }
 
-            // 4. Check account status
-            if (user.getStatus() != null && user.getStatus() != 0) {
-                throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "Account is disabled");
-            }
-
-            // 5. Generate access token using Sa-Token
+            // 4. Generate access token using Sa-Token
             StpUtil.login(user.getId());
             String accessToken = StpUtil.getTokenValue();
 
             // 6. Create session and refresh token
             TokenPairResponse response = createSessionAndTokens(user, accessToken, ipAddress, userAgent, user.getEmail());
-
-            // 7. Log successful login
-            loginLogService.recordSuccess(user.getId(), user.getEmail(), ipAddress, userAgent, "GOOGLE_OAUTH");
 
             log.info("Google OAuth login successful: email={}", user.getEmail());
             return response;
@@ -429,9 +386,6 @@ public class AuthServiceImpl implements AuthService {
             throw e;
         } catch (Exception e) {
             log.error("Google OAuth login failed", e);
-            // Publish failure event
-            eventPublisher.publishEvent(LoginEvent.failure(this, "unknown", ipAddress, userAgent, 
-                "Google OAuth error: " + e.getMessage()));
             throw new BusinessException(ErrorCode.OPERATION_ERROR, 
                 "Google OAuth login failed. Please try again.");
         }
@@ -446,11 +400,10 @@ public class AuthServiceImpl implements AuthService {
         User user = new User();
         user.setEmail(googleUserInfo.getEmail());
         user.setUsername(googleUserInfo.getName() != null ? googleUserInfo.getName() : googleUserInfo.getEmail().split("@")[0]);
-        user.setAvatar(googleUserInfo.getPicture());
-        user.setEmailVerified(Boolean.TRUE.equals(googleUserInfo.getEmailVerified()));
+        user.setAvatarUrl(googleUserInfo.getPicture());
+        user.setVerified(Boolean.TRUE.equals(googleUserInfo.getEmailVerified()));
         user.setOauthProvider("google");
         user.setOauthProviderId(googleUserInfo.getGoogleId());
-        user.setStatus(0); // Normal status
         // No password for OAuth users
 
         boolean saved = userService.save(user);
@@ -472,8 +425,8 @@ public class AuthServiceImpl implements AuthService {
         boolean updated = false;
 
         // Update avatar if changed
-        if (googleUserInfo.getPicture() != null && !googleUserInfo.getPicture().equals(user.getAvatar())) {
-            user.setAvatar(googleUserInfo.getPicture());
+        if (googleUserInfo.getPicture() != null && !googleUserInfo.getPicture().equals(user.getAvatarUrl())) {
+            user.setAvatarUrl(googleUserInfo.getPicture());
             updated = true;
         }
 
@@ -524,13 +477,13 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 3. Check if already verified
-        if (Boolean.TRUE.equals(user.getEmailVerified())) {
+        if (Boolean.TRUE.equals(user.getVerified())) {
             log.info("Email already verified: email={}", email);
             return true;
         }
 
         // 4. Update email verified status
-        user.setEmailVerified(true);
+        user.setVerified(true);
         boolean updated = userService.updateById(user);
         
         if (!updated) {
@@ -539,11 +492,6 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("Email verified successfully: email={}", email);
         return true;
-    }
-
-    @Override
-    public java.util.List<edu.zsc.ai.model.entity.LoginLog> getLoginHistory(Long userId, int limit) {
-        return loginLogService.getUserLoginHistory(userId, limit);
     }
 
     @Override
