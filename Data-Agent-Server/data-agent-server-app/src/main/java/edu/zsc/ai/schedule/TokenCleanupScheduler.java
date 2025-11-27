@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 定时任务：清理过期的 Session 和 RefreshToken
+ * Scheduled Task: Clean up expired Sessions and RefreshTokens
  * 
  * @author Data-Agent Team
  */
@@ -22,7 +22,7 @@ public class TokenCleanupScheduler {
     private final RefreshTokenService refreshTokenService;
 
     /**
-     * 每天凌晨 2 点清理过期的 Session 和 RefreshToken
+     * Clean up expired Sessions and RefreshTokens daily at 2 AM
      */
     @Scheduled(cron = "0 0 2 * * ?")
     public void cleanupExpiredTokens() {
@@ -42,7 +42,7 @@ public class TokenCleanupScheduler {
     }
     
     /**
-     * 每小时清理一次（可选，用于更频繁的清理）
+     * Clean up every hour (optional, for more frequent cleanup)
      */
     @Scheduled(cron = "0 0 * * * ?")
     public void hourlyCleanup() {

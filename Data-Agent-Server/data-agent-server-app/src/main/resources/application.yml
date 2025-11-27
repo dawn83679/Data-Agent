@@ -64,7 +64,10 @@ spring:
           model: qwen3-coder-plus
           temperature: 0.1
           enable-thinking: false
-
+ai:
+  cotext:
+    compress:
+      max-token: 300
 # MyBatis-Plus configuration
 mybatis-plus:
   configuration:
@@ -94,7 +97,7 @@ sa-token:
   # Token style (uuid, simple-uuid, random-32, random-64, random-128, tik)
   token-style: uuid
   # AccessToken expiration time (seconds, -1 means never expire)
-  timeout: 7200  # 2 hours
+  timeout: 1800  # 30 minutes
   # Allow concurrent login for same account
   is-concurrent: true
   # Share same token for multiple logins of same account
@@ -122,8 +125,8 @@ app:
   redis:
     # Default cache TTL (30 minutes)
     default-ttl: 30m
-    # Session cache TTL (2 hours)
-    session-ttl: 2h
+    # Session cache TTL (30 minutes)
+    session-ttl: 30m
     # Verification code TTL (5 minutes)
     verification-code-ttl: 5m
     # Login attempt tracking TTL (15 minutes)
@@ -134,16 +137,31 @@ app:
     enable-keyspace-notifications: false
 
 # Google OAuth configuration
+# IMPORTANT: Sensitive OAuth credentials (client-id, client-secret) are NOT stored here
+# Create application-local.yml file to configure these values (gitignored, won't be committed)
 google:
   oauth:
     # Google OAuth Client ID (from Google Cloud Console)
     # Get this from: https://console.cloud.google.com/apis/credentials
-    client-id: ${GOOGLE_CLIENT_ID:}
+    # Must be configured in application-local.yml or environment variable
+    client-id: ${GOOGLE_OAUTH_CLIENT_ID}
     # Google OAuth Client Secret (from Google Cloud Console)
-    client-secret: ${GOOGLE_CLIENT_SECRET:}
+    # Must be configured in application-local.yml or environment variable
+    client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET}
     # Backend redirect URI (must match the one registered in Google Console)
     # This is where Google will redirect after user authorization
-    redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:8081/api/auth/google/callback}
-    # Frontend redirect URI (where to send user after successful login)
-    # Tokens will be appended as URL parameters
-    frontend-redirect-uri: ${FRONTEND_REDIRECT_URI:http://localhost:3000/auth/callback}
+    redirect-uri: ${GOOGLE_OAUTH_REDIRECT_URI:http://localhost:8081/api/auth/google/callback}
+    # Frontend redirect URI (where to redirect user after successful login)
+    # This is where the user will be sent with tokens in URL parameters
+    frontend-redirect-uri: ${GOOGLE_OAUTH_FRONTEND_REDIRECT_URI:http://localhost:8081/api/auth/test-callback}
+    # Proxy configuration for accessing Google OAuth services
+    # Enable this if you need to use a proxy to access Google services
+    proxy:
+      # Whether to enable proxy (set to true to use proxy)
+      enabled: ${GOOGLE_OAUTH_PROXY_ENABLED:false}
+      # Proxy server host (e.g., 127.0.0.1 for local proxy, or your proxy server address)
+      # Common proxy software ports: Clash (7890), V2Ray (1080), Shadowsocks (1080)
+      host: ${GOOGLE_OAUTH_PROXY_HOST:127.0.0.1}
+      # Proxy server port
+      port: ${GOOGLE_OAUTH_PROXY_PORT:7890}
+

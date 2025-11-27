@@ -1,18 +1,23 @@
 package edu.zsc.ai.model.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
-import lombok.Data;
-
 import java.time.LocalDateTime;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
+import lombok.Data;
+
 /**
- * Session Entity
+ * System Session Entity
  * Tracks active user sessions
  *
  * @author Data-Agent Team
  */
 @Data
-@TableName("sessions")
+@TableName("sys_sessions")
 public class Session {
 
     @Override
@@ -25,7 +30,7 @@ public class Session {
                 ", lastActivityAt=" + lastActivityAt +
                 ", expiresAt=" + expiresAt +
                 ", status=" + status +
-                ", createTime=" + createTime +
+                ", createdAt=" + createdAt +
                 '}';
     }
 
@@ -81,11 +86,11 @@ public class Session {
      * Create time
      */
     @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
 
     /**
      * Update time
      */
     @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updateTime;
+    private LocalDateTime updatedAt;
 }
