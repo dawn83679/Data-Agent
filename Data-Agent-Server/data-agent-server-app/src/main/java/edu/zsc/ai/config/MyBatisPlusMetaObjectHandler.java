@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 
 /**
- * MyBatis-Plus 自动填充处理器
- * 自动填充创建时间和更新时间
+ * MyBatis-Plus Auto-fill Handler
+ * Automatically fills creation time and update time
  *
  * @author Data-Agent Team
  */
@@ -17,23 +17,26 @@ import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 public class MyBatisPlusMetaObjectHandler implements MetaObjectHandler {
 
     /**
-     * 插入时自动填充
+     * Auto-fill on insert
      */
     @Override
     public void insertFill(MetaObject metaObject) {
-        // 自动填充创建时间
+        // Auto-fill creation time (support both createTime and createdAt)
         this.strictInsertFill(metaObject, "createTime", LocalDateTime.class, LocalDateTime.now());
+        this.strictInsertFill(metaObject, "createdAt", LocalDateTime.class, LocalDateTime.now());
         
-        // 自动填充更新时间
+        // Auto-fill update time (support both updateTime and updatedAt)
         this.strictInsertFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
+        this.strictInsertFill(metaObject, "updatedAt", LocalDateTime.class, LocalDateTime.now());
     }
 
     /**
-     * 更新时自动填充
+     * Auto-fill on update
      */
     @Override
     public void updateFill(MetaObject metaObject) {
-        // 自动填充更新时间
+        // Auto-fill update time (support both updateTime and updatedAt)
         this.strictUpdateFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
+        this.strictUpdateFill(metaObject, "updatedAt", LocalDateTime.class, LocalDateTime.now());
     }
 }

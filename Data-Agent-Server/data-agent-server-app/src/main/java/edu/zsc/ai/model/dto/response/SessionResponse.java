@@ -1,11 +1,11 @@
 package edu.zsc.ai.model.dto.response;
 
+import java.time.LocalDateTime;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 /**
  * Session Response DTO
@@ -47,7 +47,7 @@ public class SessionResponse {
     /**
      * Session creation time
      */
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
 
     /**
      * Whether this is the current session

@@ -1,9 +1,14 @@
 package edu.zsc.ai.model.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
+import lombok.Data;
 
 /**
  * Refresh Token Entity
@@ -12,7 +17,7 @@ import java.time.LocalDateTime;
  * @author Data-Agent Team
  */
 @Data
-@TableName("refresh_tokens")
+@TableName("sys_refresh_tokens")
 public class RefreshToken {
 
     @TableId(type = IdType.AUTO)
@@ -39,24 +44,24 @@ public class RefreshToken {
     private LocalDateTime expiresAt;
 
     /**
-     * Token status (0: active, 1: used, 2: revoked)
+     * Token revoked status (0: not revoked, 1: revoked)
      */
-    private Integer status;
+    private Integer revoked;
 
     /**
-     * Used at (when token was used for refresh)
+     * Last used at (when token was last used)
      */
-    private LocalDateTime usedAt;
+    private LocalDateTime lastUsedAt;
 
     /**
-     * Create time
+     * Created at
      */
     @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
 
     /**
-     * Update time
+     * Updated at
      */
     @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updateTime;
+    private LocalDateTime updatedAt;
 }

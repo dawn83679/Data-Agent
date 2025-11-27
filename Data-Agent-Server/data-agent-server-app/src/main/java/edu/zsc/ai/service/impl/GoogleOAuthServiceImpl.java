@@ -1,6 +1,8 @@
 package edu.zsc.ai.service.impl;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -12,6 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -26,6 +29,7 @@ import edu.zsc.ai.exception.BusinessException;
 import edu.zsc.ai.model.dto.response.GoogleTokenResponse;
 import edu.zsc.ai.model.dto.response.GoogleUserInfo;
 import edu.zsc.ai.service.GoogleOAuthService;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,10 +51,41 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
     private static final long STATE_EXPIRATION_MINUTES = 10;
 
     private final GoogleOAuthProperties googleOAuthProperties;
-    private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final SecureRandom secureRandom = new SecureRandom();
     private final org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate;
+    
+    private RestTemplate restTemplate;
+
+    /**
+     * Initialize RestTemplate with proxy configuration if enabled
+     */
+    @PostConstruct
+    public void init() {
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        
+        // Configure proxy if enabled
+        if (googleOAuthProperties.getProxy().isConfigured()) {
+            String proxyHost = googleOAuthProperties.getProxy().getHost();
+            int proxyPort = googleOAuthProperties.getProxy().getPort();
+            
+            Proxy proxy = new Proxy(
+                Proxy.Type.HTTP,
+                new InetSocketAddress(proxyHost, proxyPort)
+            );
+            requestFactory.setProxy(proxy);
+            
+            log.info("Google OAuth RestTemplate configured with proxy: {}:{}", proxyHost, proxyPort);
+        } else {
+            log.info("Google OAuth RestTemplate configured without proxy");
+        }
+        
+        // Set connection and read timeouts
+        requestFactory.setConnectTimeout(10000); // 10 seconds
+        requestFactory.setReadTimeout(10000);    // 10 seconds
+        
+        this.restTemplate = new RestTemplate(requestFactory);
+    }
 
     @Override
     public String getAuthorizationUrl(String state) {

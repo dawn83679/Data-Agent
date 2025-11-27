@@ -1,8 +1,15 @@
 package edu.zsc.ai.service.impl;
 
+import java.time.LocalDateTime;
+import java.util.concurrent.TimeUnit;
+
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+
 import edu.zsc.ai.exception.BusinessException;
 import edu.zsc.ai.mapper.RefreshTokenMapper;
 import edu.zsc.ai.model.entity.RefreshToken;
@@ -10,11 +17,6 @@ import edu.zsc.ai.service.RefreshTokenService;
 import edu.zsc.ai.util.HashUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Cached Refresh Token Service Implementation with Redis
@@ -43,7 +45,7 @@ public class CachedRefreshTokenServiceImpl extends ServiceImpl<RefreshTokenMappe
         refreshToken.setSessionId(sessionId);
         refreshToken.setTokenHash(tokenHash);
         refreshToken.setExpiresAt(LocalDateTime.now().plusDays(CACHE_EXPIRE_DAYS));
-        refreshToken.setStatus(0); // Active
+        refreshToken.setRevoked(0); // Not revoked
 
         // 3. Save to database
         this.save(refreshToken);
@@ -66,8 +68,8 @@ public class CachedRefreshTokenServiceImpl extends ServiceImpl<RefreshTokenMappe
         RefreshToken cachedToken = (RefreshToken) redisTemplate.opsForValue().get(cacheKey);
         
         if (cachedToken != null) {
-            // Verify expiration and status
-            if (cachedToken.getStatus() == 0 && cachedToken.getExpiresAt().isAfter(LocalDateTime.now())) {
+            // Verify expiration and revoked status
+            if (cachedToken.getRevoked() == 0 && cachedToken.getExpiresAt().isAfter(LocalDateTime.now())) {
                 log.debug("RefreshToken found in cache");
                 return cachedToken;
             } else {
@@ -79,7 +81,7 @@ public class CachedRefreshTokenServiceImpl extends ServiceImpl<RefreshTokenMappe
         // 2. If not in cache, query from database
         RefreshToken refreshToken = this.getOne(new LambdaQueryWrapper<RefreshToken>()
                 .eq(RefreshToken::getTokenHash, tokenHash)
-                .eq(RefreshToken::getStatus, 0) // Only active tokens
+                .eq(RefreshToken::getRevoked, 0) // Only not revoked tokens
                 .gt(RefreshToken::getExpiresAt, LocalDateTime.now())
                 .last("LIMIT 1"));
 
@@ -102,8 +104,8 @@ public class CachedRefreshTokenServiceImpl extends ServiceImpl<RefreshTokenMappe
         // 1. Update database
         this.update(new LambdaUpdateWrapper<RefreshToken>()
                 .eq(RefreshToken::getTokenHash, tokenHash)
-                .set(RefreshToken::getStatus, 1) // Used
-                .set(RefreshToken::getUsedAt, LocalDateTime.now()));
+                .set(RefreshToken::getRevoked, 1) // Revoked
+                .set(RefreshToken::getLastUsedAt, LocalDateTime.now()));
 
         // 2. Remove from cache
         redisTemplate.delete(cacheKey);
@@ -116,13 +118,13 @@ public class CachedRefreshTokenServiceImpl extends ServiceImpl<RefreshTokenMappe
         // 1. Get all user tokens from database
         var tokens = this.list(new LambdaQueryWrapper<RefreshToken>()
                 .eq(RefreshToken::getUserId, userId)
-                .eq(RefreshToken::getStatus, 0));
+                .eq(RefreshToken::getRevoked, 0));
 
         // 2. Update database
         this.update(new LambdaUpdateWrapper<RefreshToken>()
                 .eq(RefreshToken::getUserId, userId)
-                .eq(RefreshToken::getStatus, 0)
-                .set(RefreshToken::getStatus, 2)); // Revoked
+                .eq(RefreshToken::getRevoked, 0)
+                .set(RefreshToken::getRevoked, 1)); // Revoked
 
         // 3. Remove all from cache
         tokens.forEach(token -> {
@@ -138,8 +140,8 @@ public class CachedRefreshTokenServiceImpl extends ServiceImpl<RefreshTokenMappe
         // Only update database, Redis will auto-expire
         this.update(new LambdaUpdateWrapper<RefreshToken>()
                 .lt(RefreshToken::getExpiresAt, LocalDateTime.now())
-                .eq(RefreshToken::getStatus, 0)
-                .set(RefreshToken::getStatus, 1)); // Mark as expired
+                .eq(RefreshToken::getRevoked, 0)
+                .set(RefreshToken::getRevoked, 1)); // Mark as revoked
 
         log.info("Cleaned expired refresh tokens from database");
     }

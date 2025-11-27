@@ -11,8 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 缓存监控服务
- * 提供缓存统计和监控功能
+ * Cache Monitor Service
+ * Provides cache statistics and monitoring functionality
  * 
  * @author Data-Agent Team
  */
@@ -24,21 +24,21 @@ public class CacheMonitorService {
     private final RedisTemplate<String, Object> redisTemplate;
 
     /**
-     * 获取缓存统计信息
+     * Get cache statistics
      */
     public Map<String, Object> getCacheStats() {
         Map<String, Object> stats = new HashMap<>();
         
         try {
-            // 统计 Session 缓存数量
+            // Count Session cache entries
             Set<String> sessionKeys = redisTemplate.keys("session:*");
             stats.put("sessionCacheCount", sessionKeys != null ? sessionKeys.size() : 0);
             
-            // 统计 RefreshToken 缓存数量
+            // Count RefreshToken cache entries
             Set<String> refreshTokenKeys = redisTemplate.keys("refresh_token:*");
             stats.put("refreshTokenCacheCount", refreshTokenKeys != null ? refreshTokenKeys.size() : 0);
             
-            // 总缓存数量
+            // Total cache count
             int totalCount = (sessionKeys != null ? sessionKeys.size() : 0) + 
                            (refreshTokenKeys != null ? refreshTokenKeys.size() : 0);
             stats.put("totalCacheCount", totalCount);
@@ -53,7 +53,7 @@ public class CacheMonitorService {
     }
 
     /**
-     * 清除所有 Session 缓存
+     * Clear all Session cache
      */
     public void clearSessionCache() {
         try {
@@ -68,7 +68,7 @@ public class CacheMonitorService {
     }
 
     /**
-     * 清除所有 RefreshToken 缓存
+     * Clear all RefreshToken cache
      */
     public void clearRefreshTokenCache() {
         try {
@@ -83,7 +83,7 @@ public class CacheMonitorService {
     }
 
     /**
-     * 清除所有缓存
+     * Clear all cache
      */
     public void clearAllCache() {
         clearSessionCache();

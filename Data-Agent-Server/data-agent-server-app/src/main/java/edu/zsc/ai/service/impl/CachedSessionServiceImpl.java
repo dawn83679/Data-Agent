@@ -29,25 +29,28 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
     private final RedisTemplate<String, Object> redisTemplate;
     
     private static final String SESSION_PREFIX = "session:";
-    private static final long CACHE_EXPIRE_HOURS = 2; // Match AccessToken expiration
+    private static final long CACHE_EXPIRE_MINUTES = 30; // Match AccessToken expiration
 
     @Override
     public Session createSession(Long userId, String accessTokenHash, String ipAddress, String userAgent) {
+        LocalDateTime now = LocalDateTime.now();
         Session session = new Session();
         session.setUserId(userId);
         session.setAccessTokenHash(accessTokenHash);
         session.setIpAddress(ipAddress);
         session.setUserAgent(userAgent);
-        session.setLastActivityAt(LocalDateTime.now());
-        session.setLastRefreshAt(LocalDateTime.now());
-        session.setExpiresAt(LocalDateTime.now().plusDays(30)); // 30 days
+        session.setLastActivityAt(now);
+        session.setLastRefreshAt(now);
+        session.setExpiresAt(now.plusDays(30)); // 30 days
         session.setStatus(0); // Active
+        session.setCreatedAt(now);
+        session.setUpdatedAt(now);
 
         this.save(session);
         
         // Cache in Redis
         String cacheKey = SESSION_PREFIX + accessTokenHash;
-        redisTemplate.opsForValue().set(cacheKey, session, CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(cacheKey, session, CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES);
         
         log.debug("Created and cached session: userId={}, sessionId={}, ipAddress={}", userId, session.getId(), ipAddress);
         return session;
@@ -83,7 +86,7 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         Session updatedSession = this.getById(sessionId);
         if (updatedSession != null) {
             String newCacheKey = SESSION_PREFIX + newAccessTokenHash;
-            redisTemplate.opsForValue().set(newCacheKey, updatedSession, CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
+            redisTemplate.opsForValue().set(newCacheKey, updatedSession, CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES);
         }
     }
 
@@ -162,7 +165,7 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         
         if (session != null) {
             // 3. Update cache
-            redisTemplate.opsForValue().set(cacheKey, session, CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
+            redisTemplate.opsForValue().set(cacheKey, session, CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES);
             log.debug("Session loaded from database and cached");
         }
         
