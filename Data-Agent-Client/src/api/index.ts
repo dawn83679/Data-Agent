@@ -4,4 +4,5 @@
 export * from './connection'
 export * from './driver'
 export * from './chat'
+export * from './auth'
 

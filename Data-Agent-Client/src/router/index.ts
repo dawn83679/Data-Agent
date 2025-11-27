@@ -22,6 +22,11 @@ const router = createRouter({
       name: 'api-test',
       component: () => import('../views/ApiTestView.vue'),
     },
+    {
+      path: '/auth/google/callback',
+      name: 'google-callback',
+      component: () => import('../views/GoogleCallbackView.vue'),
+    },
   ],
 })
 

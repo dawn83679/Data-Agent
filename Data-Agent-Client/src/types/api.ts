@@ -26,6 +26,84 @@ export interface PageRequest {
   size?: number
 }
 
+// ==================== 认证相关 ====================
+
+/**
+ * 访问令牌对
+ * 对应后端的 TokenPairResponse
+ */
+export interface TokenPairResponse {
+  accessToken: string
+  refreshToken: string
+  tokenType: string
+  expiresIn: number
+}
+
+/**
+ * 邮箱密码登录请求
+ * 对应 LoginRequest
+ */
+export interface LoginRequest {
+  email: string
+  password: string
+  rememberMe?: boolean
+}
+
+/**
+ * 邮箱验证码登录请求
+ * 对应 EmailCodeLoginRequest
+ */
+export interface EmailCodeLoginRequest {
+  email: string
+  code: string
+}
+
+/**
+ * Google 登录请求
+ * 对应 GoogleLoginRequest
+ */
+export interface GoogleLoginRequest {
+  code: string
+  redirectUri?: string
+}
+
+/**
+ * 发送验证码请求
+ * 对应 SendVerificationCodeRequest
+ */
+export interface SendVerificationCodeRequest {
+  email: string
+  codeType: string
+}
+
+/**
+ * 刷新令牌请求
+ * 对应 RefreshTokenRequest
+ */
+export interface RefreshTokenRequest {
+  refreshToken: string
+}
+
+/**
+ * 注册请求
+ * 对应 RegisterRequest
+ */
+export interface RegisterRequest {
+  email: string
+  password: string
+  username: string
+}
+
+/**
+ * 重置密码请求
+ * 对应 ResetPasswordRequest
+ */
+export interface ResetPasswordRequest {
+  email: string
+  code: string
+  newPassword: string
+}
+
 // ==================== 数据库连接相关 ====================
 
 /**
