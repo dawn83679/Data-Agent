@@ -1,7 +1,14 @@
 package edu.zsc.ai.service.impl.db;
 
+import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
+import org.springframework.stereotype.Service;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+
 import edu.zsc.ai.mapper.db.DbConnectionMapper;
 import edu.zsc.ai.model.dto.request.db.ConnectionCreateRequest;
 import edu.zsc.ai.model.dto.response.db.ConnectionResponse;
@@ -10,11 +17,6 @@ import edu.zsc.ai.service.db.DbConnectionService;
 import edu.zsc.ai.util.JsonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
-import org.springframework.stereotype.Service;
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.List;
 
 /**
  * Database Connection Service Implementation
@@ -59,8 +61,15 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
         // Save connection
         this.save(connection);
 
+        // Retrieve the saved connection to get the generated ID and timestamps
+        DbConnection savedConnection = this.getById(connection.getId());
+        if (savedConnection == null) {
+            // Fallback: query by name if ID is not populated
+            savedConnection = getByName(request.getName());
+        }
+
         // Convert to response
-        return convertToResponse(connection);
+        return convertToResponse(savedConnection);
     }
 
     @Override

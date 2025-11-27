@@ -1,7 +1,7 @@
 -- 数据库连接信息表
 CREATE TABLE IF NOT EXISTS db_connections (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL,
     db_type VARCHAR(20) NOT NULL,
     host VARCHAR(255) NOT NULL,
     port INTEGER NOT NULL,
@@ -11,13 +11,16 @@ CREATE TABLE IF NOT EXISTS db_connections (
     driver_jar_path VARCHAR(500) NOT NULL,
     timeout INTEGER DEFAULT 30,
     properties TEXT DEFAULT '',
+    user_id BIGINT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_name_user UNIQUE (name, user_id)
 );
 
 -- 索引定义
 CREATE INDEX IF NOT EXISTS idx_db_connections_type ON db_connections(db_type);
 CREATE INDEX IF NOT EXISTS idx_db_connections_host_port ON db_connections(host, port);
+CREATE INDEX IF NOT EXISTS idx_db_connections_user_id ON db_connections(user_id);
 
 -- 表注释
 COMMENT ON TABLE db_connections IS 'Database connection information table';
@@ -34,3 +37,4 @@ COMMENT ON COLUMN db_connections.timeout IS 'Connection timeout in seconds (defa
 COMMENT ON COLUMN db_connections.properties IS 'Connection properties in JSON format (passwords, ssl settings, etc.)';
 COMMENT ON COLUMN db_connections.created_at IS 'Creation time';
 COMMENT ON COLUMN db_connections.updated_at IS 'Update time';
+COMMENT ON COLUMN db_connections.user_id IS 'User ID who owns this connection';

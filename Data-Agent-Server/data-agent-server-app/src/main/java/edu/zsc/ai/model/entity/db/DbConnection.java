@@ -1,12 +1,15 @@
 package edu.zsc.ai.model.entity.db;
 
-import com.baomidou.mybatisplus.annotation.*;
+import java.time.LocalDateTime;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 /**
  * Database Connection Entity
@@ -77,6 +80,11 @@ public class DbConnection {
      * Connection properties in JSON format (passwords, ssl settings, etc.)
      */
     private String properties;
+
+    /**
+     * User ID who owns this connection
+     */
+    private Long userId;
 
     /**
      * Creation time
