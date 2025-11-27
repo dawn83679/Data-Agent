@@ -45,6 +45,16 @@ public enum ErrorCode {
      */
     FORBIDDEN_ERROR(40300, "error.forbidden"),
     
+    /**
+     * Account locked due to too many failed login attempts
+     */
+    ACCOUNT_LOCKED_ERROR(42900, "error.account.locked"),
+
+    /**
+     * Verification code error
+     */
+    VERIFICATION_CODE_ERROR(40001, "error.verification.code"),
+    
     // ==================== Server Errors (50000-50099) ====================
     
     /**
