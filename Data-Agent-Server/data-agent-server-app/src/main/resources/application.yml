@@ -18,7 +18,10 @@ spring:
           model: qwen3-coder-plus
           temperature: 0.1
           enable-thinking: false
-
+ai:
+  cotext:
+    compress:
+      max-token: 300
 
 # MyBatis-Plus configuration
 mybatis-plus:

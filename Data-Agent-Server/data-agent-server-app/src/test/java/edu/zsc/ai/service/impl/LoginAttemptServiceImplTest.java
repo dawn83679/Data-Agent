@@ -1,6 +1,6 @@
 package edu.zsc.ai.service.impl;
 
-import edu.zsc.ai.service.LoginAttemptService;
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import edu.zsc.ai.service.LoginAttemptService;
 
 /**
  * Login Attempt Service Test
@@ -33,7 +33,7 @@ class LoginAttemptServiceImplTest {
     }
 
     @Test
-    @DisplayName("测试登录失败计数")
+    @DisplayName("Test Login Failed Count")
     void testLoginFailedCount() {
         // Initially not blocked
         assertThat(loginAttemptService.isBlocked(TEST_EMAIL)).isFalse();
@@ -56,11 +56,11 @@ class LoginAttemptServiceImplTest {
         loginAttemptService.loginFailed(TEST_EMAIL);
         assertThat(loginAttemptService.getRemainingAttempts(TEST_EMAIL)).isEqualTo(1);
 
-        System.out.println("✅ 登录失败计数正确");
+        System.out.println("✅ Login failure count is correct");
     }
 
     @Test
-    @DisplayName("测试达到最大失败次数后被锁定")
+    @DisplayName("Test Block After Max Attempts")
     void testBlockAfterMaxAttempts() {
         // Fail 5 times
         for (int i = 0; i < 5; i++) {
@@ -72,12 +72,12 @@ class LoginAttemptServiceImplTest {
         assertThat(loginAttemptService.getRemainingAttempts(TEST_EMAIL)).isEqualTo(0);
         assertThat(loginAttemptService.getBlockTimeRemaining(TEST_EMAIL)).isGreaterThan(0);
 
-        System.out.println("✅ 达到最大失败次数后账户被锁定");
-        System.out.println("   剩余锁定时间: " + loginAttemptService.getBlockTimeRemaining(TEST_EMAIL) + " 秒");
+        System.out.println("✅ Account blocked after reaching max attempts");
+        System.out.println("   Remaining block time: " + loginAttemptService.getBlockTimeRemaining(TEST_EMAIL) + " seconds");
     }
 
     @Test
-    @DisplayName("测试登录成功后清除失败记录")
+    @DisplayName("Test Clear Attempts On Success")
     void testClearAttemptsOnSuccess() {
         // Fail 3 times
         loginAttemptService.loginFailed(TEST_EMAIL);
@@ -93,11 +93,11 @@ class LoginAttemptServiceImplTest {
         assertThat(loginAttemptService.isBlocked(TEST_EMAIL)).isFalse();
         assertThat(loginAttemptService.getRemainingAttempts(TEST_EMAIL)).isEqualTo(5);
 
-        System.out.println("✅ 登录成功后失败记录被清除");
+        System.out.println("✅ Failure records cleared after successful login");
     }
 
     @Test
-    @DisplayName("测试IP地址独立跟踪")
+    @DisplayName("Test IP Address Independent Tracking")
     void testIPAddressTracking() {
         // Fail email 3 times
         for (int i = 0; i < 3; i++) {
@@ -113,13 +113,13 @@ class LoginAttemptServiceImplTest {
         assertThat(loginAttemptService.getRemainingAttempts(TEST_EMAIL)).isEqualTo(2);
         assertThat(loginAttemptService.getRemainingAttempts(TEST_IP)).isEqualTo(3);
 
-        System.out.println("✅ Email 和 IP 地址独立跟踪");
-        System.out.println("   Email 剩余尝试次数: " + loginAttemptService.getRemainingAttempts(TEST_EMAIL));
-        System.out.println("   IP 剩余尝试次数: " + loginAttemptService.getRemainingAttempts(TEST_IP));
+        System.out.println("✅ Email and IP address tracked independently");
+        System.out.println("   Email remaining attempts: " + loginAttemptService.getRemainingAttempts(TEST_EMAIL));
+        System.out.println("   IP remaining attempts: " + loginAttemptService.getRemainingAttempts(TEST_IP));
     }
 
     @Test
-    @DisplayName("测试锁定后无法继续尝试")
+    @DisplayName("Test Cannot Attempt When Blocked")
     void testCannotAttemptWhenBlocked() {
         // Block the email
         for (int i = 0; i < 5; i++) {
@@ -132,6 +132,6 @@ class LoginAttemptServiceImplTest {
         loginAttemptService.loginFailed(TEST_EMAIL);
         assertThat(loginAttemptService.isBlocked(TEST_EMAIL)).isTrue();
 
-        System.out.println("✅ 锁定后无法继续尝试");
+        System.out.println("✅ Cannot continue attempts after being blocked");
     }
 }

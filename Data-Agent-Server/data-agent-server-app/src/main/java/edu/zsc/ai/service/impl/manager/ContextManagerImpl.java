@@ -49,7 +49,15 @@ public class ContextManagerImpl implements ContextManager {
         compressedMessages.addAll(needToCompressMessages);
 
         String compressResult = compressContextChatClient.prompt().messages(compressedMessages).call().content();
-        //TODO: handle compressResult null or empty
+        
+        // Handle null or empty compress result
+        if (compressResult == null || compressResult.trim().isEmpty()) {
+            log.warn("Compress result is null or empty for conversation: {}", conversationId);
+            throw new edu.zsc.ai.exception.BusinessException(
+                edu.zsc.ai.enums.error.ErrorCode.OPERATION_ERROR, 
+                "Failed to compress context: empty result");
+        }
+        
         aiMessageService.saveMessage(new SaveMessageRequest(conversationId, compressResult,
                 MessageRoleEnum.ASSISTANT.name(), compressContextConfig.getMaxToken(),
                 MessageBlockTypeEnum.SUMMARY.name(), null));

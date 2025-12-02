@@ -63,4 +63,24 @@ public interface AuthService {
      * @return token pair
      */
     TokenPairResponse googleLogin(String code, HttpServletRequest httpRequest);
+
+    /**
+     * Verify email with verification code
+     *
+     * @param email user email
+     * @param code verification code
+     * @return true if verification successful
+     */
+    boolean verifyEmail(String email, String code);
+
+    /**
+     * Update user profile
+     *
+     * @param userId user ID
+     * @param username new username (optional)
+     * @param avatar new avatar URL (optional)
+     * @param phone new phone number (optional)
+     * @return true if update successful
+     */
+    boolean updateUserProfile(Long userId, String username, String avatar, String phone);
 }

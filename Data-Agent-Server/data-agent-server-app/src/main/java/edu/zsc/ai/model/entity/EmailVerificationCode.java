@@ -1,9 +1,14 @@
 package edu.zsc.ai.model.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
+import lombok.Data;
 
 /**
  * Email Verification Code Entity
@@ -11,7 +16,7 @@ import java.time.LocalDateTime;
  * @author Data-Agent Team
  */
 @Data
-@TableName("email_verification_codes")
+@TableName("sys_email_verification_codes")
 public class EmailVerificationCode {
 
     @TableId(type = IdType.AUTO)

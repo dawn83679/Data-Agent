@@ -19,5 +19,10 @@ public enum VerificationCodeType {
     /**
      * Reset password verification code
      */
-    RESET_PASSWORD
+    RESET_PASSWORD,
+
+    /**
+     * Email verification code
+     */
+    EMAIL_VERIFICATION
 }

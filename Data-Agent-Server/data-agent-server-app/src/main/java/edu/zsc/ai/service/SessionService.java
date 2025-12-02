@@ -50,4 +50,29 @@ public interface SessionService extends IService<Session> {
      * Clean expired sessions
      */
     void cleanExpiredSessions();
+
+    /**
+     * Get all active sessions for a user
+     *
+     * @param userId user ID
+     * @return list of active sessions
+     */
+    java.util.List<Session> getUserActiveSessions(Long userId);
+
+    /**
+     * Revoke a specific session with permission check
+     * Ensures the session belongs to the user
+     *
+     * @param userId user ID
+     * @param sessionId session ID to revoke
+     */
+    void revokeSessionWithPermissionCheck(Long userId, Long sessionId);
+
+    /**
+     * Revoke all other sessions except the current one
+     *
+     * @param userId user ID
+     * @param currentSessionId current session ID to keep active
+     */
+    void revokeOtherSessions(Long userId, Long currentSessionId);
 }

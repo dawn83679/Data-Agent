@@ -6,8 +6,12 @@ import edu.zsc.ai.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.model.dto.response.db.ConnectionResponse;
 import edu.zsc.ai.model.dto.response.db.ConnectionTestResponse;
 import edu.zsc.ai.model.dto.response.db.OpenConnectionResponse;
-import edu.zsc.ai.service.ConnectionService;
-import edu.zsc.ai.service.DbConnectionService;
+
+import edu.zsc.ai.service.db.ConnectionService;
+import edu.zsc.ai.service.db.DbConnectionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +26,7 @@ import java.util.List;
  * @author Data-Agent
  * @since 0.0.1
  */
+@Tag(name = "Connection Management", description = "Database connection management APIs")
 @Slf4j
 @RestController
 @RequestMapping("/api/connections")
@@ -31,13 +36,7 @@ public class ConnectionController {
     private final ConnectionService connectionService;
     private final DbConnectionService dbConnectionService;
 
-    /**
-     * Test database connection without establishing persistent connection.
-     * Returns detailed connection information including DBMS version, driver info, ping time, etc.
-     *
-     * @param request connect request
-     * @return connection test response with detailed information
-     */
+    @Operation(summary = "Test Connection", description = "Test database connection without establishing persistent connection")
     @PostMapping("/test")
     public ApiResponse<ConnectionTestResponse> testConnection(
             @Valid @RequestBody ConnectRequest request) {
@@ -48,13 +47,7 @@ public class ConnectionController {
         return ApiResponse.success(response);
     }
 
-    /**
-     * Open a new database connection and store it in the active connections registry.
-     * Establishes a persistent connection that can be reused for queries.
-     *
-     * @param request connection request with connection parameters
-     * @return open connection response with connectionId and connection details
-     */
+    @Operation(summary = "Open Connection", description = "Open a new database connection and store it in the active connections registry")
     @PostMapping("/open")
     public ApiResponse<OpenConnectionResponse> openConnection(@Valid @RequestBody ConnectRequest request) {
         log.info("Opening connection: dbType={}, host={}, database={}",
@@ -64,12 +57,7 @@ public class ConnectionController {
         return ApiResponse.success(response);
     }
 
-    /**
-     * Create a new database connection.
-     *
-     * @param request connection creation request
-     * @return created connection response
-     */
+    @Operation(summary = "Create Connection", description = "Create a new database connection configuration")
     @PostMapping("/create")
     public ApiResponse<ConnectionResponse> createConnection(
             @Valid @RequestBody ConnectionCreateRequest request) {
@@ -79,11 +67,7 @@ public class ConnectionController {
         return ApiResponse.success(response);
     }
 
-    /**
-     * Get list of database connections.
-     *
-     * @return connection list
-     */
+    @Operation(summary = "Get All Connections", description = "Get list of all database connections")
     @GetMapping
     public ApiResponse<List<ConnectionResponse>> getConnections() {
         log.info("Getting all connections");
@@ -91,14 +75,10 @@ public class ConnectionController {
         return ApiResponse.success(connections);
     }
 
-    /**
-     * Get database connection by ID.
-     *
-     * @param id connection ID
-     * @return connection response
-     */
+    @Operation(summary = "Get Connection by ID", description = "Get database connection details by ID")
     @GetMapping("/{id}")
-    public ApiResponse<ConnectionResponse> getConnection(@PathVariable Long id) {
+    public ApiResponse<ConnectionResponse> getConnection(
+            @Parameter(description = "Connection ID") @PathVariable Long id) {
         log.info("Getting connection: id={}", id);
 
         try {
@@ -109,16 +89,10 @@ public class ConnectionController {
         }
     }
 
-    /**
-     * Update database connection.
-     *
-     * @param id      connection ID
-     * @param request update request
-     * @return updated connection response
-     */
+    @Operation(summary = "Update Connection", description = "Update database connection configuration")
     @PutMapping("/{id}")
     public ApiResponse<ConnectionResponse> updateConnection(
-            @PathVariable Long id,
+            @Parameter(description = "Connection ID") @PathVariable Long id,
             @Valid @RequestBody ConnectionCreateRequest request) {
         log.info("Updating connection: id={}, name={}", id, request.getName());
 
@@ -130,14 +104,10 @@ public class ConnectionController {
         }
     }
 
-    /**
-     * Delete database connection.
-     *
-     * @param id connection ID
-     * @return success response
-     */
+    @Operation(summary = "Delete Connection", description = "Delete database connection configuration")
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> deleteConnection(@PathVariable Long id) {
+    public ApiResponse<Void> deleteConnection(
+            @Parameter(description = "Connection ID") @PathVariable Long id) {
         log.info("Deleting connection: id={}", id);
 
         try {
@@ -148,14 +118,10 @@ public class ConnectionController {
         }
     }
 
-    /**
-     * Close an active database connection.
-     *
-     * @param connectionId unique connection identifier
-     * @return success response
-     */
+    @Operation(summary = "Close Active Connection", description = "Close an active database connection")
     @DeleteMapping("/active/{connectionId}")
-    public ApiResponse<Void> closeConnection(@PathVariable String connectionId) {
+    public ApiResponse<Void> closeConnection(
+            @Parameter(description = "Connection ID") @PathVariable String connectionId) {
         log.info("Closing connection: connectionId={}", connectionId);
 
         connectionService.closeConnection(connectionId);

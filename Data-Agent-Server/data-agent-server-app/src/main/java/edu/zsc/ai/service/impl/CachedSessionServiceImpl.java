@@ -29,25 +29,28 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
     private final RedisTemplate<String, Object> redisTemplate;
     
     private static final String SESSION_PREFIX = "session:";
-    private static final long CACHE_EXPIRE_HOURS = 2; // Match AccessToken expiration
+    private static final long CACHE_EXPIRE_MINUTES = 30; // Match AccessToken expiration
 
     @Override
     public Session createSession(Long userId, String accessTokenHash, String ipAddress, String userAgent) {
+        LocalDateTime now = LocalDateTime.now();
         Session session = new Session();
         session.setUserId(userId);
         session.setAccessTokenHash(accessTokenHash);
         session.setIpAddress(ipAddress);
         session.setUserAgent(userAgent);
-        session.setLastActivityAt(LocalDateTime.now());
-        session.setLastRefreshAt(LocalDateTime.now());
-        session.setExpiresAt(LocalDateTime.now().plusDays(30)); // 30 days
+        session.setLastActivityAt(now);
+        session.setLastRefreshAt(now);
+        session.setExpiresAt(now.plusDays(30)); // 30 days
         session.setStatus(0); // Active
+        session.setCreatedAt(now);
+        session.setUpdatedAt(now);
 
         this.save(session);
         
         // Cache in Redis
         String cacheKey = SESSION_PREFIX + accessTokenHash;
-        redisTemplate.opsForValue().set(cacheKey, session, CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(cacheKey, session, CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES);
         
         log.debug("Created and cached session: userId={}, sessionId={}, ipAddress={}", userId, session.getId(), ipAddress);
         return session;
@@ -83,7 +86,7 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         Session updatedSession = this.getById(sessionId);
         if (updatedSession != null) {
             String newCacheKey = SESSION_PREFIX + newAccessTokenHash;
-            redisTemplate.opsForValue().set(newCacheKey, updatedSession, CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
+            redisTemplate.opsForValue().set(newCacheKey, updatedSession, CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES);
         }
     }
 
@@ -135,7 +138,10 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
 
     @Override
     public Session getByAccessToken(String accessToken) {
-        String cacheKey = SESSION_PREFIX + accessToken;
+        // Note: accessToken parameter is now expected to be the hash
+        // The caller (AuthServiceImpl) should hash the token before calling this method
+        String accessTokenHash = accessToken;
+        String cacheKey = SESSION_PREFIX + accessTokenHash;
         
         // 1. Try to get from Redis cache first
         Session cachedSession = (Session) redisTemplate.opsForValue().get(cacheKey);
@@ -153,13 +159,13 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         
         // 2. If not in cache, query from database
         Session session = this.getOne(new LambdaQueryWrapper<Session>()
-                .eq(Session::getAccessTokenHash, accessToken)
+                .eq(Session::getAccessTokenHash, accessTokenHash)
                 .eq(Session::getStatus, 0) // Only active sessions
                 .last("LIMIT 1"));
         
         if (session != null) {
             // 3. Update cache
-            redisTemplate.opsForValue().set(cacheKey, session, CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
+            redisTemplate.opsForValue().set(cacheKey, session, CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES);
             log.debug("Session loaded from database and cached");
         }
         
@@ -181,5 +187,60 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         if (count > 0) {
             log.info("Cleaned {} expired sessions from database", count);
         }
+    }
+
+    @Override
+    public java.util.List<Session> getUserActiveSessions(Long userId) {
+        // Query from database (no caching for list operations)
+        return this.list(new LambdaQueryWrapper<Session>()
+                .eq(Session::getUserId, userId)
+                .eq(Session::getStatus, 0) // Only active sessions
+                .orderByDesc(Session::getLastActivityAt));
+    }
+
+    @Override
+    public void revokeSessionWithPermissionCheck(Long userId, Long sessionId) {
+        // First check if session exists and belongs to the user
+        Session session = this.getOne(new LambdaQueryWrapper<Session>()
+                .eq(Session::getId, sessionId)
+                .eq(Session::getUserId, userId)
+                .eq(Session::getStatus, 0) // Only active sessions
+                .last("LIMIT 1"));
+        
+        if (session == null) {
+            throw new edu.zsc.ai.exception.BusinessException(
+                edu.zsc.ai.enums.error.ErrorCode.NOT_FOUND_ERROR, 
+                "Session not found or already revoked");
+        }
+        
+        // Revoke the session (this will also clear cache)
+        revokeSession(sessionId);
+        log.info("User {} revoked session: sessionId={}", userId, sessionId);
+    }
+
+    @Override
+    public void revokeOtherSessions(Long userId, Long currentSessionId) {
+        // Get all user sessions except current one to remove from cache
+        var sessions = this.list(new LambdaQueryWrapper<Session>()
+                .eq(Session::getUserId, userId)
+                .eq(Session::getStatus, 0)
+                .ne(Session::getId, currentSessionId));
+        
+        // Remove all from cache
+        sessions.forEach(session -> {
+            if (session.getAccessTokenHash() != null) {
+                String cacheKey = SESSION_PREFIX + session.getAccessTokenHash();
+                redisTemplate.delete(cacheKey);
+            }
+        });
+        
+        // Update database - revoke all active sessions except the current one
+        this.update(new LambdaUpdateWrapper<Session>()
+                .eq(Session::getUserId, userId)
+                .eq(Session::getStatus, 0) // Only active sessions
+                .ne(Session::getId, currentSessionId) // Exclude current session
+                .set(Session::getStatus, 2)); // Revoked
+        
+        log.info("User {} revoked all other sessions, keeping sessionId={}", userId, currentSessionId);
     }
 }

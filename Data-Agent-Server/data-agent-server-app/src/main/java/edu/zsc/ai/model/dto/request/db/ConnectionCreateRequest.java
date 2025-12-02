@@ -1,5 +1,8 @@
 package edu.zsc.ai.model.dto.request.db;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -7,9 +10,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Connection creation request
@@ -81,4 +81,9 @@ public class ConnectionCreateRequest {
      */
     @Builder.Default
     private Map<String, String> properties = new HashMap<>();
+
+    /**
+     * User ID who owns this connection
+     */
+    private Long userId;
 }

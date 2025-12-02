@@ -35,8 +35,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // Only select necessary fields for login
         return this.getOne(new LambdaQueryWrapper<User>()
                 .eq(User::getEmail, email)
-                .select(User::getId, User::getEmail, User::getPassword, 
-                       User::getUsername, User::getStatus, User::getEmailVerified)
+                .select(User::getId, User::getEmail, User::getPasswordHash, 
+                       User::getUsername, User::getVerified)
                 .last("LIMIT 1"));
     }
 
@@ -45,8 +45,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // Only select necessary fields for login
         return this.getOne(new LambdaQueryWrapper<User>()
                 .eq(User::getPhone, phone)
-                .select(User::getId, User::getPhone, User::getPassword, 
-                       User::getUsername, User::getStatus, User::getPhoneVerified)
+                .select(User::getId, User::getPhone, User::getPasswordHash, 
+                       User::getUsername, User::getVerified)
                 .last("LIMIT 1"));
     }
 
@@ -79,7 +79,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String encodedPassword = PasswordUtil.encode(newPassword);
 
         // 3. Update user password
-        user.setPassword(encodedPassword);
+        user.setPasswordHash(encodedPassword);
         boolean updated = this.updateById(user);
         
         if (!updated) {
@@ -93,6 +93,45 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         refreshTokenService.revokeAllUserTokens(user.getId());
 
         log.info("Password reset successfully for user: email={}, userId={}", email, user.getId());
+        return true;
+    }
+
+    @Override
+    @Transactional
+    public boolean updateProfile(Long userId, String username, String avatar, String phone) {
+        // Get user
+        User user = this.getById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "User not found");
+        }
+
+        // Update fields if provided
+        boolean updated = false;
+        if (username != null && !username.trim().isEmpty()) {
+            user.setUsername(username.trim());
+            updated = true;
+        }
+        if (avatar != null && !avatar.trim().isEmpty()) {
+            user.setAvatarUrl(avatar.trim());
+            updated = true;
+        }
+        if (phone != null && !phone.trim().isEmpty()) {
+            user.setPhone(phone.trim());
+            updated = true;
+        }
+
+        if (!updated) {
+            log.debug("No fields to update for user: userId={}", userId);
+            return true;
+        }
+
+        // Save changes
+        boolean result = this.updateById(user);
+        if (!result) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "Failed to update user profile");
+        }
+
+        log.info("User profile updated successfully: userId={}", userId);
         return true;
     }
 }

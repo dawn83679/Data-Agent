@@ -1,12 +1,12 @@
 package edu.zsc.ai.model.dto.response.db;
 
+import java.time.LocalDateTime;
+import java.util.Map;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
-import java.util.Map;
 
 /**
  * Connection response DTO
@@ -69,6 +69,11 @@ public class ConnectionResponse {
      * Connection parameters
      */
     private Map<String, String> properties;
+
+    /**
+     * User ID who owns this connection
+     */
+    private Long userId;
 
     /**
      * Creation time

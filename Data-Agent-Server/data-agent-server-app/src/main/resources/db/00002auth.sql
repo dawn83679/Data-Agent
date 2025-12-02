@@ -51,16 +51,18 @@ COMMENT ON COLUMN sys_refresh_tokens.updated_at IS 'Token information last updat
 
 CREATE TABLE sys_sessions
 (
-    id                BIGSERIAL PRIMARY KEY,
-    user_id           BIGINT       NOT NULL,
-    access_token_hash VARCHAR(255) NOT NULL,
-    device_info       VARCHAR(500),
-    ip_address        VARCHAR(45),
-    user_agent        TEXT,
-    active            SMALLINT  DEFAULT 1,
-    last_refresh_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id                 BIGSERIAL PRIMARY KEY,
+    user_id            BIGINT       NOT NULL,
+    access_token_hash  VARCHAR(255) NOT NULL,
+    device_info        VARCHAR(500),
+    ip_address         VARCHAR(45),
+    user_agent         TEXT,
+    last_activity_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_refresh_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at         TIMESTAMP    NOT NULL,
+    status             INTEGER   DEFAULT 0,
+    created_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 COMMENT ON TABLE sys_sessions IS 'User session table, manages user login sessions and access tokens';
@@ -70,8 +72,10 @@ COMMENT ON COLUMN sys_sessions.access_token_hash IS 'Access token hash value, no
 COMMENT ON COLUMN sys_sessions.device_info IS 'Device information (device type, operating system, browser, etc.)';
 COMMENT ON COLUMN sys_sessions.ip_address IS 'Login IP address';
 COMMENT ON COLUMN sys_sessions.user_agent IS 'User agent string for device identification';
-COMMENT ON COLUMN sys_sessions.active IS 'Session active status: 0=revoked, 1=active';
+COMMENT ON COLUMN sys_sessions.last_activity_at IS 'Last activity time, updated on each request';
 COMMENT ON COLUMN sys_sessions.last_refresh_at IS 'Last refresh time, for cleaning up long-unused sessions';
+COMMENT ON COLUMN sys_sessions.expires_at IS 'Session expiration time';
+COMMENT ON COLUMN sys_sessions.status IS 'Session status: 0=active, 1=expired, 2=revoked';
 COMMENT ON COLUMN sys_sessions.created_at IS 'Session creation time';
 COMMENT ON COLUMN sys_sessions.updated_at IS 'Session information last update time';
 
