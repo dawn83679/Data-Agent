@@ -17,7 +17,6 @@ import edu.zsc.ai.model.entity.Session;
 import edu.zsc.ai.model.entity.User;
 import edu.zsc.ai.service.AuthService;
 import edu.zsc.ai.service.GoogleOAuthService;
-import edu.zsc.ai.service.LoginAttemptService;
 import edu.zsc.ai.service.RefreshTokenService;
 import edu.zsc.ai.service.SessionService;
 import edu.zsc.ai.service.UserService;
@@ -40,7 +39,6 @@ public class AuthServiceImpl implements AuthService {
     private final UserService userService;
     private final SessionService sessionService;
     private final RefreshTokenService refreshTokenService;
-    private final LoginAttemptService loginAttemptService;
     private final VerificationCodeService verificationCodeService;
     private final GoogleOAuthService googleOAuthService;
 
@@ -48,55 +46,29 @@ public class AuthServiceImpl implements AuthService {
     public TokenPairResponse login(LoginRequest request, HttpServletRequest httpRequest) {
         String email = request.getEmail();
         String ipAddress = getClientIp(httpRequest);
-
-        // 1. Check if email or IP is blocked
-        if (loginAttemptService.isBlocked(email)) {
-            long remainingSeconds = loginAttemptService.getBlockTimeRemaining(email);
-            throw new BusinessException(ErrorCode.ACCOUNT_LOCKED_ERROR, 
-                String.format("Too many failed login attempts. Account locked for %d seconds", remainingSeconds));
-        }
-
-        if (loginAttemptService.isBlocked(ipAddress)) {
-            long remainingSeconds = loginAttemptService.getBlockTimeRemaining(ipAddress);
-            throw new BusinessException(ErrorCode.ACCOUNT_LOCKED_ERROR, 
-                String.format("Too many failed login attempts from this IP. Blocked for %d seconds", remainingSeconds));
-        }
-
         String userAgent = httpRequest.getHeader("User-Agent");
 
-        // 2. Check if user exists
+        // 1. Check if user exists
         User user = userService.getByEmail(email);
         if (user == null) {
-            // Record failed attempt
-            loginAttemptService.loginFailed(email);
-            loginAttemptService.loginFailed(ipAddress);
-            
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR, "Invalid email or password");
         }
 
-        // 3. Verify password
+        // 2. Verify password
         if (!PasswordUtil.matches(request.getPassword(), user.getPasswordHash())) {
-            // Record failed attempt
-            loginAttemptService.loginFailed(email);
-            loginAttemptService.loginFailed(ipAddress);
-            
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR, "Invalid email or password");
         }
 
-        // 3.5. Check if email is verified (enabled for security)
+        // 3. Check if email is verified (enabled for security)
         if (!Boolean.TRUE.equals(user.getVerified())) {
             throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "Email not verified. Please check your email for verification code.");
         }
 
-        // 5. Login successful - clear failed attempts
-        loginAttemptService.loginSucceeded(email);
-        loginAttemptService.loginSucceeded(ipAddress);
-
-        // 6. Generate Access Token using Sa-Token
+        // 4. Generate Access Token using Sa-Token
         StpUtil.login(user.getId());
         String accessToken = StpUtil.getTokenValue();
 
-        // 7. Create Session and Refresh Token in transaction
+        // 5. Create Session and Refresh Token in transaction
         return createSessionAndTokens(user, accessToken, ipAddress, userAgent, email);
     }
 

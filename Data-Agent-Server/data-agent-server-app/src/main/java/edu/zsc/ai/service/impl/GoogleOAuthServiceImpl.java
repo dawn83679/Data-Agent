@@ -8,6 +8,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -43,17 +45,12 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class GoogleOAuthServiceImpl implements GoogleOAuthService {
 
-    private static final String GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
-    private static final String GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
-    private static final String GOOGLE_SCOPE = "openid email profile";
-
-    private static final String OAUTH_STATE_PREFIX = "oauth:state:";
-    private static final long STATE_EXPIRATION_MINUTES = 10;
-
     private final GoogleOAuthProperties googleOAuthProperties;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final SecureRandom secureRandom = new SecureRandom();
-    private final org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate;
+    
+    // Temporary in-memory storage for OAuth states (TODO: migrate to database)
+    private static final ConcurrentHashMap<String, Long> stateStore = new ConcurrentHashMap<>();
     
     private RestTemplate restTemplate;
 
@@ -95,11 +92,11 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
         }
 
         // Build authorization URL with required parameters
-        StringBuilder url = new StringBuilder(GOOGLE_AUTH_URL);
+        StringBuilder url = new StringBuilder(googleOAuthProperties.getAuthUrl());
         url.append("?client_id=").append(urlEncode(googleOAuthProperties.getClientId()));
         url.append("&redirect_uri=").append(urlEncode(googleOAuthProperties.getRedirectUri()));
         url.append("&response_type=code");
-        url.append("&scope=").append(urlEncode(GOOGLE_SCOPE));
+        url.append("&scope=").append(urlEncode(googleOAuthProperties.getScope()));
         url.append("&access_type=offline");
         url.append("&prompt=consent");
         
@@ -136,7 +133,7 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
             // Make request to Google token endpoint
             log.debug("Exchanging authorization code for tokens");
             ResponseEntity<GoogleTokenResponse> response = restTemplate.exchange(
-                GOOGLE_TOKEN_URL,
+                googleOAuthProperties.getTokenUrl(),
                 HttpMethod.POST,
                 request,
                 GoogleTokenResponse.class
@@ -228,9 +225,14 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
 
     @Override
     public void storeState(String state) {
-        String key = OAUTH_STATE_PREFIX + state;
-        redisTemplate.opsForValue().set(key, "valid", STATE_EXPIRATION_MINUTES, java.util.concurrent.TimeUnit.MINUTES);
-        log.debug("Stored OAuth state in Redis: {}", state);
+
+        long expirationTime = System.currentTimeMillis() + 
+            TimeUnit.MINUTES.toMillis(googleOAuthProperties.getStateExpirationMinutes());
+        stateStore.put(state, expirationTime);
+        log.debug("Stored OAuth state in memory: {}", state);
+        
+        // Clean up expired states
+        cleanupExpiredStates();
     }
 
     @Override
@@ -240,18 +242,28 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
             return false;
         }
 
-        String key = OAUTH_STATE_PREFIX + state;
-        Object value = redisTemplate.opsForValue().get(key);
+        Long expirationTime = stateStore.remove(state);
         
-        if (value != null) {
-            // Delete the state after validation (one-time use)
-            redisTemplate.delete(key);
-            log.debug("OAuth state validated and removed: {}", state);
-            return true;
+        if (expirationTime != null) {
+            if (System.currentTimeMillis() <= expirationTime) {
+                log.debug("OAuth state validated and removed: {}", state);
+                return true;
+            } else {
+                log.warn("OAuth state has expired: {}", state);
+                return false;
+            }
         }
         
-        log.warn("Invalid or expired OAuth state: {}", state);
+        log.warn("Invalid OAuth state: {}", state);
         return false;
+    }
+    
+    /**
+     * Clean up expired states from memory
+     */
+    private void cleanupExpiredStates() {
+        long now = System.currentTimeMillis();
+        stateStore.entrySet().removeIf(entry -> entry.getValue() < now);
     }
 
     /**

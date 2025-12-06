@@ -17,44 +17,6 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
       connection-test-query: SELECT 1
-  # Redis configuration for Sa-Token session storage and caching
-  data:
-    redis:
-      host: ${REDIS_HOST:192.168.238.133}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:123321}
-      database: ${REDIS_DATABASE:0}
-      timeout: 5000ms
-      # Lettuce client configuration (default client for Spring Data Redis)
-      lettuce:
-        pool:
-          # Maximum number of connections in the pool
-          max-active: 8
-          # Maximum number of idle connections in the pool
-          max-idle: 8
-          # Minimum number of idle connections to maintain in the pool
-          min-idle: 2
-          # Maximum amount of time a connection allocation should block before throwing an exception (-1 = no limit)
-          max-wait: -1ms
-        # Shutdown timeout
-        shutdown-timeout: 100ms
-      # Connection timeout
-      connect-timeout: 5000ms
-      # Client name
-      client-name: data-agent
-  
-  # Cache configuration
-  cache:
-    type: redis
-    redis:
-      # Cache entry expiration time (30 minutes)
-      time-to-live: 1800000ms
-      # Whether to cache null values
-      cache-null-values: false
-      # Key prefix for all cache entries
-      key-prefix: "data-agent:cache:"
-      # Whether to use key prefix
-      use-key-prefix: true
   ai:
     dashscope:
       api-key: ${ALIYUN_AI_API_KEY}
