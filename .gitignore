@@ -10,3 +10,6 @@
 # Maven
 **/target/
 CLAUDE.md
+
+# Local configuration with secrets
+**/application-local.yml

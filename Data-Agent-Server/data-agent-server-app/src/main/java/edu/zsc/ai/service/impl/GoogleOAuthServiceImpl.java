@@ -1,6 +1,5 @@
 package edu.zsc.ai.service.impl;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URLEncoder;
@@ -20,8 +19,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import edu.zsc.ai.config.properties.GoogleOAuthProperties;
 import edu.zsc.ai.enums.error.ErrorCode;
@@ -43,15 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class GoogleOAuthServiceImpl implements GoogleOAuthService {
 
-    private static final String GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
-    private static final String GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
-    private static final String GOOGLE_SCOPE = "openid email profile";
-
-    private static final String OAUTH_STATE_PREFIX = "oauth:state:";
-    private static final long STATE_EXPIRATION_MINUTES = 10;
-
     private final GoogleOAuthProperties googleOAuthProperties;
-    private final ObjectMapper objectMapper = new ObjectMapper();
     private final SecureRandom secureRandom = new SecureRandom();
     private final org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate;
     
@@ -81,8 +70,8 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
         }
         
         // Set connection and read timeouts
-        requestFactory.setConnectTimeout(10000); // 10 seconds
-        requestFactory.setReadTimeout(10000);    // 10 seconds
+        requestFactory.setConnectTimeout(googleOAuthProperties.getConnectionTimeout());
+        requestFactory.setReadTimeout(googleOAuthProperties.getReadTimeout());
         
         this.restTemplate = new RestTemplate(requestFactory);
     }
@@ -95,11 +84,11 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
         }
 
         // Build authorization URL with required parameters
-        StringBuilder url = new StringBuilder(GOOGLE_AUTH_URL);
+        StringBuilder url = new StringBuilder(googleOAuthProperties.getAuthUrl());
         url.append("?client_id=").append(urlEncode(googleOAuthProperties.getClientId()));
         url.append("&redirect_uri=").append(urlEncode(googleOAuthProperties.getRedirectUri()));
         url.append("&response_type=code");
-        url.append("&scope=").append(urlEncode(GOOGLE_SCOPE));
+        url.append("&scope=").append(urlEncode(googleOAuthProperties.getScope()));
         url.append("&access_type=offline");
         url.append("&prompt=consent");
         
@@ -136,7 +125,7 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
             // Make request to Google token endpoint
             log.debug("Exchanging authorization code for tokens");
             ResponseEntity<GoogleTokenResponse> response = restTemplate.exchange(
-                GOOGLE_TOKEN_URL,
+                googleOAuthProperties.getTokenUrl(),
                 HttpMethod.POST,
                 request,
                 GoogleTokenResponse.class
@@ -161,60 +150,53 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
 
     @Override
     public GoogleUserInfo validateAndExtractUserInfo(String idToken) {
-        try {
-            // Parse JWT without signature verification (Google's signature verification requires fetching public keys)
-            // In production, you should verify the signature using Google's public keys
-            String[] parts = idToken.split("\\.");
-            if (parts.length != 3) {
-                throw new BusinessException(ErrorCode.OPERATION_ERROR, "Invalid ID token format");
-            }
-
-            // Decode payload
-            String payload = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
-            
-            // Parse JSON to extract claims
-            @SuppressWarnings("unchecked")
-            Map<String, Object> claims = objectMapper.readValue(payload, Map.class);
-
-            // Validate issuer
-            String issuer = (String) claims.get("iss");
-            if (!"https://accounts.google.com".equals(issuer) && !"accounts.google.com".equals(issuer)) {
-                log.error("Invalid token issuer: {}", issuer);
-                throw new BusinessException(ErrorCode.OPERATION_ERROR, "Invalid ID token issuer");
-            }
-
-            // Validate audience (client ID)
-            String audience = (String) claims.get("aud");
-            if (!googleOAuthProperties.getClientId().equals(audience)) {
-                log.error("Invalid token audience: {}", audience);
-                throw new BusinessException(ErrorCode.OPERATION_ERROR, "Invalid ID token audience");
-            }
-
-            // Validate expiration
-            Number exp = (Number) claims.get("exp");
-            if (exp != null && exp.longValue() < System.currentTimeMillis() / 1000) {
-                log.error("ID token has expired");
-                throw new BusinessException(ErrorCode.OPERATION_ERROR, "ID token has expired");
-            }
-
-            // Extract user info
-            GoogleUserInfo userInfo = new GoogleUserInfo();
-            userInfo.setGoogleId((String) claims.get("sub"));
-            userInfo.setEmail((String) claims.get("email"));
-            userInfo.setEmailVerified((Boolean) claims.get("email_verified"));
-            userInfo.setName((String) claims.get("name"));
-            userInfo.setPicture((String) claims.get("picture"));
-            userInfo.setGivenName((String) claims.get("given_name"));
-            userInfo.setFamilyName((String) claims.get("family_name"));
-            userInfo.setLocale((String) claims.get("locale"));
-
-            log.info("Successfully validated and extracted user info from ID token: email={}", userInfo.getEmail());
-            return userInfo;
-
-        } catch (IOException e) {
-            log.error("Failed to parse ID token", e);
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "Failed to parse ID token");
+        // Parse JWT without signature verification (Google's signature verification requires fetching public keys)
+        // In production, you should verify the signature using Google's public keys
+        String[] parts = idToken.split("\\.");
+        if (parts.length != 3) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "Invalid ID token format");
         }
+
+        // Decode payload
+        String payload = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+        
+        // Parse JSON to extract claims
+        Map<String, Object> claims = edu.zsc.ai.util.JsonUtil.json2ObjectMap(payload);
+
+        // Validate issuer
+        String issuer = (String) claims.get("iss");
+        if (!"https://accounts.google.com".equals(issuer) && !"accounts.google.com".equals(issuer)) {
+            log.error("Invalid token issuer: {}", issuer);
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "Invalid ID token issuer");
+        }
+
+        // Validate audience (client ID)
+        String audience = (String) claims.get("aud");
+        if (!googleOAuthProperties.getClientId().equals(audience)) {
+            log.error("Invalid token audience: {}", audience);
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "Invalid ID token audience");
+        }
+
+        // Validate expiration
+        Number exp = (Number) claims.get("exp");
+        if (exp != null && exp.longValue() < System.currentTimeMillis() / 1000) {
+            log.error("ID token has expired");
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "ID token has expired");
+        }
+
+        // Extract user info
+        GoogleUserInfo userInfo = new GoogleUserInfo();
+        userInfo.setGoogleId((String) claims.get("sub"));
+        userInfo.setEmail((String) claims.get("email"));
+        userInfo.setEmailVerified((Boolean) claims.get("email_verified"));
+        userInfo.setName((String) claims.get("name"));
+        userInfo.setPicture((String) claims.get("picture"));
+        userInfo.setGivenName((String) claims.get("given_name"));
+        userInfo.setFamilyName((String) claims.get("family_name"));
+        userInfo.setLocale((String) claims.get("locale"));
+
+        log.info("Successfully validated and extracted user info from ID token: email={}", userInfo.getEmail());
+        return userInfo;
     }
 
     /**
@@ -228,8 +210,8 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
 
     @Override
     public void storeState(String state) {
-        String key = OAUTH_STATE_PREFIX + state;
-        redisTemplate.opsForValue().set(key, "valid", STATE_EXPIRATION_MINUTES, java.util.concurrent.TimeUnit.MINUTES);
+        String key = googleOAuthProperties.getStatePrefix() + state;
+        redisTemplate.opsForValue().set(key, "valid", googleOAuthProperties.getStateExpirationMinutes(), java.util.concurrent.TimeUnit.MINUTES);
         log.debug("Stored OAuth state in Redis: {}", state);
     }
 
@@ -240,7 +222,7 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
             return false;
         }
 
-        String key = OAUTH_STATE_PREFIX + state;
+        String key = googleOAuthProperties.getStatePrefix() + state;
         Object value = redisTemplate.opsForValue().get(key);
         
         if (value != null) {

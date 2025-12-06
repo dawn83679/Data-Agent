@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
+import edu.zsc.ai.enums.SessionStatus;
 import edu.zsc.ai.mapper.SessionMapper;
 import edu.zsc.ai.model.entity.Session;
 import edu.zsc.ai.service.SessionService;
@@ -27,9 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session> implements SessionService {
 
     private final RedisTemplate<String, Object> redisTemplate;
-    
-    private static final String SESSION_PREFIX = "session:";
-    private static final long CACHE_EXPIRE_MINUTES = 30; // Match AccessToken expiration
+    private final edu.zsc.ai.config.properties.RedisProperties redisProperties;
 
     @Override
     public Session createSession(Long userId, String accessTokenHash, String ipAddress, String userAgent) {
@@ -39,18 +38,17 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         session.setAccessTokenHash(accessTokenHash);
         session.setIpAddress(ipAddress);
         session.setUserAgent(userAgent);
-        session.setLastActivityAt(now);
         session.setLastRefreshAt(now);
         session.setExpiresAt(now.plusDays(30)); // 30 days
-        session.setStatus(0); // Active
+        session.setStatus(SessionStatus.ACTIVE.getCode());
         session.setCreatedAt(now);
         session.setUpdatedAt(now);
 
         this.save(session);
         
         // Cache in Redis
-        String cacheKey = SESSION_PREFIX + accessTokenHash;
-        redisTemplate.opsForValue().set(cacheKey, session, CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES);
+        String cacheKey = redisProperties.getSessionPrefix() + accessTokenHash;
+        redisTemplate.opsForValue().set(cacheKey, session, redisProperties.getSessionCacheExpireMinutes(), TimeUnit.MINUTES);
         
         log.debug("Created and cached session: userId={}, sessionId={}, ipAddress={}", userId, session.getId(), ipAddress);
         return session;
@@ -60,7 +58,7 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
     public void updateActivity(Long sessionId) {
         this.update(new LambdaUpdateWrapper<Session>()
                 .eq(Session::getId, sessionId)
-                .set(Session::getLastActivityAt, LocalDateTime.now()));
+                .set(Session::getLastRefreshAt, LocalDateTime.now()));
         
         // Note: We don't update cache here to avoid frequent writes
         // Cache will be refreshed on next getByAccessToken call
@@ -71,7 +69,7 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         // Get old session to remove old cache
         Session oldSession = this.getById(sessionId);
         if (oldSession != null && oldSession.getAccessTokenHash() != null) {
-            String oldCacheKey = SESSION_PREFIX + oldSession.getAccessTokenHash();
+            String oldCacheKey = redisProperties.getSessionPrefix() + oldSession.getAccessTokenHash();
             redisTemplate.delete(oldCacheKey);
         }
         
@@ -79,14 +77,13 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         this.update(new LambdaUpdateWrapper<Session>()
                 .eq(Session::getId, sessionId)
                 .set(Session::getAccessTokenHash, newAccessTokenHash)
-                .set(Session::getLastRefreshAt, LocalDateTime.now())
-                .set(Session::getLastActivityAt, LocalDateTime.now()));
+                .set(Session::getLastRefreshAt, LocalDateTime.now()));
         
         // Get updated session and cache it
         Session updatedSession = this.getById(sessionId);
         if (updatedSession != null) {
-            String newCacheKey = SESSION_PREFIX + newAccessTokenHash;
-            redisTemplate.opsForValue().set(newCacheKey, updatedSession, CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES);
+            String newCacheKey = redisProperties.getSessionPrefix() + newAccessTokenHash;
+            redisTemplate.opsForValue().set(newCacheKey, updatedSession, redisProperties.getSessionCacheExpireMinutes(), TimeUnit.MINUTES);
         }
     }
 
@@ -95,14 +92,14 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         // Get session to remove cache
         Session session = this.getById(sessionId);
         if (session != null && session.getAccessTokenHash() != null) {
-            String cacheKey = SESSION_PREFIX + session.getAccessTokenHash();
+            String cacheKey = redisProperties.getSessionPrefix() + session.getAccessTokenHash();
             redisTemplate.delete(cacheKey);
         }
         
         // Update database
         this.update(new LambdaUpdateWrapper<Session>()
                 .eq(Session::getId, sessionId)
-                .set(Session::getStatus, 2)); // Revoked
+                .set(Session::getStatus, SessionStatus.REVOKED.getCode()));
         
         log.debug("Revoked session and removed from cache: sessionId={}", sessionId);
     }
@@ -112,12 +109,12 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         // Get all user sessions to remove from cache
         var sessions = this.list(new LambdaQueryWrapper<Session>()
                 .eq(Session::getUserId, userId)
-                .eq(Session::getStatus, 0));
+                .eq(Session::getStatus, SessionStatus.ACTIVE.getCode()));
         
         // Remove all from cache
         sessions.forEach(session -> {
             if (session.getAccessTokenHash() != null) {
-                String cacheKey = SESSION_PREFIX + session.getAccessTokenHash();
+                String cacheKey = redisProperties.getSessionPrefix() + session.getAccessTokenHash();
                 redisTemplate.delete(cacheKey);
             }
         });
@@ -125,8 +122,8 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         // Update database
         this.update(new LambdaUpdateWrapper<Session>()
                 .eq(Session::getUserId, userId)
-                .eq(Session::getStatus, 0) // Only active sessions
-                .set(Session::getStatus, 2)); // Revoked
+                .eq(Session::getStatus, SessionStatus.ACTIVE.getCode())
+                .set(Session::getStatus, SessionStatus.REVOKED.getCode()));
         
         log.debug("Revoked all sessions for user: {} and cleared cache", userId);
     }
@@ -141,14 +138,14 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         // Note: accessToken parameter is now expected to be the hash
         // The caller (AuthServiceImpl) should hash the token before calling this method
         String accessTokenHash = accessToken;
-        String cacheKey = SESSION_PREFIX + accessTokenHash;
+        String cacheKey = redisProperties.getSessionPrefix() + accessTokenHash;
         
         // 1. Try to get from Redis cache first
         Session cachedSession = (Session) redisTemplate.opsForValue().get(cacheKey);
         
         if (cachedSession != null) {
             // Verify status
-            if (cachedSession.getStatus() == 0) {
+            if (SessionStatus.isActive(cachedSession.getStatus())) {
                 log.debug("Session found in cache");
                 return cachedSession;
             } else {
@@ -160,12 +157,12 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         // 2. If not in cache, query from database
         Session session = this.getOne(new LambdaQueryWrapper<Session>()
                 .eq(Session::getAccessTokenHash, accessTokenHash)
-                .eq(Session::getStatus, 0) // Only active sessions
+                .eq(Session::getStatus, SessionStatus.ACTIVE.getCode())
                 .last("LIMIT 1"));
         
         if (session != null) {
             // 3. Update cache
-            redisTemplate.opsForValue().set(cacheKey, session, CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES);
+            redisTemplate.opsForValue().set(cacheKey, session, redisProperties.getSessionCacheExpireMinutes(), TimeUnit.MINUTES);
             log.debug("Session loaded from database and cached");
         }
         
@@ -177,12 +174,12 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         // Only update database, Redis will auto-expire
         long count = this.count(new LambdaQueryWrapper<Session>()
                 .lt(Session::getExpiresAt, LocalDateTime.now())
-                .eq(Session::getStatus, 0));
+                .eq(Session::getStatus, SessionStatus.ACTIVE.getCode()));
         
         this.update(new LambdaUpdateWrapper<Session>()
                 .lt(Session::getExpiresAt, LocalDateTime.now())
-                .eq(Session::getStatus, 0) // Only active sessions
-                .set(Session::getStatus, 1)); // Expired
+                .eq(Session::getStatus, SessionStatus.ACTIVE.getCode())
+                .set(Session::getStatus, SessionStatus.EXPIRED.getCode()));
         
         if (count > 0) {
             log.info("Cleaned {} expired sessions from database", count);
@@ -194,8 +191,8 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         // Query from database (no caching for list operations)
         return this.list(new LambdaQueryWrapper<Session>()
                 .eq(Session::getUserId, userId)
-                .eq(Session::getStatus, 0) // Only active sessions
-                .orderByDesc(Session::getLastActivityAt));
+                .eq(Session::getStatus, SessionStatus.ACTIVE.getCode())
+                .orderByDesc(Session::getLastRefreshAt));
     }
 
     @Override
@@ -204,7 +201,7 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         Session session = this.getOne(new LambdaQueryWrapper<Session>()
                 .eq(Session::getId, sessionId)
                 .eq(Session::getUserId, userId)
-                .eq(Session::getStatus, 0) // Only active sessions
+                .eq(Session::getStatus, SessionStatus.ACTIVE.getCode())
                 .last("LIMIT 1"));
         
         if (session == null) {
@@ -223,13 +220,13 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         // Get all user sessions except current one to remove from cache
         var sessions = this.list(new LambdaQueryWrapper<Session>()
                 .eq(Session::getUserId, userId)
-                .eq(Session::getStatus, 0)
+                .eq(Session::getStatus, SessionStatus.ACTIVE.getCode())
                 .ne(Session::getId, currentSessionId));
         
         // Remove all from cache
         sessions.forEach(session -> {
             if (session.getAccessTokenHash() != null) {
-                String cacheKey = SESSION_PREFIX + session.getAccessTokenHash();
+                String cacheKey = redisProperties.getSessionPrefix() + session.getAccessTokenHash();
                 redisTemplate.delete(cacheKey);
             }
         });
@@ -237,9 +234,9 @@ public class CachedSessionServiceImpl extends ServiceImpl<SessionMapper, Session
         // Update database - revoke all active sessions except the current one
         this.update(new LambdaUpdateWrapper<Session>()
                 .eq(Session::getUserId, userId)
-                .eq(Session::getStatus, 0) // Only active sessions
-                .ne(Session::getId, currentSessionId) // Exclude current session
-                .set(Session::getStatus, 2)); // Revoked
+                .eq(Session::getStatus, SessionStatus.ACTIVE.getCode())
+                .ne(Session::getId, currentSessionId)
+                .set(Session::getStatus, SessionStatus.REVOKED.getCode()));
         
         log.info("User {} revoked all other sessions, keeping sessionId={}", userId, currentSessionId);
     }

@@ -71,4 +71,25 @@ public class JsonUtil {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * Parse JSON string to Map<String, Object>
+     * Useful for parsing JWT payloads or dynamic JSON structures
+     *
+     * @param json JSON string
+     * @return Map with String keys and Object values
+     */
+    public static Map<String, Object> json2ObjectMap(String json) {
+        if (StringUtils.isBlank(json)) {
+            return new HashMap<>();
+        }
+
+        try {
+            return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {
+            });
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to parse JSON string to Map<String, Object>: {}", json, e);
+            return new HashMap<>();
+        }
+    }
 }

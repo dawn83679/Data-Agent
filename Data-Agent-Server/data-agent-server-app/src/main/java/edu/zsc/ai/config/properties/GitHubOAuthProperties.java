@@ -8,29 +8,29 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Google OAuth Configuration Properties
+ * GitHub OAuth Configuration Properties
  *
  * @author Data-Agent Team
  */
 @Slf4j
 @Data
 @Component
-@ConfigurationProperties(prefix = "google.oauth")
-public class GoogleOAuthProperties {
+@ConfigurationProperties(prefix = "github.oauth")
+public class GitHubOAuthProperties {
 
     /**
-     * Google OAuth Client ID
+     * GitHub OAuth Client ID
      */
     private String clientId;
 
     /**
-     * Google OAuth Client Secret
+     * GitHub OAuth Client Secret
      */
     private String clientSecret;
 
     /**
      * OAuth Redirect URI (backend callback endpoint)
-     * Must match the URI registered in Google Cloud Console
+     * Must match the URI registered in GitHub OAuth App settings
      */
     private String redirectUri;
 
@@ -41,24 +41,29 @@ public class GoogleOAuthProperties {
     private String frontendRedirectUri;
 
     /**
-     * Google OAuth Authorization URL
+     * GitHub OAuth Authorization URL
      */
-    private String authUrl = "https://accounts.google.com/o/oauth2/v2/auth";
+    private String authUrl = "https://github.com/login/oauth/authorize";
 
     /**
-     * Google OAuth Token URL
+     * GitHub OAuth Token URL
      */
-    private String tokenUrl = "https://oauth2.googleapis.com/token";
+    private String tokenUrl = "https://github.com/login/oauth/access_token";
 
     /**
-     * Google OAuth Scope
+     * GitHub User API URL
      */
-    private String scope = "openid email profile";
+    private String userApiUrl = "https://api.github.com/user";
+
+    /**
+     * GitHub OAuth Scope
+     */
+    private String scope = "read:user user:email";
 
     /**
      * OAuth State Redis Key Prefix
      */
-    private String statePrefix = "oauth:state:";
+    private String statePrefix = "oauth:github:state:";
 
     /**
      * OAuth State Expiration Time (in minutes)
@@ -76,7 +81,7 @@ public class GoogleOAuthProperties {
     private int readTimeout = 10000;
 
     /**
-     * Proxy configuration for accessing Google OAuth services
+     * Proxy configuration for accessing GitHub OAuth services
      */
     private Proxy proxy = new Proxy();
 
@@ -109,7 +114,7 @@ public class GoogleOAuthProperties {
     }
 
     /**
-     * Check if Google OAuth is properly configured
+     * Check if GitHub OAuth is properly configured
      */
     public boolean isConfigured() {
         return clientId != null && !clientId.isEmpty()
@@ -123,13 +128,14 @@ public class GoogleOAuthProperties {
      */
     @PostConstruct
     public void logConfiguration() {
-        log.info("=== Google OAuth Configuration ===");
-        log.info("Client ID: {}", clientId != null ? "***" + clientId.substring(Math.max(0, clientId.length() - 15)) : "NOT SET");
-        log.info("Client Secret: {}", clientSecret != null ? "***" + clientSecret.substring(Math.max(0, clientSecret.length() - 5)) : "NOT SET");
-        log.info("Redirect URI: {}", redirectUri != null ? redirectUri : "NOT SET");
-        log.info("Frontend Redirect URI: {}", frontendRedirectUri != null ? frontendRedirectUri : "NOT SET");
+        log.info("=== GitHub OAuth Configuration ===");
+        log.info("Client ID: {}", clientId != null && !clientId.isEmpty() ? "***" + clientId.substring(Math.max(0, clientId.length() - 10)) : "NOT SET");
+        log.info("Client Secret: {}", clientSecret != null && !clientSecret.isEmpty() ? "***" + clientSecret.substring(Math.max(0, clientSecret.length() - 5)) : "NOT SET");
+        log.info("Redirect URI: {}", redirectUri != null && !redirectUri.isEmpty() ? redirectUri : "NOT SET");
+        log.info("Frontend Redirect URI: {}", frontendRedirectUri != null && !frontendRedirectUri.isEmpty() ? frontendRedirectUri : "NOT SET");
         log.info("Auth URL: {}", authUrl);
         log.info("Token URL: {}", tokenUrl);
+        log.info("User API URL: {}", userApiUrl);
         log.info("Scope: {}", scope);
         log.info("State Expiration: {} minutes", stateExpirationMinutes);
         log.info("Connection Timeout: {} ms", connectionTimeout);

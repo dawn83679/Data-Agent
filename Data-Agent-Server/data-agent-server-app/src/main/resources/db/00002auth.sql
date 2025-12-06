@@ -57,7 +57,6 @@ CREATE TABLE sys_sessions
     device_info        VARCHAR(500),
     ip_address         VARCHAR(45),
     user_agent         TEXT,
-    last_activity_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_refresh_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at         TIMESTAMP    NOT NULL,
     status             INTEGER   DEFAULT 0,
@@ -72,7 +71,6 @@ COMMENT ON COLUMN sys_sessions.access_token_hash IS 'Access token hash value, no
 COMMENT ON COLUMN sys_sessions.device_info IS 'Device information (device type, operating system, browser, etc.)';
 COMMENT ON COLUMN sys_sessions.ip_address IS 'Login IP address';
 COMMENT ON COLUMN sys_sessions.user_agent IS 'User agent string for device identification';
-COMMENT ON COLUMN sys_sessions.last_activity_at IS 'Last activity time, updated on each request';
 COMMENT ON COLUMN sys_sessions.last_refresh_at IS 'Last refresh time, for cleaning up long-unused sessions';
 COMMENT ON COLUMN sys_sessions.expires_at IS 'Session expiration time';
 COMMENT ON COLUMN sys_sessions.status IS 'Session status: 0=active, 1=expired, 2=revoked';

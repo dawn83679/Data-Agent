@@ -27,7 +27,7 @@ public class Session {
                 ", userId=" + userId +
                 ", ipAddress='" + ipAddress + '\'' +
                 ", userAgent='" + userAgent + '\'' +
-                ", lastActivityAt=" + lastActivityAt +
+                ", lastRefreshAt=" + lastRefreshAt +
                 ", expiresAt=" + expiresAt +
                 ", status=" + status +
                 ", createdAt=" + createdAt +
@@ -61,11 +61,6 @@ public class Session {
      * Device info (optional)
      */
     private String deviceInfo;
-
-    /**
-     * Last activity time
-     */
-    private LocalDateTime lastActivityAt;
 
     /**
      * Last refresh time

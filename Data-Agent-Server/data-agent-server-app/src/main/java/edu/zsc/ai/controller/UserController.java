@@ -82,7 +82,7 @@ public class UserController {
                         .ipAddress(session.getIpAddress())
                         .userAgent(session.getUserAgent())
                         .deviceInfo(session.getDeviceInfo())
-                        .lastActivityAt(session.getLastActivityAt())
+                        .lastActivityAt(session.getLastRefreshAt())
                         .createdAt(session.getCreatedAt())
                         .isCurrent(session.getId().equals(currentSessionId))
                         .build())

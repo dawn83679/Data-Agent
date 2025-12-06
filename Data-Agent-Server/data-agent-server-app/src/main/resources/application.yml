@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: DataAgent
+  profiles:
+    active: local
   datasource:
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://localhost:5432/data_agent
@@ -80,12 +82,6 @@ mybatis-plus:
       logic-not-delete-value: 0
   mapper-locations: classpath:mapper/*.xml
 
-# JWT configuration
-jwt:
-  secret: data-agent-secret-key-please-change-this-in-production-environment-min-256-bits-required
-  access-token-expiration: 3600000  # 1 hour in milliseconds
-  refresh-token-expiration: 2592000000  # 30 days in milliseconds
-
 # Sa-Token configuration
 sa-token:
   # JWT secret key (should use environment variable in production)
@@ -94,8 +90,8 @@ sa-token:
   token-name: Authorization
   # Token prefix
   token-prefix: Bearer
-  # Token style (uuid, simple-uuid, random-32, random-64, random-128, tik)
-  token-style: uuid
+  # Token style (uuid, simple-uuid, random-32, random-64, random-128, tik, jwt)
+  token-style: jwt
   # AccessToken expiration time (seconds, -1 means never expire)
   timeout: 1800  # 30 minutes
   # Allow concurrent login for same account
@@ -114,27 +110,6 @@ sa-token:
   # Note: This is not directly supported in JWT stateless mode
   # We'll handle RefreshToken separately
 
-# Security configuration
-security:
-  login:
-    max-attempts: 5  # Maximum failed login attempts before blocking
-    block-duration-minutes: 5  # Block duration in minutes after max attempts reached
-
-# Application-specific Redis configuration
-app:
-  redis:
-    # Default cache TTL (30 minutes)
-    default-ttl: 30m
-    # Session cache TTL (30 minutes)
-    session-ttl: 30m
-    # Verification code TTL (5 minutes)
-    verification-code-ttl: 5m
-    # Login attempt tracking TTL (15 minutes)
-    login-attempt-ttl: 15m
-    # Key prefix for all Redis keys
-    key-prefix: "data-agent:"
-    # Enable Redis keyspace notifications (for key expiration events)
-    enable-keyspace-notifications: false
 
 # Google OAuth configuration
 # IMPORTANT: Sensitive OAuth credentials (client-id, client-secret) are NOT stored here
@@ -164,4 +139,32 @@ google:
       host: ${GOOGLE_OAUTH_PROXY_HOST:127.0.0.1}
       # Proxy server port
       port: ${GOOGLE_OAUTH_PROXY_PORT:7890}
+
+# GitHub OAuth configuration
+# IMPORTANT: Sensitive OAuth credentials (client-id, client-secret) are NOT stored here
+# Create application-local.yml file to configure these values (gitignored, won't be committed)
+github:
+  oauth:
+    # GitHub OAuth Client ID (from GitHub Developer Settings)
+    # Get this from: https://github.com/settings/developers
+    # Must be configured in application-local.yml or environment variable
+    client-id: ${GITHUB_OAUTH_CLIENT_ID}
+    # GitHub OAuth Client Secret (from GitHub Developer Settings)
+    # Must be configured in application-local.yml or environment variable
+    client-secret: ${GITHUB_OAUTH_CLIENT_SECRET}
+    # Backend redirect URI (must match the one registered in GitHub OAuth App)
+    # This is where GitHub will redirect after user authorization
+    redirect-uri: ${GITHUB_OAUTH_REDIRECT_URI:http://localhost:8081/api/auth/github/callback}
+    # Frontend redirect URI (where to redirect user after successful login)
+    # This is where the user will be sent with tokens in URL parameters
+    frontend-redirect-uri: ${GITHUB_OAUTH_FRONTEND_REDIRECT_URI:http://localhost:8081/api/auth/test-callback}
+    # Proxy configuration for accessing GitHub OAuth services
+    # Enable this if you need to use a proxy to access GitHub services
+    proxy:
+      # Whether to enable proxy (set to true to use proxy)
+      enabled: ${GITHUB_OAUTH_PROXY_ENABLED:false}
+      # Proxy server host (e.g., 127.0.0.1 for local proxy, or your proxy server address)
+      host: ${GITHUB_OAUTH_PROXY_HOST:127.0.0.1}
+      # Proxy server port
+      port: ${GITHUB_OAUTH_PROXY_PORT:7890}
 

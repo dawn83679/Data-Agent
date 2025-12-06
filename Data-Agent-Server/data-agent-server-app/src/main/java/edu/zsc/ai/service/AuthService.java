@@ -65,6 +65,16 @@ public interface AuthService {
     TokenPairResponse googleLogin(String code, HttpServletRequest httpRequest);
 
     /**
+     * GitHub OAuth login
+     * Exchange authorization code for user info and create/login user
+     *
+     * @param code GitHub OAuth authorization code
+     * @param httpRequest HTTP request for IP and user agent
+     * @return token pair
+     */
+    TokenPairResponse githubLogin(String code, HttpServletRequest httpRequest);
+
+    /**
      * Verify email with verification code
      *
      * @param email user email

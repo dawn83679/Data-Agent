@@ -1,0 +1,245 @@
+{
+  "info": {
+    "name": "数据库连接管理 API",
+    "description": "测试数据库连接管理功能的完整 API 集合",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8081/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "connectionId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. 用户登录",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.collectionVariables.set('token', jsonData.accessToken);",
+              "    console.log('Token saved:', jsonData.accessToken);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "2. 获取支持的数据库类型",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/connections/types",
+          "host": ["{{baseUrl}}"],
+          "path": ["connections", "types"]
+        }
+      }
+    },
+    {
+      "name": "3. 创建 MySQL 连接",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.collectionVariables.set('connectionId', jsonData.id);",
+              "    console.log('Connection ID saved:', jsonData.id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"我的MySQL数据库\",\n  \"dbType\": \"mysql\",\n  \"host\": \"localhost\",\n  \"port\": 3306,\n  \"database\": \"test_db\",\n  \"username\": \"root\",\n  \"password\": \"password123\",\n  \"driverJarPath\": \"/path/to/mysql-connector.jar\",\n  \"timeout\": 30,\n  \"properties\": \"{\\\"useSSL\\\":\\\"false\\\"}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/connections",
+          "host": ["{{baseUrl}}"],
+          "path": ["connections"]
+        }
+      }
+    },
+    {
+      "name": "4. 创建 PostgreSQL 连接",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"我的PostgreSQL数据库\",\n  \"dbType\": \"postgresql\",\n  \"host\": \"localhost\",\n  \"port\": 5432,\n  \"database\": \"data_agent\",\n  \"username\": \"postgres\",\n  \"password\": \"postgres\",\n  \"driverJarPath\": \"/path/to/postgresql.jar\",\n  \"timeout\": 30\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/connections",
+          "host": ["{{baseUrl}}"],
+          "path": ["connections"]
+        }
+      }
+    },
+    {
+      "name": "5. 获取连接列表",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/connections",
+          "host": ["{{baseUrl}}"],
+          "path": ["connections"]
+        }
+      }
+    },
+    {
+      "name": "6. 获取连接详情",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/connections/{{connectionId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["connections", "{{connectionId}}"]
+        }
+      }
+    },
+    {
+      "name": "7. 更新连接",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"更新后的MySQL连接\",\n  \"host\": \"192.168.1.100\",\n  \"port\": 3307\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/connections/{{connectionId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["connections", "{{connectionId}}"]
+        }
+      }
+    },
+    {
+      "name": "8. 测试连接",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"dbType\": \"postgresql\",\n  \"host\": \"localhost\",\n  \"port\": 5432,\n  \"database\": \"data_agent\",\n  \"username\": \"postgres\",\n  \"password\": \"postgres\",\n  \"driverJarPath\": \"/path/to/postgresql.jar\",\n  \"timeout\": 10\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/connections/test",
+          "host": ["{{baseUrl}}"],
+          "path": ["connections", "test"]
+        }
+      }
+    },
+    {
+      "name": "9. 删除连接",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/connections/{{connectionId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["connections", "{{connectionId}}"]
+        }
+      }
+    }
+  ]
+}

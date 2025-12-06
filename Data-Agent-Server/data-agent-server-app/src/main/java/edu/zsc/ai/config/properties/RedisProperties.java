@@ -49,6 +49,30 @@ public class RedisProperties {
     private String keyPrefix = "data-agent:";
 
     /**
+     * Session key prefix in Redis
+     * Default: "session:"
+     */
+    private String sessionPrefix = "session:";
+
+    /**
+     * Session cache expiration time in minutes
+     * Default: 30 minutes (matches AccessToken expiration)
+     */
+    private long sessionCacheExpireMinutes = 30;
+
+    /**
+     * Refresh token key prefix in Redis
+     * Default: "refresh_token:"
+     */
+    private String refreshTokenPrefix = "refresh_token:";
+
+    /**
+     * Refresh token cache expiration time in days
+     * Default: 30 days
+     */
+    private long refreshTokenCacheExpireDays = 30;
+
+    /**
      * Whether to enable Redis key expiration events
      * Default: false
      */
