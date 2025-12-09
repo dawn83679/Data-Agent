@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS db_connections (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    db_type VARCHAR(20) NOT NULL,
+    db_type VARCHAR(20) NOT NULL UNIQUE,
     host VARCHAR(255) NOT NULL,
     port INTEGER NOT NULL,
     database VARCHAR(100),
@@ -13,13 +13,11 @@ CREATE TABLE IF NOT EXISTS db_connections (
     properties TEXT DEFAULT '',
     user_id BIGINT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uk_name_user UNIQUE (name, user_id)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 索引定义
 CREATE INDEX IF NOT EXISTS idx_db_connections_type ON db_connections(db_type);
-CREATE INDEX IF NOT EXISTS idx_db_connections_host_port ON db_connections(host, port);
 CREATE INDEX IF NOT EXISTS idx_db_connections_user_id ON db_connections(user_id);
 
 -- 表注释

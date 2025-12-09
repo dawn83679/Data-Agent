@@ -4,6 +4,9 @@
 .claude
 .kiro
 
+# Spring Boot Local Configuration (contains sensitive data)
+**/application-local.yml
+
 # OS
 .DS_Store
 

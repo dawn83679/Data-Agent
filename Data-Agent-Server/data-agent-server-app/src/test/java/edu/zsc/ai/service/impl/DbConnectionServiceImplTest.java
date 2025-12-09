@@ -91,14 +91,14 @@ class DbConnectionServiceImplTest {
         // Create a connection first
         dbConnectionService.createConnection(testRequest);
 
-        // Try to create connection with same name
+        // Try to create connection with same name (name is globally unique)
         ConnectionCreateRequest duplicateRequest = new ConnectionCreateRequest();
         duplicateRequest.setName(testRequest.getName());
         duplicateRequest.setDbType("postgresql");
         duplicateRequest.setHost("localhost");
         duplicateRequest.setPort(5432);
         duplicateRequest.setDriverJarPath("/path/to/postgresql.jar");
-        duplicateRequest.setUserId(1L);
+        duplicateRequest.setUserId(2L); // Different user, but name must still be unique
 
         // Verify exception is thrown
         assertThrows(IllegalArgumentException.class, () -> {
@@ -232,19 +232,19 @@ class DbConnectionServiceImplTest {
         request2.setHost("localhost");
         request2.setPort(5432);
         request2.setDriverJarPath("/path/to/postgresql.jar");
-        request2.setUserId(1L);
+        request2.setUserId(2L); // Different user
         ConnectionResponse connection2 = dbConnectionService.createConnection(request2);
 
-        // 尝试将 connection2 的名称更新为 connection1 的名称
+        // Try to update connection2's name to connection1's name (should fail due to global uniqueness)
         ConnectionCreateRequest updateRequest = new ConnectionCreateRequest();
         updateRequest.setName(connection1.getName());
         updateRequest.setDbType("postgresql");
         updateRequest.setHost("localhost");
         updateRequest.setPort(5432);
         updateRequest.setDriverJarPath("/path/to/postgresql.jar");
-        updateRequest.setUserId(1L);
+        updateRequest.setUserId(2L);
 
-        // 验证抛出异常
+        // Verify exception is thrown
         assertThrows(IllegalArgumentException.class, () -> {
             dbConnectionService.updateConnection(connection2.getId(), updateRequest);
         });

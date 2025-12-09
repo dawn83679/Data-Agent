@@ -40,11 +40,6 @@ public class SessionResponse {
     private String deviceInfo;
 
     /**
-     * Last activity time
-     */
-    private LocalDateTime lastActivityAt;
-
-    /**
      * Session creation time
      */
     private LocalDateTime createdAt;

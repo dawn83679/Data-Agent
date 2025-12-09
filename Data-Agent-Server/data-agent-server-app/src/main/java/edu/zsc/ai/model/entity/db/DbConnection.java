@@ -32,7 +32,7 @@ public class DbConnection {
     private Long id;
 
     /**
-     * Connection name, must be unique
+     * Connection name, must be globally unique
      */
     private String name;
 

@@ -45,7 +45,9 @@ public class AuthController {
     private final AuthService authService;
     private final VerificationCodeService verificationCodeService;
     private final GoogleOAuthService googleOAuthService;
+    private final edu.zsc.ai.service.GitHubOAuthService gitHubOAuthService;
     private final edu.zsc.ai.config.properties.GoogleOAuthProperties googleOAuthProperties;
+    private final edu.zsc.ai.config.properties.GitHubOAuthProperties gitHubOAuthProperties;
 
     /**
      * User login
@@ -237,6 +239,76 @@ public class AuthController {
 
 
     /**
+     * Initiate GitHub OAuth login
+     * Public endpoint - redirects user to GitHub authorization page
+     */
+    @Operation(summary = "Initiate GitHub OAuth", description = "Redirect to GitHub authorization page")
+    @GetMapping("/github/login")
+    public RedirectView initiateGitHubLogin() {
+        log.info("Initiating GitHub OAuth login");
+        // Generate secure random state for CSRF protection
+        String state = ((edu.zsc.ai.service.impl.GitHubOAuthServiceImpl) gitHubOAuthService).generateState();
+        // Store state in Redis for validation in callback
+        gitHubOAuthService.storeState(state);
+        
+        String authUrl = gitHubOAuthService.getAuthorizationUrl(state);
+        return new RedirectView(authUrl);
+    }
+
+    /**
+     * GitHub OAuth callback
+     * Public endpoint - handles redirect from GitHub with authorization code
+     */
+    @Operation(summary = "GitHub OAuth Callback", description = "Handle GitHub OAuth callback with authorization code")
+    @GetMapping("/github/callback")
+    public RedirectView handleGitHubCallback(
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String error,
+            @RequestParam(required = false) String error_description,
+            @RequestParam(required = false) String state,
+            HttpServletRequest httpRequest) {
+        log.info("GitHub OAuth callback received");
+        
+        try {
+            // Check if GitHub returned an error (e.g., user denied access)
+            if (error != null) {
+                log.warn("GitHub OAuth error: {} - {}", error, error_description);
+                String errorMessage = error_description != null ? error_description : "Authorization failed";
+                String errorUrl = buildGitHubFrontendErrorUrl(errorMessage);
+                return new RedirectView(errorUrl);
+            }
+            
+            // Check if code parameter is present
+            if (code == null || code.isEmpty()) {
+                log.error("Missing authorization code in callback");
+                String errorUrl = buildGitHubFrontendErrorUrl("Missing authorization code");
+                return new RedirectView(errorUrl);
+            }
+            
+            // Validate state parameter against stored value
+            if (!gitHubOAuthService.validateState(state)) {
+                log.error("Invalid or expired OAuth state parameter");
+                String errorUrl = buildGitHubFrontendErrorUrl("Invalid or expired OAuth state. Please try again.");
+                return new RedirectView(errorUrl);
+            }
+            
+            // Process login and get tokens
+            TokenPairResponse tokenPair = authService.githubLogin(code, httpRequest);
+            
+            // Redirect to frontend with tokens
+            String frontendUrl = buildGitHubFrontendRedirectUrl(tokenPair);
+            log.info("GitHub OAuth login successful, redirecting to frontend");
+            return new RedirectView(frontendUrl);
+            
+        } catch (Exception e) {
+            log.error("GitHub OAuth login failed", e);
+            // Redirect to frontend error page
+            String errorUrl = buildGitHubFrontendErrorUrl(e.getMessage());
+            return new RedirectView(errorUrl);
+        }
+    }
+
+    /**
      * Test callback endpoint for debugging OAuth flow
      * This endpoint displays the OAuth result (success or error)
      */
@@ -298,6 +370,37 @@ public class AuthController {
      */
     private String buildFrontendErrorUrl(String errorMessage) {
         String frontendUrl = googleOAuthProperties.getFrontendRedirectUri();
+        try {
+            return frontendUrl + "?error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8");
+        } catch (Exception e) {
+            log.error("Failed to encode error message", e);
+            return frontendUrl + "?error=unknown";
+        }
+    }
+
+    /**
+     * Build GitHub frontend redirect URL with tokens
+     */
+    private String buildGitHubFrontendRedirectUrl(TokenPairResponse tokenPair) {
+        String frontendUrl = gitHubOAuthProperties.getFrontendRedirectUri();
+        
+        try {
+            return frontendUrl + "?" +
+                "access_token=" + java.net.URLEncoder.encode(tokenPair.getAccessToken(), "UTF-8") +
+                "&refresh_token=" + java.net.URLEncoder.encode(tokenPair.getRefreshToken(), "UTF-8") +
+                "&token_type=" + java.net.URLEncoder.encode(tokenPair.getTokenType(), "UTF-8") +
+                "&expires_in=" + tokenPair.getExpiresIn();
+        } catch (Exception e) {
+            log.error("Failed to encode tokens in URL", e);
+            return frontendUrl + "?error=encoding_failed";
+        }
+    }
+
+    /**
+     * Build GitHub frontend error URL
+     */
+    private String buildGitHubFrontendErrorUrl(String errorMessage) {
+        String frontendUrl = gitHubOAuthProperties.getFrontendRedirectUri();
         try {
             return frontendUrl + "?error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8");
         } catch (Exception e) {
