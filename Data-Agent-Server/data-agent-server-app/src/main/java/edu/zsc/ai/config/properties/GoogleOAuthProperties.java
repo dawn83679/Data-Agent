@@ -41,6 +41,41 @@ public class GoogleOAuthProperties {
     private String frontendRedirectUri;
 
     /**
+     * OAuth state parameter prefix for Redis/storage keys
+     */
+    private String statePrefix = "oauth:google:state:";
+
+    /**
+     * OAuth state expiration time in minutes
+     */
+    private int stateExpirationMinutes = 10;
+
+    /**
+     * Authorization URL
+     */
+    private String authUrl = "https://accounts.google.com/o/oauth2/v2/auth";
+
+    /**
+     * Token exchange URL
+     */
+    private String tokenUrl = "https://oauth2.googleapis.com/token";
+
+    /**
+     * OAuth scope
+     */
+    private String scope = "openid email profile";
+
+    /**
+     * Connection timeout in milliseconds
+     */
+    private int connectionTimeout = 5000;
+
+    /**
+     * Read timeout in milliseconds
+     */
+    private int readTimeout = 5000;
+
+    /**
      * Proxy configuration for accessing Google OAuth services
      */
     private Proxy proxy = new Proxy();

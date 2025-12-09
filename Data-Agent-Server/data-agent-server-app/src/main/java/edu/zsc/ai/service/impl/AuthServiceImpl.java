@@ -8,6 +8,8 @@ import edu.zsc.ai.enums.error.ErrorCode;
 import edu.zsc.ai.exception.BusinessException;
 import edu.zsc.ai.model.dto.request.LoginRequest;
 import edu.zsc.ai.model.dto.request.RegisterRequest;
+import edu.zsc.ai.model.dto.response.GitHubTokenResponse;
+import edu.zsc.ai.model.dto.response.GitHubUserInfo;
 import edu.zsc.ai.model.dto.response.GoogleTokenResponse;
 import edu.zsc.ai.model.dto.response.GoogleUserInfo;
 import edu.zsc.ai.model.dto.response.TokenPairResponse;
@@ -41,6 +43,7 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenService refreshTokenService;
     private final VerificationCodeService verificationCodeService;
     private final GoogleOAuthService googleOAuthService;
+    private final edu.zsc.ai.service.GitHubOAuthService gitHubOAuthService;
 
     @Override
     public TokenPairResponse login(LoginRequest request, HttpServletRequest httpRequest) {
@@ -374,8 +377,7 @@ public class AuthServiceImpl implements AuthService {
         user.setUsername(googleUserInfo.getName() != null ? googleUserInfo.getName() : googleUserInfo.getEmail().split("@")[0]);
         user.setAvatarUrl(googleUserInfo.getPicture());
         user.setVerified(Boolean.TRUE.equals(googleUserInfo.getEmailVerified()));
-        user.setOauthProvider("google");
-        user.setOauthProviderId(googleUserInfo.getGoogleId());
+        user.setPasswordHash("OAUTH_USER_NO_PASSWORD"); // Placeholder for OAuth users
         // No password for OAuth users
 
         boolean saved = userService.save(user);
@@ -383,8 +385,7 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "Failed to create user from Google OAuth");
         }
 
-        log.info("Created user from Google OAuth: email={}, provider={}, providerId={}", 
-                user.getEmail(), user.getOauthProvider(), user.getOauthProviderId());
+        log.info("Created user from Google OAuth: email={}", user.getEmail());
         return user;
     }
 
@@ -411,24 +412,116 @@ public class AuthServiceImpl implements AuthService {
             }
         }
 
-        // Update OAuth provider info if not set or changed
-        if (user.getOauthProvider() == null || !user.getOauthProvider().equals("google")) {
-            user.setOauthProvider("google");
-            updated = true;
-        }
-        if (user.getOauthProviderId() == null || !user.getOauthProviderId().equals(googleUserInfo.getGoogleId())) {
-            user.setOauthProviderId(googleUserInfo.getGoogleId());
-            updated = true;
-        }
-
         // Save if any changes were made
         if (updated) {
             boolean saved = userService.updateById(user);
             if (!saved) {
                 log.warn("Failed to update user profile from Google OAuth: email={}", user.getEmail());
             } else {
-                log.info("Updated user profile from Google OAuth: email={}, provider={}, providerId={}", 
-                        user.getEmail(), user.getOauthProvider(), user.getOauthProviderId());
+                log.info("Updated user profile from Google OAuth: email={}", user.getEmail());
+            }
+        }
+    }
+
+    @Override
+    public TokenPairResponse githubLogin(String code, HttpServletRequest httpRequest) {
+        String ipAddress = getClientIp(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        try {
+            // 1. Exchange authorization code for tokens
+            log.debug("Exchanging GitHub authorization code for tokens");
+            GitHubTokenResponse tokenResponse = gitHubOAuthService.exchangeCode(code);
+
+            // 2. Get user info from GitHub API
+            log.debug("Fetching user info from GitHub API");
+            GitHubUserInfo gitHubUserInfo = gitHubOAuthService.getUserInfo(tokenResponse.getAccessToken());
+
+            // 3. Check if user exists
+            User user = userService.getByEmail(gitHubUserInfo.getEmail());
+            if (user == null) {
+                // Create new user from GitHub info
+                log.info("Creating new user from GitHub OAuth: email={}", gitHubUserInfo.getEmail());
+                user = createUserFromGitHubInfo(gitHubUserInfo);
+            } else {
+                // Update existing user's profile
+                log.info("Existing user logging in via GitHub OAuth: email={}", gitHubUserInfo.getEmail());
+                updateUserFromGitHubInfo(user, gitHubUserInfo);
+            }
+
+            // 4. Generate access token using Sa-Token
+            StpUtil.login(user.getId());
+            String accessToken = StpUtil.getTokenValue();
+
+            // 5. Create session and refresh token
+            TokenPairResponse response = createSessionAndTokens(user, accessToken, ipAddress, userAgent, user.getEmail());
+
+            log.info("GitHub OAuth login successful: email={}", user.getEmail());
+            return response;
+
+        } catch (BusinessException e) {
+            // Re-throw business exceptions
+            throw e;
+        } catch (Exception e) {
+            log.error("GitHub OAuth login failed", e);
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, 
+                "GitHub OAuth login failed. Please try again.");
+        }
+    }
+
+    /**
+     * Create user from GitHub OAuth info
+     * This is a helper method for GitHub OAuth login
+     */
+    @Transactional
+    protected User createUserFromGitHubInfo(GitHubUserInfo gitHubUserInfo) {
+        User user = new User();
+        user.setEmail(gitHubUserInfo.getEmail());
+        user.setUsername(gitHubUserInfo.getLogin() != null ? gitHubUserInfo.getLogin() : gitHubUserInfo.getEmail().split("@")[0]);
+        user.setAvatarUrl(gitHubUserInfo.getAvatarUrl());
+        user.setVerified(true); // GitHub emails are verified
+        user.setPasswordHash("OAUTH_USER_NO_PASSWORD"); // Placeholder for OAuth users
+        // No password for OAuth users
+
+        boolean saved = userService.save(user);
+        if (!saved) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "Failed to create user from GitHub OAuth");
+        }
+
+        log.info("Created user from GitHub OAuth: email={}", user.getEmail());
+        return user;
+    }
+
+    /**
+     * Update existing user with GitHub OAuth info
+     * Updates avatar, name, and OAuth info if changed, but preserves password and status
+     */
+    @Transactional
+    protected void updateUserFromGitHubInfo(User user, GitHubUserInfo gitHubUserInfo) {
+        boolean updated = false;
+
+        // Update avatar if changed
+        if (gitHubUserInfo.getAvatarUrl() != null && !gitHubUserInfo.getAvatarUrl().equals(user.getAvatarUrl())) {
+            user.setAvatarUrl(gitHubUserInfo.getAvatarUrl());
+            updated = true;
+        }
+
+        // Update username if changed and user doesn't have a custom username
+        if (gitHubUserInfo.getLogin() != null && !gitHubUserInfo.getLogin().equals(user.getUsername())) {
+            // Only update if current username looks like it was auto-generated (email prefix)
+            if (user.getUsername() != null && user.getUsername().equals(user.getEmail().split("@")[0])) {
+                user.setUsername(gitHubUserInfo.getLogin());
+                updated = true;
+            }
+        }
+
+        // Save if any changes were made
+        if (updated) {
+            boolean saved = userService.updateById(user);
+            if (!saved) {
+                log.warn("Failed to update user profile from GitHub OAuth: email={}", user.getEmail());
+            } else {
+                log.info("Updated user profile from GitHub OAuth: email={}", user.getEmail());
             }
         }
     }

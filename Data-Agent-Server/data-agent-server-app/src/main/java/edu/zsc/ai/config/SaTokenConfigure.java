@@ -75,6 +75,8 @@ public class SaTokenConfigure implements WebMvcConfigurer {
             "/api/auth/login/email-code",
             "/api/auth/google/login",
             "/api/auth/google/callback",
+            "/api/auth/github/login",
+            "/api/auth/github/callback",
             "/api/auth/test-callback",
             "/api/auth/verify-email",
             // Exclude health check endpoints
