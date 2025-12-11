@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import cn.dev33.satoken.exception.NotLoginException;
 import edu.zsc.ai.enums.error.ErrorCode;
 import edu.zsc.ai.exception.BusinessException;
 import edu.zsc.ai.model.dto.response.base.ApiResponse;
@@ -27,6 +28,41 @@ public class GlobalExceptionHandler {
 
     @Autowired
     private I18nUtils i18nUtils;
+
+    /**
+     * Handle Sa-Token NotLoginException
+     *
+     * @param e not login exception
+     * @return unified response format
+     */
+    @ExceptionHandler(NotLoginException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNotLoginException(NotLoginException e) {
+        String message;
+        switch (e.getType()) {
+            case NotLoginException.NOT_TOKEN:
+                message = i18nUtils.getMessage("error.token.missing");
+                break;
+            case NotLoginException.INVALID_TOKEN:
+                message = i18nUtils.getMessage("error.token.invalid");
+                break;
+            case NotLoginException.TOKEN_TIMEOUT:
+                message = i18nUtils.getMessage("error.token.expired");
+                break;
+            case NotLoginException.BE_REPLACED:
+                message = i18nUtils.getMessage("error.token.replaced");
+                break;
+            case NotLoginException.KICK_OUT:
+                message = i18nUtils.getMessage("error.token.kickout");
+                break;
+            default:
+                message = i18nUtils.getMessage("error.not.login");
+        }
+        
+        log.warn("Not login exception: type={}, message={}", e.getType(), message);
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(ErrorCode.NOT_LOGIN_ERROR, message));
+    }
 
     /**
      * Handle business exception

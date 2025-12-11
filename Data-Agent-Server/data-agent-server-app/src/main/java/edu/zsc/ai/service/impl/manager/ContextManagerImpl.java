@@ -49,7 +49,9 @@ public class ContextManagerImpl implements ContextManager {
         compressedMessages.addAll(needToCompressMessages);
 
         String compressResult = compressContextChatClient.prompt().messages(compressedMessages).call().content();
+
         //TODO: handle compressResult null or empty
+        
         aiMessageService.saveMessage(new SaveMessageRequest(conversationId, compressResult,
                 MessageRoleEnum.ASSISTANT.name(), compressContextConfig.getMaxToken(),
                 MessageBlockTypeEnum.SUMMARY.name(), null));

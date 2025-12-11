@@ -4,11 +4,21 @@ server:
 spring:
   application:
     name: DataAgent
+  profiles:
+    active: local
   datasource:
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://localhost:5432/data_agent
     username: postgres
     password: postgres
+    # HikariCP's connection pool configuration
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-test-query: SELECT 1
   ai:
     dashscope:
       api-key: ${ALIYUN_AI_API_KEY}
@@ -22,7 +32,6 @@ ai:
   cotext:
     compress:
       max-token: 300
-
 # MyBatis-Plus configuration
 mybatis-plus:
   configuration:
@@ -34,4 +43,90 @@ mybatis-plus:
       logic-delete-value: 1
       logic-not-delete-value: 0
   mapper-locations: classpath:mapper/*.xml
+
+# Sa-Token configuration
+sa-token:
+  # JWT secret key (should use environment variable in production)
+  jwt-secret-key: ${SA_TOKEN_JWT_SECRET:data-agent-secret-key-please-change-this-in-production-environment-min-256-bits-required}
+  # Token name (key in request header)
+  token-name: Authorization
+  # Token prefix
+  token-prefix: Bearer
+  # Token style (uuid, simple-uuid, random-32, random-64, random-128, tik, jwt)
+  token-style: jwt
+  # AccessToken expiration time (seconds, -1 means never expire)
+  timeout: 1800  # 30 minutes
+  # Allow concurrent login for same account
+  is-concurrent: true
+  # Share same token for multiple logins of same account
+  is-share: false
+  # Try to read token from request body
+  is-read-body: false
+  # Try to read token from header
+  is-read-header: true
+  # Try to read token from cookie
+  is-read-cookie: false
+  # Enable RefreshToken
+  is-log: false
+  # RefreshToken expiration time (seconds, -1 means never expire)
+  # Note: This is not directly supported in JWT stateless mode
+  # We'll handle RefreshToken separately
+
+# Google OAuth configuration
+# IMPORTANT: Sensitive OAuth credentials (client-id, client-secret) are NOT stored here
+# Create application-local.yml file to configure these values (gitignored, won't be committed)
+google:
+  oauth:
+    # Google OAuth Client ID (from Google Cloud Console)
+    # Get this from: https://console.cloud.google.com/apis/credentials
+    # Must be configured in application-local.yml or environment variable
+    client-id: ${GOOGLE_OAUTH_CLIENT_ID}
+    # Google OAuth Client Secret (from Google Cloud Console)
+    # Must be configured in application-local.yml or environment variable
+    client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET}
+    # Backend redirect URI (must match the one registered in Google Console)
+    # This is where Google will redirect after user authorization
+    redirect-uri: ${GOOGLE_OAUTH_REDIRECT_URI:http://localhost:8081/api/auth/google/callback}
+    # Frontend redirect URI (where to redirect user after successful login)
+    # This is where the user will be sent with tokens in URL parameters
+    frontend-redirect-uri: ${GOOGLE_OAUTH_FRONTEND_REDIRECT_URI:http://localhost:8081/api/auth/test-callback}
+    # Proxy configuration for accessing Google OAuth services
+    # Enable this if you need to use a proxy to access Google services
+    proxy:
+      # Whether to enable proxy (set to true to use proxy)
+      enabled: ${GOOGLE_OAUTH_PROXY_ENABLED:false}
+      # Proxy server host (e.g., 127.0.0.1 for local proxy, or your proxy server address)
+      # Common proxy software ports: Clash (7890), V2Ray (1080), Shadowsocks (1080)
+      host: ${GOOGLE_OAUTH_PROXY_HOST:127.0.0.1}
+      # Proxy server port
+      port: ${GOOGLE_OAUTH_PROXY_PORT:7890}
+
+# GitHub OAuth configuration
+# IMPORTANT: Sensitive OAuth credentials (client-id, client-secret) are NOT stored here
+# Create application-local.yml file to configure these values (gitignored, won't be committed)
+github:
+  oauth:
+    # GitHub OAuth Client ID (from GitHub Developer Settings)
+    # Get this from: https://github.com/settings/developers
+    # Must be configured in application-local.yml or environment variable
+    client-id: ${GITHUB_OAUTH_CLIENT_ID}
+    # GitHub OAuth Client Secret (from GitHub Developer Settings)
+    # Must be configured in application-local.yml or environment variable
+    client-secret: ${GITHUB_OAUTH_CLIENT_SECRET}
+    # Backend redirect URI (must match the one registered in GitHub OAuth App)
+    # This is where GitHub will redirect after user authorization
+    redirect-uri: ${GITHUB_OAUTH_REDIRECT_URI:http://localhost:8081/api/auth/github/callback}
+    # Frontend redirect URI (where to redirect user after successful login)
+    # This is where the user will be sent with tokens in URL parameters
+    frontend-redirect-uri: ${GITHUB_OAUTH_FRONTEND_REDIRECT_URI:http://localhost:8081/api/auth/test-callback}
+    # Proxy configuration for accessing GitHub OAuth services
+    # Enable this if you need to use a proxy to access GitHub services
+    proxy:
+      # Whether to enable proxy (set to true to use proxy)
+      enabled: ${GITHUB_OAUTH_PROXY_ENABLED:false}
+      # Proxy server host (e.g., 127.0.0.1 for local proxy, or your proxy server address)
+      # Common proxy software ports: Clash (7890), V2Ray (1080), Shadowsocks (1080)
+      host: ${GITHUB_OAUTH_PROXY_HOST:127.0.0.1}
+      # Proxy server port
+      port: ${GITHUB_OAUTH_PROXY_PORT:7890}
 
