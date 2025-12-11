@@ -123,13 +123,7 @@
                 <artifactId>spring-security-crypto</artifactId>
                 <version>${spring-security-crypto.version}</version>
             </dependency>
-            <!-- jqwik for Property-Based Testing -->
-            <dependency>
-                <groupId>net.jqwik</groupId>
-                <artifactId>jqwik</artifactId>
-                <version>${jqwik.version}</version>
-                <scope>test</scope>
-            </dependency>
+
         </dependencies>
     </dependencyManagement>
 

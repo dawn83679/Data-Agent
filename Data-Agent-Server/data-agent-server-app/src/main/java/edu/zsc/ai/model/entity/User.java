@@ -65,16 +65,6 @@ public class User {
     private Boolean verified;
 
     /**
-     * OAuth provider (null for email/password, 'google' for Google OAuth)
-     */
-    private String oauthProvider;
-
-    /**
-     * OAuth provider user ID
-     */
-    private String oauthProviderId;
-
-    /**
      * Account creation time
      */
     @TableField(fill = FieldFill.INSERT)

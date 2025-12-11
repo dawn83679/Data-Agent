@@ -26,6 +26,7 @@ import edu.zsc.ai.model.entity.EmailVerificationCode;
 import edu.zsc.ai.model.entity.User;
 import edu.zsc.ai.service.UserService;
 import edu.zsc.ai.service.VerificationCodeService;
+import edu.zsc.ai.util.PasswordUtil;
 
 /**
  * Email Verification Code Login Tests
@@ -66,6 +67,7 @@ class AuthServiceEmailCodeLoginTest {
         testUser = new User();
         testUser.setEmail(testEmail);
         testUser.setUsername("codetestuser");
+        testUser.setPasswordHash(PasswordUtil.encode("DummyPassword123!")); // Required field
         testUser.setVerified(true);
         userService.save(testUser);
 
@@ -178,6 +180,7 @@ class AuthServiceEmailCodeLoginTest {
         User unverifiedUser = new User();
         unverifiedUser.setEmail(unverifiedEmail);
         unverifiedUser.setUsername("unverified");
+        unverifiedUser.setPasswordHash(PasswordUtil.encode("DummyPassword123!")); // Required field
         unverifiedUser.setVerified(false);
         userService.save(unverifiedUser);
 

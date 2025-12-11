@@ -39,12 +39,6 @@
             <artifactId>spring-security-crypto</artifactId>
         </dependency>
 
-        <!-- Redis -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
-        </dependency>
-
         <!-- MyBatis-Plus for Spring Boot 3.x -->
         <dependency>
             <groupId>com.baomidou</groupId>

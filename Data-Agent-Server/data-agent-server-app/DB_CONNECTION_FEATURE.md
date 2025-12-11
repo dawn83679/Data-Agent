@@ -29,7 +29,7 @@
 
 - ✅ **数据隔离**
   - 每个用户的连接数据完全隔离
-  - 连接名称在用户范围内唯一
+  - 连接名称全局唯一
 
 ### 2. 支持的数据库类型
 
@@ -146,8 +146,7 @@ CREATE TABLE db_connections (
     properties      TEXT      DEFAULT '',
     user_id         BIGINT       NOT NULL,
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uk_name_user UNIQUE (name, user_id)
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_db_connections_type ON db_connections(db_type);
@@ -170,7 +169,7 @@ CREATE INDEX idx_db_connections_user_id ON db_connections(user_id);
 
 ### 3. 数据隔离
 - 每个用户的连接数据完全隔离
-- 连接名称在用户范围内唯一（不同用户可以使用相同的连接名称）
+- 连接名称全局唯一（所有用户共享同一命名空间）
 
 ## 配置说明
 

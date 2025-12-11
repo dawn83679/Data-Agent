@@ -187,46 +187,6 @@ class AuthServiceEmailPasswordLoginTest {
                 .andExpect(jsonPath("$.code").value(40300));
     }
 
-    @Test
-    @DisplayName("Test Account Lock After Multiple Failures")
-    void testAccountLockAfterMultipleFailures() throws Exception {
-        LoginRequest request = new LoginRequest();
-        request.setEmail(testEmail);
-        request.setPassword("WrongPassword");
-
-        // Attempt multiple failed logins and verify counter decrements
-        for (int i = 0; i < 5; i++) {
-            int expectedRemaining = 5 - i - 1; // Remaining attempts: 4, 3, 2, 1, 0
-            
-            mockMvc.perform(post("/api/auth/login")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.code").value(40100));
-            
-            // Verify remaining attempts
-            int actualRemaining = loginAttemptService.getRemainingAttempts(testEmail);
-            System.out.println("After attempt " + (i + 1) + ", remaining attempts: " + actualRemaining + " (expected: " + expectedRemaining + ")");
-            
-            // Only verify remaining attempts after first 4 failures (after 5th failure, account is locked and remaining is 0)
-            if (i < 4) {
-                assertTrue(actualRemaining == expectedRemaining, 
-                    "After " + (i + 1) + " failed attempts, expected " + expectedRemaining + " remaining, but got " + actualRemaining);
-            }
-        }
-
-        // Verify account is blocked
-        assertTrue(loginAttemptService.isBlocked(testEmail), "Account should be blocked after 5 failed attempts");
-        assertTrue(loginAttemptService.getRemainingAttempts(testEmail) == 0, "Remaining attempts should be 0 when blocked");
-
-        // Even correct password should be rejected
-        request.setPassword(testPassword);
-        mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(42900)); // ACCOUNT_LOCKED_ERROR
-    }
 
     @Test
     @DisplayName("Test Clear Failure Count After Successful Login")

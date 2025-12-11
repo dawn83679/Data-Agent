@@ -8,29 +8,29 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Google OAuth Configuration Properties
+ * GitHub OAuth Configuration Properties
  *
  * @author Data-Agent Team
  */
 @Slf4j
 @Data
 @Component
-@ConfigurationProperties(prefix = "google.oauth")
-public class GoogleOAuthProperties {
+@ConfigurationProperties(prefix = "github.oauth")
+public class GitHubOAuthProperties {
 
     /**
-     * Google OAuth Client ID
+     * GitHub OAuth Client ID
      */
     private String clientId;
 
     /**
-     * Google OAuth Client Secret
+     * GitHub OAuth Client Secret
      */
     private String clientSecret;
 
     /**
      * OAuth Redirect URI (backend callback endpoint)
-     * Must match the URI registered in Google Cloud Console
+     * Must match the URI registered in GitHub OAuth App settings
      */
     private String redirectUri;
 
@@ -41,9 +41,9 @@ public class GoogleOAuthProperties {
     private String frontendRedirectUri;
 
     /**
-     * OAuth state parameter prefix for Redis/storage keys
+     * OAuth state parameter prefix for storage keys
      */
-    private String statePrefix = "oauth:google:state:";
+    private String statePrefix = "oauth:github:state:";
 
     /**
      * OAuth state expiration time in minutes
@@ -53,17 +53,22 @@ public class GoogleOAuthProperties {
     /**
      * Authorization URL
      */
-    private String authUrl = "https://accounts.google.com/o/oauth2/v2/auth";
+    private String authUrl = "https://github.com/login/oauth/authorize";
 
     /**
      * Token exchange URL
      */
-    private String tokenUrl = "https://oauth2.googleapis.com/token";
+    private String tokenUrl = "https://github.com/login/oauth/access_token";
+
+    /**
+     * User API URL
+     */
+    private String userApiUrl = "https://api.github.com/user";
 
     /**
      * OAuth scope
      */
-    private String scope = "openid email profile";
+    private String scope = "read:user user:email";
 
     /**
      * Connection timeout in milliseconds
@@ -76,7 +81,7 @@ public class GoogleOAuthProperties {
     private int readTimeout = 5000;
 
     /**
-     * Proxy configuration for accessing Google OAuth services
+     * Proxy configuration for accessing GitHub OAuth services
      */
     private Proxy proxy = new Proxy();
 
@@ -109,7 +114,7 @@ public class GoogleOAuthProperties {
     }
 
     /**
-     * Check if Google OAuth is properly configured
+     * Check if GitHub OAuth is properly configured
      */
     public boolean isConfigured() {
         return clientId != null && !clientId.isEmpty()
@@ -123,7 +128,7 @@ public class GoogleOAuthProperties {
      */
     @PostConstruct
     public void logConfiguration() {
-        log.info("=== Google OAuth Configuration ===");
+        log.info("=== GitHub OAuth Configuration ===");
         log.info("Client ID: {}", clientId != null ? "***" + clientId.substring(Math.max(0, clientId.length() - 15)) : "NOT SET");
         log.info("Client Secret: {}", clientSecret != null ? "***" + clientSecret.substring(Math.max(0, clientSecret.length() - 5)) : "NOT SET");
         log.info("Redirect URI: {}", redirectUri != null ? redirectUri : "NOT SET");

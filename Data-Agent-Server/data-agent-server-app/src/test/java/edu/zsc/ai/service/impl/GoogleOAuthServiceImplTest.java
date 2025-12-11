@@ -1,13 +1,16 @@
 package edu.zsc.ai.service.impl;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -37,6 +40,8 @@ class GoogleOAuthServiceImplTest {
         when(googleOAuthProperties.getClientId()).thenReturn("test-client-id");
         when(googleOAuthProperties.getClientSecret()).thenReturn("test-client-secret");
         when(googleOAuthProperties.getRedirectUri()).thenReturn("http://localhost:8081/api/auth/google/callback");
+        when(googleOAuthProperties.getAuthUrl()).thenReturn("https://accounts.google.com/o/oauth2/v2/auth");
+        when(googleOAuthProperties.getScope()).thenReturn("openid email profile");
         when(googleOAuthProperties.isConfigured()).thenReturn(true);
     }
 
