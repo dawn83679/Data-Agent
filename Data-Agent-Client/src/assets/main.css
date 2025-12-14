@@ -7,6 +7,13 @@
   font-weight: normal;
 }
 
+/* 全屏页面时移除限制 */
+#app.fullscreen {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 a,
 .green {
   text-decoration: none;
@@ -22,14 +29,22 @@ a,
 }
 
 @media (min-width: 1024px) {
-  body {
+  body:not(.fullscreen-mode) {
     display: flex;
     place-items: center;
   }
 
-  #app {
+  #app:not(.fullscreen) {
     display: grid;
     grid-template-columns: 1fr 1fr;
     padding: 0 2rem;
+  }
+
+  /* 全屏模式下移除所有布局限制 */
+  body.fullscreen-mode,
+  body.fullscreen-mode #app {
+    display: block;
+    margin: 0;
+    padding: 0;
   }
 }

@@ -1,22 +1,50 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { computed, watch } from 'vue'
 import HelloWorld from './components/HelloWorld.vue'
+
+const route = useRoute()
+// 数据库页面全屏显示，不显示header
+const isFullScreen = computed(() => route.name === 'database')
+
+// 动态添加/移除全屏类
+watch(isFullScreen, (fullscreen) => {
+  const app = document.getElementById('app')
+  if (app) {
+    if (fullscreen) {
+      app.classList.add('fullscreen')
+      document.body.classList.add('fullscreen-mode')
+      document.body.style.overflow = 'hidden'
+      document.body.style.margin = '0'
+      document.body.style.padding = '0'
+    } else {
+      app.classList.remove('fullscreen')
+      document.body.classList.remove('fullscreen-mode')
+      document.body.style.overflow = ''
+      document.body.style.margin = ''
+      document.body.style.padding = ''
+    }
+  }
+}, { immediate: true })
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+  <template v-if="!isFullScreen">
+    <header>
+      <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+      <div class="wrapper">
+        <HelloWorld msg="You did it!" />
 
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-        <RouterLink to="/api-test">API 测试</RouterLink>
-      </nav>
-    </div>
-  </header>
+        <nav>
+          <RouterLink to="/">Home</RouterLink>
+          <RouterLink to="/about">About</RouterLink>
+          <RouterLink to="/api-test">API 测试</RouterLink>
+          <RouterLink to="/database">数据库管理</RouterLink>
+        </nav>
+      </div>
+    </header>
+  </template>
 
   <RouterView />
 </template>

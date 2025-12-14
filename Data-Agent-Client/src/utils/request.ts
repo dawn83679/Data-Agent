@@ -1,4 +1,5 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
+import axios from 'axios'
+import type { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
 import type { ApiResponse } from '@/types/api'
 
 /**
@@ -15,6 +16,11 @@ const request: AxiosInstance = axios.create({
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
+  },
+  // 对于401错误，不抛出异常，而是返回响应供业务层处理
+  validateStatus: (status) => {
+    // 对于401错误，仍然返回true，这样不会触发error handler，而是在response中处理
+    return status < 500 // 只对5xx错误抛出异常
   },
 })
 
@@ -40,6 +46,17 @@ request.interceptors.request.use(
  */
 request.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
+    // 对于401状态码，直接返回特殊标识，不抛出错误
+    if (response.status === 401) {
+      localStorage.removeItem('satoken')
+      // 返回一个特殊的响应，标记为未授权
+      return Promise.reject({
+        isUnauthorized: true,
+        status: 401,
+        message: '未授权'
+      })
+    }
+
     const res = response.data
 
     // 如果 code 为 0，表示成功
@@ -64,10 +81,10 @@ request.interceptors.response.use(
   (error: AxiosError) => {
     // 处理 HTTP 错误
     let errorMessage = '网络错误，请稍后重试'
+    const status = error.response?.status
 
     if (error.response) {
       // 服务器返回了错误状态码
-      const status = error.response.status
       switch (status) {
         case 400:
           errorMessage = '请求参数错误'
@@ -75,6 +92,7 @@ request.interceptors.response.use(
         case 401:
           errorMessage = '未授权，请重新登录'
           localStorage.removeItem('satoken')
+          // 401错误完全静默，不打印任何日志
           break
         case 403:
           errorMessage = '拒绝访问'
@@ -93,7 +111,10 @@ request.interceptors.response.use(
       errorMessage = '网络连接失败，请检查网络'
     }
 
-    console.error('Request Error:', errorMessage, error)
+    // 对于401错误，完全静默处理，不打印任何console.error
+    if (status !== 401) {
+      console.error('Request Error:', errorMessage, error)
+    }
     return Promise.reject(new Error(errorMessage))
   }
 )

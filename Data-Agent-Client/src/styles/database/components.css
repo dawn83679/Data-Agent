@@ -1,0 +1,172 @@
+/**
+ * 组件样式
+ */
+
+/* Resizer Handle */
+.resizer-handle {
+    width: 1px;
+    background: var(--border-color);
+    cursor: col-resize;
+    z-index: 50;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.resizer-handle::after {
+    content: '';
+    position: absolute;
+    left: -4px;
+    right: -4px;
+    top: 0;
+    bottom: 0;
+    background: transparent;
+    z-index: 10;
+    cursor: col-resize;
+}
+
+.resizer-handle:hover,
+.resizer-handle.active {
+    background: var(--accent-blue);
+    width: 2px;
+}
+
+body.is-resizing {
+    cursor: col-resize;
+    user-select: none;
+}
+
+body.is-resizing iframe {
+    pointer-events: none;
+}
+
+/* SQL Editor */
+.editor-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 10px;
+    border: 0;
+    box-sizing: border-box;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow: auto;
+    white-space: pre;
+    background: transparent;
+    tab-size: 4;
+    word-wrap: normal;
+    overflow-wrap: normal;
+    font-variant-ligatures: none;
+    text-rendering: optimizeSpeed;
+}
+
+.sql-highlight {
+    z-index: 0;
+    pointer-events: none;
+    color: var(--text-primary);
+    white-space: pre;
+    font-variant-ligatures: none;
+}
+
+.sql-editor {
+    z-index: 1;
+    color: transparent;
+    caret-color: var(--caret-color);
+    resize: none;
+    outline: none;
+    white-space: pre;
+    word-wrap: normal;
+    overflow-wrap: normal;
+    font-variant-ligatures: none;
+    background: transparent !important;
+}
+
+.sql-editor::selection {
+    background: rgba(53, 116, 240, 0.3);
+}
+
+/* Syntax Colors */
+.sql-keyword {
+    color: var(--syntax-keyword);
+    font-weight: bold;
+}
+
+.sql-string {
+    color: var(--syntax-string);
+}
+
+.sql-func {
+    color: var(--syntax-func);
+}
+
+.sql-number {
+    color: var(--syntax-number);
+}
+
+.sql-comment {
+    color: var(--syntax-comment);
+    font-style: italic;
+}
+
+.sql-punct {
+    color: var(--syntax-punct);
+}
+
+/* Tabs */
+.tab-active {
+    background-color: var(--bg-main);
+    border-top: 2px solid var(--accent-blue);
+    color: var(--text-primary);
+}
+
+.tab-drag-over {
+    border-left: 2px solid var(--accent-blue) !important;
+    opacity: 0.8;
+}
+
+/* Tree View */
+.tree-item:hover {
+    background-color: var(--bg-hover);
+}
+
+.tree-node-drag-over {
+    background-color: var(--bg-selected) !important;
+    border: 1px dashed var(--accent-blue);
+}
+
+/* Letter Badge Icons */
+.letter-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    font-size: 9px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    color: white;
+}
+
+.letter-badge.function {
+    background-color: #3574f0;
+}
+
+.letter-badge.procedure {
+    background-color: #3574f0;
+}
+
+/* No Scrollbar */
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+

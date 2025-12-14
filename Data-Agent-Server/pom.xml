@@ -35,7 +35,6 @@
         <spring.ai.version>1.0.0</spring.ai.version>
         <spring.ai.alibaba>1.0.0.2</spring.ai.alibaba>
         <sa-token.version>1.44.0</sa-token.version>
-        <jqwik.version>1.7.4</jqwik.version>
     </properties>
 
     <dependencyManagement>
