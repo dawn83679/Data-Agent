@@ -1,4 +1,4 @@
-package edu.zsc.ai.domain.service.impl.manager;
+package edu.zsc.ai.domain.service.ai.manager.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;

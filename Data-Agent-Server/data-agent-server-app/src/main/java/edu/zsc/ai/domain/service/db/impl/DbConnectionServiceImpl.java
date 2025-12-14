@@ -1,4 +1,4 @@
-package edu.zsc.ai.domain.service.impl.db;
+package edu.zsc.ai.domain.service.db.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;

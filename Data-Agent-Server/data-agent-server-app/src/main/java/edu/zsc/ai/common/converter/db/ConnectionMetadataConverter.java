@@ -1,7 +1,7 @@
 package edu.zsc.ai.common.converter.db;
 
 import edu.zsc.ai.domain.model.dto.request.db.ConnectRequest;
-import edu.zsc.ai.domain.service.impl.db.ConnectionManager;
+import edu.zsc.ai.domain.service.db.impl.ConnectionManager;
 
 import java.time.LocalDateTime;
 

@@ -1,4 +1,4 @@
-package edu.zsc.ai.domain.service.impl.ai;
+package edu.zsc.ai.domain.service.ai.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import edu.zsc.ai.domain.mapper.AiTodoTaskMapper;

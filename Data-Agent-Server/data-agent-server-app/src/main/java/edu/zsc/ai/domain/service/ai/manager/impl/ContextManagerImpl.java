@@ -1,4 +1,4 @@
-package edu.zsc.ai.domain.service.impl.manager;
+package edu.zsc.ai.domain.service.ai.manager.impl;
 
 import edu.zsc.ai.config.ai.CompressContextConfig;
 import edu.zsc.ai.common.enums.ai.message.MessageBlockTypeEnum;

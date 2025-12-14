@@ -1,4 +1,4 @@
-package edu.zsc.ai.domain.service.impl.db;
+package edu.zsc.ai.domain.service.db.impl;
 
 import edu.zsc.ai.common.converter.db.ConnectionMetadataConverter;
 import edu.zsc.ai.util.exception.BusinessException;

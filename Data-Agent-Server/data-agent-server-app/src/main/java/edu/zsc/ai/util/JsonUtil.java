@@ -2,6 +2,7 @@ package edu.zsc.ai.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.constraints.NotBlank;
 import lombok.extern.slf4j.Slf4j;
@@ -67,6 +68,14 @@ public class JsonUtil {
     public static <T> T json2Object(@NotBlank String json, Class<T> clazz) {
         try {
             return objectMapper.readValue(json, clazz);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static JsonNode readTree(String s) {
+        try {
+            return objectMapper.readTree(s);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

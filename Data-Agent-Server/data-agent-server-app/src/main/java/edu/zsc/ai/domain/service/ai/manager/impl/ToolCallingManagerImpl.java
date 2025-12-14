@@ -1,4 +1,4 @@
-package edu.zsc.ai.domain.service.impl.manager;
+package edu.zsc.ai.domain.service.ai.manager.impl;
 
 import edu.zsc.ai.domain.service.ai.manager.ToolCallingManager;
 import edu.zsc.ai.domain.service.ai.manager.ToolExecutor;

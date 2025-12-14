@@ -1,4 +1,4 @@
-package edu.zsc.ai.domain.service.impl.ai;
+package edu.zsc.ai.domain.service.ai.impl;
 
 import edu.zsc.ai.domain.model.dto.request.ai.ChatRequest;
 import edu.zsc.ai.domain.service.ai.ChatService;
