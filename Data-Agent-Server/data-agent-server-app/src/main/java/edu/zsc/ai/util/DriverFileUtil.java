@@ -1,6 +1,6 @@
 package edu.zsc.ai.util;
 
-import edu.zsc.ai.model.dto.response.db.InstalledDriverResponse;
+import edu.zsc.ai.domain.model.dto.response.db.InstalledDriverResponse;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;

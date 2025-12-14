@@ -1,9 +1,9 @@
 package edu.zsc.ai.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import edu.zsc.ai.service.ai.parse.rule.ToolUseXmlParseRule;
+import edu.zsc.ai.domain.service.ai.parse.rule.ToolUseXmlParseRule;
 import lombok.extern.slf4j.Slf4j;
-import edu.zsc.ai.enums.ai.message.MessageBlockTypeEnum;
+import edu.zsc.ai.common.enums.ai.message.MessageBlockTypeEnum;
 
 import java.util.Objects;
 

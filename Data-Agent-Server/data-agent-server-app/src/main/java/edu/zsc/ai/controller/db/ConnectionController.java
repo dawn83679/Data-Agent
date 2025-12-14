@@ -1,30 +1,19 @@
 package edu.zsc.ai.controller.db;
 
-import java.util.List;
-
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import edu.zsc.ai.model.dto.request.db.ConnectRequest;
-import edu.zsc.ai.model.dto.request.db.ConnectionCreateRequest;
-import edu.zsc.ai.model.dto.response.base.ApiResponse;
-import edu.zsc.ai.model.dto.response.db.ConnectionResponse;
-import edu.zsc.ai.model.dto.response.db.ConnectionTestResponse;
-import edu.zsc.ai.model.dto.response.db.OpenConnectionResponse;
-import edu.zsc.ai.service.db.ConnectionService;
-import edu.zsc.ai.service.db.DbConnectionService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import edu.zsc.ai.domain.model.dto.request.db.ConnectRequest;
+import edu.zsc.ai.domain.model.dto.request.db.ConnectionCreateRequest;
+import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
+import edu.zsc.ai.domain.model.dto.response.db.ConnectionResponse;
+import edu.zsc.ai.domain.model.dto.response.db.ConnectionTestResponse;
+import edu.zsc.ai.domain.model.dto.response.db.OpenConnectionResponse;
+import edu.zsc.ai.domain.service.db.ConnectionService;
+import edu.zsc.ai.domain.service.db.DbConnectionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * Connection Controller
@@ -33,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
  * @author Data-Agent
  * @since 0.0.1
  */
-@Tag(name = "Connection Management", description = "Database connection management APIs")
 @Slf4j
 @RestController
 @RequestMapping("/api/connections")
@@ -43,7 +31,13 @@ public class ConnectionController {
     private final ConnectionService connectionService;
     private final DbConnectionService dbConnectionService;
 
-    @Operation(summary = "Test Connection", description = "Test database connection without establishing persistent connection")
+    /**
+     * Test database connection without establishing persistent connection.
+     * Returns detailed connection information including DBMS version, driver info, ping time, etc.
+     *
+     * @param request connect request
+     * @return connection test response with detailed information
+     */
     @PostMapping("/test")
     public ApiResponse<ConnectionTestResponse> testConnection(
             @Valid @RequestBody ConnectRequest request) {
@@ -54,7 +48,13 @@ public class ConnectionController {
         return ApiResponse.success(response);
     }
 
-    @Operation(summary = "Open Connection", description = "Open a new database connection and store it in the active connections registry")
+    /**
+     * Open a new database connection and store it in the active connections registry.
+     * Establishes a persistent connection that can be reused for queries.
+     *
+     * @param request connection request with connection parameters
+     * @return open connection response with connectionId and connection details
+     */
     @PostMapping("/open")
     public ApiResponse<OpenConnectionResponse> openConnection(@Valid @RequestBody ConnectRequest request) {
         log.info("Opening connection: dbType={}, host={}, database={}",
@@ -64,7 +64,12 @@ public class ConnectionController {
         return ApiResponse.success(response);
     }
 
-    @Operation(summary = "Create Connection", description = "Create a new database connection configuration")
+    /**
+     * Create a new database connection.
+     *
+     * @param request connection creation request
+     * @return created connection response
+     */
     @PostMapping("/create")
     public ApiResponse<ConnectionResponse> createConnection(
             @Valid @RequestBody ConnectionCreateRequest request) {
@@ -74,7 +79,11 @@ public class ConnectionController {
         return ApiResponse.success(response);
     }
 
-    @Operation(summary = "Get All Connections", description = "Get list of all database connections")
+    /**
+     * Get list of database connections.
+     *
+     * @return connection list
+     */
     @GetMapping
     public ApiResponse<List<ConnectionResponse>> getConnections() {
         log.info("Getting all connections");
@@ -82,10 +91,14 @@ public class ConnectionController {
         return ApiResponse.success(connections);
     }
 
-    @Operation(summary = "Get Connection by ID", description = "Get database connection details by ID")
+    /**
+     * Get database connection by ID.
+     *
+     * @param id connection ID
+     * @return connection response
+     */
     @GetMapping("/{id}")
-    public ApiResponse<ConnectionResponse> getConnection(
-            @Parameter(description = "Connection ID") @PathVariable Long id) {
+    public ApiResponse<ConnectionResponse> getConnection(@PathVariable Long id) {
         log.info("Getting connection: id={}", id);
 
         try {
@@ -96,10 +109,16 @@ public class ConnectionController {
         }
     }
 
-    @Operation(summary = "Update Connection", description = "Update database connection configuration")
+    /**
+     * Update database connection.
+     *
+     * @param id      connection ID
+     * @param request update request
+     * @return updated connection response
+     */
     @PutMapping("/{id}")
     public ApiResponse<ConnectionResponse> updateConnection(
-            @Parameter(description = "Connection ID") @PathVariable Long id,
+            @PathVariable Long id,
             @Valid @RequestBody ConnectionCreateRequest request) {
         log.info("Updating connection: id={}, name={}", id, request.getName());
 
@@ -111,10 +130,14 @@ public class ConnectionController {
         }
     }
 
-    @Operation(summary = "Delete Connection", description = "Delete database connection configuration")
+    /**
+     * Delete database connection.
+     *
+     * @param id connection ID
+     * @return success response
+     */
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> deleteConnection(
-            @Parameter(description = "Connection ID") @PathVariable Long id) {
+    public ApiResponse<Void> deleteConnection(@PathVariable Long id) {
         log.info("Deleting connection: id={}", id);
 
         try {
@@ -125,10 +148,14 @@ public class ConnectionController {
         }
     }
 
-    @Operation(summary = "Close Active Connection", description = "Close an active database connection")
+    /**
+     * Close an active database connection.
+     *
+     * @param connectionId unique connection identifier
+     * @return success response
+     */
     @DeleteMapping("/active/{connectionId}")
-    public ApiResponse<Void> closeConnection(
-            @Parameter(description = "Connection ID") @PathVariable String connectionId) {
+    public ApiResponse<Void> closeConnection(@PathVariable String connectionId) {
         log.info("Closing connection: connectionId={}", connectionId);
 
         connectionService.closeConnection(connectionId);

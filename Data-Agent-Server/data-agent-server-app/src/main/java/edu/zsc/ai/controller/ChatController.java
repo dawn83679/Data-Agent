@@ -1,8 +1,8 @@
 package edu.zsc.ai.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
-import edu.zsc.ai.model.dto.request.ai.ChatRequest;
-import edu.zsc.ai.service.ai.ChatService;
+import edu.zsc.ai.domain.model.dto.request.ai.ChatRequest;
+import edu.zsc.ai.domain.service.ai.ChatService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,15 +1,15 @@
 package edu.zsc.ai.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
-import edu.zsc.ai.model.dto.request.ai.conversation.ConversationListRequest;
-import edu.zsc.ai.model.dto.request.ai.conversation.CreateConversationRequest;
-import edu.zsc.ai.model.dto.request.ai.conversation.DeleteConversationRequest;
-import edu.zsc.ai.model.dto.request.ai.conversation.GetConversationRequest;
-import edu.zsc.ai.model.dto.request.ai.conversation.UpdateConversationRequest;
-import edu.zsc.ai.model.dto.response.base.ApiResponse;
-import edu.zsc.ai.model.dto.response.ai.conversation.ConversationResponse;
-import edu.zsc.ai.model.dto.response.base.PageResponse;
-import edu.zsc.ai.service.ai.AiConversationService;
+import edu.zsc.ai.domain.model.dto.request.ai.conversation.ConversationListRequest;
+import edu.zsc.ai.domain.model.dto.request.ai.conversation.CreateConversationRequest;
+import edu.zsc.ai.domain.model.dto.request.ai.conversation.DeleteConversationRequest;
+import edu.zsc.ai.domain.model.dto.request.ai.conversation.GetConversationRequest;
+import edu.zsc.ai.domain.model.dto.request.ai.conversation.UpdateConversationRequest;
+import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
+import edu.zsc.ai.domain.model.dto.response.ai.conversation.ConversationResponse;
+import edu.zsc.ai.domain.model.dto.response.base.PageResponse;
+import edu.zsc.ai.domain.service.ai.AiConversationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;

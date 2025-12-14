@@ -1,8 +1,8 @@
 package edu.zsc.ai.service.impl;
 
-import edu.zsc.ai.model.dto.response.db.AvailableDriverResponse;
-import edu.zsc.ai.model.dto.response.db.InstalledDriverResponse;
-import edu.zsc.ai.service.db.DriverService;
+import edu.zsc.ai.domain.model.dto.response.db.AvailableDriverResponse;
+import edu.zsc.ai.domain.model.dto.response.db.InstalledDriverResponse;
+import edu.zsc.ai.domain.service.db.DriverService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

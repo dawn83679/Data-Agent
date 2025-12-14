@@ -1,11 +1,11 @@
 package edu.zsc.ai.controller.db;
 
-import edu.zsc.ai.model.dto.request.db.DownloadDriverRequest;
-import edu.zsc.ai.model.dto.response.base.ApiResponse;
-import edu.zsc.ai.model.dto.response.db.AvailableDriverResponse;
-import edu.zsc.ai.model.dto.response.db.DownloadDriverResponse;
-import edu.zsc.ai.model.dto.response.db.InstalledDriverResponse;
-import edu.zsc.ai.service.db.DriverService;
+import edu.zsc.ai.domain.model.dto.request.db.DownloadDriverRequest;
+import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
+import edu.zsc.ai.domain.model.dto.response.db.AvailableDriverResponse;
+import edu.zsc.ai.domain.model.dto.response.db.DownloadDriverResponse;
+import edu.zsc.ai.domain.model.dto.response.db.InstalledDriverResponse;
+import edu.zsc.ai.domain.service.db.DriverService;
 import edu.zsc.ai.util.DriverFileUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

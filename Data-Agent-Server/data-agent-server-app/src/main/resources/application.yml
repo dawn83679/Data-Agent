@@ -9,52 +9,6 @@ spring:
     url: jdbc:postgresql://localhost:5432/data_agent
     username: postgres
     password: postgres
-    # HikariCP's connection pool configuration
-    hikari:
-      minimum-idle: 5
-      maximum-pool-size: 20
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
-      connection-test-query: SELECT 1
-  # Redis configuration for Sa-Token session storage and caching
-  data:
-    redis:
-      host: ${REDIS_HOST:192.168.238.133}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:123321}
-      database: ${REDIS_DATABASE:0}
-      timeout: 5000ms
-      # Lettuce client configuration (default client for Spring Data Redis)
-      lettuce:
-        pool:
-          # Maximum number of connections in the pool
-          max-active: 8
-          # Maximum number of idle connections in the pool
-          max-idle: 8
-          # Minimum number of idle connections to maintain in the pool
-          min-idle: 2
-          # Maximum amount of time a connection allocation should block before throwing an exception (-1 = no limit)
-          max-wait: -1ms
-        # Shutdown timeout
-        shutdown-timeout: 100ms
-      # Connection timeout
-      connect-timeout: 5000ms
-      # Client name
-      client-name: data-agent
-  
-  # Cache configuration
-  cache:
-    type: redis
-    redis:
-      # Cache entry expiration time (30 minutes)
-      time-to-live: 1800000ms
-      # Whether to cache null values
-      cache-null-values: false
-      # Key prefix for all cache entries
-      key-prefix: "data-agent:cache:"
-      # Whether to use key prefix
-      use-key-prefix: true
   ai:
     dashscope:
       api-key: ${ALIYUN_AI_API_KEY}
@@ -68,6 +22,7 @@ ai:
   cotext:
     compress:
       max-token: 300
+
 # MyBatis-Plus configuration
 mybatis-plus:
   configuration:
@@ -79,89 +34,4 @@ mybatis-plus:
       logic-delete-value: 1
       logic-not-delete-value: 0
   mapper-locations: classpath:mapper/*.xml
-
-# JWT configuration
-jwt:
-  secret: data-agent-secret-key-please-change-this-in-production-environment-min-256-bits-required
-  access-token-expiration: 3600000  # 1 hour in milliseconds
-  refresh-token-expiration: 2592000000  # 30 days in milliseconds
-
-# Sa-Token configuration
-sa-token:
-  # JWT secret key (should use environment variable in production)
-  jwt-secret-key: ${SA_TOKEN_JWT_SECRET:data-agent-secret-key-please-change-this-in-production-environment-min-256-bits-required}
-  # Token name (key in request header)
-  token-name: Authorization
-  # Token prefix
-  token-prefix: Bearer
-  # Token style (uuid, simple-uuid, random-32, random-64, random-128, tik)
-  token-style: uuid
-  # AccessToken expiration time (seconds, -1 means never expire)
-  timeout: 1800  # 30 minutes
-  # Allow concurrent login for same account
-  is-concurrent: true
-  # Share same token for multiple logins of same account
-  is-share: false
-  # Try to read token from request body
-  is-read-body: false
-  # Try to read token from header
-  is-read-header: true
-  # Try to read token from cookie
-  is-read-cookie: false
-  # Enable RefreshToken
-  is-log: false
-  # RefreshToken expiration time (seconds, -1 means never expire)
-  # Note: This is not directly supported in JWT stateless mode
-  # We'll handle RefreshToken separately
-
-# Security configuration
-security:
-  login:
-    max-attempts: 5  # Maximum failed login attempts before blocking
-    block-duration-minutes: 5  # Block duration in minutes after max attempts reached
-
-# Application-specific Redis configuration
-app:
-  redis:
-    # Default cache TTL (30 minutes)
-    default-ttl: 30m
-    # Session cache TTL (30 minutes)
-    session-ttl: 30m
-    # Verification code TTL (5 minutes)
-    verification-code-ttl: 5m
-    # Login attempt tracking TTL (15 minutes)
-    login-attempt-ttl: 15m
-    # Key prefix for all Redis keys
-    key-prefix: "data-agent:"
-    # Enable Redis keyspace notifications (for key expiration events)
-    enable-keyspace-notifications: false
-
-# Google OAuth configuration
-# IMPORTANT: Sensitive OAuth credentials (client-id, client-secret) are NOT stored here
-# Create application-local.yml file to configure these values (gitignored, won't be committed)
-google:
-  oauth:
-    # Google OAuth Client ID (from Google Cloud Console)
-    # Get this from: https://console.cloud.google.com/apis/credentials
-    # Must be configured in application-local.yml or environment variable
-    client-id: ${GOOGLE_OAUTH_CLIENT_ID}
-    # Google OAuth Client Secret (from Google Cloud Console)
-    # Must be configured in application-local.yml or environment variable
-    client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET}
-    # Backend redirect URI (must match the one registered in Google Console)
-    # This is where Google will redirect after user authorization
-    redirect-uri: ${GOOGLE_OAUTH_REDIRECT_URI:http://localhost:8081/api/auth/google/callback}
-    # Frontend redirect URI (where to redirect user after successful login)
-    # This is where the user will be sent with tokens in URL parameters
-    frontend-redirect-uri: ${GOOGLE_OAUTH_FRONTEND_REDIRECT_URI:http://localhost:8081/api/auth/test-callback}
-    # Proxy configuration for accessing Google OAuth services
-    # Enable this if you need to use a proxy to access Google services
-    proxy:
-      # Whether to enable proxy (set to true to use proxy)
-      enabled: ${GOOGLE_OAUTH_PROXY_ENABLED:false}
-      # Proxy server host (e.g., 127.0.0.1 for local proxy, or your proxy server address)
-      # Common proxy software ports: Clash (7890), V2Ray (1080), Shadowsocks (1080)
-      host: ${GOOGLE_OAUTH_PROXY_HOST:127.0.0.1}
-      # Proxy server port
-      port: ${GOOGLE_OAUTH_PROXY_PORT:7890}
 
