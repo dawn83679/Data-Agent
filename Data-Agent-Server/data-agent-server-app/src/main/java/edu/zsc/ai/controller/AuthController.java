@@ -8,15 +8,10 @@ import edu.zsc.ai.domain.service.sys.AuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import edu.zsc.ai.domain.service.oauth.OAuthLoginService;
 
 @Slf4j
 @RestController
@@ -26,9 +21,6 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
-
-    @Autowired
-    private OAuthLoginService oAuthLoginService;
 
     @PostMapping("/login")
     public TokenPairResponse login(@RequestBody @Validated LoginRequest request) {
@@ -55,14 +47,4 @@ public class AuthController {
         return authService.resetPassword(request);
     }
 
-    @GetMapping("/oauth/login/{provider}")
-    public String getOAuthLoginUrl(@PathVariable String provider) {
-        return oAuthLoginService.getAuthorizationUrl(provider);
-    }
-
-    @GetMapping("/oauth/callback/{provider}")
-    public TokenPairResponse oauthCallback(@PathVariable String provider,
-            @RequestParam("code") String code) {
-        return oAuthLoginService.login(provider, code);
-    }
 }

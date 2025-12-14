@@ -28,30 +28,38 @@ public class SaTokenConfigure implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         // Custom interceptor to exclude OPTIONS requests
         registry.addInterceptor(new HandlerInterceptor() {
-                    @Override
-                    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-                        // OPTIONS requests directly pass through (CORS preflight requests)
-                        if ("OPTIONS".equals(request.getMethod())) {
-                            return true;
-                        }
+            @Override
+            public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+                // OPTIONS requests directly pass through (CORS preflight requests)
+                if ("OPTIONS".equals(request.getMethod())) {
+                    return true;
+                }
 
-                        // 1) Framework login check
-                        StpUtil.checkLogin();
-                        // 2) Business session active check
-                        String token = StpUtil.getTokenValue();
-                        long userId = StpUtil.getLoginIdAsLong();
-                        FindSessionByTokenRequest req = new FindSessionByTokenRequest();
-                        req.setAccessToken(token);
-                        req.setUserId(userId);
-                        SysSessions s = sessionService.findByAccessTokenAndUserId(req);
-                        if (s == null || s.getActive() == null || s.getActive() != SessionStatusEnum.ACTIVE.getValue()) {
-                            throw BusinessException.of(ResponseConstant.UNAUTHORIZED, ResponseConstant.NOT_LOGIN_MESSAGE);
-                        }
-                        return true;
-                    }
-                })
+                // 1) Framework login check
+                StpUtil.checkLogin();
+                // 2) Business session active check
+                String token = StpUtil.getTokenValue();
+                long userId = StpUtil.getLoginIdAsLong();
+                FindSessionByTokenRequest req = new FindSessionByTokenRequest();
+                req.setAccessToken(token);
+                req.setUserId(userId);
+                SysSessions s = sessionService.findByAccessTokenAndUserId(req);
+                if (s == null || s.getActive() == null || !s.getActive().equals(SessionStatusEnum.ACTIVE.getValue())) {
+                    throw BusinessException.of(ResponseConstant.UNAUTHORIZED, ResponseConstant.NOT_LOGIN_MESSAGE);
+                }
+                return true;
+            }
+        })
                 .addPathPatterns("/**")
-                .excludePathPatterns("/api/auth/login", "/api/auth/register", "/api/auth/refresh", "/api/auth/reset-password");
+                .excludePathPatterns(
+                        "/api/auth/login",
+                        "/api/auth/register",
+                        "/api/auth/refresh",
+                        "/api/auth/reset-password",
+                        "/api/oauth/google",
+                        "/api/oauth/callback/google",
+                        "/api/oauth/github",
+                        "/api/oauth/callback/github");
     }
 
     @Bean
