@@ -4,7 +4,7 @@ import cn.dev33.satoken.jwt.StpLogicJwtForStateless;
 import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
 import edu.zsc.ai.common.constant.ResponseConstant;
-import edu.zsc.ai.common.enums.sys.SessionStatusEnum;
+import edu.zsc.ai.domain.model.enums.SessionStatusEnum;
 import edu.zsc.ai.domain.model.dto.request.sys.FindSessionByTokenRequest;
 import edu.zsc.ai.domain.model.entity.sys.SysSessions;
 import edu.zsc.ai.domain.service.sys.SysSessionsService;
@@ -51,10 +51,8 @@ public class SaTokenConfigure implements WebMvcConfigurer {
                     }
                 })
                 .addPathPatterns("/**")
-                .excludePathPatterns("/api/auth/login", "/api/auth/register", "/api/auth/refresh",
-                        "/api/auth/reset-password", "/api/health", "/api/auth/google/login", "/api/auth/google/callback");
+                .excludePathPatterns("/api/auth/login", "/api/auth/register", "/api/auth/refresh", "/api/auth/reset-password");
     }
-
 
     @Bean
     public StpLogic getStpLogicJwt() {
