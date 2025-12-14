@@ -35,3 +35,13 @@ mybatis-plus:
       logic-not-delete-value: 0
   mapper-locations: classpath:mapper/*.xml
 
+sa-token:
+  jwt-secret-key: deepImage-secret-key
+  timeout: 1800
+  token-name: Authorization
+  is-log: true
+  is-concurrent: true
+  is-share: false
+  token-style: jwt
+  is-write-header: true
+  token-prefix: Bearer
