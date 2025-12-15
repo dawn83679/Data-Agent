@@ -20,7 +20,13 @@ public class JwtUtil {
             String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
             JsonNode jsonNode = JsonUtil.readTree(payload);
             if (jsonNode != null && jsonNode.has(claim)) {
-                return jsonNode.get(claim).asText();
+                JsonNode claimNode = jsonNode.get(claim);
+                // For arrays and objects, return JSON string representation
+                if (claimNode.isArray() || claimNode.isObject()) {
+                    return claimNode.toString();
+                }
+                // For primitives, return as text
+                return claimNode.asText();
             }
             return null;
         } catch (Exception e) {
