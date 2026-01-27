@@ -33,7 +33,7 @@ public class GoogleOAuthStrategy implements OAuthStrategy {
 
     @Override
     public String getProviderName() {
-        return AuthProviderEnum.GOOGLE.name();
+        return AuthProviderEnum.GOOGLE.getValue();
     }
 
     @Override
@@ -96,7 +96,7 @@ public class GoogleOAuthStrategy implements OAuthStrategy {
             String sub = JwtUtil.getClaimAsString(idToken, OAuthConstant.KEY_SUB); // Google's unique user ID
 
             return OAuthUserInfo.builder()
-                    .provider(AuthProviderEnum.GOOGLE.name())
+                    .provider(AuthProviderEnum.GOOGLE.getValue())
                     .providerId(sub)
                     .email(email)
                     .nickname(name)

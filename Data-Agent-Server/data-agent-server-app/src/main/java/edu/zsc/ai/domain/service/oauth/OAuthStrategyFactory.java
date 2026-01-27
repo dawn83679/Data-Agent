@@ -19,7 +19,7 @@ public class OAuthStrategyFactory {
     }
 
     public OAuthStrategy getStrategy(String provider) {
-        OAuthStrategy strategy = strategyMap.get(provider.toUpperCase());
+        OAuthStrategy strategy = strategyMap.get(provider);
         BusinessException.assertNotNull(strategy, "Unsupported OAuth provider: " + provider);
         return strategy;
     }

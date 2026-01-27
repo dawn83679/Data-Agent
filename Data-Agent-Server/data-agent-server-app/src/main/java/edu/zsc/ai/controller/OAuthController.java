@@ -22,29 +22,29 @@ public class OAuthController {
 
     @GetMapping("/google")
     public void getGoogleLoginUrl(@RequestParam String fromUrl, HttpServletResponse response) throws IOException {
-        response.sendRedirect(oAuthLoginService.getAuthorizationUrl(fromUrl, AuthProviderEnum.GOOGLE.name()));
+        response.sendRedirect(oAuthLoginService.getAuthorizationUrl(fromUrl, AuthProviderEnum.GOOGLE.getValue()));
     }
 
     @GetMapping("/callback/google")
     public void googleCallback(@RequestParam String code,
-                                @RequestParam String state,
-                                @RequestParam(required = false) String error,
-                                HttpServletResponse response) throws IOException {
-        String redirectUrl = oAuthLoginService.handleCallback(AuthProviderEnum.GOOGLE.name(), code, state, error);
+            @RequestParam String state,
+            @RequestParam(required = false) String error,
+            HttpServletResponse response) throws IOException {
+        String redirectUrl = oAuthLoginService.handleCallback(AuthProviderEnum.GOOGLE.getValue(), code, state, error);
         response.sendRedirect(redirectUrl);
     }
 
     @GetMapping("/github")
     public void getGithubLoginUrl(String fromUrl, HttpServletResponse response) throws IOException {
-        response.sendRedirect(oAuthLoginService.getAuthorizationUrl(fromUrl, AuthProviderEnum.GITHUB.name()));
+        response.sendRedirect(oAuthLoginService.getAuthorizationUrl(fromUrl, AuthProviderEnum.GITHUB.getValue()));
     }
 
     @GetMapping("/callback/github")
     public void githubCallback(@RequestParam String code,
-                                @RequestParam String state,
-                                @RequestParam(required = false) String error,
-                                HttpServletResponse response) throws IOException {
-        String redirectUrl = oAuthLoginService.handleCallback(AuthProviderEnum.GITHUB.name(), code, state, error);
+            @RequestParam String state,
+            @RequestParam(required = false) String error,
+            HttpServletResponse response) throws IOException {
+        String redirectUrl = oAuthLoginService.handleCallback(AuthProviderEnum.GITHUB.getValue(), code, state, error);
         response.sendRedirect(redirectUrl);
     }
 }

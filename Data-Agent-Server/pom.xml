@@ -95,6 +95,12 @@
                 <artifactId>commons-collections4</artifactId>
                 <version>${commons-collections4.version}</version>
             </dependency>
+            <!-- Apache Commons Codec (for SHA-256 and other encoding utilities) -->
+            <dependency>
+                <groupId>commons-codec</groupId>
+                <artifactId>commons-codec</artifactId>
+                <version>1.17.1</version>
+            </dependency>
             <!-- MyBatis-Plus for Spring Boot 3.x -->
             <dependency>
                 <groupId>com.baomidou</groupId>

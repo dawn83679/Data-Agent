@@ -29,7 +29,7 @@ public class GithubOAuthStrategy implements OAuthStrategy {
 
     @Override
     public String getProviderName() {
-        return AuthProviderEnum.GITHUB.name();
+        return AuthProviderEnum.GITHUB.getValue();
     }
 
     @Override
@@ -72,7 +72,7 @@ public class GithubOAuthStrategy implements OAuthStrategy {
         String avatarUrl = (String) userProfile.get(OAuthConstant.KEY_AVATAR_URL);
 
         return OAuthUserInfo.builder()
-                .provider(AuthProviderEnum.GITHUB.name())
+                .provider(AuthProviderEnum.GITHUB.getValue())
                 .providerId(id)
                 .email(email)
                 .nickname(name)

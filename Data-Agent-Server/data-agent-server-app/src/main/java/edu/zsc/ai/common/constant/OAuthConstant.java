@@ -6,13 +6,13 @@ package edu.zsc.ai.common.constant;
 public class OAuthConstant {
 
     // Oauth provider
-    public static final String GOOGLE_PROVIDER = "GOOGLE";
-    public static final String GITHUB_PROVIDER = "GITHUB";
+    public static final String GOOGLE_PROVIDER = "google";
+    public static final String GITHUB_PROVIDER = "github";
 
     // Google OAuth
     public static final String GOOGLE_AUTHORIZATION_URI = "https://accounts.google.com/o/oauth2/v2/auth";
     public static final String GOOGLE_TOKEN_URI = "https://oauth2.googleapis.com/token";
-    public static final String GOOGLE_SCOPE = "openid,email,profile";
+    public static final String GOOGLE_SCOPE = "openid email profile";
     public static final String GOOGLE_ACCESS_TYPE = "online";
     public static final String GOOGLE_RESPONSE_TYPE = "code";
     public static final String GOOGLE_GRANT_TYPE = "authorization_code";

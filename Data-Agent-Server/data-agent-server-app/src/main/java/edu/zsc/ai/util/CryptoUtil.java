@@ -1,10 +1,8 @@
 package edu.zsc.ai.util;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 
 public final class CryptoUtil {
@@ -27,24 +25,16 @@ public final class CryptoUtil {
         return UUID.randomUUID().toString().replace("-", "");
     }
 
-    // SHA-256
-    public static String sha256Hex(String input)  {
-        MessageDigest digest;
-        try {
-            digest = MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-        byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
-        StringBuilder hexString = new StringBuilder();
-        for (byte b : hash) {
-            String hex = Integer.toHexString(0xff & b);
-            if (hex.length() == 1) hexString.append('0');
-            hexString.append(hex);
-        }
-        return hexString.toString();
+    /**
+     * Generate a random secure password (typically for OAuth users)
+     * Returns a 64-character random string
+     */
+    public static String generateRandomPassword() {
+        return randomToken() + randomToken();
+    }
 
+    // SHA-256 (using Apache Commons Codec)
+    public static String sha256Hex(String input) {
+        return DigestUtils.sha256Hex(input);
     }
 }
-
-

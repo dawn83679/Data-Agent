@@ -95,8 +95,14 @@ public class OAuthLoginService {
 
                 user.setUsername(username);
                 user.setAvatarUrl(userInfo.getAvatarUrl());
-                user.setAuthProvider(provider.toUpperCase());
+                user.setAuthProvider(provider);
                 user.setVerified(true); // OAuth users are usually verified
+
+                // Generate random password for OAuth users (they won't use it, but DB requires
+                // it)
+                String randomPassword = CryptoUtil.generateRandomPassword();
+                user.setPasswordHash(CryptoUtil.encode(randomPassword));
+
                 user.setCreatedAt(LocalDateTime.now());
                 user.setUpdatedAt(LocalDateTime.now());
                 sysUsersService.save(user);
@@ -142,8 +148,7 @@ public class OAuthLoginService {
             return strategy.buildSuccessRedirectUrl(
                     fromUrl,
                     accessToken,
-                    refreshTokenPlain
-            );
+                    refreshTokenPlain);
 
         } catch (BusinessException e) {
             // Business exceptions should be handled by GlobalExceptionHandler
