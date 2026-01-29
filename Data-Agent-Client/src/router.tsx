@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, type RouteObject } from "react-router-dom";
 import { RouteGuard } from "./components/auth/RouteGuard";
 import Home from "./pages/Home";
 import Settings from "./pages/Settings";
@@ -53,4 +53,4 @@ const applyRouteGuard = (configs: RouterConfig[]): RouterConfig[] => {
     });
 };
 
-export const routerConfig: RouterConfig[] = applyRouteGuard(routes);
+export const routerConfig: RouteObject[] = applyRouteGuard(routes) as RouteObject[];
