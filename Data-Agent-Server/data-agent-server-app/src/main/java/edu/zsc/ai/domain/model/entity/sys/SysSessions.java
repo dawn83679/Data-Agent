@@ -36,12 +36,6 @@ public class SysSessions {
     private String accessTokenHash;
 
     /**
-     * Device information (device type, operating system, browser, etc.)
-     */
-    @TableField("device_info")
-    private String deviceInfo;
-
-    /**
      * Login IP address
      */
     @TableField("ip_address")

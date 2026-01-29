@@ -41,7 +41,7 @@ public class GithubOAuthStrategy implements OAuthStrategy {
         return UriComponentsBuilder.fromUriString(OAuthConstant.GITHUB_AUTHORIZATION_URI)
                 .queryParam(OAuthConstant.PARAM_CLIENT_ID, registration.getClientId())
                 .queryParam(OAuthConstant.PARAM_REDIRECT_URI, registration.getRedirectUri())
-                .queryParam(OAuthConstant.PARAM_SCOPE, OAuthConstant.GITHUB_SCOPE) // Request email permission
+                .queryParam(OAuthConstant.PARAM_SCOPE, OAuthConstant.GITHUB_SCOPE) 
                 .queryParam(OAuthConstant.PARAM_STATE, state)
                 .queryParam(OAuthConstant.PARAM_PROMPT, OAuthConstant.PARAM_PROMPT_VALUE_SELECT_ACCOUNT)
                 .build().toUriString();

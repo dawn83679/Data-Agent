@@ -36,7 +36,6 @@ export interface User {
 
 export interface SessionInfo {
     id: number;
-    deviceInfo?: string;
     ipAddress?: string;
     userAgent?: string;
     isCurrent: boolean;

@@ -62,6 +62,33 @@ export function SessionManager() {
         return <Monitor className="h-4 w-4" />;
     };
 
+    const getDeviceName = (userAgent?: string): string => {
+        if (!userAgent) return 'Unknown Device';
+        const ua = userAgent.toLowerCase();
+
+        // Browser detection
+        let browser = 'Unknown Browser';
+        if (ua.includes('chrome') && !ua.includes('edg')) browser = 'Chrome';
+        else if (ua.includes('firefox')) browser = 'Firefox';
+        else if (ua.includes('safari') && !ua.includes('chrome')) browser = 'Safari';
+        else if (ua.includes('edg')) browser = 'Edge';
+        else if (ua.includes('opera') || ua.includes('opr')) browser = 'Opera';
+
+        // OS detection
+        let os = 'Unknown OS';
+        if (ua.includes('windows')) os = 'Windows';
+        else if (ua.includes('mac os')) os = 'macOS';
+        else if (ua.includes('linux')) os = 'Linux';
+        else if (ua.includes('android')) os = 'Android';
+        else if (ua.includes('iphone') || ua.includes('ipad')) os = 'iOS';
+
+        // Device type
+        if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) {
+            return `${browser} on ${os}`;
+        }
+        return `${browser} on ${os}`;
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -100,7 +127,7 @@ export function SessionManager() {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
                                             <p className="font-medium text-sm">
-                                                {session.deviceInfo || 'Unknown Device'}
+                                                {getDeviceName(session.userAgent)}
                                             </p>
                                             {session.isCurrent && (
                                                 <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-primary text-primary-foreground">

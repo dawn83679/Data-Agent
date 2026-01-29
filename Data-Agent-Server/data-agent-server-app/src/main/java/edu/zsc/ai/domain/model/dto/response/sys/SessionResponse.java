@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class SessionResponse {
     private Long id;
-    private String deviceInfo;
     private String ipAddress;
     private String userAgent;
     private Boolean isCurrent;

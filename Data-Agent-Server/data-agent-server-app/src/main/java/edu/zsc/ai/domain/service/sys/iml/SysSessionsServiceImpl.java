@@ -55,7 +55,6 @@ public class SysSessionsServiceImpl extends ServiceImpl<SysSessionsMapper, SysSe
                 return sessions.stream()
                                 .map(session -> SessionResponse.builder()
                                                 .id(session.getId())
-                                                .deviceInfo(session.getDeviceInfo())
                                                 .ipAddress(session.getIpAddress())
                                                 .userAgent(session.getUserAgent())
                                                 .isCurrent(session.getAccessTokenHash().equals(currentAccessTokenHash))
