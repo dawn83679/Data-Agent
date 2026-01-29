@@ -5,12 +5,10 @@ import edu.zsc.ai.domain.model.dto.request.sys.RefreshTokenRequest;
 import edu.zsc.ai.domain.model.dto.request.sys.RegisterRequest;
 import edu.zsc.ai.domain.model.dto.request.sys.ResetPasswordRequest;
 import edu.zsc.ai.domain.model.dto.response.sys.TokenPairResponse;
-import edu.zsc.ai.domain.model.dto.response.sys.UserResponse;
 import edu.zsc.ai.domain.service.sys.AuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,11 +22,6 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
-
-    @GetMapping("/me")
-    public UserResponse getCurrentUser() {
-        return authService.getCurrentUser();
-    }
 
     @PostMapping("/login")
     public TokenPairResponse login(@RequestBody @Validated LoginRequest request) {
