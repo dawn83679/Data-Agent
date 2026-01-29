@@ -37,6 +37,7 @@ public class OAuthConstant {
     public static final String PARAM_NONCE = "nonce";
     public static final String PARAM_CODE = "code";
     public static final String PARAM_GRANT_TYPE = "grant_type";
+    public static final String PARAM_PROMPT_VALUE_SELECT_ACCOUNT = "select_account";
 
     // Response Keys
     public static final String KEY_ID_TOKEN = "id_token";
