@@ -26,6 +26,28 @@ http.interceptors.request.use(
 
 http.interceptors.response.use(
     (response) => {
+        // 检查后端返回的 code 字段，只有 code === 200 才是真正的成功
+        const responseData = response.data;
+        if (responseData && typeof responseData === 'object' && 'code' in responseData) {
+            const code = responseData.code;
+            // 如果 code 不是 200，将其作为错误处理
+            if (code !== ErrorCode.SUCCESS) {
+                // 构造一个错误对象，保持与 axios 错误格式一致
+                const error: any = new Error(responseData.message || 'Request failed');
+                error.response = {
+                    status: response.status,
+                    data: responseData,
+                };
+                error.config = response.config;
+                return Promise.reject(error);
+            }
+            // code === 200，如果响应是 ApiResponse 格式，自动提取 data 字段
+            // 这样 service 层可以直接使用 response.data，无需关心 ApiResponse 结构
+            if ('data' in responseData) {
+                response.data = responseData.data;
+            }
+        }
+        // code === 200 或没有 code 字段（兼容旧接口），返回响应
         return response;
     },
     async (error) => {

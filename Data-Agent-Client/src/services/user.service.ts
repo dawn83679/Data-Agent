@@ -5,8 +5,7 @@ export const userService = {
     /**
      * Update current user profile
      */
-    updateProfile: async (data: UpdateUserRequest): Promise<boolean> => {
-        const response = await http.put<boolean>('/user/me', data);
-        return response.data;
+    updateProfile: async (data: UpdateUserRequest): Promise<void> => {
+        await http.put<void>('/user/me', data);
     },
 };

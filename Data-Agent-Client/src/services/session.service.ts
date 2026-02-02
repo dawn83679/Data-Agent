@@ -13,8 +13,7 @@ export const sessionService = {
     /**
      * Revoke a specific session (logout from another device)
      */
-    revokeSession: async (sessionId: number): Promise<boolean> => {
-        const response = await http.delete<boolean>(`/session/${sessionId}`);
-        return response.data;
+    revokeSession: async (sessionId: number): Promise<void> => {
+        await http.delete<void>(`/session/${sessionId}`);
     },
 };

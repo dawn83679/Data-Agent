@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/Dialog";
+import { Eye, EyeOff } from "lucide-react";
 import { authService } from "../../services/auth.service";
 import { Alert } from "../ui/Alert";
 import { useToast } from "../../hooks/useToast";
+import { resolveErrorMessage } from "../../lib/errorMessage";
 
 interface RegisterModalProps {
     onSwitchToLogin: () => void;
@@ -15,6 +17,8 @@ export function RegisterModal({ onSwitchToLogin }: RegisterModalProps) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const toast = useToast();
@@ -44,7 +48,7 @@ export function RegisterModal({ onSwitchToLogin }: RegisterModalProps) {
             onSwitchToLogin();
         } catch (error) {
             console.error("Registration failed", error);
-            setError("Registration failed. Please try again.");
+            setError(resolveErrorMessage(error, "Registration failed. Please try again."));
         } finally {
             setLoading(false);
         }
@@ -86,23 +90,53 @@ export function RegisterModal({ onSwitchToLogin }: RegisterModalProps) {
                 </div>
                 <div className="grid gap-2">
                     <label htmlFor="password" className="text-sm font-medium text-foreground">Password</label>
-                    <Input
-                        id="password"
-                        type="password"
-                        placeholder="At least 6 characters"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                    />
+                    <div className="relative">
+                        <Input
+                            id="password"
+                            type={showPassword ? "text" : "password"}
+                            placeholder="At least 6 characters"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="pr-10"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                            {showPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                            ) : (
+                                <Eye className="h-4 w-4" />
+                            )}
+                        </button>
+                    </div>
                 </div>
                 <div className="grid gap-2">
                     <label htmlFor="confirm-password" className="text-sm font-medium text-foreground">Confirm Password</label>
-                    <Input
-                        id="confirm-password"
-                        type="password"
-                        placeholder="Re-enter your password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                    />
+                    <div className="relative">
+                        <Input
+                            id="confirm-password"
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder="Re-enter your password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="pr-10"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                        >
+                            {showConfirmPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                            ) : (
+                                <Eye className="h-4 w-4" />
+                            )}
+                        </button>
+                    </div>
                 </div>
                 <Button className="w-full" onClick={handleRegister} disabled={loading}>
                     {loading ? "Creating Account..." : "Create Account"}

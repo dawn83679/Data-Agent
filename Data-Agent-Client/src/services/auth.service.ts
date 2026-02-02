@@ -29,17 +29,15 @@ export const authService = {
     /**
      * Logout the current user
      */
-    logout: async (): Promise<boolean> => {
-        await http.post<boolean>('/auth/logout');
-        return true;
+    logout: async (): Promise<void> => {
+        await http.post<void>('/auth/logout');
     },
 
     /**
      * Reset password
      */
-    resetPassword: async (data: ResetPasswordRequest): Promise<boolean> => {
-        const response = await http.post<boolean>('/auth/reset-password', data);
-        return response.data;
+    resetPassword: async (data: ResetPasswordRequest): Promise<void> => {
+        await http.post<void>('/auth/reset-password', data);
     },
 
     /**
