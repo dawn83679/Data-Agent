@@ -8,7 +8,7 @@ import edu.zsc.ai.plugin.driver.DriverStorageManager;
 import edu.zsc.ai.plugin.driver.MavenDriverDownloader;
 import edu.zsc.ai.plugin.driver.MavenMetadataClient;
 import edu.zsc.ai.plugin.enums.DbType;
-import edu.zsc.ai.plugin.manager.PluginManager;
+import edu.zsc.ai.plugin.manager.DefaultPluginManager;
 import edu.zsc.ai.plugin.driver.MavenCoordinates;
 import edu.zsc.ai.domain.service.db.DriverService;
 import edu.zsc.ai.util.DriverFileUtil;
@@ -38,13 +38,23 @@ public class DriverServiceImpl implements DriverService {
 
     @Override
     public Path downloadDriver(String databaseType, String version) {
-        // Step 1: Select the first plugin for the database type
-        Plugin plugin = PluginManager.selectFirstPluginByDbType(databaseType.toLowerCase());
+        List<Plugin> plugins = DefaultPluginManager.getInstance().getPluginsByDbType(databaseType.toLowerCase());
 
-        // Step 2: Get Maven coordinates from selected plugin
-        MavenCoordinates downloadCoordinates = plugin.getDriverMavenCoordinates(version);
+        MavenCoordinates downloadCoordinates = null;
+        Plugin plugin = null;
+        for (Plugin p : plugins) {
+            try {
+                downloadCoordinates = p.getDriverMavenCoordinates(version);
+                plugin = p;
+                break;
+            } catch (RuntimeException e) {
+                // Try next plugin
+            }
+        }
+        if (plugin == null || downloadCoordinates == null) {
+            throw new BusinessException(400, "No plugin supports driver version " + version + " for database type " + databaseType);
+        }
 
-        // Step 3: Download driver
         DbType dbType = plugin.getDbType();
         Path driverPath = MavenDriverDownloader.downloadDriver(
                 downloadCoordinates,
@@ -59,33 +69,41 @@ public class DriverServiceImpl implements DriverService {
 
     @Override
     public List<AvailableDriverResponse> listAvailableDrivers(String databaseType) {
-        // Select the first plugin for the database type
-        Plugin plugin = PluginManager.selectFirstPluginByDbType(databaseType.toLowerCase());
+        List<Plugin> plugins = DefaultPluginManager.getInstance().getPluginsByDbType(databaseType.toLowerCase());
 
-        // Get default driver coordinates from selected plugin
-        MavenCoordinates coordinates = plugin.getDriverMavenCoordinates(null);
+        MavenCoordinates coordinates = null;
+        Plugin plugin = null;
+        for (Plugin p : plugins) {
+            try {
+                coordinates = p.getDriverMavenCoordinates(null);
+                plugin = p;
+                break;
+            } catch (RuntimeException e) {
+                // Try next plugin
+            }
+        }
+        if (plugin == null || coordinates == null) {
+            throw new BusinessException(400, "No plugin provides default driver coordinates for database type " + databaseType);
+        }
 
-        // Query Maven Central for all available versions
+        final MavenCoordinates coords = coordinates;
         List<String> versions = MavenMetadataClient.queryVersions(
-                coordinates.getGroupId(),
-                coordinates.getArtifactId(),
+                coords.getGroupId(),
+                coords.getArtifactId(),
                 null  // Use default Maven Central URL
         );
 
-        // Check which versions are installed locally
         DbType dbType = plugin.getDbType();
-        Set<String> installedVersions = getInstalledVersionStrings(dbType, coordinates.getArtifactId());
-
-        // Build response list
+        Set<String> installedVersions = getInstalledVersionStrings(dbType, coords.getArtifactId());
 
         return versions.stream()
                 .map(version -> AvailableDriverResponse.builder()
                         .databaseType(dbType.getDisplayName())
                         .version(version)
                         .installed(installedVersions.contains(version))
-                        .groupId(coordinates.getGroupId())
-                        .artifactId(coordinates.getArtifactId())
-                        .mavenCoordinates(coordinates.getGroupId() + ":" + coordinates.getArtifactId() + ":" + version)
+                        .groupId(coords.getGroupId())
+                        .artifactId(coords.getArtifactId())
+                        .mavenCoordinates(coords.getGroupId() + ":" + coords.getArtifactId() + ":" + version)
                         .build())
                 .collect(Collectors.toList());
     }

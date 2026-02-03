@@ -2,6 +2,7 @@ package edu.zsc.ai.plugin.driver;
 
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.jar.JarFile;
@@ -51,7 +52,7 @@ public final class JarFileValidator {
         // Check JAR magic number
         try {
             byte[] header = new byte[4];
-            try (var inputStream = Files.newInputStream(filePath)) {
+            try (InputStream inputStream = Files.newInputStream(filePath)) {
                 int bytesRead = inputStream.read(header);
                 if (bytesRead != 4) {
                     throw new RuntimeException("File is too small to be a valid JAR: " + filePath);

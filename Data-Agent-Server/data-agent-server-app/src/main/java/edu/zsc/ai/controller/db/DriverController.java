@@ -8,8 +8,10 @@ import edu.zsc.ai.domain.model.dto.response.db.InstalledDriverResponse;
 import edu.zsc.ai.domain.service.db.DriverService;
 import edu.zsc.ai.util.DriverFileUtil;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.Path;
@@ -23,6 +25,7 @@ import java.util.List;
  * @since 0.0.1
  */
 @Slf4j
+@Validated
 @RestController
 @RequestMapping("/api/drivers")
 @RequiredArgsConstructor
@@ -39,7 +42,7 @@ public class DriverController {
      */
     @GetMapping("/available")
     public ApiResponse<List<AvailableDriverResponse>> listAvailableDrivers(
-            @RequestParam String databaseType) {
+            @RequestParam @NotBlank(message = "databaseType is required") String databaseType) {
         log.info("Listing available drivers from Maven Central, databaseType={}", databaseType);
         List<AvailableDriverResponse> drivers = driverService.listAvailableDrivers(databaseType);
         return ApiResponse.success(drivers);
@@ -54,7 +57,7 @@ public class DriverController {
      */
     @GetMapping("/installed")
     public ApiResponse<List<InstalledDriverResponse>> listInstalledDrivers(
-            @RequestParam String databaseType) {
+            @RequestParam @NotBlank(message = "databaseType is required") String databaseType) {
         log.info("Listing installed drivers from local disk, databaseType={}", databaseType);
         List<InstalledDriverResponse> drivers = driverService.listInstalledDrivers(databaseType);
         return ApiResponse.success(drivers);
@@ -99,8 +102,8 @@ public class DriverController {
      */
     @DeleteMapping("/{databaseType}/{version}")
     public ApiResponse<Void> deleteDriver(
-            @PathVariable String databaseType,
-            @PathVariable String version) {
+            @PathVariable @NotBlank(message = "databaseType is required") String databaseType,
+            @PathVariable @NotBlank(message = "version is required") String version) {
         log.info("Deleting driver: databaseType={}, version={}", databaseType, version);
         
         driverService.deleteDriver(databaseType, version);

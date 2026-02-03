@@ -4,6 +4,7 @@ import edu.zsc.ai.plugin.base.AbstractDatabasePlugin;
 import edu.zsc.ai.plugin.capability.DatabaseProvider;
 import edu.zsc.ai.plugin.capability.CommandExecutor;
 import edu.zsc.ai.plugin.capability.ConnectionProvider;
+import edu.zsc.ai.plugin.capability.SchemaProvider;
 import edu.zsc.ai.plugin.driver.DriverLoader;
 import edu.zsc.ai.plugin.connection.JdbcConnectionBuilder;
 import edu.zsc.ai.plugin.connection.ConnectionConfig;
@@ -22,10 +23,10 @@ import java.util.logging.Logger;
 /**
  * Abstract base class for MySQL database plugins.
  * Provides common functionality for different MySQL versions.
- * Implements ConnectionProvider, CommandExecutor and DatabaseProvider capabilities for all MySQL plugins.
+ * Implements ConnectionProvider, CommandExecutor, DatabaseProvider and SchemaProvider capabilities for all MySQL plugins.
  */
 public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin
-        implements ConnectionProvider, CommandExecutor<SqlCommandRequest, SqlCommandResult>, DatabaseProvider {
+        implements ConnectionProvider, CommandExecutor<SqlCommandRequest, SqlCommandResult>, DatabaseProvider, SchemaProvider {
 
     private static final Logger logger = Logger.getLogger(AbstractMysqlPlugin.class.getName());
 
