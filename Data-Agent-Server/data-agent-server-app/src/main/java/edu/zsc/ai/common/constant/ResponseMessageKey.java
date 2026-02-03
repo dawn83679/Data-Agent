@@ -23,4 +23,7 @@ public class ResponseMessageKey {
     public static final String USERNAME_ALREADY_EXISTS_MESSAGE = "error.user.username.already.exists";
     public static final String SESSION_NOT_FOUND_MESSAGE = "error.session.not.found";
     public static final String SESSION_NOT_BELONG_TO_USER_MESSAGE = "error.session.not.belong.to.user";
+
+    // connection
+    public static final String CONNECTION_ACCESS_DENIED_MESSAGE = "error.connection.access.denied";
 }

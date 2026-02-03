@@ -1,18 +1,21 @@
 package edu.zsc.ai.domain.service.db.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import edu.zsc.ai.common.constant.ResponseMessageKey;
 import edu.zsc.ai.domain.mapper.db.DbConnectionMapper;
 import edu.zsc.ai.domain.model.dto.request.db.ConnectionCreateRequest;
 import edu.zsc.ai.domain.model.dto.response.db.ConnectionResponse;
 import edu.zsc.ai.domain.model.entity.db.DbConnection;
 import edu.zsc.ai.domain.service.db.DbConnectionService;
 import edu.zsc.ai.util.JsonUtil;
+import edu.zsc.ai.util.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 
@@ -40,26 +43,40 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
         return this.getOne(wrapper);
     }
 
+    /**
+     * Get connection by name for a specific user (for uniqueness check within user's connections).
+     */
+    private DbConnection getByNameAndUserId(String name, Long userId) {
+        if (!StringUtils.isNotBlank(name) || userId == null) {
+            return null;
+        }
+        LambdaQueryWrapper<DbConnection> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(DbConnection::getName, name).eq(DbConnection::getUserId, userId);
+        return this.getOne(wrapper);
+    }
+
+    private void requireConnectionOwnedByCurrentUser(DbConnection connection) {
+        Long currentUserId = StpUtil.getLoginIdAsLong();
+        if (connection.getUserId() == null || !connection.getUserId().equals(currentUserId)) {
+            throw BusinessException.forbidden(ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE);
+        }
+    }
+
     
     @Override
     public ConnectionResponse createConnection(ConnectionCreateRequest request) {
-        // Check if connection name already exists
-        DbConnection existingConnection = getByName(request.getName());
+        long currentUserId = StpUtil.getLoginIdAsLong();
+        DbConnection existingConnection = getByNameAndUserId(request.getName(), currentUserId);
         if (existingConnection != null) {
             throw new IllegalArgumentException("Connection name already exists: " + request.getName());
         }
 
-        // Convert request to entity
         DbConnection connection = new DbConnection();
         BeanUtils.copyProperties(request, connection);
-
-        // Convert properties Map to JSON string using JsonUtil
+        connection.setUserId(currentUserId);
         connection.setProperties(JsonUtil.map2Json(request.getProperties()));
 
-        // Save connection
         this.save(connection);
-
-        // Convert to response
         return convertToResponse(connection);
     }
 
@@ -69,22 +86,19 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
         if (existingConnection == null) {
             throw new IllegalArgumentException("Connection not found: " + id);
         }
+        requireConnectionOwnedByCurrentUser(existingConnection);
 
-        // Check if name conflicts with other connections
-        DbConnection nameConflict = getByName(request.getName());
+        long currentUserId = StpUtil.getLoginIdAsLong();
+        DbConnection nameConflict = getByNameAndUserId(request.getName(), currentUserId);
         if (nameConflict != null && !nameConflict.getId().equals(id)) {
             throw new IllegalArgumentException("Connection name already exists: " + request.getName());
         }
 
-        // Update connection
         BeanUtils.copyProperties(request, existingConnection);
         existingConnection.setId(id);
-
-        // Convert properties Map to JSON string using JsonUtil
         existingConnection.setProperties(JsonUtil.map2Json(request.getProperties()));
 
         this.updateById(existingConnection);
-
         return convertToResponse(existingConnection);
     }
 
@@ -94,13 +108,15 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
         if (connection == null) {
             throw new IllegalArgumentException("Connection not found: " + id);
         }
+        requireConnectionOwnedByCurrentUser(connection);
         return convertToResponse(connection);
     }
 
     @Override
     public List<ConnectionResponse> getAllConnections() {
+        long currentUserId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<DbConnection> wrapper = new LambdaQueryWrapper<>();
-        wrapper.orderByAsc(DbConnection::getId);
+        wrapper.eq(DbConnection::getUserId, currentUserId).orderByAsc(DbConnection::getId);
         List<DbConnection> connections = this.list(wrapper);
         return connections.stream()
                 .map(this::convertToResponse)
@@ -113,6 +129,7 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
         if (connection == null) {
             throw new IllegalArgumentException("Connection not found: " + id);
         }
+        requireConnectionOwnedByCurrentUser(connection);
         this.removeById(id);
     }
 
