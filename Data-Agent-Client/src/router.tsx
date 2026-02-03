@@ -1,10 +1,12 @@
+import { lazy, Suspense } from "react";
 import { Navigate, type RouteObject } from "react-router-dom";
 import { RouteGuard } from "./components/auth/RouteGuard";
-import Home from "./pages/Home";
-import Settings from "./pages/Settings";
-import Profile from "./pages/Profile";
-import PasswordReset from "./pages/PasswordReset";
-import Sessions from "./pages/Sessions";
+
+const Home = lazy(() => import("./pages/Home").then((m) => ({ default: m.default })));
+const Settings = lazy(() => import("./pages/Settings").then((m) => ({ default: m.default })));
+const Profile = lazy(() => import("./pages/Profile").then((m) => ({ default: m.default })));
+const PasswordReset = lazy(() => import("./pages/PasswordReset").then((m) => ({ default: m.default })));
+const Sessions = lazy(() => import("./pages/Sessions").then((m) => ({ default: m.default })));
 
 interface RouterConfig {
     path?: string;
@@ -20,17 +22,29 @@ interface RouterConfig {
 const routes: RouterConfig[] = [
     {
         path: "/",
-        element: <Home />,
+        element: (
+            <Suspense fallback={null}>
+                <Home />
+            </Suspense>
+        ),
+    },
+    {
+        path: "/profile",
+        element: <Navigate to="/settings/profile" replace />,
     },
     {
         path: "/settings",
-        element: <Settings />,
+        element: (
+            <Suspense fallback={null}>
+                <Settings />
+            </Suspense>
+        ),
         requiresAuth: true,
         children: [
             { index: true, element: <Navigate to="/settings/profile" replace /> },
-            { path: "profile", element: <Profile />, requiresAuth: true },
-            { path: "password", element: <PasswordReset />, requiresAuth: true },
-            { path: "sessions", element: <Sessions />, requiresAuth: true },
+            { path: "profile", element: <Suspense fallback={null}><Profile /></Suspense>, requiresAuth: true },
+            { path: "password", element: <Suspense fallback={null}><PasswordReset /></Suspense>, requiresAuth: true },
+            { path: "sessions", element: <Suspense fallback={null}><Sessions /></Suspense>, requiresAuth: true },
         ],
     },
 ];
