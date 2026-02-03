@@ -9,8 +9,11 @@ import edu.zsc.ai.domain.model.dto.response.db.OpenConnectionResponse;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.DbConnectionService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,6 +26,7 @@ import java.util.List;
  * @since 0.0.1
  */
 @Slf4j
+@Validated
 @RestController
 @RequestMapping("/api/connections")
 @RequiredArgsConstructor
@@ -98,7 +102,7 @@ public class ConnectionController {
      * @return connection response
      */
     @GetMapping("/{id}")
-    public ApiResponse<ConnectionResponse> getConnection(@PathVariable Long id) {
+    public ApiResponse<ConnectionResponse> getConnection(@PathVariable @NotNull Long id) {
         log.info("Getting connection: id={}", id);
 
         try {
@@ -118,7 +122,7 @@ public class ConnectionController {
      */
     @PutMapping("/{id}")
     public ApiResponse<ConnectionResponse> updateConnection(
-            @PathVariable Long id,
+            @PathVariable @NotNull Long id,
             @Valid @RequestBody ConnectionCreateRequest request) {
         log.info("Updating connection: id={}, name={}", id, request.getName());
 
@@ -137,7 +141,7 @@ public class ConnectionController {
      * @return success response
      */
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> deleteConnection(@PathVariable Long id) {
+    public ApiResponse<Void> deleteConnection(@PathVariable @NotNull Long id) {
         log.info("Deleting connection: id={}", id);
 
         try {
@@ -155,7 +159,7 @@ public class ConnectionController {
      * @return success response
      */
     @DeleteMapping("/active/{connectionId}")
-    public ApiResponse<Void> closeConnection(@PathVariable String connectionId) {
+    public ApiResponse<Void> closeConnection(@PathVariable @NotBlank String connectionId) {
         log.info("Closing connection: connectionId={}", connectionId);
 
         connectionService.closeConnection(connectionId);

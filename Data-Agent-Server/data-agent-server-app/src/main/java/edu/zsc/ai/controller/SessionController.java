@@ -3,6 +3,7 @@ package edu.zsc.ai.controller;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.model.dto.response.sys.SessionResponse;
 import edu.zsc.ai.domain.service.sys.SysSessionsService;
+import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -30,7 +31,7 @@ public class SessionController {
     }
 
     @DeleteMapping("/{sessionId}")
-    public ApiResponse<Void> revokeSession(@PathVariable Long sessionId) {
+    public ApiResponse<Void> revokeSession(@PathVariable @NotNull Long sessionId) {
         sysSessionsService.revokeSessionById(sessionId);
         return ApiResponse.success();
     }

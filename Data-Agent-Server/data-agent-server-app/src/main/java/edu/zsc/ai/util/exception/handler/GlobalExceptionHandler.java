@@ -12,6 +12,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+
 import edu.zsc.ai.common.enums.error.ErrorCode;
 import edu.zsc.ai.util.exception.BusinessException;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
@@ -57,6 +60,24 @@ public class GlobalExceptionHandler {
         FieldError fieldError = e.getBindingResult().getFieldError();
         String message = fieldError != null ? fieldError.getDefaultMessage() : i18nUtils.getMessage("error.validation");
         log.error("Validation exception: {}", message);
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ErrorCode.PARAMS_ERROR, message));
+    }
+
+    /**
+     * Handle constraint violation (e.g. @RequestParam / @PathVariable with @Validated).
+     *
+     * @param e constraint violation exception
+     * @return unified response format
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(ConstraintViolationException e) {
+        String message = e.getConstraintViolations().stream()
+                .findFirst()
+                .map(ConstraintViolation::getMessage)
+                .orElse(i18nUtils.getMessage("error.params"));
+        log.error("Constraint violation: {}", message);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(ErrorCode.PARAMS_ERROR, message));
