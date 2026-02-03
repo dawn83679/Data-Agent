@@ -29,7 +29,12 @@ public class DbConnection {
     private Long id;
 
     /**
-     * Connection name, must be unique
+     * Associated system user ID, references sys_users.id
+     */
+    private Long userId;
+
+    /**
+     * Connection name, must be unique per user
      */
     private String name;
 
