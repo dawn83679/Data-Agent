@@ -7,14 +7,19 @@ import edu.zsc.ai.domain.model.dto.response.db.OpenConnectionResponse;
 import edu.zsc.ai.common.enums.db.ConnectionTestStatus;
 import edu.zsc.ai.plugin.Plugin;
 import edu.zsc.ai.plugin.capability.ConnectionProvider;
-import edu.zsc.ai.plugin.manager.PluginManager;
+import edu.zsc.ai.plugin.manager.DefaultPluginManager;
+import edu.zsc.ai.plugin.manager.TryFirstSuccess;
 import edu.zsc.ai.plugin.connection.ConnectionConfig;
 import edu.zsc.ai.domain.service.db.ConnectionService;
+import edu.zsc.ai.util.ConnectionPermissionChecker;
+import edu.zsc.ai.util.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import cn.dev33.satoken.stp.StpUtil;
 
 import java.sql.Connection;
+import java.util.List;
 
 /**
  * Connection Service Implementation
@@ -30,21 +35,24 @@ public class ConnectionServiceImpl implements ConnectionService {
 
     @Override
     public ConnectionTestResponse testConnection(ConnectRequest request) {
-        Connection connection = null;
         long startTime = System.currentTimeMillis();
-        ConnectionProvider provider = PluginManager.selectConnectionProviderByDbType(request.getDbType());
-
-        // Convert request to ConnectionConfig
+        List<ConnectionProvider> providers = DefaultPluginManager.getInstance()
+                .getConnectionProviderByDbType(request.getDbType());
         ConnectionConfig config = ConnectionConfigConverter.convert(request);
 
+        TryFirstSuccess.AttemptResult<ConnectionProvider, Connection> res;
         try {
-            // Establish connection to get detailed information
-            connection = provider.connect(config);
+            res = TryFirstSuccess.tryFirstSuccess(providers, p -> p.connect(config));
+        } catch (UnsupportedOperationException e) {
+            throw BusinessException.badRequest(
+                    "Database type %s was trying to run connection test but no plugin succeeded", request.getDbType());
+        }
 
-            // Calculate ping time
+        try {
             long ping = System.currentTimeMillis() - startTime;
+            ConnectionProvider provider = res.candidate();
+            Connection connection = res.result();
 
-            // Get database and driver information using ConnectionProvider
             String dbmsInfo = provider.getDbmsInfo(connection);
             String driverInfo = provider.getDriverInfo(connection);
 
@@ -55,42 +63,40 @@ public class ConnectionServiceImpl implements ConnectionService {
                     .ping(ping)
                     .build();
         } finally {
-            // Ensure connection is closed
-            if (connection != null) {
-                try {
-                    provider.closeConnection(connection);
-                } catch (Exception e) {
-                    log.warn("Failed to close connection", e);
-                }
+            try {
+                res.candidate().closeConnection(res.result());
+            } catch (Exception e) {
+                log.warn("Failed to close connection", e);
             }
         }
     }
 
     @Override
     public OpenConnectionResponse openConnection(ConnectRequest request) {
-        // Select the first plugin for initial connection (to get database version)
-        Plugin initialPlugin = PluginManager.selectFirstPluginByDbType(request.getDbType());
-        ConnectionProvider conncetionProvider = (ConnectionProvider) initialPlugin;
-
-        // Convert request to ConnectionConfig
+        List<ConnectionProvider> providers = DefaultPluginManager.getInstance()
+                .getConnectionProviderByDbType(request.getDbType());
         ConnectionConfig config = ConnectionConfigConverter.convert(request);
 
-        // Establish connection first
-        Connection connection = conncetionProvider.connect(config);
+        TryFirstSuccess.AttemptResult<ConnectionProvider, Connection> res;
+        try {
+            res = TryFirstSuccess.tryFirstSuccess(providers, p -> p.connect(config));
+        } catch (UnsupportedOperationException e) {
+            throw BusinessException.badRequest(
+                    "Database type %s was trying to open connection but no plugin succeeded", request.getDbType());
+        }
 
-        // Get database version from connection using ConnectionProvider
-        String databaseVersion = conncetionProvider.getDatabaseProductVersion(connection);
+        ConnectionProvider connectionProvider = res.candidate();
+        Connection connection = res.result();
 
-        // Select appropriate plugin based on database version
-        Plugin selectedPlugin = PluginManager.selectPluginByDbTypeAndVersion(request.getDbType(), databaseVersion);
+        String databaseVersion = connectionProvider.getDatabaseProductVersion(connection);
 
-        // Store connection in ConnectionManager with selected plugin's ID
-        String connectionId = ConnectionManager.openConnection(request, connection, selectedPlugin.getPluginId());
+        Plugin selectedPlugin = DefaultPluginManager.getInstance().getPluginByDbTypeAndVersion(request.getDbType(), databaseVersion);
 
-        // Get metadata for response
+        long userId = StpUtil.getLoginIdAsLong();
+        String connectionId = ConnectionManager.openConnection(request, connection, selectedPlugin.getPluginId(), userId);
+
         ConnectionManager.ConnectionMetadata metadata = ConnectionManager.getConnectionMetadata(connectionId);
 
-        // Build response
         return OpenConnectionResponse.builder()
                 .connectionId(connectionId)
                 .dbType(request.getDbType())
@@ -101,11 +107,11 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .connected(true)
                 .createdAt(metadata.createdAt())
                 .build();
-
     }
 
     @Override
     public void closeConnection(String connectionId) {
+        ConnectionPermissionChecker.checkConnectionOwnership(connectionId);
         ConnectionManager.closeConnection(connectionId);
     }
 }

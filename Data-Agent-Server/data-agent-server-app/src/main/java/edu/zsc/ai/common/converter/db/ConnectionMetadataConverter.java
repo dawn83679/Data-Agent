@@ -17,13 +17,15 @@ public class ConnectionMetadataConverter {
     /**
      * Convert ConnectRequest to ConnectionMetadata.
      *
-     * @param request connect request DTO
+     * @param request  connect request DTO
      * @param pluginId the plugin ID used to establish this connection
+     * @param userId   the current user ID who opens this connection
      * @return ConnectionMetadata instance
      */
-    public static ConnectionManager.ConnectionMetadata convert(ConnectRequest request, String pluginId) {
+    public static ConnectionManager.ConnectionMetadata convert(ConnectRequest request, String pluginId, Long userId) {
         LocalDateTime now = LocalDateTime.now();
         return new ConnectionManager.ConnectionMetadata(
+                userId,
                 request.getDbType(),
                 request.getHost(),
                 request.getPort(),
