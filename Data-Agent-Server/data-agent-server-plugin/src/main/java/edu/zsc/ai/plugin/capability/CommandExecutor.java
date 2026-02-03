@@ -1,7 +1,5 @@
 package edu.zsc.ai.plugin.capability;
 
-import edu.zsc.ai.plugin.annotation.CapabilityMarker;
-import edu.zsc.ai.plugin.enums.CapabilityEnum;
 import edu.zsc.ai.plugin.model.command.*;
 
 /**
@@ -11,7 +9,6 @@ import edu.zsc.ai.plugin.model.command.*;
  * @param <T> the command request type
  * @param <R> the command result type
  */
-@CapabilityMarker(CapabilityEnum.COMMAND_EXECUTOR)
 public interface CommandExecutor<T extends CommandRequest, R extends CommandResult> {
 
     /**

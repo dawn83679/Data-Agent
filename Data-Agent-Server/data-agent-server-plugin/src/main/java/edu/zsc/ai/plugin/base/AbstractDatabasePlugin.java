@@ -1,13 +1,9 @@
 package edu.zsc.ai.plugin.base;
 
 import edu.zsc.ai.plugin.Plugin;
-import edu.zsc.ai.plugin.annotation.CapabilityMarker;
 import edu.zsc.ai.plugin.annotation.PluginInfo;
 import edu.zsc.ai.plugin.enums.DbType;
 import edu.zsc.ai.plugin.enums.PluginType;
-
-import java.util.HashSet;
-import java.util.Set;
 
 
 /**
@@ -88,44 +84,6 @@ public abstract class AbstractDatabasePlugin implements Plugin {
     @Override
     public String getSupportMaxVersion() {
         return pluginInfo.supportMaxVersion();
-    }
-    
-    /**
-     * Get all supported capabilities by scanning implemented capability interfaces.
-     * Automatically collects capabilities from interfaces annotated with @CapabilityMarker.
-     *
-     * @return set of capability identifiers
-     */
-    @Override
-    public Set<String> getSupportedCapabilities() {
-        Set<String> capabilities = new HashSet<>();
-        collectCapabilities(this.getClass(), capabilities);
-        return capabilities;
-    }
-    
-    /**
-     * Recursively collect capabilities from class and its parent classes
-     *
-     * @param clazz current class to scan
-     * @param capabilities capability set to populate
-     */
-    private void collectCapabilities(Class<?> clazz, Set<String> capabilities) {
-        if (clazz == null || clazz == Object.class) {
-            return;
-        }
-        
-        // Scan all interfaces of current class
-        for (Class<?> interfaceClass : clazz.getInterfaces()) {
-            CapabilityMarker marker = interfaceClass.getAnnotation(CapabilityMarker.class);
-            if (marker != null) {
-                capabilities.add(marker.value().getCode());
-            }
-            // Recursively scan parent interfaces
-            collectCapabilities(interfaceClass, capabilities);
-        }
-        
-        // Recursively scan parent class
-        collectCapabilities(clazz.getSuperclass(), capabilities);
     }
 }
 

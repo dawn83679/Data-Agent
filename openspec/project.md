@@ -80,7 +80,7 @@ data-agent-server (parent)
 
 #### Plugin Architecture
 - **SPI-based**: Java Service Provider Interface for plugin discovery
-- **Annotation-driven**: Use `@PluginInfo` for metadata, `@CapabilityMarker` for capabilities
+- **Annotation-driven**: Use `@PluginInfo` for plugin metadata
 - **Capability-based**: Plugins declare capabilities (CONNECTION, QUERY, DDL, etc.)
 - **Component-based**: Reusable components (DriverLoader, JdbcConnectionBuilder)
 

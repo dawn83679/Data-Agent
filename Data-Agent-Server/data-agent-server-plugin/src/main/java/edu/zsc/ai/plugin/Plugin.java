@@ -4,8 +4,6 @@ import edu.zsc.ai.plugin.enums.DbType;
 import edu.zsc.ai.plugin.enums.PluginType;
 import edu.zsc.ai.plugin.driver.MavenCoordinates;
 
-import java.util.Set;
-
 
 /**
  * Top-level database plugin interface.
@@ -87,14 +85,6 @@ public interface Plugin {
      * @return maximum database version (e.g., "5.7.99"), or empty string
      */
     String getSupportMaxVersion();
-    
-    /**
-     * Get all supported capabilities of this plugin.
-     * Capabilities are automatically collected from implemented capability interfaces.
-     *
-     * @return set of capability identifiers
-     */
-    Set<String> getSupportedCapabilities();
     
     // ========== Driver Maven Coordinates ==========
     

@@ -1,7 +1,5 @@
 package edu.zsc.ai.plugin.capability;
 
-import edu.zsc.ai.plugin.annotation.CapabilityMarker;
-import edu.zsc.ai.plugin.enums.CapabilityEnum;
 import edu.zsc.ai.plugin.connection.ConnectionConfig;
 import java.sql.*;
 
@@ -9,7 +7,6 @@ import java.sql.*;
  * Connection provider capability interface.
  * Plugins implementing this interface can establish and manage database connections.
  */
-@CapabilityMarker(CapabilityEnum.CONNECTION)
 public interface ConnectionProvider {
     
     /**
