@@ -1,34 +1,47 @@
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { User, Shield, Lock, ChevronRight } from 'lucide-react';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { User, Shield, Lock, ChevronRight, ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/utils';
+import { Button } from '../components/ui/Button';
 
-// TODO: 支持多级 Settings 子菜单（如 /settings/profile/security），
-// 导航高亮和结构需要在后续迭代时扩展。
 const navItems = [
-    { path: '/settings/profile', label: 'Profile', icon: User },
-    { path: '/settings/password', label: 'Security', icon: Lock },
-    { path: '/settings/sessions', label: 'Sessions', icon: Shield },
+    { path: '/settings/profile', labelKey: 'settingsPage.nav_profile' as const, icon: User },
+    { path: '/settings/password', labelKey: 'settingsPage.nav_security' as const, icon: Lock },
+    { path: '/settings/sessions', labelKey: 'settingsPage.nav_sessions' as const, icon: Shield },
 ] as const;
 
 export default function Settings() {
+    const { t } = useTranslation();
     const location = useLocation();
+    const navigate = useNavigate();
 
     return (
         <div className="max-w-5xl mx-auto">
-            {/* Page Header */}
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold">Settings</h1>
-                <p className="text-muted-foreground mt-1">
-                    Manage your account settings and preferences
-                </p>
+            <div className="mb-8 flex items-start justify-between">
+                <div>
+                    <div className="flex items-center gap-2 mb-2">
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => navigate('/')}
+                            className="h-8 px-2 -ml-2 theme-text-secondary hover:theme-text-primary"
+                        >
+                            <ArrowLeft className="h-4 w-4 mr-1" />
+                            {t('settingsPage.back_to_workspace')}
+                        </Button>
+                    </div>
+                    <h1 className="text-3xl font-bold">{t('settingsPage.title')}</h1>
+                    <p className="text-muted-foreground mt-1">
+                        {t('settingsPage.subtitle')}
+                    </p>
+                </div>
             </div>
 
             <div className="flex flex-col md:flex-row gap-8">
-                {/* Sidebar Navigation */}
                 <nav className="w-full md:w-64 flex-shrink-0">
                     <div className="bg-card rounded-lg border border-border overflow-hidden">
                         <div className="p-4 border-b border-border bg-muted/30">
-                            <h2 className="font-medium text-sm">Account</h2>
+                            <h2 className="font-medium text-sm">{t('settingsPage.account')}</h2>
                         </div>
                         <ul className="p-2 space-y-1">
                             {navItems.map((item) => {
@@ -47,7 +60,7 @@ export default function Settings() {
                                             )}
                                         >
                                             <Icon className="h-4 w-4" />
-                                            {item.label}
+                                            {t(item.labelKey)}
                                             {isActive && (
                                                 <ChevronRight className="h-3 w-3 ml-auto" />
                                             )}

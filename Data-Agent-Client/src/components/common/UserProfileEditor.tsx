@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { userService } from '../../services/user.service';
 import { Button } from '../ui/Button';
@@ -7,6 +8,7 @@ import { User, Save } from 'lucide-react';
 import { resolveErrorMessage } from '../../lib/errorMessage';
 
 export function UserProfileEditor() {
+    const { t } = useTranslation();
     const { user, setAuth, accessToken, refreshToken } = useAuthStore();
     const [username, setUsername] = useState(user?.username || '');
     const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '');
@@ -24,14 +26,13 @@ export function UserProfileEditor() {
             if (avatarUrl !== user?.avatarUrl) updateData.avatarUrl = avatarUrl;
 
             if (Object.keys(updateData).length === 0) {
-                setMessage({ type: 'error', text: 'No changes to save' });
+                setMessage({ type: 'error', text: t('profile.no_changes') });
                 setIsLoading(false);
                 return;
             }
 
             await userService.updateProfile(updateData);
 
-            // Update local user state
             if (user) {
                 setAuth(
                     { ...user, username: username || user.username, avatarUrl: avatarUrl || user.avatarUrl },
@@ -40,9 +41,9 @@ export function UserProfileEditor() {
                 );
             }
 
-            setMessage({ type: 'success', text: 'Profile updated successfully!' });
+            setMessage({ type: 'success', text: t('profile.update_success') });
         } catch (error: any) {
-            setMessage({ type: 'error', text: resolveErrorMessage(error, 'Failed to update profile') });
+            setMessage({ type: 'error', text: resolveErrorMessage(error, t('profile.update_failed')) });
         } finally {
             setIsLoading(false);
         }
@@ -52,20 +53,20 @@ export function UserProfileEditor() {
         <div className="space-y-6">
             <div className="flex items-center gap-2">
                 <User className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold">Profile Settings</h2>
+                <h2 className="text-xl font-semibold">{t('profile.form_title')}</h2>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                     <label htmlFor="username" className="text-sm font-medium">
-                        Username
+                        {t('profile.username')}
                     </label>
                     <Input
                         id="username"
                         type="text"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Enter your username"
+                        placeholder={t('profile.username_placeholder')}
                         minLength={2}
                         maxLength={50}
                     />
@@ -73,7 +74,7 @@ export function UserProfileEditor() {
 
                 <div className="space-y-2">
                     <label htmlFor="email" className="text-sm font-medium text-muted-foreground">
-                        Email (read-only)
+                        {t('profile.email_readonly')}
                     </label>
                     <Input
                         id="email"
@@ -86,21 +87,21 @@ export function UserProfileEditor() {
 
                 <div className="space-y-2">
                     <label htmlFor="avatarUrl" className="text-sm font-medium">
-                        Avatar URL
+                        {t('profile.avatar_url')}
                     </label>
                     <Input
                         id="avatarUrl"
                         type="url"
                         value={avatarUrl}
                         onChange={(e) => setAvatarUrl(e.target.value)}
-                        placeholder="https://example.com/avatar.jpg"
+                        placeholder={t('profile.avatar_placeholder')}
                         maxLength={500}
                     />
                     {avatarUrl && (
                         <div className="mt-2">
                             <img
                                 src={avatarUrl}
-                                alt="Avatar preview"
+                                alt={t('profile.avatar_preview')}
                                 className="h-16 w-16 rounded-full object-cover border-2 border-border"
                                 onError={(e) => {
                                     e.currentTarget.style.display = 'none';
@@ -123,7 +124,7 @@ export function UserProfileEditor() {
 
                 <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
                     <Save className="h-4 w-4 mr-2" />
-                    {isLoading ? 'Saving...' : 'Save Changes'}
+                    {isLoading ? t('profile.saving') : t('profile.save_changes')}
                 </Button>
             </form>
         </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { sessionService } from '../../services/session.service';
 import { SessionInfo } from '../../types/auth';
 import { Button } from '../ui/Button';
@@ -8,6 +9,7 @@ import { useToast } from '../../hooks/useToast';
 import { resolveErrorMessage } from '../../lib/errorMessage';
 
 export function SessionManager() {
+    const { t } = useTranslation();
     const [sessions, setSessions] = useState<SessionInfo[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -21,7 +23,7 @@ export function SessionManager() {
             const data = await sessionService.listActiveSessions();
             setSessions(data);
         } catch (err: any) {
-            setError(resolveErrorMessage(err, 'Failed to load sessions'));
+            setError(resolveErrorMessage(err, t('sessions.load_failed')));
         } finally {
             setIsLoading(false);
         }
@@ -41,9 +43,9 @@ export function SessionManager() {
         try {
             await sessionService.revokeSession(sessionToRevoke);
             setSessions(sessions.filter((s) => s.id !== sessionToRevoke));
-            toast.success('Device logged out successfully');
+            toast.success(t('sessions.revoke_success'));
         } catch (err: any) {
-            toast.error(resolveErrorMessage(err, 'Failed to revoke session'));
+            toast.error(resolveErrorMessage(err, t('sessions.revoke_failed')));
         } finally {
             setSessionToRevoke(null);
         }
@@ -63,7 +65,7 @@ export function SessionManager() {
     };
 
     const getDeviceName = (userAgent?: string): string => {
-        if (!userAgent) return 'Unknown Device';
+        if (!userAgent) return t('sessions.unknown_device');
         const ua = userAgent.toLowerCase();
 
         // Browser detection
@@ -82,20 +84,16 @@ export function SessionManager() {
         else if (ua.includes('android')) os = 'Android';
         else if (ua.includes('iphone') || ua.includes('ipad')) os = 'iOS';
 
-        // Device type
-        if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) {
-            return `${browser} on ${os}`;
-        }
         return `${browser} on ${os}`;
     };
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">Active Sessions</h2>
+                <h2 className="text-xl font-semibold">{t('sessions.list_title')}</h2>
                 <Button variant="outline" size="sm" onClick={loadSessions} disabled={isLoading}>
                     <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                    Refresh
+                    {t('sessions.refresh')}
                 </Button>
             </div>
 
@@ -106,9 +104,9 @@ export function SessionManager() {
             )}
 
             {isLoading && sessions.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">Loading sessions...</div>
+                <div className="text-center py-8 text-muted-foreground">{t('sessions.loading')}</div>
             ) : sessions.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">No active sessions found</div>
+                <div className="text-center py-8 text-muted-foreground">{t('sessions.no_sessions')}</div>
             ) : (
                 <div className="space-y-3">
                     {sessions.map((session) => (
@@ -131,18 +129,18 @@ export function SessionManager() {
                                             </p>
                                             {session.isCurrent && (
                                                 <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-primary text-primary-foreground">
-                                                    Current
+                                                    {t('sessions.current')}
                                                 </span>
                                             )}
                                         </div>
                                         <p className="text-xs text-muted-foreground mt-1">
-                                            IP: {session.ipAddress || 'Unknown'}
+                                            {t('sessions.ip')}: {session.ipAddress || t('sessions.unknown')}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            Last active: {formatDate(session.lastRefreshAt)}
+                                            {t('sessions.last_active')}: {formatDate(session.lastRefreshAt)}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            Logged in: {formatDate(session.createdAt)}
+                                            {t('sessions.logged_in')}: {formatDate(session.createdAt)}
                                         </p>
                                     </div>
                                 </div>
@@ -166,17 +164,17 @@ export function SessionManager() {
             <Dialog open={!!sessionToRevoke} onOpenChange={() => setSessionToRevoke(null)}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Logout Device</DialogTitle>
+                        <DialogTitle>{t('sessions.dialog_title')}</DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to logout this device? This action cannot be undone.
+                            {t('sessions.dialog_desc')}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setSessionToRevoke(null)}>
-                            Cancel
+                            {t('sessions.cancel')}
                         </Button>
                         <Button variant="destructive" onClick={confirmRevoke}>
-                            Logout
+                            {t('sessions.logout')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

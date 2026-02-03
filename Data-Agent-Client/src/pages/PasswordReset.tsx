@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/authStore';
 import { authService } from '../services/auth.service';
 import { Button } from '../components/ui/Button';
@@ -9,6 +10,7 @@ import { useToast } from '../hooks/useToast';
 import { useNavigate } from 'react-router-dom';
 
 export default function PasswordReset() {
+    const { t } = useTranslation();
     const { user, clearAuth } = useAuthStore();
     const navigate = useNavigate();
     const toast = useToast();
@@ -37,31 +39,31 @@ export default function PasswordReset() {
         const newErrors: Record<string, string> = {};
 
         if (!email) {
-            newErrors.email = 'Email is required';
+            newErrors.email = t('password.email_required');
         } else if (!validateEmail(email)) {
-            newErrors.email = 'Please enter a valid email address';
+            newErrors.email = t('password.email_invalid');
         }
 
         if (!oldPassword) {
-            newErrors.oldPassword = 'Current password is required';
+            newErrors.oldPassword = t('password.old_required');
         } else if (!validatePasswordFormat(oldPassword)) {
-            newErrors.oldPassword = 'Password must be at least 8 characters and contain both letters and numbers';
+            newErrors.oldPassword = t('password.old_format');
         }
 
         if (!newPassword) {
-            newErrors.newPassword = 'New password is required';
+            newErrors.newPassword = t('password.new_required');
         } else if (!validatePasswordFormat(newPassword)) {
-            newErrors.newPassword = 'Password must be at least 8 characters and contain both letters and numbers';
+            newErrors.newPassword = t('password.new_format');
         }
 
         if (!confirmPassword) {
-            newErrors.confirmPassword = 'Please confirm your new password';
+            newErrors.confirmPassword = t('password.confirm_required');
         } else if (newPassword !== confirmPassword) {
-            newErrors.confirmPassword = 'Passwords do not match';
+            newErrors.confirmPassword = t('password.confirm_match');
         }
 
         if (oldPassword && newPassword && oldPassword === newPassword) {
-            newErrors.newPassword = 'New password must be different from current password';
+            newErrors.newPassword = t('password.new_different');
         }
 
         setErrors(newErrors);
@@ -85,21 +87,19 @@ export default function PasswordReset() {
                 newPassword,
             });
 
-            toast.success('Password reset successfully! You will be logged out from all devices.');
-            
-            // 重置密码后会强制登出所有设备，所以需要清除本地认证信息
+            toast.success(t('password.success_toast'));
+
             setTimeout(() => {
                 clearAuth();
                 navigate('/');
-                toast.info('Please log in again with your new password');
+                toast.info(t('password.login_again_toast'));
             }, 2000);
         } catch (error: any) {
-            const errorMessage = resolveErrorMessage(error, 'Failed to reset password');
+            const errorMessage = resolveErrorMessage(error, t('password.reset_failed'));
             toast.error(errorMessage);
-            
-            // 如果是认证错误，可能是旧密码错误
+
             if (error?.response?.status === 401) {
-                setErrors({ oldPassword: 'Current password is incorrect' });
+                setErrors({ oldPassword: t('password.old_incorrect') });
             }
         } finally {
             setIsLoading(false);
@@ -109,16 +109,16 @@ export default function PasswordReset() {
     return (
         <div>
             <div className="mb-6">
-                <h2 className="text-xl font-semibold">Change Password</h2>
+                <h2 className="text-xl font-semibold">{t('password.page_title')}</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                    Update your password to keep your account secure. After changing your password, you will be logged out from all devices.
+                    {t('password.page_desc')}
                 </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
                     <label htmlFor="email" className="text-sm font-medium">
-                        Email
+                        {t('password.email_label')}
                     </label>
                     <Input
                         id="email"
@@ -130,8 +130,8 @@ export default function PasswordReset() {
                                 setErrors({ ...errors, email: '' });
                             }
                         }}
-                        placeholder="your@email.com"
-                        disabled={!!user?.email} // 如果已登录，邮箱不可编辑
+                        placeholder={t('password.email_placeholder')}
+                        disabled={!!user?.email}
                         className={errors.email ? 'border-destructive' : ''}
                     />
                     {errors.email && (
@@ -141,7 +141,7 @@ export default function PasswordReset() {
 
                 <div className="space-y-2">
                     <label htmlFor="oldPassword" className="text-sm font-medium">
-                        Current Password
+                        {t('password.old_label')}
                     </label>
                     <div className="relative">
                         <Input
@@ -154,7 +154,7 @@ export default function PasswordReset() {
                                     setErrors({ ...errors, oldPassword: '' });
                                 }
                             }}
-                            placeholder="Enter your current password"
+                            placeholder={t('password.old_placeholder')}
                             className={errors.oldPassword ? 'border-destructive pr-10' : 'pr-10'}
                         />
                         <button
@@ -176,7 +176,7 @@ export default function PasswordReset() {
 
                 <div className="space-y-2">
                     <label htmlFor="newPassword" className="text-sm font-medium">
-                        New Password
+                        {t('password.new_label')}
                     </label>
                     <div className="relative">
                         <Input
@@ -189,7 +189,7 @@ export default function PasswordReset() {
                                     setErrors({ ...errors, newPassword: '' });
                                 }
                             }}
-                            placeholder="Enter your new password"
+                            placeholder={t('password.new_placeholder')}
                             className={errors.newPassword ? 'border-destructive pr-10' : 'pr-10'}
                         />
                         <button
@@ -208,13 +208,13 @@ export default function PasswordReset() {
                         <p className="text-sm text-destructive">{errors.newPassword}</p>
                     )}
                     <p className="text-xs text-muted-foreground">
-                        Password must be at least 8 characters and contain both letters and numbers
+                        {t('password.hint_length')}
                     </p>
                 </div>
 
                 <div className="space-y-2">
                     <label htmlFor="confirmPassword" className="text-sm font-medium">
-                        Confirm New Password
+                        {t('password.confirm_label')}
                     </label>
                     <div className="relative">
                         <Input
@@ -227,7 +227,7 @@ export default function PasswordReset() {
                                     setErrors({ ...errors, confirmPassword: '' });
                                 }
                             }}
-                            placeholder="Confirm your new password"
+                            placeholder={t('password.confirm_placeholder')}
                             className={errors.confirmPassword ? 'border-destructive pr-10' : 'pr-10'}
                         />
                         <button
@@ -251,15 +251,15 @@ export default function PasswordReset() {
                     <div className="flex items-start gap-2">
                         <Lock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                         <div className="text-sm text-muted-foreground">
-                            <p className="font-medium mb-1">Security Notice</p>
-                            <p>After changing your password, you will be automatically logged out from all devices for security reasons. Please log in again with your new password.</p>
+                            <p className="font-medium mb-1">{t('password.security_notice_title')}</p>
+                            <p>{t('password.security_notice_desc')}</p>
                         </div>
                     </div>
                 </div>
 
                 <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
                     <Save className="h-4 w-4 mr-2" />
-                    {isLoading ? 'Updating Password...' : 'Update Password'}
+                    {isLoading ? t('password.updating') : t('password.change_btn')}
                 </Button>
             </form>
         </div>
