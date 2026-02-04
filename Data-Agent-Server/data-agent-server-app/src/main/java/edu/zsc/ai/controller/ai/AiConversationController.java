@@ -1,4 +1,4 @@
-package edu.zsc.ai.controller;
+package edu.zsc.ai.controller.ai;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import edu.zsc.ai.domain.model.dto.request.ai.conversation.ConversationListRequest;

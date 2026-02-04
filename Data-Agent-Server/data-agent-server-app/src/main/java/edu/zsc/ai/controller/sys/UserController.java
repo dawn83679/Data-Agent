@@ -1,4 +1,4 @@
-package edu.zsc.ai.controller;
+package edu.zsc.ai.controller.sys;
 
 import edu.zsc.ai.domain.model.dto.request.sys.UpdateUserRequest;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;

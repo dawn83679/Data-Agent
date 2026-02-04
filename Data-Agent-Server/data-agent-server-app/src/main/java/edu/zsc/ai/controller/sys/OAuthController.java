@@ -1,4 +1,4 @@
-package edu.zsc.ai.controller;
+package edu.zsc.ai.controller.sys;
 
 import edu.zsc.ai.domain.model.enums.AuthProviderEnum;
 import edu.zsc.ai.domain.service.oauth.OAuthLoginService;
