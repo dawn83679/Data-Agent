@@ -1,9 +1,12 @@
 package edu.zsc.ai.plugin.manager;
 
 import edu.zsc.ai.plugin.Plugin;
+import edu.zsc.ai.plugin.capability.ColumnProvider;
 import edu.zsc.ai.plugin.capability.ConnectionProvider;
 import edu.zsc.ai.plugin.capability.DatabaseProvider;
 import edu.zsc.ai.plugin.capability.SchemaProvider;
+import edu.zsc.ai.plugin.capability.TableProvider;
+import edu.zsc.ai.plugin.capability.ViewProvider;
 import edu.zsc.ai.plugin.enums.DbType;
 import edu.zsc.ai.plugin.driver.MavenCoordinates;
 import jakarta.validation.constraints.NotBlank;
@@ -141,5 +144,50 @@ public class DefaultPluginManager implements PluginManager {
     @Override
     public SchemaProvider getSchemaProviderByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion) {
         return PluginCapabilityResolver.getProviderByDbTypeAndVersion(getPluginsByDbTypeInternal(dbTypeCode), databaseVersion, SchemaProvider.class);
+    }
+
+    @Override
+    public List<TableProvider> getTableProviderByDbType(@NotBlank String dbTypeCode) {
+        return PluginCapabilityResolver.getProviders(getPluginsByDbTypeInternal(dbTypeCode), TableProvider.class, dbTypeCode);
+    }
+
+    @Override
+    public TableProvider getTableProviderByPluginId(@NotBlank String pluginId) {
+        return PluginCapabilityResolver.getProviderByPluginId(pluginMap, pluginId, TableProvider.class);
+    }
+
+    @Override
+    public TableProvider getTableProviderByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion) {
+        return PluginCapabilityResolver.getProviderByDbTypeAndVersion(getPluginsByDbTypeInternal(dbTypeCode), databaseVersion, TableProvider.class);
+    }
+
+    @Override
+    public List<ViewProvider> getViewProviderByDbType(@NotBlank String dbTypeCode) {
+        return PluginCapabilityResolver.getProviders(getPluginsByDbTypeInternal(dbTypeCode), ViewProvider.class, dbTypeCode);
+    }
+
+    @Override
+    public ViewProvider getViewProviderByPluginId(@NotBlank String pluginId) {
+        return PluginCapabilityResolver.getProviderByPluginId(pluginMap, pluginId, ViewProvider.class);
+    }
+
+    @Override
+    public ViewProvider getViewProviderByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion) {
+        return PluginCapabilityResolver.getProviderByDbTypeAndVersion(getPluginsByDbTypeInternal(dbTypeCode), databaseVersion, ViewProvider.class);
+    }
+
+    @Override
+    public List<ColumnProvider> getColumnProviderByDbType(@NotBlank String dbTypeCode) {
+        return PluginCapabilityResolver.getProviders(getPluginsByDbTypeInternal(dbTypeCode), ColumnProvider.class, dbTypeCode);
+    }
+
+    @Override
+    public ColumnProvider getColumnProviderByPluginId(@NotBlank String pluginId) {
+        return PluginCapabilityResolver.getProviderByPluginId(pluginMap, pluginId, ColumnProvider.class);
+    }
+
+    @Override
+    public ColumnProvider getColumnProviderByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion) {
+        return PluginCapabilityResolver.getProviderByDbTypeAndVersion(getPluginsByDbTypeInternal(dbTypeCode), databaseVersion, ColumnProvider.class);
     }
 }
