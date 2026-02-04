@@ -52,12 +52,12 @@ http.interceptors.response.use(
     },
     async (error) => {
         const originalRequest = error.config as any;
+        // HTTP 401 或 业务 code 401 任一成立即尝试刷新
+        const isNotLogin =
+            error.response?.status === HttpStatusCode.UNAUTHORIZED ||
+            error.response?.data?.code === ErrorCode.NOT_LOGIN_ERROR;
 
-        if (
-            error.response?.status === HttpStatusCode.UNAUTHORIZED &&
-            error.response?.data?.code === ErrorCode.NOT_LOGIN_ERROR &&
-            !originalRequest._retry
-        ) {
+        if (isNotLogin && originalRequest && !originalRequest._retry) {
             originalRequest._retry = true;
 
             try {
