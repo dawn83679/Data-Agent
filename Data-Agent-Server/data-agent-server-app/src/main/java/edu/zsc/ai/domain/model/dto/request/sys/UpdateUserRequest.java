@@ -1,8 +1,7 @@
 package edu.zsc.ai.domain.model.dto.request.sys;
 
+import jakarta.validation.constraints.Size;
 import lombok.Data;
-
-import javax.validation.constraints.Size;
 
 @Data
 public class UpdateUserRequest {

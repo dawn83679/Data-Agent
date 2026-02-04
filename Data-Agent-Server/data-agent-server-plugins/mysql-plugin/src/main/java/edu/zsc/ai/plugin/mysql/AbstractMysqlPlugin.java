@@ -1,16 +1,13 @@
 package edu.zsc.ai.plugin.mysql;
 
 import edu.zsc.ai.plugin.base.AbstractDatabasePlugin;
-import edu.zsc.ai.plugin.capability.ColumnProvider;
-import edu.zsc.ai.plugin.capability.DatabaseProvider;
 import edu.zsc.ai.plugin.capability.CommandExecutor;
 import edu.zsc.ai.plugin.capability.ConnectionProvider;
+import edu.zsc.ai.plugin.capability.DatabaseProvider;
 import edu.zsc.ai.plugin.capability.SchemaProvider;
-import edu.zsc.ai.plugin.capability.TableProvider;
-import edu.zsc.ai.plugin.capability.ViewProvider;
-import edu.zsc.ai.plugin.driver.DriverLoader;
-import edu.zsc.ai.plugin.connection.JdbcConnectionBuilder;
 import edu.zsc.ai.plugin.connection.ConnectionConfig;
+import edu.zsc.ai.plugin.connection.JdbcConnectionBuilder;
+import edu.zsc.ai.plugin.driver.DriverLoader;
 import edu.zsc.ai.plugin.driver.MavenCoordinates;
 import edu.zsc.ai.plugin.model.command.sql.SqlCommandRequest;
 import edu.zsc.ai.plugin.model.command.sql.SqlCommandResult;
@@ -26,12 +23,11 @@ import java.util.logging.Logger;
 /**
  * Abstract base class for MySQL database plugins.
  * Provides common functionality for different MySQL versions.
- * Implements ConnectionProvider, CommandExecutor, DatabaseProvider, SchemaProvider, TableProvider, ViewProvider,
- * and ColumnProvider capabilities for all MySQL plugins.
+ * Implements ConnectionProvider, CommandExecutor, DatabaseProvider, and SchemaProvider capabilities for MySQL plugins.
  */
 public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin
         implements ConnectionProvider, CommandExecutor<SqlCommandRequest, SqlCommandResult>, DatabaseProvider,
-        SchemaProvider, TableProvider, ViewProvider, ColumnProvider {
+        SchemaProvider {
 
     private static final Logger logger = Logger.getLogger(AbstractMysqlPlugin.class.getName());
 
@@ -44,7 +40,7 @@ public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin
      * SQL executor - can be reused for all SQL command executions
      */
     private final MySQLSqlExecutor sqlExecutor = new MySQLSqlExecutor();
-    
+
     @Override
     public boolean supportSchema() {
         return false; // MySQL: DATABASE and SCHEMA are synonyms, no separate schema namespace
@@ -57,7 +53,7 @@ public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin
      * @return JDBC driver class name
      */
     protected abstract String getDriverClassName();
-    
+
     /**
      * Get default JDBC URL template
      *
@@ -66,7 +62,7 @@ public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin
     protected String getJdbcUrlTemplate() {
         return "jdbc:mysql://%s:%d/%s";
     }
-    
+
     /**
      * Get default port for MySQL
      *
@@ -92,20 +88,20 @@ public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin
 
             // Step 4: Establish connection
             Connection connection = DriverManager.getConnection(jdbcUrl, properties);
-            
+
             logger.info(String.format("Successfully connected to MySQL database at %s:%d/%s",
-                config.getHost(), 
-                config.getPort() != null ? config.getPort() : getDefaultPort(),
-                config.getDatabase() != null ? config.getDatabase() : ""));
-            
+                    config.getHost(),
+                    config.getPort() != null ? config.getPort() : getDefaultPort(),
+                    config.getDatabase() != null ? config.getDatabase() : ""));
+
             return connection;
 
         } catch (SQLException e) {
             String errorMsg = String.format("Failed to connect to MySQL database at %s:%d/%s: %s",
-                config.getHost(),
-                config.getPort() != null ? config.getPort() : getDefaultPort(),
-                config.getDatabase() != null ? config.getDatabase() : "",
-                e.getMessage());
+                    config.getHost(),
+                    config.getPort() != null ? config.getPort() : getDefaultPort(),
+                    config.getDatabase() != null ? config.getDatabase() : "",
+                    e.getMessage());
             logger.severe(errorMsg);
             throw new RuntimeException(errorMsg, e);
         } catch (RuntimeException e) {
@@ -155,7 +151,7 @@ public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin
     }
 
     // ========== Driver Maven Coordinates ==========
-    
+
     /**
      * Get Maven coordinates for MySQL JDBC driver.
      * Automatically selects the correct artifact based on version:
@@ -169,26 +165,26 @@ public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin
     @Override
     public MavenCoordinates getDriverMavenCoordinates(String driverVersion) {
         // If no version specified or version >= 8.0, use mysql-connector-j
-        if (driverVersion == null || driverVersion.isEmpty() 
-            || driverVersion.startsWith("8.") || driverVersion.startsWith("9.")) {
+        if (driverVersion == null || driverVersion.isEmpty()
+                || driverVersion.startsWith("8.") || driverVersion.startsWith("9.")) {
             String version = (driverVersion != null && !driverVersion.isEmpty()) ? driverVersion : "8.0.33";
             return new MavenCoordinates(
-                "com.mysql",
-                "mysql-connector-j",
-                version
+                    "com.mysql",
+                    "mysql-connector-j",
+                    version
             );
         }
-        
+
         // Version 2.x - 7.x → use mysql-connector-java
         char firstChar = driverVersion.charAt(0);
         if (firstChar >= '2' && firstChar <= '7') {
             return new MavenCoordinates(
-                "mysql",
-                "mysql-connector-java",
-                driverVersion
+                    "mysql",
+                    "mysql-connector-java",
+                    driverVersion
             );
         }
-        
+
         // Unsupported version - throw exception instead of returning null
         throw new IllegalArgumentException(
                 String.format("Unsupported MySQL driver version: %s. Supported versions: 2.x-7.x, 8.x, 9.x", driverVersion));
