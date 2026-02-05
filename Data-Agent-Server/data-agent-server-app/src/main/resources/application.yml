@@ -47,3 +47,24 @@ auth:
         client-secret: ${GITHUB_CLIENT_SECRET}
         redirect-uri: ${GITHUB_REDIRECT_URI}
 
+# LangChain4j Configuration for Qwen (DashScope)
+langchain4j:
+  community:
+    dashscope:
+      chat-model:
+        api-key: ${ALIYUN_AI_API_KEY}
+        model-name: qwen3-max
+        log-requests: true
+        log-responses: true
+        temperature: 0.7
+        max-tokens: 4096
+      streaming-chat-model:
+        api-key: ${ALIYUN_AI_API_KEY}
+        model-name: qwen3-max
+        log-requests: true
+        log-responses: true
+      embedding-model:
+        api-key: ${ALIYUN_AI_API_KEY}
+        model-name: text-embedding-v4
+
+
