@@ -30,7 +30,8 @@
         <mybatis-plus-jsqlparser.version>3.5.14</mybatis-plus-jsqlparser.version>
         <postgresql.version>42.7.2</postgresql.version>
         <sa-token.version>1.44.0</sa-token.version>
-        <langchain4j.version>1.10.0</langchain4j.version>
+        <langchain4j.version>1.11.0</langchain4j.version>
+        <langchain4j-community.version>1.11.0-beta19</langchain4j-community.version>
     </properties>
 
     <dependencyManagement>
@@ -43,6 +44,13 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j-community-bom</artifactId>
+                <version>${langchain4j-community.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
                 <groupId>cn.dev33</groupId>
                 <artifactId>sa-token-spring-boot3-starter</artifactId>
                 <version>${sa-token.version}</version>
@@ -51,10 +59,6 @@
                 <groupId>cn.dev33</groupId>
                 <artifactId>sa-token-jwt</artifactId>
                 <version>${sa-token.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-webflux</artifactId>
             </dependency>
             <!-- Jackson -->
             <dependency>
