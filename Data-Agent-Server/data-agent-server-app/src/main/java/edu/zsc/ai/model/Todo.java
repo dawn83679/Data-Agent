@@ -18,11 +18,6 @@ import java.time.LocalDateTime;
 public class Todo {
     
     /**
-     * Todo ID (within the list)
-     */
-    private Long id;
-    
-    /**
      * Todo Title
      */
     private String title;
@@ -50,7 +45,7 @@ public class Todo {
     private LocalDateTime createdAt;
     
     /**
-     * Status Changed Time
+     * Updated Time
      */
-    private LocalDateTime statusChangedAt;
+    private LocalDateTime updatedAt;
 }
