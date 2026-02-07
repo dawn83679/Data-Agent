@@ -3,11 +3,6 @@ package edu.zsc.ai.plugin.mysql;
 import edu.zsc.ai.plugin.annotation.PluginInfo;
 import edu.zsc.ai.plugin.enums.DbType;
 
-/**
- * MySQL 8.0+ database plugin implementation.
- * Supports MySQL 8.0 and later versions.
- * ConnectionProvider capability is inherited from AbstractMysqlPlugin.
- */
 @PluginInfo(
     id = "mysql-8",
     name = "MySQL 8.0+",
@@ -16,7 +11,7 @@ import edu.zsc.ai.plugin.enums.DbType;
     description = "MySQL 8.0+ database plugin with full CRUD and metadata support, including new features like CTE and window functions",
     supportMinVersion = "8.0.0"
 )
-public class Mysql8Plugin extends AbstractMysqlPlugin {
+public class Mysql8Plugin extends DefaultMysqlPlugin {
     
     @Override
     protected String getDriverClassName() {

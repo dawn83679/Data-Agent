@@ -1,5 +1,6 @@
 package edu.zsc.ai.plugin.capability;
 
+import edu.zsc.ai.plugin.SqlPlugin;
 import edu.zsc.ai.plugin.constant.JdbcMetaDataConstants;
 
 import java.sql.Connection;
@@ -13,8 +14,8 @@ import java.util.List;
  * Plugins that implement this can provide view list for a given connection and
  * scope.
  * <p>
- * Use {@link edu.zsc.ai.plugin.SqlPlugin#supportDatabase()} /
- * {@link edu.zsc.ai.plugin.SqlPlugin#supportSchema()}
+ * Use {@link SqlPlugin#supportDatabase()} /
+ * {@link SqlPlugin#supportSchema()}
  * to decide catalog/schema semantics:
  * <ul>
  * <li>MySQL: catalog = database name, schema = null or same as catalog</li>
@@ -25,12 +26,6 @@ public interface ViewProvider {
 
     /**
      * List views in the given catalog/schema.
-     *
-     * @param connection the active connection
-     * @param catalog    catalog/database name; may be null for current catalog
-     * @param schema     schema name; may be null
-     * @return list of view names, never null
-     * @throws RuntimeException if listing fails
      */
     default List<String> getViews(Connection connection, String catalog, String schema) {
         try {
@@ -52,14 +47,6 @@ public interface ViewProvider {
 
     /**
      * Get DDL statement for the specified view.
-     * Default implementation throws UnsupportedOperationException; plugins should
-     * override if supported.
-     *
-     * @param connection the active connection
-     * @param catalog    catalog/database name; may be null
-     * @param schema     schema name; may be null
-     * @param viewName   view name
-     * @return view DDL statement
      */
     String getViewDdl(Connection connection, String catalog, String schema, String viewName);
 }

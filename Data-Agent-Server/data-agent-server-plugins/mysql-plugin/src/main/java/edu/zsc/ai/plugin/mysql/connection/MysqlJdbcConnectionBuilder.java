@@ -7,10 +7,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Properties;
 
-/**
- * MySQL JDBC connection builder implementation.
- * Handles building both JDBC URL and connection properties.
- */
 public class MysqlJdbcConnectionBuilder implements JdbcConnectionBuilder {
 
     @Override
@@ -29,20 +25,25 @@ public class MysqlJdbcConnectionBuilder implements JdbcConnectionBuilder {
 
         // Set username and password
         if (StringUtils.isNotBlank(config.getUsername())) {
-            props.setProperty("user", config.getUsername());
+            props.setProperty(PROP_USER, config.getUsername());
         }
         if (StringUtils.isNotBlank(config.getPassword())) {
-            props.setProperty("password", config.getPassword());
+            props.setProperty(PROP_PASSWORD, config.getPassword());
         }
 
         // Set connection timeout (convert seconds to milliseconds)
         if (config.getTimeout() != null) {
-            props.setProperty("connectTimeout", String.valueOf(config.getTimeout() * 1000));
+            props.setProperty(PROP_CONNECT_TIMEOUT, String.valueOf(config.getTimeout() * 1000));
         }
 
         // Add additional properties
         if (MapUtils.isNotEmpty(config.getProperties())) {
             props.putAll(config.getProperties());
+        }
+
+        // Set database name if present
+        if (StringUtils.isNotBlank(config.getDatabase())) {
+            props.setProperty(PROP_DATABASE, config.getDatabase());
         }
 
         return props;
