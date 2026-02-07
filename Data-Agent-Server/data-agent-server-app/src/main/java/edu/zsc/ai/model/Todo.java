@@ -1,5 +1,7 @@
 package edu.zsc.ai.model;
 
+import edu.zsc.ai.common.enums.ai.TodoPriority;
+import edu.zsc.ai.common.enums.ai.TodoStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
