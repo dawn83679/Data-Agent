@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useState } from 'react';
-import { Database, Folder, Table, ChevronRight, ChevronDown, Plus, Search, RefreshCw, MoreVertical, Pencil, Trash2, Plug, Settings } from 'lucide-react';
+import { Database, Folder, Table, ChevronRight, ChevronDown, Plus, Search, RefreshCw, MoreVertical, Pencil, Trash2, Plug, Settings, FileText } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useWorkspaceStore } from '../../store/workspaceStore';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +8,7 @@ import { Tree as ArboristTree, NodeApi } from 'react-arborist';
 import { ConnectionFormModal, type ConnectionFormMode } from '../common/ConnectionFormModal';
 import { DriverManageModal } from '../common/DriverManageModal';
 import { DeleteConnectionDialog } from './DeleteConnectionDialog';
+import { TableDdlDialog } from './TableDdlDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,7 +24,7 @@ import { useConnectionTree, type ExplorerNode } from '../../hooks/useConnectionT
 
 export function DatabaseExplorer() {
   const { t } = useTranslation();
-  const { supportedDbTypes, fetchSupportedDbTypes } = useWorkspaceStore();
+  const { supportedDbTypes } = useWorkspaceStore();
   const {
     treeDataState,
     loadNodeData,
@@ -41,6 +42,12 @@ export function DatabaseExplorer() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [driverModalOpen, setDriverModalOpen] = useState(false);
   const [selectedDriverDbType, setSelectedDriverDbType] = useState<string>('');
+  
+  const [ddlDialogOpen, setDdlDialogOpen] = useState(false);
+  const [selectedTableNode, setSelectedTableNode] = useState<ExplorerNode | null>(null);
+  
+  const [contextMenuOpen, setContextMenuOpen] = useState(false);
+  const [contextMenuNode, setContextMenuNode] = useState<NodeApi<ExplorerNode> | null>(null);
 
   React.useEffect(() => {
     useWorkspaceStore.getState().fetchSupportedDbTypes();
@@ -59,6 +66,12 @@ export function DatabaseExplorer() {
     setConnectionModalOpen(true);
   };
 
+  const handleViewDdl = (node: ExplorerNode) => {
+    setSelectedTableNode(node);
+    setDdlDialogOpen(true);
+    setContextMenuOpen(false);
+  };
+
   const renderNode = ({ node, style, dragHandle }: { node: NodeApi<ExplorerNode>; style: React.CSSProperties; dragHandle?: unknown }) => {
     const isConnected = !!node.data.connectionId;
     const isLoading = node.isInternal && node.isOpen && (!node.data.children || node.data.children.length === 0);
@@ -71,7 +84,8 @@ export function DatabaseExplorer() {
           'flex items-center py-1 px-2 hover:bg-accent/50 cursor-pointer group select-none text-xs',
           node.isSelected && 'bg-accent/30'
         )}
-        onClick={() => {
+        onClick={() => node.select()}
+        onDoubleClick={() => {
           if (node.isInternal) {
             if (!node.isOpen && (!node.data.children || node.data.children.length === 0)) {
               loadNodeData(node);
@@ -79,8 +93,28 @@ export function DatabaseExplorer() {
             node.toggle();
           }
         }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          node.select();
+          // Show context menu for table nodes
+          if (node.data.type === 'table') {
+            setContextMenuNode(node);
+            setContextMenuOpen(true);
+          }
+        }}
       >
-        <span className="w-4 flex items-center justify-center mr-1">
+        <span 
+          className="w-4 flex items-center justify-center mr-1 hover:bg-accent rounded-sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (node.isInternal) {
+              if (!node.isOpen && (!node.data.children || node.data.children.length === 0)) {
+                loadNodeData(node);
+              }
+              node.toggle();
+            }
+          }}
+        >
           {node.isInternal && (node.isOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />)}
         </span>
         <span className="mr-2">{renderIcon(node.data.type, node.isOpen)}</span>
@@ -91,33 +125,77 @@ export function DatabaseExplorer() {
             {isLoading ? (
               <RefreshCw className="w-3.5 h-3.5 animate-spin theme-text-secondary" />
             ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                    <MoreVertical className="w-3 h-3 theme-text-secondary" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {isConnected && (
-                    <DropdownMenuItem onClick={() => handleDisconnect(node)}>
-                      <Plug className="w-3.5 h-3.5 mr-2" />
-                      {t('explorer.disconnect')}
+              <>
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        loadNodeData(node);
+                    }}
+                    title={t('common.refresh')}
+                >
+                    <RefreshCw className="w-3 h-3 theme-text-secondary" />
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                      <MoreVertical className="w-3 h-3 theme-text-secondary" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {isConnected && (
+                      <DropdownMenuItem onClick={() => handleDisconnect(node)}>
+                        <Plug className="w-3.5 h-3.5 mr-2" />
+                        {t('explorer.disconnect')}
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onClick={() => openEditModal(Number(node.id.replace('conn-', '')))}>
+                      <Pencil className="w-3.5 h-3.5 mr-2" />
+                      {t('explorer.edit')}
                     </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem onClick={() => openEditModal(Number(node.id.replace('conn-', '')))}>
-                    <Pencil className="w-3.5 h-3.5 mr-2" />
-                    {t('explorer.edit')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setDeleteConfirmId(Number(node.id.replace('conn-', '')))}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 mr-2" />
-                    {t('explorer.delete_connection')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <DropdownMenuItem
+                      onClick={() => setDeleteConfirmId(Number(node.id.replace('conn-', '')))}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-2" />
+                      {t('explorer.delete_connection')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
             )}
+          </div>
+        )}
+
+        {node.data.type === 'table' && (
+          <div className="opacity-0 group-hover:opacity-100 flex items-center" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenu open={contextMenuOpen && contextMenuNode?.id === node.id} onOpenChange={(open) => {
+              setContextMenuOpen(open);
+              if (!open) setContextMenuNode(null);
+            }}>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setContextMenuNode(node);
+                    setContextMenuOpen(true);
+                  }}
+                >
+                  <MoreVertical className="w-3 h-3 theme-text-secondary" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleViewDdl(node.data)}>
+                  <FileText className="w-3.5 h-3.5 mr-2" />
+                  {t('explorer.view_ddl')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
       </div>
@@ -252,6 +330,17 @@ export function DatabaseExplorer() {
         }}
         isPending={deleteMutation.isPending}
       />
+      
+      {selectedTableNode && (
+        <TableDdlDialog
+          open={ddlDialogOpen}
+          onOpenChange={setDdlDialogOpen}
+          connectionId={selectedTableNode.connectionId || ''}
+          tableName={selectedTableNode.name}
+          catalog={selectedTableNode.catalog}
+          schema={selectedTableNode.schema}
+        />
+      )}
     </div>
   );
 }

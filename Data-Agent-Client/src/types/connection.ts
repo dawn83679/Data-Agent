@@ -1,4 +1,3 @@
-/** Request body for test connection and open connection (no name). */
 export interface ConnectRequest {
   dbType: string;
   host: string;
@@ -11,8 +10,8 @@ export interface ConnectRequest {
   properties?: Record<string, string>;
 }
 
-/** Request body for create/update connection (includes name). */
 export interface ConnectionCreateRequest {
+  connectionId?: number;
   name: string;
   dbType: string;
   host: string;
@@ -25,7 +24,6 @@ export interface ConnectionCreateRequest {
   properties?: Record<string, string>;
 }
 
-/** Connection config as returned by API (no password). */
 export interface DbConnection {
   id: number;
   name: string;
@@ -41,7 +39,6 @@ export interface DbConnection {
   updatedAt?: string;
 }
 
-/** Response from POST /connections/test */
 export interface ConnectionTestResponse {
   status: 'SUCCEEDED' | 'FAILED';
   dbmsInfo: string;
@@ -49,20 +46,7 @@ export interface ConnectionTestResponse {
   ping: number;
 }
 
-/** Response from POST /connections/open */
-export interface OpenConnectionResponse {
-  connectionId: string;
-  dbType: string;
-  host: string;
-  port: number;
-  database?: string;
-  username?: string;
-  connected: boolean;
-  createdAt: string;
-}
-
 /** @deprecated Use ConnectionCreateRequest */
 export type CreateConnectionRequest = ConnectionCreateRequest;
 
-/** Form/test payload without name; use ConnectRequest or build from ConnectionCreateRequest. */
 export type TestConnectionRequest = ConnectRequest;
