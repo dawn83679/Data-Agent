@@ -1,18 +1,21 @@
 package edu.zsc.ai.plugin.mysql;
 
+import edu.zsc.ai.plugin.SqlPlugin;
 import edu.zsc.ai.plugin.base.AbstractDatabasePlugin;
 import edu.zsc.ai.plugin.capability.CommandExecutor;
 import edu.zsc.ai.plugin.capability.ConnectionProvider;
-import edu.zsc.ai.plugin.capability.DatabaseProvider;
-import edu.zsc.ai.plugin.capability.SchemaProvider;
-import edu.zsc.ai.plugin.connection.ConnectionConfig;
-import edu.zsc.ai.plugin.connection.JdbcConnectionBuilder;
+import edu.zsc.ai.plugin.capability.ViewProvider;
 import edu.zsc.ai.plugin.driver.DriverLoader;
+import edu.zsc.ai.plugin.connection.JdbcConnectionBuilder;
+import edu.zsc.ai.plugin.connection.ConnectionConfig;
 import edu.zsc.ai.plugin.driver.MavenCoordinates;
 import edu.zsc.ai.plugin.model.command.sql.SqlCommandRequest;
 import edu.zsc.ai.plugin.model.command.sql.SqlCommandResult;
+import edu.zsc.ai.plugin.model.command.view.ViewCommandRequest;
+import edu.zsc.ai.plugin.model.command.view.ViewCommandResult;
 import edu.zsc.ai.plugin.mysql.connection.MysqlJdbcConnectionBuilder;
 import edu.zsc.ai.plugin.mysql.executor.MySQLSqlExecutor;
+import edu.zsc.ai.plugin.mysql.view.MySQLViewProvider;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -23,11 +26,10 @@ import java.util.logging.Logger;
 /**
  * Abstract base class for MySQL database plugins.
  * Provides common functionality for different MySQL versions.
- * Implements ConnectionProvider, CommandExecutor, DatabaseProvider, and SchemaProvider capabilities for MySQL plugins.
+ * Implements ConnectionProvider and CommandExecutor capabilities for all MySQL plugins.
  */
 public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin
-        implements ConnectionProvider, CommandExecutor<SqlCommandRequest, SqlCommandResult>, DatabaseProvider,
-        SchemaProvider {
+        implements SqlPlugin, ConnectionProvider, CommandExecutor<SqlCommandRequest, SqlCommandResult>, ViewProvider {
 
     private static final Logger logger = Logger.getLogger(AbstractMysqlPlugin.class.getName());
 
@@ -41,11 +43,18 @@ public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin
      */
     private final MySQLSqlExecutor sqlExecutor = new MySQLSqlExecutor();
 
-    @Override
-    public boolean supportSchema() {
-        return false; // MySQL: DATABASE and SCHEMA are synonyms, no separate schema namespace
+    /**
+     * View provider - handles view-related operations
+     */
+    private final MySQLViewProvider viewProvider;
+    
+    /**
+     * Constructor - initializes the view provider with this plugin as ConnectionProvider
+     */
+    public AbstractMysqlPlugin() {
+        this.viewProvider = new MySQLViewProvider(this);
     }
-
+    
     /**
      * Get MySQL-specific JDBC driver class name.
      * Different MySQL versions may use different driver classes.
@@ -53,7 +62,7 @@ public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin
      * @return JDBC driver class name
      */
     protected abstract String getDriverClassName();
-
+    
     /**
      * Get default JDBC URL template
      *
@@ -62,7 +71,7 @@ public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin
     protected String getJdbcUrlTemplate() {
         return "jdbc:mysql://%s:%d/%s";
     }
-
+    
     /**
      * Get default port for MySQL
      *
@@ -88,20 +97,20 @@ public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin
 
             // Step 4: Establish connection
             Connection connection = DriverManager.getConnection(jdbcUrl, properties);
-
+            
             logger.info(String.format("Successfully connected to MySQL database at %s:%d/%s",
-                    config.getHost(),
-                    config.getPort() != null ? config.getPort() : getDefaultPort(),
-                    config.getDatabase() != null ? config.getDatabase() : ""));
-
+                config.getHost(), 
+                config.getPort() != null ? config.getPort() : getDefaultPort(),
+                config.getDatabase() != null ? config.getDatabase() : ""));
+            
             return connection;
 
         } catch (SQLException e) {
             String errorMsg = String.format("Failed to connect to MySQL database at %s:%d/%s: %s",
-                    config.getHost(),
-                    config.getPort() != null ? config.getPort() : getDefaultPort(),
-                    config.getDatabase() != null ? config.getDatabase() : "",
-                    e.getMessage());
+                config.getHost(),
+                config.getPort() != null ? config.getPort() : getDefaultPort(),
+                config.getDatabase() != null ? config.getDatabase() : "",
+                e.getMessage());
             logger.severe(errorMsg);
             throw new RuntimeException(errorMsg, e);
         } catch (RuntimeException e) {
@@ -150,8 +159,45 @@ public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin
         return sqlExecutor.executeCommand(command);
     }
 
-    // ========== Driver Maven Coordinates ==========
+    // ========== ViewProvider Implementation ==========
 
+    @Override
+    public ViewCommandResult createView(ViewCommandRequest request) {
+        return viewProvider.createView(request);
+    }
+
+    @Override
+    public ViewCommandResult getViewDefinition(ViewCommandRequest request) {
+        return viewProvider.getViewDefinition(request);
+    }
+
+    @Override
+    public ViewCommandResult alterView(ViewCommandRequest request) {
+        return viewProvider.alterView(request);
+    }
+
+    @Override
+    public ViewCommandResult dropView(ViewCommandRequest request) {
+        return viewProvider.dropView(request);
+    }
+
+    @Override
+    public ViewCommandResult listViews(ViewCommandRequest request) {
+        return viewProvider.listViews(request);
+    }
+
+    @Override
+    public ViewCommandResult viewExists(ViewCommandRequest request) {
+        return viewProvider.viewExists(request);
+    }
+
+    @Override
+    public void setConnectionConfig(edu.zsc.ai.plugin.connection.ConnectionConfig connectionConfig) {
+        viewProvider.setConnectionConfig(connectionConfig);
+    }
+
+    // ========== Driver Maven Coordinates ==========
+    
     /**
      * Get Maven coordinates for MySQL JDBC driver.
      * Automatically selects the correct artifact based on version:
@@ -165,26 +211,26 @@ public abstract class AbstractMysqlPlugin extends AbstractDatabasePlugin
     @Override
     public MavenCoordinates getDriverMavenCoordinates(String driverVersion) {
         // If no version specified or version >= 8.0, use mysql-connector-j
-        if (driverVersion == null || driverVersion.isEmpty()
-                || driverVersion.startsWith("8.") || driverVersion.startsWith("9.")) {
+        if (driverVersion == null || driverVersion.isEmpty() 
+            || driverVersion.startsWith("8.") || driverVersion.startsWith("9.")) {
             String version = (driverVersion != null && !driverVersion.isEmpty()) ? driverVersion : "8.0.33";
             return new MavenCoordinates(
-                    "com.mysql",
-                    "mysql-connector-j",
-                    version
+                "com.mysql",
+                "mysql-connector-j",
+                version
             );
         }
-
+        
         // Version 2.x - 7.x → use mysql-connector-java
         char firstChar = driverVersion.charAt(0);
         if (firstChar >= '2' && firstChar <= '7') {
             return new MavenCoordinates(
-                    "mysql",
-                    "mysql-connector-java",
-                    driverVersion
+                "mysql",
+                "mysql-connector-java",
+                driverVersion
             );
         }
-
+        
         // Unsupported version - throw exception instead of returning null
         throw new IllegalArgumentException(
                 String.format("Unsupported MySQL driver version: %s. Supported versions: 2.x-7.x, 8.x, 9.x", driverVersion));
