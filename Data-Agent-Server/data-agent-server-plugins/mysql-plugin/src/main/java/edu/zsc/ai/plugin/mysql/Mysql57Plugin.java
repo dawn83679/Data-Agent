@@ -3,11 +3,6 @@ package edu.zsc.ai.plugin.mysql;
 import edu.zsc.ai.plugin.annotation.PluginInfo;
 import edu.zsc.ai.plugin.enums.DbType;
 
-/**
- * MySQL 5.7 database plugin implementation.
- * Supports MySQL 5.7.x versions.
- * ConnectionProvider capability is inherited from AbstractMysqlPlugin.
- */
 @PluginInfo(
     id = "mysql-5.7",
     name = "MySQL 5.7",
@@ -17,7 +12,7 @@ import edu.zsc.ai.plugin.enums.DbType;
     supportMinVersion = "5.7.0",
     supportMaxVersion = "7.9.99"
 )
-public class Mysql57Plugin extends AbstractMysqlPlugin {
+public class Mysql57Plugin extends DefaultMysqlPlugin {
     
     @Override
     protected String getDriverClassName() {

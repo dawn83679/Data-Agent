@@ -142,7 +142,13 @@
     "ddl_data_source": "DDL Data Source",
     "data_source_from_url": "Data Source from URL",
     "data_source_from_path": "Data Source from Path",
-    "driver": "Driver"
+    "driver": "Driver",
+    "view_ddl": "View DDL",
+    "table_ddl": "Table DDL",
+    "copy_ddl": "Copy DDL",
+    "ddl_copied": "DDL copied to clipboard",
+    "load_ddl_failed": "Failed to load DDL",
+    "close": "Close"
   },
   "connections": {
     "new": "New connection",

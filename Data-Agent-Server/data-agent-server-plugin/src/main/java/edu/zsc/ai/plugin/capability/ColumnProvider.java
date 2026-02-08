@@ -5,6 +5,7 @@ import edu.zsc.ai.plugin.model.metadata.ColumnMetadata;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +48,7 @@ public interface ColumnProvider {
                             typeName != null ? typeName : "",
                             columnSize,
                             decimalDigits,
-                            nullable == java.sql.ResultSetMetaData.columnNullable,
+                            nullable == ResultSetMetaData.columnNullable,
                             ordinalPosition,
                             remarks
                     ));

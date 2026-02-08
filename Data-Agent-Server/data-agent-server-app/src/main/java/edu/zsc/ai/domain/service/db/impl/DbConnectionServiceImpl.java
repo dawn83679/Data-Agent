@@ -2,7 +2,10 @@ package edu.zsc.ai.domain.service.db.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import edu.zsc.ai.common.converter.db.ConnectionConverter;
+import edu.zsc.ai.common.constant.ResponseCode;
 import edu.zsc.ai.common.constant.ResponseMessageKey;
 import edu.zsc.ai.domain.mapper.db.DbConnectionMapper;
 import edu.zsc.ai.domain.model.dto.request.db.ConnectionCreateRequest;
@@ -19,18 +22,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/**
- * Database Connection Service Implementation
- *
- * @author Data-Agent
- * @since 0.0.1
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbConnection>
         implements DbConnectionService {
-
 
     @Override
     public DbConnection getByName(String name) {
@@ -55,20 +51,21 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
         return this.getOne(wrapper);
     }
 
-    private void requireConnectionOwnedByCurrentUser(DbConnection connection) {
-        Long currentUserId = StpUtil.getLoginIdAsLong();
-        if (connection.getUserId() == null || !connection.getUserId().equals(currentUserId)) {
-            throw BusinessException.forbidden(ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE);
-        }
+    @Override
+    public DbConnection getOwnedById(Long id) {
+        DbConnection connection = this.getOne(Wrappers.<DbConnection>lambdaQuery()
+                .eq(DbConnection::getId, id)
+                .eq(DbConnection::getUserId, StpUtil.getLoginIdAsLong()));
+        BusinessException.assertNotNull(connection, ResponseCode.PARAM_ERROR, ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE);
+        return connection;
     }
 
-    
     @Override
     public ConnectionResponse createConnection(ConnectionCreateRequest request) {
         long currentUserId = StpUtil.getLoginIdAsLong();
         DbConnection existingConnection = getByNameAndUserId(request.getName(), currentUserId);
         if (existingConnection != null) {
-            throw new IllegalArgumentException("Connection name already exists: " + request.getName());
+            throw new BusinessException(ResponseCode.PARAM_ERROR, ResponseMessageKey.CONNECTION_NAME_EXISTS_MESSAGE);
         }
 
         DbConnection connection = new DbConnection();
@@ -77,39 +74,33 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
         connection.setProperties(JsonUtil.map2Json(request.getProperties()));
 
         this.save(connection);
-        return convertToResponse(connection);
+        return ConnectionConverter.convertToResponse(connection);
     }
 
     @Override
-    public ConnectionResponse updateConnection(Long id, ConnectionCreateRequest request) {
-        DbConnection existingConnection = this.getById(id);
-        if (existingConnection == null) {
-            throw new IllegalArgumentException("Connection not found: " + id);
-        }
-        requireConnectionOwnedByCurrentUser(existingConnection);
-
+    public ConnectionResponse updateConnection(ConnectionCreateRequest request) {
+        Long connectionId = request.getConnectionId();
         long currentUserId = StpUtil.getLoginIdAsLong();
+
+        DbConnection existingConnection = this.getOwnedById(connectionId);
+
         DbConnection nameConflict = getByNameAndUserId(request.getName(), currentUserId);
-        if (nameConflict != null && !nameConflict.getId().equals(id)) {
-            throw new IllegalArgumentException("Connection name already exists: " + request.getName());
+        if (nameConflict != null && !nameConflict.getId().equals(connectionId)) {
+            throw new BusinessException(ResponseCode.PARAM_ERROR, ResponseMessageKey.CONNECTION_NAME_EXISTS_MESSAGE);
         }
 
         BeanUtils.copyProperties(request, existingConnection);
-        existingConnection.setId(id);
+        existingConnection.setId(connectionId);
         existingConnection.setProperties(JsonUtil.map2Json(request.getProperties()));
 
         this.updateById(existingConnection);
-        return convertToResponse(existingConnection);
+        return ConnectionConverter.convertToResponse(existingConnection);
     }
 
     @Override
-    public ConnectionResponse getConnectionById(Long id) {
-        DbConnection connection = this.getById(id);
-        if (connection == null) {
-            throw new IllegalArgumentException("Connection not found: " + id);
-        }
-        requireConnectionOwnedByCurrentUser(connection);
-        return convertToResponse(connection);
+    public ConnectionResponse getConnectionById(Long connectionId) {
+        DbConnection connection = this.getOwnedById(connectionId);
+        return ConnectionConverter.convertToResponse(connection);
     }
 
     @Override
@@ -119,30 +110,13 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
         wrapper.eq(DbConnection::getUserId, currentUserId).orderByAsc(DbConnection::getId);
         List<DbConnection> connections = this.list(wrapper);
         return connections.stream()
-                .map(this::convertToResponse)
+                .map(ConnectionConverter::convertToResponse)
                 .toList();
     }
 
     @Override
-    public void deleteConnection(Long id) {
-        DbConnection connection = this.getById(id);
-        if (connection == null) {
-            throw new IllegalArgumentException("Connection not found: " + id);
-        }
-        requireConnectionOwnedByCurrentUser(connection);
-        this.removeById(id);
-    }
-
-    /**
-     * Convert entity to response DTO
-     */
-    private ConnectionResponse convertToResponse(DbConnection connection) {
-        ConnectionResponse response = new ConnectionResponse();
-        BeanUtils.copyProperties(connection, response);
-
-        // Convert properties JSON string to Map using JsonUtil
-        response.setProperties(JsonUtil.json2Map(connection.getProperties()));
-
-        return response;
+    public void deleteConnection(Long connectionId) {
+        this.getOwnedById(connectionId);
+        this.removeById(connectionId);
     }
 }

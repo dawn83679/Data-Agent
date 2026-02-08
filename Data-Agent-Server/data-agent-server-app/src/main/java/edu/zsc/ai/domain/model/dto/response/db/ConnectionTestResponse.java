@@ -1,6 +1,6 @@
 package edu.zsc.ai.domain.model.dto.response.db;
 
-import edu.zsc.ai.common.enums.db.ConnectionTestStatus;
+import edu.zsc.ai.common.enums.db.ConnectionTestStatuEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,7 +22,7 @@ public class ConnectionTestResponse {
     /**
      * Test status
      */
-    private ConnectionTestStatus status;
+    private ConnectionTestStatuEnum status;
     
     /**
      * DBMS information: "MySQL (ver. 8.0.43)"

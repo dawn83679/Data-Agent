@@ -1,5 +1,7 @@
 package edu.zsc.ai.model;
 
+import edu.zsc.ai.common.enums.ai.TodoPriorityEnum;
+import edu.zsc.ai.common.enums.ai.TodoStatusEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,11 +20,6 @@ import java.time.LocalDateTime;
 public class Todo {
     
     /**
-     * Todo ID (within the list)
-     */
-    private Long id;
-    
-    /**
      * Todo Title
      */
     private String title;
@@ -36,13 +33,13 @@ public class Todo {
      * Todo Status: NOT_STARTED, IN_PROGRESS, PAUSED, COMPLETED
      */
     @Builder.Default
-    private String status = TodoStatus.NOT_STARTED.name();
+    private String status = TodoStatusEnum.NOT_STARTED.name();
     
     /**
      * Todo Priority: LOW, MEDIUM, HIGH
      */
     @Builder.Default
-    private String priority = TodoPriority.MEDIUM.name();
+    private String priority = TodoPriorityEnum.MEDIUM.name();
     
     /**
      * Created Time
@@ -50,7 +47,7 @@ public class Todo {
     private LocalDateTime createdAt;
     
     /**
-     * Status Changed Time
+     * Updated Time
      */
-    private LocalDateTime statusChangedAt;
+    private LocalDateTime updatedAt;
 }

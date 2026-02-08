@@ -182,7 +182,10 @@ export function ConnectionFormModal({
   const submitMutation = useMutation({
     mutationFn: (values: ConnectionFormValues) => {
       if (mode === 'edit' && editId) {
-        return connectionService.updateConnection(editId, values as any);
+        return connectionService.updateConnection({
+          ...values,
+          connectionId: editId,
+        } as any);
       }
       return connectionService.createConnection(values as any);
     },

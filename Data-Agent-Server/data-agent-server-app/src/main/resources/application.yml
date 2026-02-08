@@ -54,17 +54,14 @@ langchain4j:
       chat-model:
         api-key: ${ALIYUN_AI_API_KEY}
         model-name: qwen3-max
-        log-requests: true
-        log-responses: true
-        temperature: 0.7
-        max-tokens: 4096
       streaming-chat-model:
         api-key: ${ALIYUN_AI_API_KEY}
         model-name: qwen3-max
-        log-requests: true
-        log-responses: true
       embedding-model:
         api-key: ${ALIYUN_AI_API_KEY}
         model-name: text-embedding-v4
+      tokenizer:
+        api-key: ${ALIYUN_AI_API_KEY}
+        model-name: qwen3-max
 
 

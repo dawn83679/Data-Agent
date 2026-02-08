@@ -1,11 +1,11 @@
 package edu.zsc.ai.domain.service.db.impl;
 
-import edu.zsc.ai.common.converter.db.ConnectionMetadataConverter;
-import edu.zsc.ai.util.exception.BusinessException;
-import edu.zsc.ai.domain.model.dto.request.db.ConnectRequest;
+import cn.dev33.satoken.stp.StpUtil;
+import edu.zsc.ai.common.constant.ResponseCode;
+import edu.zsc.ai.common.constant.ResponseMessageKey;
 import edu.zsc.ai.plugin.capability.ConnectionProvider;
 import edu.zsc.ai.plugin.manager.DefaultPluginManager;
-import edu.zsc.ai.util.HashUtil;
+import edu.zsc.ai.util.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Connection;
@@ -14,169 +14,115 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Connection Manager
- * Thread-safe static utility class for managing active database connections.
- *
- * @author Data-Agent
- * @since 0.0.1
- */
 @Slf4j
 public class ConnectionManager {
 
     /**
-     * Connection metadata record.
-     * Stores information about a connection for lifecycle management.
+     * Active connection record.
+     * Stores the physical connection and its metadata.
      */
-    public record ConnectionMetadata(
+    public record ActiveConnection(
+            Connection connection,
             Long userId,
+            Long dbConnectionId,
             String dbType,
-            String host,
-            Integer port,
-            String database,
-            String username,
             String pluginId,
+            String databaseName,
+            String schemaName,
             LocalDateTime createdAt,
             LocalDateTime lastAccessedAt) {
-
-        /**
-         * Generate connectionId based on this metadata.
-         * Uses hash of key fields including userId so same config opened by different users gets different IDs.
-         *
-         * @return connection identifier (SHA-256 hash string)
-         */
-        public String generateConnectionId() {
-            String hashInput = String.join("|",
-                    userId != null ? String.valueOf(userId) : "",
-                    dbType != null ? dbType : "",
-                    host != null ? host : "",
-                    port != null ? String.valueOf(port) : "",
-                    database != null ? database : "",
-                    username != null ? username : "",
-                    pluginId != null ? pluginId : ""
-            );
-            return HashUtil.sha256(hashInput);
-        }
     }
 
     /**
-     * Active connections registry: connectionId -> Connection
+     * Active connections registry: dbConnectionId -> { database_schema -> ActiveConnection }
      */
-    private static final Map<String, Connection> activeConnections = new ConcurrentHashMap<>();
+    private static final Map<Long, Map<String, ActiveConnection>> activeConnections = new ConcurrentHashMap<>();
 
     /**
-     * Connection metadata registry: connectionId -> ConnectionMetadata
+     * Generate inner key for the second level map.
      */
-    private static final Map<String, ConnectionMetadata> connectionMetadata = new ConcurrentHashMap<>();
-
-    /**
-     * Open a new database connection and store it in the active connections registry.
-     * Generates a connectionId based on connection metadata hash (including userId) to enable connection reuse per user.
-     *
-     * @param request    connection request with connection parameters
-     * @param connection the established database connection
-     * @param pluginId   the plugin ID used to establish this connection
-     * @param userId     the current user ID who opens this connection
-     * @return unique connection identifier (hash-based)
-     */
-    public static String openConnection(ConnectRequest request, Connection connection, String pluginId, Long userId) {
-        ConnectionMetadata metadata = ConnectionMetadataConverter.convert(request, pluginId, userId);
-
-        // Generate connectionId based on metadata
-        String connectionId = metadata.generateConnectionId();
-
-        // Check if connection already exists
-        Connection existingConnection = activeConnections.get(connectionId);
-        if (existingConnection == null) {
-            // Store new connection and metadata
-            activeConnections.put(connectionId, connection);
-            connectionMetadata.put(connectionId, metadata);
-            log.info("Connection opened: connectionId={}, dbType={}, host={}, database={}",
-                    connectionId, request.getDbType(), request.getHost(), request.getDatabase());
-            return connectionId;
-        }
-        return connectionId;
+    public static String generateInnerKey(String databaseName, String schemaName) {
+        return (databaseName != null ? databaseName : "null") + "::" + (schemaName != null ? schemaName : "null");
     }
 
     /**
-     * Close an active database connection and remove it from the registry.
-     *
-     * @param connectionId unique connection identifier
-     * @throws BusinessException if connection not found
+     * Register a new active connection.
      */
-    public static void closeConnection(String connectionId) {
-        Connection connection = activeConnections.get(connectionId);
-        ConnectionMetadata metadata = connectionMetadata.get(connectionId);
+    public static void registerConnection(Long dbConnectionId, ActiveConnection activeConnection) {
+        String innerKey = generateInnerKey(activeConnection.databaseName(), activeConnection.schemaName());
+        activeConnections.computeIfAbsent(dbConnectionId, k -> new ConcurrentHashMap<>())
+                .put(innerKey, activeConnection);
+        
+        log.info("Connection registered: dbConnectionId={}, key={}, dbType={}",
+                dbConnectionId, innerKey, activeConnection.dbType());
+    }
 
-        if (connection == null || metadata == null) {
-            log.warn("Close connection ignored: connectionId not found, connectionId={}", connectionId);
-            return;
+    /**
+     * Get active connection for a dbConnectionId and specific catalog/schema.
+     */
+    public static Optional<ActiveConnection> getConnection(Long dbConnectionId, String catalog, String schema) {
+        Map<String, ActiveConnection> innerMap = activeConnections.get(dbConnectionId);
+        if (innerMap == null) {
+            return Optional.empty();
         }
+        String key = generateInnerKey(catalog, schema);
+        return Optional.ofNullable(innerMap.get(key));
+    }
 
+    /**
+     * Get active connection for a dbConnectionId and specific catalog/schema, 
+     * and verify ownership by current user.
+     */
+    public static ActiveConnection getOwnedConnection(Long dbConnectionId, String catalog, String schema) {
+        ActiveConnection active = getConnection(dbConnectionId, catalog, schema)
+                .orElseThrow(() -> BusinessException.notFound(ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE));
+        
+        if (!active.userId().equals(StpUtil.getLoginIdAsLong())) {
+            throw new BusinessException(ResponseCode.PARAM_ERROR, ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE);
+        }
+        return active;
+    }
+
+    /**
+     * Get any active connection for a dbConnectionId (e.g. for listing databases).
+     */
+    public static Optional<ActiveConnection> getAnyActiveConnection(Long dbConnectionId) {
+        return Optional.ofNullable(activeConnections.get(dbConnectionId))
+                .flatMap(m -> m.values().stream().findFirst());
+    }
+
+    /**
+     * Get any active connection for a dbConnectionId and verify ownership.
+     */
+    public static ActiveConnection getAnyOwnedActiveConnection(Long dbConnectionId) {
+        ActiveConnection active = getAnyActiveConnection(dbConnectionId)
+                .orElseThrow(() -> BusinessException.notFound(ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE));
+
+        if (!active.userId().equals(StpUtil.getLoginIdAsLong())) {
+            throw new BusinessException(ResponseCode.PARAM_ERROR, ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE);
+        }
+        return active;
+    }
+
+    /**
+     * Close all connections for a dbConnectionId.
+     */
+    public static void closeAllConnections(Long dbConnectionId) {
+        Map<String, ActiveConnection> innerMap = activeConnections.remove(dbConnectionId);
+        if (innerMap != null) {
+            innerMap.values().forEach(ConnectionManager::doClose);
+        }
+    }
+
+    private static void doClose(ActiveConnection active) {
         try {
-            ConnectionProvider provider = DefaultPluginManager.getInstance().getConnectionProviderByPluginId(metadata.pluginId());
-            provider.closeConnection(connection);
-            log.info("Connection closed: connectionId={}, dbType={}, host={}",
-                    connectionId, metadata.dbType(), metadata.host());
+            ConnectionProvider provider = DefaultPluginManager.getInstance()
+                    .getConnectionProviderByPluginId(active.pluginId());
+            provider.closeConnection(active.connection());
+            log.info("Connection closed: dbConnectionId={}, database={}, schema={}",
+                    active.dbConnectionId(), active.databaseName(), active.schemaName());
         } catch (Exception e) {
-            log.error("Error closing connection: connectionId={}", connectionId, e);
-        } finally {
-            activeConnections.remove(connectionId);
-            connectionMetadata.remove(connectionId);
+            log.error("Error closing connection: dbConnectionId={}", active.dbConnectionId(), e);
         }
     }
-
-
-    /**
-     * Get connection by connectionId.
-     * Does not modify metadata or update lastAccessedAt.
-     *
-     * @param connectionId unique connection identifier
-     * @return Optional containing the Connection if exists, empty otherwise
-     */
-    public static Optional<Connection> getConnection(String connectionId) {
-        Connection connection = activeConnections.get(connectionId);
-        return Optional.ofNullable(connection);
-    }
-
-    /**
-     * Get connection metadata by connectionId.
-     * Updates lastAccessedAt timestamp when metadata is accessed.
-     *
-     * @param connectionId unique connection identifier
-     * @return ConnectionMetadata if exists, null otherwise
-     */
-    public static ConnectionMetadata getConnectionMetadata(String connectionId) {
-        ConnectionMetadata metadata = connectionMetadata.get(connectionId);
-        if (metadata != null) {
-            updateLastAccessedAt(connectionId);
-        }
-        return metadata;
-    }
-
-    /**
-     * Update lastAccessedAt timestamp for a connection.
-     *
-     * @param connectionId unique connection identifier
-     */
-    private static void updateLastAccessedAt(String connectionId) {
-        ConnectionMetadata existingMetadata = connectionMetadata.get(connectionId);
-        if (existingMetadata != null) {
-            ConnectionMetadata updatedMetadata = new ConnectionMetadata(
-                    existingMetadata.userId(),
-                    existingMetadata.dbType(),
-                    existingMetadata.host(),
-                    existingMetadata.port(),
-                    existingMetadata.database(),
-                    existingMetadata.username(),
-                    existingMetadata.pluginId(),
-                    existingMetadata.createdAt(),
-                    LocalDateTime.now()
-            );
-            connectionMetadata.put(connectionId, updatedMetadata);
-        }
-    }
-
-
 }
-

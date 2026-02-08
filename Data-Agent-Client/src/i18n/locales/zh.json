@@ -142,7 +142,13 @@
     "ddl_data_source": "DDL 数据源",
     "data_source_from_url": "来自 URL 的数据源",
     "data_source_from_path": "来自路径的数据源",
-    "driver": "驱动"
+    "driver": "驱动",
+    "view_ddl": "查看 DDL",
+    "table_ddl": "表结构 DDL",
+    "copy_ddl": "复制 DDL",
+    "ddl_copied": "DDL 已复制到剪贴板",
+    "load_ddl_failed": "加载 DDL 失败",
+    "close": "关闭"
   },
   "connections": {
     "new": "新建连接",

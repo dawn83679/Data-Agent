@@ -8,21 +8,18 @@ import java.util.Properties;
  */
 public interface JdbcConnectionBuilder {
 
+    String PROP_USER = "user";
+    String PROP_PASSWORD = "password";
+    String PROP_CONNECT_TIMEOUT = "connectTimeout";
+    String PROP_DATABASE = "database";
+
     /**
      * Build JDBC URL from connection configuration.
-     *
-     * @param config connection configuration
-     * @param urlTemplate JDBC URL template (e.g., "jdbc:mysql://%s:%d/%s")
-     * @param defaultPort default port if not specified in config
-     * @return JDBC URL string
      */
     String buildUrl(ConnectionConfig config, String urlTemplate, int defaultPort);
 
     /**
      * Build connection properties from configuration.
-     *
-     * @param config connection configuration
-     * @return Properties object with connection parameters
      */
     Properties buildProperties(ConnectionConfig config);
 }

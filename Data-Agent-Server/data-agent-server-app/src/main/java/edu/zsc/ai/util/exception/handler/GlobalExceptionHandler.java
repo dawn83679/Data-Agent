@@ -15,18 +15,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 
-import edu.zsc.ai.common.enums.error.ErrorCode;
+import edu.zsc.ai.common.enums.error.ErrorCodeEnum;
 import edu.zsc.ai.util.exception.BusinessException;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.util.I18nUtils;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Global exception handler
- * Support i18n messages
- *
- * @author hhz
- */
+
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -34,12 +29,7 @@ public class GlobalExceptionHandler {
     @Autowired
     private I18nUtils i18nUtils;
 
-    /**
-     * Handle business exception
-     *
-     * @param e business exception
-     * @return unified response format
-     */
+
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException e) {
         log.error("Business exception: {}", e.getMessage());
@@ -49,12 +39,7 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(e.getCode(), message));
     }
 
-    /**
-     * Handle validation exception
-     *
-     * @param e validation exception
-     * @return unified response format
-     */
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleValidationException(MethodArgumentNotValidException e) {
         FieldError fieldError = e.getBindingResult().getFieldError();
@@ -62,15 +47,9 @@ public class GlobalExceptionHandler {
         log.error("Validation exception: {}", message);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ErrorCode.PARAMS_ERROR, message));
+                .body(ApiResponse.error(ErrorCodeEnum.PARAMS_ERROR, message));
     }
 
-    /**
-     * Handle constraint violation (e.g. @RequestParam / @PathVariable with @Validated).
-     *
-     * @param e constraint violation exception
-     * @return unified response format
-     */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(ConstraintViolationException e) {
         String message = e.getConstraintViolations().stream()
@@ -80,15 +59,10 @@ public class GlobalExceptionHandler {
         log.error("Constraint violation: {}", message);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ErrorCode.PARAMS_ERROR, message));
+                .body(ApiResponse.error(ErrorCodeEnum.PARAMS_ERROR, message));
     }
 
-    /**
-     * Handle bind exception
-     *
-     * @param e bind exception
-     * @return unified response format
-     */
+
     @ExceptionHandler(BindException.class)
     public ResponseEntity<ApiResponse<Void>> handleBindException(BindException e) {
         FieldError fieldError = e.getBindingResult().getFieldError();
@@ -96,58 +70,47 @@ public class GlobalExceptionHandler {
         log.error("Bind exception: {}", message);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ErrorCode.PARAMS_ERROR, message));
+                .body(ApiResponse.error(ErrorCodeEnum.PARAMS_ERROR, message));
     }
 
-    /**
-     * Handle all other uncaught exceptions
-     *
-     * @param e exception
-     * @return unified response format
-     */
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
         log.error("System exception: ", e);
         String systemError = i18nUtils.getMessage("error.system");
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error(ErrorCode.SYSTEM_ERROR, systemError + ": " + e.getMessage()));
+                .body(ApiResponse.error(ErrorCodeEnum.SYSTEM_ERROR, systemError + ": " + e.getMessage()));
     }
 
-    /**
-     * Handle SaToken not login exception (token expired, not logged in, etc.)
-     */
+
     @ExceptionHandler(NotLoginException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotLoginException(NotLoginException e) {
         log.warn("Not logged in: {}", e.getMessage());
         String message = i18nUtils.getMessage("error.not.login");
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error(ErrorCode.NOT_LOGIN_ERROR, message));
+                .body(ApiResponse.error(ErrorCodeEnum.NOT_LOGIN_ERROR, message));
     }
 
-    /**
-     * Handle SaToken not role exception
-     */
+
     @ExceptionHandler(NotRoleException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotRoleException(NotRoleException e) {
         log.warn("Not role: {}", e.getMessage());
         String message = i18nUtils.getMessage("error.no.auth");
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error(ErrorCode.NO_AUTH_ERROR, message));
+                .body(ApiResponse.error(ErrorCodeEnum.NO_AUTH_ERROR, message));
     }
 
-    /**
-     * Handle SaToken not permission exception
-     */
+
     @ExceptionHandler(NotPermissionException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotPermissionException(NotPermissionException e) {
         log.warn("Not permission: {}", e.getMessage());
         String message = i18nUtils.getMessage("error.no.auth");
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error(ErrorCode.NO_AUTH_ERROR, message));
+                .body(ApiResponse.error(ErrorCodeEnum.NO_AUTH_ERROR, message));
     }
 }
 

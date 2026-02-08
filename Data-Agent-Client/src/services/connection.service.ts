@@ -4,7 +4,6 @@ import {
   ConnectionCreateRequest,
   ConnectRequest,
   ConnectionTestResponse,
-  OpenConnectionResponse,
 } from '../types/connection';
 
 export const connectionService = {
@@ -35,8 +34,8 @@ export const connectionService = {
   /**
    * Update connection config
    */
-  updateConnection: async (id: number, data: ConnectionCreateRequest): Promise<DbConnection> => {
-    const response = await http.put<DbConnection>(`/connections/${id}`, data);
+  updateConnection: async (data: ConnectionCreateRequest): Promise<DbConnection> => {
+    const response = await http.post<DbConnection>('/connections/update', data);
     return response.data;
   },
 
@@ -56,17 +55,19 @@ export const connectionService = {
   },
 
   /**
-   * Open a persistent connection. Use the returned connectionId for listDatabases/listSchemas.
+   * Open a persistent connection by saved config ID.
    */
-  openConnection: async (request: ConnectRequest): Promise<OpenConnectionResponse> => {
-    const response = await http.post<OpenConnectionResponse>('/connections/open', request);
+  openConnectionById: async (id: number): Promise<boolean> => {
+    const response = await http.post<boolean>('/connections/open', null, {
+      params: { connectionId: id },
+    });
     return response.data;
   },
 
   /**
    * Close an active connection by its connectionId.
    */
-  closeConnection: async (connectionId: string): Promise<void> => {
-    await http.delete(`/connections/active/${encodeURIComponent(connectionId)}`);
+  closeConnection: async (connectionId: number): Promise<void> => {
+    await http.delete(`/connections/active/${connectionId}`);
   },
 };

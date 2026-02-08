@@ -1,6 +1,6 @@
 package edu.zsc.ai.domain.model.dto.response.base;
 
-import edu.zsc.ai.common.enums.error.ErrorCode;
+import edu.zsc.ai.common.enums.error.ErrorCodeEnum;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -41,8 +41,8 @@ public class ApiResponse<T> implements Serializable {
         this(code, data, "");
     }
 
-    public ApiResponse(ErrorCode errorCode) {
-        this(errorCode.getCode(), null, errorCode.getMessage());
+    public ApiResponse(ErrorCodeEnum errorCodeEnum) {
+        this(errorCodeEnum.getCode(), null, errorCodeEnum.getMessage());
     }
 
     /**
@@ -53,7 +53,7 @@ public class ApiResponse<T> implements Serializable {
      * @return success response
      */
     public static <T> ApiResponse<T> success(T data) {
-        return new ApiResponse<>(ErrorCode.SUCCESS.getCode(), data, "ok");
+        return new ApiResponse<>(ErrorCodeEnum.SUCCESS.getCode(), data, "ok");
     }
 
     /**
@@ -63,18 +63,18 @@ public class ApiResponse<T> implements Serializable {
      * @return success response
      */
     public static <T> ApiResponse<T> success() {
-        return new ApiResponse<>(ErrorCode.SUCCESS.getCode(), null, "ok");
+        return new ApiResponse<>(ErrorCodeEnum.SUCCESS.getCode(), null, "ok");
     }
 
     /**
      * Error
      *
-     * @param errorCode error code enum
+     * @param errorCodeEnum error code enum
      * @param <T> data type
      * @return error response
      */
-    public static <T> ApiResponse<T> error(ErrorCode errorCode) {
-        return new ApiResponse<>(errorCode);
+    public static <T> ApiResponse<T> error(ErrorCodeEnum errorCodeEnum) {
+        return new ApiResponse<>(errorCodeEnum);
     }
 
     /**
@@ -92,13 +92,13 @@ public class ApiResponse<T> implements Serializable {
     /**
      * Error (custom message)
      *
-     * @param errorCode error code enum
+     * @param errorCodeEnum error code enum
      * @param message custom error message
      * @param <T> data type
      * @return error response
      */
-    public static <T> ApiResponse<T> error(ErrorCode errorCode, String message) {
-        return new ApiResponse<>(errorCode.getCode(), null, message);
+    public static <T> ApiResponse<T> error(ErrorCodeEnum errorCodeEnum, String message) {
+        return new ApiResponse<>(errorCodeEnum.getCode(), null, message);
     }
 
     /**
@@ -109,7 +109,7 @@ public class ApiResponse<T> implements Serializable {
      * @return error response
      */
     public static <T> ApiResponse<T> error(String message) {
-        return new ApiResponse<>(ErrorCode.SYSTEM_ERROR.getCode(), null, message);
+        return new ApiResponse<>(ErrorCodeEnum.SYSTEM_ERROR.getCode(), null, message);
     }
 }
 

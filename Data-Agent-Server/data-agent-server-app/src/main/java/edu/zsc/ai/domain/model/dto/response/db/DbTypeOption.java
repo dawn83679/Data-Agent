@@ -26,4 +26,14 @@ public class DbTypeOption {
      * Display name for UI (e.g. "MySQL").
      */
     private String displayName;
+
+    /**
+     * Whether this database type supports the concept of database (catalog).
+     */
+    private boolean supportDatabase;
+
+    /**
+     * Whether this database type supports schema as a separate namespace within a database.
+     */
+    private boolean supportSchema;
 }

@@ -3,6 +3,9 @@ import { NodeApi } from 'react-arborist';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { connectionService } from '../services/connection.service';
 import { databaseService } from '../services/database.service';
+import { schemaService } from '../services/schema.service';
+import { tableService } from '../services/table.service';
+import { useWorkspaceStore } from '../store/workspaceStore';
 import type { DbConnection } from '../types/connection';
 
 export interface ExplorerNode {
@@ -12,15 +15,20 @@ export interface ExplorerNode {
   connectionId?: string;
   dbConnection?: DbConnection;
   children?: ExplorerNode[];
+  catalog?: string;
+  schema?: string;
 }
 
 export function useConnectionTree() {
   const queryClient = useQueryClient();
+  const { supportedDbTypes } = useWorkspaceStore();
 
-  const { data: connections = [], isLoading: isConnectionsLoading, refetch: refetchConnections } = useQuery({
+  const { data, isLoading: isConnectionsLoading, refetch: refetchConnections } = useQuery({
     queryKey: ['connections'],
     queryFn: () => connectionService.getConnections(),
   });
+
+  const connections = useMemo(() => data || [], [data]);
 
   const treeData = useMemo<ExplorerNode[]>(() => {
     return connections.map((conn) => ({
@@ -35,7 +43,21 @@ export function useConnectionTree() {
   const [treeDataState, setTreeDataState] = useState<ExplorerNode[]>([]);
 
   useEffect(() => {
-    setTreeDataState(treeData);
+    setTreeDataState((prev) => {
+      if (prev.length === 0) return treeData;
+
+      return treeData.map((newNode) => {
+        const existingNode = prev.find((p) => p.id === newNode.id);
+        if (existingNode) {
+          return {
+            ...newNode,
+            connectionId: existingNode.connectionId,
+            children: existingNode.children,
+          };
+        }
+        return newNode;
+      });
+    });
   }, [treeData]);
 
   const deleteMutation = useMutation({
@@ -46,55 +68,110 @@ export function useConnectionTree() {
   });
 
   const disconnectMutation = useMutation({
-    mutationFn: (connectionId: string) => connectionService.closeConnection(connectionId),
+    mutationFn: (connectionId: number) => connectionService.closeConnection(connectionId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['connections'] });
     },
   });
 
   const loadNodeData = async (node: NodeApi<ExplorerNode>) => {
-    if (node.data.type !== 'root' || !node.data.dbConnection) return;
-    const conn = node.data.dbConnection;
+    if (!node.data.connectionId && node.data.type !== 'root') return;
+    
+    const connId = node.data.connectionId || (node.data.dbConnection ? String(node.data.dbConnection.id) : undefined);
+    
+    if (!connId) return;
+
     try {
-      const openRes = await connectionService.openConnection({
-        dbType: conn.dbType,
-        host: conn.host,
-        port: conn.port,
-        database: conn.database,
-        username: conn.username ?? '',
-        driverJarPath: conn.driverJarPath,
-        timeout: conn.timeout ?? 30,
-        properties: conn.properties ?? {},
-      });
+      if (node.data.type === 'root' && node.data.dbConnection) {
+        const dbNames = await databaseService.listDatabases(String(node.data.dbConnection.id));
+        const childrenNodes: ExplorerNode[] = dbNames.map((name) => ({
+          id: `${node.id}-db-${name}`,
+          name,
+          type: 'db',
+          connectionId: String(node.data.dbConnection!.id),
+          children: [],
+        }));
 
-      const dbNames = await databaseService.listDatabases(openRes.connectionId);
-      const childrenNodes: ExplorerNode[] = dbNames.map((name) => ({
-        id: `${node.id}-db-${name}`,
-        name,
-        type: 'db',
-        connectionId: openRes.connectionId,
-        children: [],
-      }));
+        updateNodeChildren(node.id, childrenNodes, String(node.data.dbConnection.id));
+      } else if (node.data.type === 'db') {
+        const dbName = node.data.name;
+        
+        let rootNode = node;
+        while (rootNode.parent && rootNode.level > 0) {
+            rootNode = rootNode.parent;
+        }
+        
+        const dbConnection = rootNode.data.dbConnection;
+        const dbType = dbConnection?.dbType;
+        const typeOption = supportedDbTypes.find(t => t.code === dbType);
+        const supportSchema = typeOption?.supportSchema ?? false;
 
-      setTreeDataState((prev) => {
-        const update = (list: ExplorerNode[]): ExplorerNode[] =>
-          list.map((n) => {
-            if (n.id === node.id) {
-              return { ...n, connectionId: openRes.connectionId, children: childrenNodes };
-            }
-            if (n.children) return { ...n, children: update(n.children) };
-            return n;
-          });
-        return update(prev);
-      });
+        if (supportSchema) {
+             const schemas = await schemaService.listSchemas(connId, dbName);
+             const childrenNodes: ExplorerNode[] = schemas.map((schema) => ({
+               id: `${node.id}-schema-${schema}`,
+               name: schema,
+               type: 'schema',
+               connectionId: connId,
+               children: [],
+             }));
+             updateNodeChildren(node.id, childrenNodes);
+        } else {
+             const tables = await tableService.listTables(connId, dbName);
+             const childrenNodes: ExplorerNode[] = tables.map((table) => ({
+               id: `${node.id}-table-${table}`,
+               name: table,
+               type: 'table',
+               connectionId: connId,
+               catalog: dbName,
+             }));
+             updateNodeChildren(node.id, childrenNodes);
+        }
+      } else if (node.data.type === 'schema') {
+        const dbNode = node.parent;
+        const dbName = dbNode?.data.name;
+        const schemaName = node.data.name;
+        
+        const tables = await tableService.listTables(connId, dbName, schemaName);
+        const childrenNodes: ExplorerNode[] = tables.map((table) => ({
+          id: `${node.id}-table-${table}`,
+          name: table,
+          type: 'table',
+          connectionId: connId,
+          catalog: dbName,
+          schema: schemaName,
+        }));
+        updateNodeChildren(node.id, childrenNodes);
+      }
     } catch (err) {
-      console.error('Failed to open connection:', err);
+      console.error('Failed to load node data:', err);
     }
+  };
+
+  const updateNodeChildren = (nodeId: string, children: ExplorerNode[], connectionId?: string) => {
+    setTreeDataState((prev) => {
+      const update = (list: ExplorerNode[]): ExplorerNode[] =>
+        list.map((n) => {
+          if (n.id === nodeId) {
+            return { 
+              ...n, 
+              children,
+              ...(connectionId ? { connectionId } : {})
+            };
+          }
+          if (n.children) return { ...n, children: update(n.children) };
+          return n;
+        });
+      return update(prev);
+    });
   };
 
   const handleDisconnect = (node: NodeApi<ExplorerNode>) => {
     if (!node.data.connectionId) return;
-    disconnectMutation.mutate(node.data.connectionId);
+    const connId = Number(node.data.connectionId);
+    if (isNaN(connId)) return;
+
+    disconnectMutation.mutate(connId);
     setTreeDataState((prev) => {
       const update = (list: ExplorerNode[]): ExplorerNode[] =>
         list.map((n) => {

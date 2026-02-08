@@ -1,5 +1,6 @@
 package edu.zsc.ai.plugin.capability;
 
+import edu.zsc.ai.plugin.SqlPlugin;
 import edu.zsc.ai.plugin.constant.JdbcMetaDataConstants;
 
 import java.sql.Connection;
@@ -14,8 +15,8 @@ import java.util.List;
  * Plugins that implement this can provide table list for a given connection and
  * scope.
  * <p>
- * Use {@link edu.zsc.ai.plugin.SqlPlugin#supportDatabase()} /
- * {@link edu.zsc.ai.plugin.SqlPlugin#supportSchema()}
+ * Use {@link SqlPlugin#supportDatabase()} /
+ * {@link SqlPlugin#supportSchema()}
  * to decide catalog/schema semantics:
  * <ul>
  * <li>MySQL: catalog = database name, schema = null or same as catalog</li>
@@ -34,11 +35,11 @@ public interface TableProvider {
      * @return list of table names, never null
      * @throws RuntimeException if listing fails
      */
-    default List<String> getTables(Connection connection, String catalog, String schema) {
+    default List<String> getTableNames(Connection connection, String catalog, String schema) {
         try {
             List<String> list = new ArrayList<>();
             try (ResultSet rs = connection.getMetaData().getTables(
-                    catalog, schema, null, new String[] { JdbcMetaDataConstants.TABLE_TYPE_TABLE })) {
+                    catalog, schema, null, new String[] {JdbcMetaDataConstants.TABLE_TYPE_TABLE})) {
                 while (rs.next()) {
                     String name = rs.getString(JdbcMetaDataConstants.TABLE_NAME);
                     if (name != null && !name.isEmpty()) {
@@ -63,5 +64,7 @@ public interface TableProvider {
      * @param tableName  table name
      * @return table DDL statement
      */
-    String getTableDdl(Connection connection, String catalog, String schema, String tableName);
+    default String getTableDdl(Connection connection, String catalog, String schema, String tableName) {
+        throw new UnsupportedOperationException("Plugin does not support getting table DDL");
+    }
 }

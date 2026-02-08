@@ -1,70 +1,52 @@
 package edu.zsc.ai.plugin.capability;
 
-import edu.zsc.ai.plugin.connection.ConnectionConfig;
-import edu.zsc.ai.plugin.model.command.view.ViewCommandRequest;
-import edu.zsc.ai.plugin.model.command.view.ViewCommandResult;
+import edu.zsc.ai.plugin.SqlPlugin;
+import edu.zsc.ai.plugin.constant.JdbcMetaDataConstants;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * View provider capability interface.
- * Defines operations for managing database views.
+ * Capability for listing views under a catalog/schema.
+ * Plugins that implement this can provide view list for a given connection and
+ * scope.
+ * <p>
+ * Use {@link SqlPlugin#supportDatabase()} /
+ * {@link SqlPlugin#supportSchema()}
+ * to decide catalog/schema semantics:
+ * <ul>
+ * <li>MySQL: catalog = database name, schema = null or same as catalog</li>
+ * <li>PostgreSQL: catalog may be null, schema = namespace</li>
+ * </ul>
  */
 public interface ViewProvider {
 
     /**
-     * Create a new view
-     *
-     * @param request view command request containing view definition
-     * @return view command result with operation status
+     * List views in the given catalog/schema.
      */
-    ViewCommandResult createView(ViewCommandRequest request);
-
-    /**
-     * Get view definition
-     *
-     * @param request view command request containing view name
-     * @return view command result with view definition
-     */
-    ViewCommandResult getViewDefinition(ViewCommandRequest request);
-
-    /**
-     * Alter an existing view
-     *
-     * @param request view command request containing new view definition
-     * @return view command result with operation status
-     */
-    ViewCommandResult alterView(ViewCommandRequest request);
-
-    /**
-     * Drop a view
-     *
-     * @param request view command request containing view name
-     * @return view command result with operation status
-     */
-    ViewCommandResult dropView(ViewCommandRequest request);
-
-    /**
-     * List all views in the database/schema
-     *
-     * @param request view command request containing database/schema info
-     * @return view command result with list of views
-     */
-    ViewCommandResult listViews(ViewCommandRequest request);
-
-    /**
-     * Check if a view exists
-     *
-     * @param request view command request containing view name
-     * @return view command result with existence status
-     */
-    ViewCommandResult viewExists(ViewCommandRequest request);
-
-    /**
-     * Set connection configuration for view operations.
-     * This method should be called before performing any view operations.
-     *
-     * @param connectionConfig database connection configuration
-     */
-    default void setConnectionConfig(ConnectionConfig connectionConfig) {
-        // Default implementation does nothing - implementations can override if needed
+    default List<String> getViews(Connection connection, String catalog, String schema) {
+        try {
+            List<String> list = new ArrayList<>();
+            try (ResultSet rs = connection.getMetaData().getTables(
+                    catalog, schema, null, new String[] { JdbcMetaDataConstants.TABLE_TYPE_VIEW })) {
+                while (rs.next()) {
+                    String name = rs.getString(JdbcMetaDataConstants.TABLE_NAME);
+                    if (name != null && !name.isEmpty()) {
+                        list.add(name);
+                    }
+                }
+            }
+            return list;
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to list views: " + e.getMessage(), e);
+        }
     }
+
+    /**
+     * Get DDL statement for the specified view.
+     */
+    String getViewDdl(Connection connection, String catalog, String schema, String viewName);
 }
