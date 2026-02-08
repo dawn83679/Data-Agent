@@ -1,26 +1,16 @@
 package edu.zsc.ai.plugin.capability;
 
-import edu.zsc.ai.plugin.SqlPlugin;
-import edu.zsc.ai.plugin.constant.JdbcMetaDataConstants;
-
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.zsc.ai.plugin.constant.JdbcMetaDataConstants;
+
 /**
- * Capability for listing views under a catalog/schema.
- * Plugins that implement this can provide view list for a given connection and
- * scope.
- * <p>
- * Use {@link SqlPlugin#supportDatabase()} /
- * {@link SqlPlugin#supportSchema()}
- * to decide catalog/schema semantics:
- * <ul>
- * <li>MySQL: catalog = database name, schema = null or same as catalog</li>
- * <li>PostgreSQL: catalog may be null, schema = namespace</li>
- * </ul>
+ * Capability for listing views and retrieving view DDL.
+ * Plugins that implement this can provide view metadata for schema browsing, SQL editing, etc.
  */
 public interface ViewProvider {
 
@@ -46,7 +36,7 @@ public interface ViewProvider {
     }
 
     /**
-     * Get DDL statement for the specified view.
+     * Get DDL for the specified view.
      */
     String getViewDdl(Connection connection, String catalog, String schema, String viewName);
 }
