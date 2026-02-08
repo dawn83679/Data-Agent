@@ -28,7 +28,7 @@ public class LangChain4jConfig {
         return memoryId -> TokenWindowChatMemory.builder()
                 .id(memoryId)
                 .maxTokens(memoryThreshold, tokenCountEstimator)
-                .chatMemoryStore(new CustomChatMemoryStore())
+//                .chatMemoryStore(new CustomChatMemoryStore())
                 .build();
     }
 }

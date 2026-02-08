@@ -58,7 +58,6 @@ public class ChatServiceImpl implements ChatService {
         });
 
         tokenStream.onCompleteResponse(response -> {
-            sink.tryEmitNext(ChatResponseBlock.done());
             sink.tryEmitComplete();
         });
 
