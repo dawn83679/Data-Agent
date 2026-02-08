@@ -22,8 +22,6 @@ public class AiMessage {
 
     private Long conversationId;
 
-    private Long userId;
-
     private String role;
 
     private Integer tokenCount;

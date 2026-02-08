@@ -22,8 +22,6 @@ public class AiCompressionRecord {
 
     private Long conversationId;
 
-    private Long userId;
-
     private Long startMessageId;
 
     private Long endMessageId;

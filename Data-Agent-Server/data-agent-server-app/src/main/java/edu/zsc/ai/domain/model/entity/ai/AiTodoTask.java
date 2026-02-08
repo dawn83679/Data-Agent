@@ -37,11 +37,6 @@ public class AiTodoTask {
     private Long conversationId;
 
     /**
-     * Associated user ID
-     */
-    private Long userId;
-
-    /**
      * JSON array of task objects stored as text
      */
     private String content;
