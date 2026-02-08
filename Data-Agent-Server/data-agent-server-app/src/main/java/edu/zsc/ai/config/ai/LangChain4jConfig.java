@@ -3,6 +3,7 @@ package edu.zsc.ai.config.ai;
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
 import dev.langchain4j.memory.chat.TokenWindowChatMemory;
 import dev.langchain4j.model.TokenCountEstimator;
+import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import edu.zsc.ai.common.enums.ai.ModelContextLimitEnum;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ public class LangChain4jConfig {
     @Value("${langchain4j.community.dashscope.streaming-chat-model.model-name:qwen3-max}")
     private String streamingModelName;
 
+    private final ChatMemoryStore chatMemoryStore;
     @Bean
     @ConditionalOnMissingBean
     public ChatMemoryProvider chatMemoryProvider() {
@@ -28,6 +30,7 @@ public class LangChain4jConfig {
         return memoryId -> TokenWindowChatMemory.builder()
                 .id(memoryId)
                 .maxTokens(memoryThreshold, tokenCountEstimator)
+                .chatMemoryStore(chatMemoryStore)
                 .build();
     }
 }

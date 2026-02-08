@@ -1,9 +1,9 @@
 package edu.zsc.ai.domain.mapper.ai;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import edu.zsc.ai.domain.model.entity.ai.AiMessage;
+import edu.zsc.ai.domain.model.entity.ai.CustomAiMessage;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface AiMessageMapper extends BaseMapper<AiMessage> {
+public interface AiMessageMapper extends BaseMapper<CustomAiMessage> {
 }
