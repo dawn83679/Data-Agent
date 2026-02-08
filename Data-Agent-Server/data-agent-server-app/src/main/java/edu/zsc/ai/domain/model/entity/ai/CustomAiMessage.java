@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AiMessage {
+public class CustomAiMessage {
 
     @TableId(type = IdType.AUTO)
     private Long id;
@@ -26,7 +26,7 @@ public class AiMessage {
 
     private Integer tokenCount;
 
-    private Short status;
+    private Integer status;
 
     private Integer priority;
 
