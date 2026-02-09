@@ -2,6 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { HttpStatusCode, ErrorCode } from '../constants/errorCode';
 import type { TokenPairResponse } from '../types/auth';
+import { ensureValidAccessToken } from './authToken';
 
 const http = axios.create({
     baseURL: '/api',
@@ -11,11 +12,24 @@ const http = axios.create({
     },
 });
 
+const isAuthEndpoint = (url?: string) => {
+    const path = url ?? '';
+    return path.includes('/auth/refresh') || path.includes('/auth/login');
+};
+
 http.interceptors.request.use(
-    (config) => {
-        const { accessToken } = useAuthStore.getState();
-        if (accessToken) {
-            config.headers.Authorization = `Bearer ${accessToken}`;
+    async (config) => {
+        if (isAuthEndpoint(config.url)) {
+            return config;
+        }
+        const token = await ensureValidAccessToken();
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        } else {
+            const { accessToken } = useAuthStore.getState();
+            if (accessToken) {
+                config.headers.Authorization = `Bearer ${accessToken}`;
+            }
         }
         return config;
     },

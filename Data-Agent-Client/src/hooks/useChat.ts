@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { parseSSEResponse } from '../lib/sse';
+import { ensureValidAccessToken } from '../lib/authToken';
 import type { ChatRequest, ChatMessage, UseChatOptions, UseChatReturn } from '../types/chat';
 import type { TokenPairResponse } from '../types/auth';
 
@@ -41,7 +42,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
 
-  const { accessToken, user, setAuth, openLoginModal } = useAuthStore();
+  const { user, setAuth, openLoginModal } = useAuthStore();
 
   const appendMessage = useCallback((message: ChatMessage) => {
     setMessages((prev) => [...prev, message]);
@@ -49,7 +50,8 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
 
   const processStream = useCallback(
     async (request: ChatRequest, retryCount = 0) => {
-      if (!accessToken) {
+      const token = await ensureValidAccessToken();
+      if (!token) {
         const err = new Error('Not authenticated');
         setError(err);
         options.onError?.(err);
@@ -65,7 +67,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(request),
           signal: abortControllerRef.current.signal,
@@ -142,7 +144,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
         setIsLoading(false);
       }
     },
-    [api, accessToken, user, setAuth, openLoginModal, appendMessage, options]
+    [api, user, setAuth, openLoginModal, appendMessage, options]
   );
 
   const handleSubmit = useCallback(
