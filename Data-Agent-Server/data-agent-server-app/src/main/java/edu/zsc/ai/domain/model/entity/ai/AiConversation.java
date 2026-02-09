@@ -26,8 +26,6 @@ public class AiConversation {
 
     private Integer tokenCount;
 
-    private Integer deleteFlag;
-
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

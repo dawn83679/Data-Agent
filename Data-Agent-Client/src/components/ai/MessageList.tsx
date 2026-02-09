@@ -4,6 +4,23 @@ import { useTranslation } from 'react-i18next';
 import { Bot, User } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { MonacoEditor } from '../editor/MonacoEditor';
+import { splitByMention, MENTION_PART_REGEX } from './mentionTypes';
+
+const MENTION_COLOR_CLASS = 'text-cyan-400 font-medium';
+
+/** Split content into text and styled @mention segments. */
+function parseContentWithMentions(content: string): React.ReactNode[] {
+  const parts = splitByMention(content);
+  return parts.map((part, i) =>
+    MENTION_PART_REGEX.test(part) ? (
+      <span key={i} className={MENTION_COLOR_CLASS}>
+        {part}
+      </span>
+    ) : (
+      <React.Fragment key={i}>{part}</React.Fragment>
+    )
+  );
+}
 
 export interface Message {
   id: string;
@@ -44,6 +61,11 @@ export function MessageList({ messages, messagesEndRef }: MessageListProps) {
                 : "theme-bg-panel theme-text-primary border theme-border rounded-tl-none"
             )}
           >
+            {msg.role === 'user' ? (
+              <p className="mb-0 leading-relaxed whitespace-pre-wrap">
+                {parseContentWithMentions(msg.content)}
+              </p>
+            ) : (
             <ReactMarkdown
               components={{
                 code({ node, className, children, ...props }) {
@@ -76,6 +98,7 @@ export function MessageList({ messages, messagesEndRef }: MessageListProps) {
             >
               {msg.content}
             </ReactMarkdown>
+            )}
           </div>
         </div>
       ))}

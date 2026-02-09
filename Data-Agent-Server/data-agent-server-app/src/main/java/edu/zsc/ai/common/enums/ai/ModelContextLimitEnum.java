@@ -5,7 +5,8 @@ import lombok.Getter;
 @Getter
 public enum ModelContextLimitEnum {
 
-    QWEN3_MAX("qwen3-max", 256000, 230000);
+    QWEN3_MAX("qwen3-max", 256000, 230000),
+    QWEN_PLUS("qwen-plus", 1048576, 900000);
 
     private final String modelName;
     private final int maxContextTokens;

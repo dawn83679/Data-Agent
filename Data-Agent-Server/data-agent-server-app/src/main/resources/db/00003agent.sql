@@ -8,7 +8,6 @@ CREATE TABLE ai_conversation (
     user_id BIGINT NOT NULL,
     title VARCHAR(255),
     token_count INTEGER DEFAULT 0,
-    delete_flag SMALLINT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -19,7 +18,6 @@ COMMENT ON COLUMN ai_conversation.id IS 'Primary key ID for conversation';
 COMMENT ON COLUMN ai_conversation.user_id IS 'Associated user ID';
 COMMENT ON COLUMN ai_conversation.title IS 'Conversation title, can be generated from first message or customized by user';
 COMMENT ON COLUMN ai_conversation.token_count IS 'Token usage statistics';
-COMMENT ON COLUMN ai_conversation.delete_flag IS 'Soft delete flag, 0: normal 1: deleted';
 COMMENT ON COLUMN ai_conversation.created_at IS 'Created time';
 COMMENT ON COLUMN ai_conversation.updated_at IS 'Updated time';
 

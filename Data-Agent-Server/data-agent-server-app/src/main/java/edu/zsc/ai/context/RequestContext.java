@@ -1,6 +1,10 @@
 package edu.zsc.ai.context;
 
+import edu.zsc.ai.common.constant.RequestContextConstant;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Request Context Manager
@@ -91,5 +95,35 @@ public class RequestContext {
      */
     public static boolean hasContext() {
         return CONTEXT_HOLDER.get() != null;
+    }
+
+    /**
+     * Update conversationId in current context (e.g. after creating a new conversation in this request).
+     */
+    public static void updateConversationId(Long conversationId) {
+        RequestContextInfo context = CONTEXT_HOLDER.get();
+        if (context != null) {
+            context.setConversationId(conversationId);
+        }
+    }
+
+    /**
+     * Build a map from current context for passing to external callers (e.g. AI Service).
+     * Only non-null values are included; callers use get(key) which returns null for absent keys.
+     */
+    public static Map<String, Object> toMap() {
+        Map<String, Object> map = new HashMap<>();
+        putIfNotNull(map, RequestContextConstant.USER_ID, getUserId());
+        putIfNotNull(map, RequestContextConstant.CONVERSATION_ID, getConversationId());
+        putIfNotNull(map, RequestContextConstant.CONNECTION_ID, getConnectionId());
+        putIfNotNull(map, RequestContextConstant.DATABASE_NAME, getDatabaseName());
+        putIfNotNull(map, RequestContextConstant.SCHEMA_NAME, getSchemaName());
+        return map;
+    }
+
+    private static void putIfNotNull(Map<String, Object> map, String key, Object value) {
+        if (value != null) {
+            map.put(key, value);
+        }
     }
 }

@@ -27,7 +27,7 @@ function AppRoutes({
     const element = useRoutes(routerConfig);
     const location = useLocation();
     
-    // 只有在根路径 "/" 时才显示 IDE 布局（侧边栏和 AI 助手）
+    // Show IDE layout (sidebar + AI assistant) only at root path "/"
     const isWorkspace = location.pathname === '/';
 
     if (!isWorkspace) {
@@ -62,12 +62,19 @@ function App() {
     const [showAI, setShowAI] = useState(false);
     const [showExplorer, setShowExplorer] = useState(true);
 
-    // 处理 OAuth 登录回调：从 URL 读取 token 同步到 authStore
+    // OAuth callback: read token from URL and sync to authStore
     useOAuthCallbackFromUrl();
 
-    // 启动时拉取支持的数据库类型，供新建连接等使用
+    // Fetch supported DB types on mount for connection creation etc.
     useEffect(() => {
         useWorkspaceStore.getState().fetchSupportedDbTypes();
+    }, []);
+
+    // Disable browser context menu globally
+    useEffect(() => {
+        const handleContextMenu = (e: MouseEvent) => e.preventDefault();
+        document.addEventListener('contextmenu', handleContextMenu);
+        return () => document.removeEventListener('contextmenu', handleContextMenu);
     }, []);
 
     const handleSwitchToRegister = () => {

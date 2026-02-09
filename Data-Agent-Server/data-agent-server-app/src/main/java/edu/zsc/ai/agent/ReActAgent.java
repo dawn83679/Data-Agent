@@ -1,13 +1,14 @@
 package edu.zsc.ai.agent;
 
+import dev.langchain4j.invocation.InvocationParameters;
+import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.TokenStream;
-import dev.langchain4j.service.spring.AiService;
-import edu.zsc.ai.model.request.ChatRequest;
+import dev.langchain4j.service.UserMessage;
 
-@AiService
+
 public interface ReActAgent {
 
-    @SystemMessage("classpath:prompt/system.md")
-    TokenStream chat(ChatRequest request);
+    @SystemMessage(fromResource = "prompt/system.md")
+    TokenStream chat(@MemoryId String memoryId, @UserMessage String message, InvocationParameters parameters);
 }

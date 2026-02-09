@@ -2,7 +2,8 @@ package edu.zsc.ai.tool;
 
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
-import edu.zsc.ai.context.RequestContext;
+import dev.langchain4j.invocation.InvocationParameters;
+import edu.zsc.ai.common.constant.RequestContextConstant;
 import edu.zsc.ai.domain.model.entity.ai.AiTodoTask;
 import edu.zsc.ai.domain.service.ai.AiTodoTaskService;
 import edu.zsc.ai.model.Todo;
@@ -28,16 +29,25 @@ public class TodoTool {
     private final AiTodoTaskService aiTodoTaskService;
 
 
-    @Tool("Retrieve the entire current list of tasks. Use this to see all tasks before making updates.")
-    public String getTodoList() {
-        AiTodoTask task = aiTodoTaskService.getByConversationId(RequestContext.getConversationId());
+    @Tool({
+        "Retrieve the entire current list of tasks for this conversation.",
+        "Call this before updating the list to see existing tasks."
+    })
+    public String getTodoList(InvocationParameters parameters) {
+        Long conversationId = parameters.get(RequestContextConstant.CONVERSATION_ID);
+        AiTodoTask task = aiTodoTaskService.getByConversationId(conversationId);
         return (task == null || task.getContent() == null) ? ToolResultFormatter.empty("[]") : ToolResultFormatter.success(task.getContent());
     }
 
 
-    @Tool("Update the entire todo list (Full Overwrite). Valid status: NOT_STARTED, IN_PROGRESS, PAUSED, COMPLETED. Valid priority: LOW, MEDIUM, HIGH.")
-    public String updateTodoList(@P("The complete list of tasks") List<TodoRequest> requests) {
-        Long cid = RequestContext.getConversationId();
+    @Tool({
+        "Update the entire todo list for this conversation (full overwrite).",
+        "Pass a list of tasks; each task's fields are described in the parameter.",
+        "Pass an empty list to clear all tasks."
+    })
+    public String updateTodoList(@P("The complete list of todo tasks; each element has title and optional description, "
+            + "priority; status is for updates only") List<TodoRequest> requests, InvocationParameters parameters) {
+        Long cid = parameters.get(RequestContextConstant.CONVERSATION_ID);
         if (requests == null || requests.isEmpty()) {
             aiTodoTaskService.removeByConversationId(cid);
             return ToolResultFormatter.success("Cleared.");

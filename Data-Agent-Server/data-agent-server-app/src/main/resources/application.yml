@@ -62,6 +62,4 @@ langchain4j:
         model-name: text-embedding-v4
       tokenizer:
         api-key: ${ALIYUN_AI_API_KEY}
-        model-name: qwen3-max
-
-
+        model-name: qwen-plus

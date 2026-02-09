@@ -48,15 +48,33 @@ public class AiMessageServiceImpl extends ServiceImpl<AiMessageMapper, CustomAiM
                 .map(CustomAiMessage::getId)
                 .toList();
 
-        // 删除关联的 blocks
+        // Delete associated blocks first
         aiMessageBlockService.deleteByMessageIds(messageIds);
 
-        // 删除消息
+        // Delete messages
         removeByIds(messageIds);
 
         log.debug("Deleted {} messages and {} blocks for conversation {}",
                 messageIds.size(), messageIds.size(), conversationId);
 
+        return messageIds.size();
+    }
+
+    @Override
+    @Transactional
+    public int removeAllByConversationId(Long conversationId) {
+        LambdaQueryWrapper<CustomAiMessage> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(CustomAiMessage::getConversationId, conversationId);
+        List<CustomAiMessage> messages = list(wrapper);
+        if (messages.isEmpty()) {
+            return 0;
+        }
+        List<Long> messageIds = messages.stream()
+                .map(CustomAiMessage::getId)
+                .toList();
+        aiMessageBlockService.deleteByMessageIds(messageIds);
+        removeByIds(messageIds);
+        log.debug("Deleted all {} messages for conversation {}", messageIds.size(), conversationId);
         return messageIds.size();
     }
 }

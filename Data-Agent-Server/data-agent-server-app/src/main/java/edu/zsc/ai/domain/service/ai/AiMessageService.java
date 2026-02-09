@@ -14,4 +14,13 @@ public interface AiMessageService extends IService<CustomAiMessage> {
 
 
     int removeByConversationId(Long conversationId);
+
+    /**
+     * Remove all messages (any status) and their blocks for a conversation.
+     * Used when deleting a conversation.
+     *
+     * @param conversationId conversation ID
+     * @return number of messages removed
+     */
+    int removeAllByConversationId(Long conversationId);
 }

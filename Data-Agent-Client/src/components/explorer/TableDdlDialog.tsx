@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { Copy, Check, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -11,7 +10,6 @@ import {
 } from '../ui/Dialog';
 import { Button } from '../ui/Button';
 import { tableService } from '../../services/table.service';
-import { cn } from '../../lib/utils';
 
 interface TableDdlDialogProps {
   open: boolean;
