@@ -21,8 +21,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import cn.dev33.satoken.stp.StpUtil;
+import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.ChatMessageDeserializer;
+import edu.zsc.ai.common.converter.ai.StoredMessageToResponseConverter;
+import edu.zsc.ai.domain.model.dto.response.ai.ConversationMessageResponse;
+import edu.zsc.ai.domain.model.entity.ai.StoredChatMessage;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -98,11 +105,28 @@ public class AiConversationServiceImpl extends ServiceImpl<AiConversationMapper,
     public void deleteByCurrentUser(Long conversationId) {
         long userId = getCurrentUserId();
         checkAccess(userId, conversationId);
-        aiMessageService.removeAllByConversationId(conversationId);
+        aiMessageService.removeByConversationId(conversationId);
         aiCompressionRecordService.remove(new LambdaQueryWrapper<AiCompressionRecord>()
                 .eq(AiCompressionRecord::getConversationId, conversationId));
         aiTodoTaskService.removeByConversationId(conversationId);
         removeById(conversationId);
         log.info("Deleted conversation {} for user {}", conversationId, userId);
+    }
+
+    @Override
+    public List<ConversationMessageResponse> getMessagesForCurrentUser(Long conversationId) {
+        long userId = getCurrentUserId();
+        checkAccess(userId, conversationId);
+        List<StoredChatMessage> stored = aiMessageService.getByConversationIdOrderByCreatedAtAsc(conversationId);
+        List<ConversationMessageResponse> result = new ArrayList<>(stored.size());
+        for (StoredChatMessage s : stored) {
+            try {
+                ChatMessage message = ChatMessageDeserializer.messageFromJson(s.getData());
+                result.add(StoredMessageToResponseConverter.toResponse(s, message));
+            } catch (Exception e) {
+                log.warn("Failed to deserialize message id={}, skipping", s.getId(), e);
+            }
+        }
+        return result;
     }
 }

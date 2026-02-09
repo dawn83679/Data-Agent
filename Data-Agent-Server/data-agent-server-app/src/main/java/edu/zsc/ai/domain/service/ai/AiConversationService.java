@@ -3,7 +3,11 @@ package edu.zsc.ai.domain.service.ai;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import edu.zsc.ai.domain.model.dto.request.base.PageRequest;
+import edu.zsc.ai.domain.model.dto.response.ai.ConversationMessageResponse;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
+import edu.zsc.ai.util.exception.BusinessException;
+
+import java.util.List;
 
 public interface AiConversationService extends IService<AiConversation> {
 
@@ -12,7 +16,7 @@ public interface AiConversationService extends IService<AiConversation> {
      *
      * @param userId          user ID
      * @param conversationId  conversation ID
-     * @throws edu.zsc.ai.util.exception.BusinessException if access is denied
+     * @throws BusinessException if access is denied
      */
     void checkAccess(Long userId, Long conversationId);
 
@@ -42,7 +46,12 @@ public interface AiConversationService extends IService<AiConversation> {
     AiConversation updateTitle(Long conversationId, String title);
 
     /**
-     * Deletes the conversation for the current user, including all messages and blocks under it.
+     * Deletes the conversation for the current user, including all messages under it.
      */
     void deleteByCurrentUser(Long conversationId);
+
+    /**
+     * Returns history messages for the conversation. Verifies current user has access.
+     */
+    List<ConversationMessageResponse> getMessagesForCurrentUser(Long conversationId);
 }

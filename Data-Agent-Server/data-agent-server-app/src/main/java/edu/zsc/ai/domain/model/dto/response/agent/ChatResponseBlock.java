@@ -1,10 +1,13 @@
 package edu.zsc.ai.domain.model.dto.response.agent;
 
 import edu.zsc.ai.common.enums.ai.MessageBlockEnum;
+import edu.zsc.ai.util.JsonUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.Map;
 
 @Data
 @Builder
@@ -14,9 +17,6 @@ public class ChatResponseBlock {
     private String type;
     private String data;
     private Long conversationId;
-    private String toolName;
-    private String toolArguments;
-    private String toolResult;
     private boolean done;
 
     public static ChatResponseBlock text(String data) {
@@ -45,19 +45,32 @@ public class ChatResponseBlock {
                 .build();
     }
 
+    /**
+     * Tool call block: data is JSON {"toolName":"...", "arguments":"..."}.
+     */
     public static ChatResponseBlock toolCall(String toolName, String arguments) {
+        String data = JsonUtil.object2json(Map.of(
+                "toolName", toolName != null ? toolName : "",
+                "arguments", arguments != null ? arguments : ""
+        ));
         return ChatResponseBlock.builder()
                 .type(MessageBlockEnum.TOOL_CALL.name())
-                .toolName(toolName)
-                .toolArguments(arguments)
+                .data(data)
                 .done(false)
                 .build();
     }
 
-    public static ChatResponseBlock toolResult(String result) {
+    /**
+     * Tool result block: data is JSON {"toolName":"...", "result":"..."}.
+     */
+    public static ChatResponseBlock toolResult(String toolName, String result) {
+        String data = JsonUtil.object2json(Map.of(
+                "toolName", toolName != null ? toolName : "",
+                "result", result != null ? result : ""
+        ));
         return ChatResponseBlock.builder()
                 .type(MessageBlockEnum.TOOL_RESULT.name())
-                .toolResult(result)
+                .data(data)
                 .done(false)
                 .build();
     }

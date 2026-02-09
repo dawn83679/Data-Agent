@@ -6,6 +6,7 @@ import edu.zsc.ai.domain.model.dto.request.base.PageRequest;
 import edu.zsc.ai.domain.model.dto.request.ai.ConversationUpdateRequest;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.model.dto.response.base.PageResponse;
+import edu.zsc.ai.domain.model.dto.response.ai.ConversationMessageResponse;
 import edu.zsc.ai.domain.model.dto.response.ai.ConversationResponse;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
 import edu.zsc.ai.domain.service.ai.AiConversationService;
@@ -56,6 +57,12 @@ public class ConversationController {
     public ApiResponse<ConversationResponse> getById(@PathVariable @NotNull Long id) {
         AiConversation conversation = aiConversationService.getByIdForCurrentUser(id);
         return ApiResponse.success(ConversationConverter.toResponse(conversation));
+    }
+
+    @GetMapping("/{id}/messages")
+    public ApiResponse<List<ConversationMessageResponse>> getMessages(@PathVariable @NotNull Long id) {
+        List<ConversationMessageResponse> messages = aiConversationService.getMessagesForCurrentUser(id);
+        return ApiResponse.success(messages);
     }
 
     @PostMapping("/{id}")

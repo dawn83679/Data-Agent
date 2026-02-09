@@ -4,7 +4,6 @@ import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.invocation.InvocationParameters;
 import dev.langchain4j.service.TokenStream;
 import edu.zsc.ai.agent.ReActAgent;
-import edu.zsc.ai.common.enums.ai.MessageBlockEnum;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.domain.model.dto.response.agent.ChatResponseBlock;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
@@ -59,25 +58,15 @@ public class ChatServiceImpl implements ChatService {
         tokenStream.onIntermediateResponse(response -> {
             if (response.aiMessage().hasToolExecutionRequests()) {
                 for (ToolExecutionRequest toolRequest : response.aiMessage().toolExecutionRequests()) {
-                    ChatResponseBlock block = ChatResponseBlock.builder()
-                            .type(MessageBlockEnum.TOOL_CALL.name())
-                            .toolName(toolRequest.name())
-                            .toolArguments(toolRequest.arguments())
-                            .done(false)
-                            .build();
-                    sink.tryEmitNext(block);
+                    sink.tryEmitNext(ChatResponseBlock.toolCall(toolRequest.name(), toolRequest.arguments()));
                 }
             }
         });
 
         tokenStream.onToolExecuted(toolExecution -> {
-            ChatResponseBlock block = ChatResponseBlock.builder()
-                    .type(MessageBlockEnum.TOOL_RESULT.name())
-                    .toolName(toolExecution.request().name())
-                    .toolResult(toolExecution.result())
-                    .done(false)
-                    .build();
-            sink.tryEmitNext(block);
+            sink.tryEmitNext(ChatResponseBlock.toolResult(
+                    toolExecution.request().name(),
+                    toolExecution.result()));
         });
 
         tokenStream.onCompleteResponse(response -> {
