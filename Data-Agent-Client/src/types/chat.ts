@@ -12,13 +12,37 @@ export interface ChatRequest {
   schemaName?: string;
 }
 
+/** 与后端 MessageBlockEnum 一致 */
+export const MessageBlockType = {
+  TEXT: 'TEXT',
+  THOUGHT: 'THOUGHT',
+  TOOL_CALL: 'TOOL_CALL',
+  TOOL_RESULT: 'TOOL_RESULT',
+} as const;
+
+export type MessageBlockType = (typeof MessageBlockType)[keyof typeof MessageBlockType];
+
+/** 仅 TEXT/THOUGHT 累加到 content */
+export function isContentBlockType(type: MessageBlockType | undefined): boolean {
+  return type === MessageBlockType.TEXT || type === MessageBlockType.THOUGHT;
+}
+
+/** Parsed from TOOL_CALL block.data */
+export interface ToolCallData {
+  toolName: string;
+  arguments: string;
+}
+
+/** Parsed from TOOL_RESULT block.data */
+export interface ToolResultData {
+  toolName: string;
+  result: string;
+}
+
 export interface ChatResponseBlock {
-  type?: 'TEXT' | 'THOUGHT' | 'TOOL_CALL' | 'TOOL_RESULT';
+  type?: MessageBlockType;
   data?: string;
   conversationId?: number;
-  toolName?: string;
-  toolArguments?: string;
-  toolResult?: string;
   done: boolean;
 }
 

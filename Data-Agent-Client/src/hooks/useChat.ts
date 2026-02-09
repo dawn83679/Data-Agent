@@ -3,6 +3,7 @@ import { useAuthStore } from '../store/authStore';
 import { parseSSEResponse } from '../lib/sse';
 import { ensureValidAccessToken } from '../lib/authToken';
 import type { ChatRequest, ChatMessage, UseChatOptions, UseChatReturn, ChatResponseBlock } from '../types/chat';
+import { isContentBlockType } from '../types/chat';
 import type { TokenPairResponse } from '../types/auth';
 
 const DEFAULT_API = '/api/chat/stream';
@@ -125,7 +126,9 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
             options.onConversationId?.(block.conversationId);
           }
 
-          accumulatedContent += block.data ?? '';
+          if (isContentBlockType(block.type)) {
+            accumulatedContent += block.data ?? '';
+          }
           accumulatedBlocks.push(block);
 
           setMessages((prev) => {

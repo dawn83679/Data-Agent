@@ -1,4 +1,5 @@
 import http from '../lib/http';
+import type { ChatMessage } from '../types/chat';
 import type { Conversation, PageResponse } from '../types/conversation';
 
 export const conversationService = {
@@ -36,5 +37,20 @@ export const conversationService = {
    */
   delete: async (id: number): Promise<void> => {
     await http.delete(`/conversations/${id}`);
+  },
+
+  /**
+   * Get history messages for a conversation (current user). Returns list compatible with ChatMessage.
+   */
+  getMessages: async (id: number): Promise<ChatMessage[]> => {
+    const response = await http.get<ChatMessage[]>(`/conversations/${id}/messages`);
+    const list = Array.isArray(response.data) ? response.data : [];
+    return list.map((m: ChatMessage & { createdAt?: string }) => ({
+      id: m.id,
+      role: m.role as 'user' | 'assistant',
+      content: m.content ?? '',
+      blocks: m.blocks,
+      createdAt: m.createdAt ? new Date(m.createdAt) : undefined,
+    }));
   },
 };

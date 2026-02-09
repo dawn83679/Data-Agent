@@ -12,6 +12,7 @@ import { AISettings } from './AISettings';
 import { ConversationHistoryPanel } from './ConversationHistoryPanel';
 import { useChat } from '../../hooks/useChat';
 import { useAuthStore } from '../../store/authStore';
+import { conversationService } from '../../services/conversation.service';
 import type { ChatMessage, ChatContext } from '../../types/chat';
 
 export function AIAssistant() {
@@ -97,9 +98,14 @@ export function AIAssistant() {
                 <ConversationHistoryPanel
                   open={isHistoryOpen}
                   onClose={() => setIsHistoryOpen(false)}
-                  onSelectConversation={(id) => {
+                  onSelectConversation={async (id) => {
                     setCurrentConversationId(id);
-                    setMessages([]);
+                    try {
+                      const list = await conversationService.getMessages(id);
+                      setMessages(list);
+                    } catch {
+                      setMessages([]);
+                    }
                   }}
                   onNewChat={() => {
                     setCurrentConversationId(null);
