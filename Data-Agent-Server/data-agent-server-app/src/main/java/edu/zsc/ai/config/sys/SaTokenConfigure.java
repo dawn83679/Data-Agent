@@ -11,6 +11,7 @@ import edu.zsc.ai.domain.model.entity.sys.SysSessions;
 import edu.zsc.ai.domain.service.sys.SysSessionsService;
 import edu.zsc.ai.util.exception.BusinessException;
 import jakarta.annotation.Resource;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +34,11 @@ public class SaTokenConfigure implements WebMvcConfigurer {
             public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
                 // OPTIONS requests directly pass through (CORS preflight requests)
                 if ("OPTIONS".equals(request.getMethod())) {
+                    return true;
+                }
+
+                // Async dispatch: login already checked on initial request, skip to avoid SaTokenContext not set on this thread
+                if (DispatcherType.ASYNC.equals(request.getDispatcherType())) {
                     return true;
                 }
 

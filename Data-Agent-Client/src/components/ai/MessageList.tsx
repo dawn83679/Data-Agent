@@ -1,9 +1,10 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useTranslation } from 'react-i18next';
 import { Bot, User } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { MonacoEditor } from '../editor/MonacoEditor';
 import { splitByMention, MENTION_PART_REGEX } from './mentionTypes';
 
 const MENTION_COLOR_CLASS = 'text-cyan-400 font-medium';
@@ -72,16 +73,27 @@ export function MessageList({ messages, messagesEndRef }: MessageListProps) {
                   const match = /language-(\w+)/.exec(className || '');
                   const language = match ? match[1] : '';
                   const isInline = !match;
-                  
-                  if (!isInline && language === 'sql') {
+
+                  if (!isInline) {
+                    const code = String(children).replace(/\n$/, '');
                     return (
-                      <div className="my-2 border theme-border rounded overflow-hidden h-[150px]">
-                        <MonacoEditor
-                          value={String(children).replace(/\n$/, '')}
-                          language="sql"
-                          readOnly={true}
-                          theme="jetbrains-dark"
-                        />
+                      <div className="my-2 rounded border theme-border overflow-hidden max-h-[200px] overflow-y-auto text-[11px]">
+                        <SyntaxHighlighter
+                          language={language || 'text'}
+                          style={oneDark}
+                          showLineNumbers={false}
+                          customStyle={{
+                            margin: 0,
+                            padding: '0.75rem 1rem',
+                            fontSize: '11px',
+                            lineHeight: 1.5,
+                            background: 'var(--code-bg, #282c34)',
+                          }}
+                          codeTagProps={{ style: { fontFamily: 'inherit' } }}
+                          PreTag="div"
+                        >
+                          {code}
+                        </SyntaxHighlighter>
                       </div>
                     );
                   }
