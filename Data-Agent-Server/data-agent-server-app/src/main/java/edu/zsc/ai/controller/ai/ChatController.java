@@ -29,8 +29,8 @@ public class ChatController {
 
     @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ChatResponseBlock> chat(@Valid @RequestBody ChatRequest request) {
-        log.info("Chat request received: message={}, conversationId={}, connectionId={}",
-                request.getMessage(), request.getConversationId(), request.getConnectionId());
+        log.info("Chat request received: model={}, message={}, conversationId={}, connectionId={}",
+                request.getModel(), request.getMessage(), request.getConversationId(), request.getConnectionId());
         return chatService.chat(request);
     }
 }

@@ -4,6 +4,8 @@ import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.invocation.InvocationParameters;
 import dev.langchain4j.service.TokenStream;
 import edu.zsc.ai.agent.ReActAgent;
+import edu.zsc.ai.agent.ReActAgentProvider;
+import edu.zsc.ai.common.enums.ai.ModelEnum;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.domain.model.dto.response.agent.ChatResponseBlock;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
@@ -13,7 +15,9 @@ import edu.zsc.ai.model.request.ChatRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
@@ -22,11 +26,22 @@ import reactor.core.publisher.Sinks;
 @RequiredArgsConstructor
 public class ChatServiceImpl implements ChatService {
 
-    private final ReActAgent reActAgent;
+    private static final String DEFAULT_MODEL = ModelEnum.QWEN3_MAX.getModelName();
+
+    private final ReActAgentProvider reActAgentProvider;
     private final AiConversationService aiConversationService;
 
     @Override
     public Flux<ChatResponseBlock> chat(ChatRequest request) {
+        String modelName = StringUtils.isNotBlank(request.getModel()) ? request.getModel().trim() : DEFAULT_MODEL;
+        try {
+            ModelEnum.fromModelName(modelName);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown model: " + modelName, e);
+        }
+
+        ReActAgent agent = reActAgentProvider.getAgent(modelName);
+
         if (request.getConversationId() == null) {
             Long userId = RequestContext.getUserId();
             AiConversation conversation = aiConversationService.createConversation(userId, request.getMessage());
@@ -40,7 +55,7 @@ public class ChatServiceImpl implements ChatService {
         String memoryId = RequestContext.getUserId() + ":" + request.getConversationId();
 
         InvocationParameters parameters = InvocationParameters.from(RequestContext.toMap());
-        TokenStream tokenStream = reActAgent.chat(memoryId, request.getMessage(), parameters);
+        TokenStream tokenStream = agent.chat(memoryId, request.getMessage(), parameters);
 
         tokenStream.onPartialResponse(content -> {
             if (StringUtils.isNotBlank(content)) {
@@ -58,15 +73,21 @@ public class ChatServiceImpl implements ChatService {
         tokenStream.onIntermediateResponse(response -> {
             if (response.aiMessage().hasToolExecutionRequests()) {
                 for (ToolExecutionRequest toolRequest : response.aiMessage().toolExecutionRequests()) {
-                    sink.tryEmitNext(ChatResponseBlock.toolCall(toolRequest.name(), toolRequest.arguments()));
+                    sink.tryEmitNext(ChatResponseBlock.toolCall(
+                            toolRequest.id(),
+                            toolRequest.name(),
+                            toolRequest.arguments()));
                 }
             }
         });
 
         tokenStream.onToolExecuted(toolExecution -> {
+            ToolExecutionRequest req = toolExecution.request();
             sink.tryEmitNext(ChatResponseBlock.toolResult(
-                    toolExecution.request().name(),
-                    toolExecution.result()));
+                    req.id(),
+                    req.name(),
+                    toolExecution.result(),
+                    toolExecution.hasFailed()));
         });
 
         tokenStream.onCompleteResponse(response -> {

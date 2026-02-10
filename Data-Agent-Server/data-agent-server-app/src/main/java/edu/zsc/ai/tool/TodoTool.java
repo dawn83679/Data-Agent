@@ -29,8 +29,8 @@ public class TodoTool {
 
 
     @Tool({
-        "Retrieve the entire current list of tasks for this conversation.",
-        "Call this before updating the list to see existing tasks."
+            "Retrieve the entire current list of tasks for this conversation.",
+            "Call this before updating the list to see existing tasks."
     })
     public String getTodoList(InvocationParameters parameters) {
         log.info("[Tool before] getTodoList");
@@ -40,16 +40,16 @@ public class TodoTool {
         }
         Long conversationId = parameters.get(RequestContextConstant.CONVERSATION_ID);
         AiTodoTask task = aiTodoTaskService.getByConversationId(conversationId, userId);
-        String result = (task == null || task.getContent() == null) ? "EMPTY:[]" : task.getContent();
+        String result = (task == null || task.getContent() == null) ? "[]" : task.getContent();
         log.info("[Tool done] getTodoList, conversationId={}", conversationId);
         return result;
     }
 
 
     @Tool({
-        "Update the entire todo list for this conversation (full overwrite).",
-        "Pass a list of tasks; each task's fields are described in the parameter.",
-        "Pass an empty list to clear all tasks."
+            "Update the entire todo list for this conversation (full overwrite).",
+            "Pass a list of tasks; each task's fields are described in the parameter.",
+            "Pass an empty list to clear all tasks."
     })
     public String updateTodoList(@P("The complete list of todo tasks; each element has title and optional description, "
             + "priority; status is for updates only") List<TodoRequest> requests, InvocationParameters parameters) {

@@ -41,7 +41,12 @@ public final class StoredMessageToResponseConverter {
             blocks = aiMessageBlocks(aiMsg);
         } else if (message instanceof ToolExecutionResultMessage toolMsg) {
             content = StringUtils.defaultString(toolMsg.text());
-            blocks = List.of(ChatResponseBlock.toolResult(toolMsg.toolName(), toolMsg.text()));
+            boolean isError = Boolean.TRUE.equals(toolMsg.isError());
+            blocks = List.of(ChatResponseBlock.toolResult(
+                    toolMsg.id(),
+                    toolMsg.toolName(),
+                    toolMsg.text(),
+                    isError));
         } else {
             content = "";
             blocks = List.of();
@@ -77,6 +82,7 @@ public final class StoredMessageToResponseConverter {
         if (CollectionUtils.isNotEmpty(aiMsg.toolExecutionRequests())) {
             for (var req : aiMsg.toolExecutionRequests()) {
                 out.add(ChatResponseBlock.toolCall(
+                        req.id(),
                         StringUtils.defaultString(req.name()),
                         StringUtils.defaultString(req.arguments())
                 ));

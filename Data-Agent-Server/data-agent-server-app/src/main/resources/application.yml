@@ -54,9 +54,15 @@ langchain4j:
       chat-model:
         api-key: ${ALIYUN_AI_API_KEY}
         model-name: qwen3-max
+        parameters:
+          enable-thinking: true
+          thinking-budget: 1000
       streaming-chat-model:
         api-key: ${ALIYUN_AI_API_KEY}
         model-name: qwen3-max
+        parameters:
+          enable-thinking: true
+          thinking-budget: 1000
       embedding-model:
         api-key: ${ALIYUN_AI_API_KEY}
         model-name: text-embedding-v4
