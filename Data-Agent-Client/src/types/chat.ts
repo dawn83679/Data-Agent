@@ -14,7 +14,7 @@ export interface ChatRequest {
   schemaName?: string;
 }
 
-/** 与后端 MessageBlockEnum 一致 */
+/** Aligned with backend MessageBlockEnum */
 export const MessageBlockType = {
   TEXT: 'TEXT',
   THOUGHT: 'THOUGHT',
@@ -24,7 +24,7 @@ export const MessageBlockType = {
 
 export type MessageBlockType = (typeof MessageBlockType)[keyof typeof MessageBlockType];
 
-/** 仅 TEXT/THOUGHT 累加到 content */
+/** Only TEXT and THOUGHT blocks are accumulated into content */
 export function isContentBlockType(type: MessageBlockType | undefined): boolean {
   return type === MessageBlockType.TEXT || type === MessageBlockType.THOUGHT;
 }
@@ -88,6 +88,8 @@ export interface UseChatReturn {
   /** Submit user answer to askUserQuestion tool and continue (streams into last assistant message). */
   submitToolAnswer: (toolCallId: string, answer: string) => Promise<void>;
   isLoading: boolean;
+  /** True when streaming and no backend data received for 100ms (show planning indicator). */
+  showPlanning?: boolean;
   stop: () => void;
   reload: () => Promise<void>;
   error?: Error;
