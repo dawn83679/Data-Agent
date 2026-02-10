@@ -1,29 +1,55 @@
 import { useState } from 'react';
-import { CheckCircle, ChevronDown, ChevronRight } from 'lucide-react';
-import { cn } from '../../../lib/utils';
+import { CheckCircle, ChevronDown, ChevronRight, XCircle } from 'lucide-react';
 
 export interface ToolRunBlockProps {
   toolName: string;
   parametersData: string;
   responseData: string;
+  /** True when tool execution failed (backend ToolExecution.hasFailed()). */
+  responseError?: boolean;
+  /** True while waiting for TOOL_RESULT (no icon, tool name blinks). */
+  pending?: boolean;
+  /** When true, details (parameters + response) are shown by default so user sees each tool result without expanding. */
+  defaultExpanded?: boolean;
 }
 
-/** One tool run: toolName + PARAMETERS (top) + RESPONSE (bottom). Collapsed by default. */
-export function ToolRunBlock({ toolName, parametersData, responseData }: ToolRunBlockProps) {
-  const [collapsed, setCollapsed] = useState(true);
+/** One tool run: pending = tool name only (blink); completed = icon + Ran/Failed + expandable details. Same style for success and failure (icon only differs). */
+export function ToolRunBlock({
+  toolName,
+  parametersData,
+  responseData,
+  responseError = false,
+  pending = false,
+  defaultExpanded = false,
+}: ToolRunBlockProps) {
+  const [collapsed, setCollapsed] = useState(!defaultExpanded);
+
+  if (pending) {
+    return (
+      <div className="mb-2 text-xs opacity-70 theme-text-secondary">
+        <div className="w-full py-1.5 flex items-center gap-2 text-left rounded theme-text-primary">
+          <span className="font-medium animate-pulse">{toolName}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mb-2 text-xs opacity-70 theme-text-secondary">
       <button
         type="button"
         onClick={() => setCollapsed((c) => !c)}
-        className={cn(
-          'w-full py-1.5 flex items-center gap-2 text-left rounded',
-          'theme-text-primary hover:bg-black/5 dark:hover:bg-white/5 transition-colors'
-        )}
+        className="w-full py-1.5 flex items-center gap-2 text-left rounded transition-colors theme-text-primary hover:bg-black/5 dark:hover:bg-white/5"
       >
-        <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />
-        <span className="font-medium">Ran {toolName}</span>
+        {responseError ? (
+          <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" aria-label="Failed" />
+        ) : (
+          <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" aria-hidden />
+        )}
+        <span className="font-medium">
+          {responseError ? 'Failed ' : 'Ran '}
+          {toolName}
+        </span>
         <span className="ml-auto shrink-0 opacity-60">
           {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </span>

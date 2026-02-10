@@ -13,3 +13,20 @@ export const MENTION_PART_REGEX = /^@[^\s]+$/;
 export function splitByMention(text: string): string[] {
   return text.split(/(@[^\s]+)/g);
 }
+
+export type MentionSegment =
+  | { type: 'mention'; text: string }
+  | { type: 'plain'; text: string };
+
+/**
+ * Parse text into alternating plain and @mention segments.
+ * Shared by ChatInput (input highlight) and MessageBubble (content display).
+ */
+export function parseMentionSegments(text: string): MentionSegment[] {
+  const parts = splitByMention(text);
+  return parts.map((segText) =>
+    MENTION_PART_REGEX.test(segText)
+      ? { type: 'mention' as const, text: segText }
+      : { type: 'plain' as const, text: segText }
+  );
+}

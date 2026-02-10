@@ -1,74 +1,39 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Infinity, ListTodo } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useMention } from '../../hooks/useMention';
 import { MentionPopup } from './MentionPopup';
+import { SlashCommandPopup } from './SlashCommandPopup';
+import { SLASH_COMMANDS, type SlashCommandItem } from './slashCommands';
 import { ChatInputToolbar } from './ChatInputToolbar';
-import { splitByMention, MENTION_PART_REGEX } from './mentionTypes';
-import type { ChatContext } from '../../types/chat';
+import { parseMentionSegments, splitByMention, MENTION_PART_REGEX } from './mentionTypes';
+import { AGENT_COLORS, type AgentType } from './agentTypes';
+import { useAIAssistantContext } from './AIAssistantContext';
 
-export type AgentType = 'Agent' | 'Plan';
-
-/** Theme colors per Agent mode: icon, border, background, focus border, send button, mention popup highlight, mention text. */
-export const AGENT_COLORS: Record<
-  AgentType,
-  {
-    icon: string;
-    bg: string;
-    border: string;
-    focusBorder: string;
-    sendBtn: string;
-    popupHighlight: string;
-    mentionText: string;
-  }
-> = {
-  Agent: {
-    icon: 'text-violet-400',
-    bg: 'bg-violet-500/20',
-    border: 'border-violet-400/50',
-    focusBorder: 'focus-within:border-violet-400/50',
-    sendBtn: 'text-violet-400 hover:text-violet-300',
-    popupHighlight: 'bg-violet-500 text-white',
-    mentionText: 'text-violet-400',
-  },
-  Plan: {
-    icon: 'text-amber-400',
-    bg: 'bg-amber-500/20',
-    border: 'border-amber-400/50',
-    focusBorder: 'focus-within:border-amber-400/50',
-    sendBtn: 'text-amber-400 hover:text-amber-300',
-    popupHighlight: 'bg-amber-500 text-white',
-    mentionText: 'text-amber-400',
-  },
-};
-
-interface ChatInputProps {
-  input: string;
-  setInput: (value: string) => void;
-  onSend: () => void;
-  agent: AgentType;
-  setAgent: (agent: AgentType) => void;
-  model: string;
-  setModel: (model: string) => void;
-  chatContext: ChatContext;
-  setChatContext: React.Dispatch<React.SetStateAction<ChatContext>>;
-}
-
-const MODELS = ['Gemini 3 Pro', 'GPT-4o', 'Claude 3.5'];
-
-export function ChatInput({
-  input,
-  setInput,
-  onSend,
-  agent,
-  setAgent,
-  model,
-  setModel,
-  setChatContext,
-}: ChatInputProps) {
+export function ChatInput() {
+  const {
+    input,
+    setInput,
+    onSend,
+    onStop,
+    isLoading,
+    modelState,
+    agentState,
+    chatContextState,
+    onCommand,
+  } = useAIAssistantContext();
+  const { model, setModel, modelOptions } = modelState;
+  const { agent, setAgent } = agentState;
+  const { setChatContext } = chatContextState;
+  const modelNames = useMemo(() => modelOptions.map((m) => m.modelName), [modelOptions]);
   const { t } = useTranslation();
   const inputRef = useRef(input);
   inputRef.current = input;
+
+  const [slashOpen, setSlashOpen] = useState(false);
+  const [slashQuery, setSlashQuery] = useState('');
+  const [slashHighlightedIndex, setSlashHighlightedIndex] = useState(0);
+  const slashStateRef = useRef<{ start: number; query: string }>({ start: 0, query: '' });
 
   /** Parse last-segment names from existing @mentions for duplicate detection. */
   const parseExistingShortNames = useCallback((text: string): Set<string> => {
@@ -106,12 +71,7 @@ export function ChatInput({
   const CurrentAgentIcon = agents.find((a) => a.type === agent)?.icon ?? Infinity;
 
   /** Split input by @mention for inline highlight. */
-  const inputSegments = useMemo(() => {
-    const parts = splitByMention(input);
-    return parts.map((text) =>
-      MENTION_PART_REGEX.test(text) ? { type: 'mention' as const, text } : { type: 'plain' as const, text }
-    );
-  }, [input]);
+  const inputSegments = useMemo(() => parseMentionSegments(input), [input]);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -121,7 +81,6 @@ export function ChatInput({
       const beforeCursor = value.slice(0, cursorPos);
       const lastAt = beforeCursor.lastIndexOf('@');
       const afterAt = lastAt !== -1 ? beforeCursor.slice(lastAt + 1) : '';
-      // Only treat as "typing mention" when @ is at start or after space; e.g. "@log_table@" does not trigger
       const charBeforeAt = lastAt > 0 ? beforeCursor[lastAt - 1] : ' ';
       const atIsAtStartOrAfterSpace = lastAt === 0 || /\s/.test(charBeforeAt);
       const isValidMentionTrigger =
@@ -130,17 +89,77 @@ export function ChatInput({
         (afterAt.length === 0 || !/[\s]/.test(afterAt));
       if (isValidMentionTrigger) {
         mention.openMention();
+        setSlashOpen(false);
         return;
       }
       if (!value.includes('@') || (value.length > 0 && !value.trim().includes('@'))) {
         mention.closeMention();
       }
+
+      // Slash command: "/" at start or after space, query = text after "/" until cursor (no space)
+      const lastSlash = beforeCursor.lastIndexOf('/');
+      const charBeforeSlash = lastSlash > 0 ? beforeCursor[lastSlash - 1] : ' ';
+      const slashAtStartOrAfterSpace = lastSlash === 0 || /\s/.test(charBeforeSlash);
+      const query = lastSlash !== -1 ? beforeCursor.slice(lastSlash + 1, cursorPos) : '';
+      const queryHasSpace = /\s/.test(query);
+      if (lastSlash !== -1 && slashAtStartOrAfterSpace && !queryHasSpace && cursorPos > lastSlash) {
+        slashStateRef.current = { start: lastSlash, query };
+        setSlashQuery(query);
+        setSlashOpen(true);
+        setSlashHighlightedIndex(0);
+      } else {
+        setSlashOpen(false);
+      }
     },
     [setInput, mention.openMention, mention.closeMention]
   );
 
+  const filteredSlashCommands = useMemo(() => {
+    const q = slashQuery.toLowerCase().trim();
+    return q
+      ? SLASH_COMMANDS.filter((c) => c.slug.toLowerCase().startsWith(q))
+      : SLASH_COMMANDS;
+  }, [slashQuery]);
+
+  const runSlashCommand = useCallback(
+    (cmd: SlashCommandItem) => {
+      const { start, query } = slashStateRef.current;
+      const current = inputRef.current;
+      setInput(current.slice(0, start) + current.slice(start + 1 + query.length));
+      setSlashOpen(false);
+      onCommand?.(cmd.id);
+    },
+    [setInput, onCommand]
+  );
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      if (slashOpen) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setSlashHighlightedIndex((i) => (i + 1) % Math.max(1, filteredSlashCommands.length));
+          return;
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSlashHighlightedIndex((i) =>
+            i <= 0 ? Math.max(0, filteredSlashCommands.length - 1) : i - 1
+          );
+          return;
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const cmd = filteredSlashCommands[slashHighlightedIndex];
+          if (cmd) runSlashCommand(cmd);
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setSlashOpen(false);
+          return;
+        }
+      }
+
       if (mention.mentionOpen && mention.handleMentionKeyDown(e)) return;
 
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -150,8 +169,8 @@ export function ChatInput({
       }
       if (e.key === 'Tab' && !e.shiftKey) {
         e.preventDefault();
-        const nextIndex = (MODELS.indexOf(model) + 1) % MODELS.length;
-        setModel(MODELS[nextIndex] ?? model);
+        const nextIndex = (modelNames.indexOf(model) + 1) % Math.max(1, modelNames.length);
+        setModel(modelNames[nextIndex] ?? model);
         return;
       }
       if (e.key === 'Tab' && e.shiftKey) {
@@ -161,7 +180,20 @@ export function ChatInput({
         setAgent(agentsList[nextIndex] ?? agent);
       }
     },
-    [mention.mentionOpen, mention.handleMentionKeyDown, onSend, model, setModel, agent, setAgent]
+    [
+      slashOpen,
+      slashHighlightedIndex,
+      filteredSlashCommands,
+      runSlashCommand,
+      mention.mentionOpen,
+      mention.handleMentionKeyDown,
+      onSend,
+      model,
+      modelNames,
+      setModel,
+      agent,
+      setAgent,
+    ]
   );
 
   return (
@@ -179,6 +211,16 @@ export function ChatInput({
           highlightedIndex={mention.mentionHighlightedIndex}
           onSelect={mention.handleMentionSelect}
           onHighlight={mention.setMentionHighlightedIndex}
+          highlightClassName={AGENT_COLORS[agent].popupHighlight}
+        />
+
+        <SlashCommandPopup
+          open={slashOpen}
+          query={slashQuery}
+          commands={SLASH_COMMANDS}
+          highlightedIndex={Math.min(slashHighlightedIndex, Math.max(0, filteredSlashCommands.length - 1))}
+          onSelect={runSlashCommand}
+          onHighlight={setSlashHighlightedIndex}
           highlightClassName={AGENT_COLORS[agent].popupHighlight}
         />
 
@@ -213,7 +255,10 @@ export function ChatInput({
           setAgent={setAgent}
           model={model}
           setModel={setModel}
+          modelOptions={modelOptions}
           onSend={onSend}
+          onStop={onStop}
+          isLoading={isLoading}
           agents={agents}
           CurrentAgentIcon={CurrentAgentIcon}
         />
