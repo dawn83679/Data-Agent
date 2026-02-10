@@ -53,9 +53,15 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
 
     @Override
     public DbConnection getOwnedById(Long id) {
+        return getOwnedById(id, null);
+    }
+
+    @Override
+    public DbConnection getOwnedById(Long id, Long userId) {
+        long ownerId = userId != null ? userId : StpUtil.getLoginIdAsLong();
         DbConnection connection = this.getOne(Wrappers.<DbConnection>lambdaQuery()
                 .eq(DbConnection::getId, id)
-                .eq(DbConnection::getUserId, StpUtil.getLoginIdAsLong()));
+                .eq(DbConnection::getUserId, ownerId));
         BusinessException.assertNotNull(connection, ResponseCode.PARAM_ERROR, ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE);
         return connection;
     }

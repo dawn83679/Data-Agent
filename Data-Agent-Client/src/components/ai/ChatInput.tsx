@@ -1,135 +1,267 @@
-import React from 'react';
-import { Send, Mic, Paperclip, Infinity, ListTodo, LineChart, ChevronDown } from 'lucide-react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { Infinity, ListTodo } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../ui/DropdownMenu";
+import { useMention } from '../../hooks/useMention';
+import { MentionPopup } from './MentionPopup';
+import { SlashCommandPopup } from './SlashCommandPopup';
+import { SLASH_COMMANDS, type SlashCommandItem } from './slashCommands';
+import { ChatInputToolbar } from './ChatInputToolbar';
+import { parseMentionSegments, splitByMention, MENTION_PART_REGEX } from './mentionTypes';
+import { AGENT_COLORS, type AgentType } from './agentTypes';
+import { useAIAssistantContext } from './AIAssistantContext';
 
-export type AgentType = 'Agent' | 'Plan' | 'Analysis';
-
-interface ChatInputProps {
-  input: string;
-  setInput: (value: string) => void;
-  onSend: () => void;
-  agent: AgentType;
-  setAgent: (agent: AgentType) => void;
-  model: string;
-  setModel: (model: string) => void;
-}
-
-export function ChatInput({ 
-  input, 
-  setInput, 
-  onSend, 
-  agent, 
-  setAgent, 
-  model, 
-  setModel 
-}: ChatInputProps) {
+export function ChatInput() {
+  const {
+    input,
+    setInput,
+    onSend,
+    onStop,
+    isLoading,
+    modelState,
+    agentState,
+    chatContextState,
+    onCommand,
+  } = useAIAssistantContext();
+  const { model, setModel, modelOptions } = modelState;
+  const { agent, setAgent } = agentState;
+  const { setChatContext } = chatContextState;
+  const modelNames = useMemo(() => modelOptions.map((m) => m.modelName), [modelOptions]);
   const { t } = useTranslation();
+  const inputRef = useRef(input);
+  inputRef.current = input;
 
-  const agents: { type: AgentType; icon: any; label: string }[] = [
-    { type: 'Agent', icon: Infinity, label: t('ai.agent') },
-    { type: 'Plan', icon: ListTodo, label: t('ai.plan') },
-    { type: 'Analysis', icon: LineChart, label: t('ai.analysis') },
+  const [slashOpen, setSlashOpen] = useState(false);
+  const [slashQuery, setSlashQuery] = useState('');
+  const [slashHighlightedIndex, setSlashHighlightedIndex] = useState(0);
+  const slashStateRef = useRef<{ start: number; query: string }>({ start: 0, query: '' });
+
+  /** Parse last-segment names from existing @mentions for duplicate detection. */
+  const parseExistingShortNames = useCallback((text: string): Set<string> => {
+    const parts = splitByMention(text).filter((p) => MENTION_PART_REGEX.test(p));
+    return new Set(
+      parts.map((m) => {
+        const path = m.slice(1);
+        return path.includes('/') ? (path.split('/').pop() ?? path) : path;
+      })
+    );
+  }, []);
+
+  const mention = useMention({
+    setChatContext,
+    onConfirmDisplay: ({ short: shortName, full: fullPath }) => {
+      const prev = inputRef.current;
+      const idx = prev.lastIndexOf('@');
+      const beforeCurrentAt = idx >= 0 ? prev.slice(0, idx) : '';
+      const existingShortNames = parseExistingShortNames(beforeCurrentAt);
+      const hasDuplicate = existingShortNames.has(shortName);
+      const displayText = hasDuplicate ? fullPath : `@${shortName}`;
+
+      if (idx === -1) {
+        setInput(prev + (prev && !prev.endsWith(' ') ? ' ' : '') + displayText);
+      } else {
+        setInput(prev.slice(0, idx) + displayText);
+      }
+    },
+  });
+
+  const agents = [
+    { type: 'Agent' as const, icon: Infinity, label: t('ai.agent') },
+    { type: 'Plan' as const, icon: ListTodo, label: t('ai.plan') },
   ];
+  const CurrentAgentIcon = agents.find((a) => a.type === agent)?.icon ?? Infinity;
 
-  const models = ['Gemini 3 Pro', 'GPT-4o', 'Claude 3.5'];
+  /** Split input by @mention for inline highlight. */
+  const inputSegments = useMemo(() => parseMentionSegments(input), [input]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Enter: Send message
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      onSend();
-    }
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const value = e.target.value;
+      setInput(value);
+      const cursorPos = e.target.selectionStart ?? value.length;
+      const beforeCursor = value.slice(0, cursorPos);
+      const lastAt = beforeCursor.lastIndexOf('@');
+      const afterAt = lastAt !== -1 ? beforeCursor.slice(lastAt + 1) : '';
+      const charBeforeAt = lastAt > 0 ? beforeCursor[lastAt - 1] : ' ';
+      const atIsAtStartOrAfterSpace = lastAt === 0 || /\s/.test(charBeforeAt);
+      const isValidMentionTrigger =
+        lastAt !== -1 &&
+        atIsAtStartOrAfterSpace &&
+        (afterAt.length === 0 || !/[\s]/.test(afterAt));
+      if (isValidMentionTrigger) {
+        mention.openMention();
+        setSlashOpen(false);
+        return;
+      }
+      if (!value.includes('@') || (value.length > 0 && !value.trim().includes('@'))) {
+        mention.closeMention();
+      }
 
-    // Tab: Switch model (simple cycle)
-    if (e.key === 'Tab' && !e.shiftKey) {
-      e.preventDefault();
-      const nextIndex = (models.indexOf(model) + 1) % models.length;
-      setModel(models[nextIndex]);
-    }
+      // Slash command: "/" at start or after space, query = text after "/" until cursor (no space)
+      const lastSlash = beforeCursor.lastIndexOf('/');
+      const charBeforeSlash = lastSlash > 0 ? beforeCursor[lastSlash - 1] : ' ';
+      const slashAtStartOrAfterSpace = lastSlash === 0 || /\s/.test(charBeforeSlash);
+      const query = lastSlash !== -1 ? beforeCursor.slice(lastSlash + 1, cursorPos) : '';
+      const queryHasSpace = /\s/.test(query);
+      if (lastSlash !== -1 && slashAtStartOrAfterSpace && !queryHasSpace && cursorPos > lastSlash) {
+        slashStateRef.current = { start: lastSlash, query };
+        setSlashQuery(query);
+        setSlashOpen(true);
+        setSlashHighlightedIndex(0);
+      } else {
+        setSlashOpen(false);
+      }
+    },
+    [setInput, mention.openMention, mention.closeMention]
+  );
 
-    // Shift+Tab: Switch agent mode
-    if (e.key === 'Tab' && e.shiftKey) {
-      e.preventDefault();
-      const agentsList: AgentType[] = ['Agent', 'Plan', 'Analysis'];
-      const nextIndex = (agentsList.indexOf(agent) + 1) % agentsList.length;
-      setAgent(agentsList[nextIndex]);
-    }
-  };
+  const filteredSlashCommands = useMemo(() => {
+    const q = slashQuery.toLowerCase().trim();
+    return q
+      ? SLASH_COMMANDS.filter((c) => c.slug.toLowerCase().startsWith(q))
+      : SLASH_COMMANDS;
+  }, [slashQuery]);
 
-  const CurrentAgentIcon = agents.find(a => a.type === agent)?.icon || Infinity;
+  const runSlashCommand = useCallback(
+    (cmd: SlashCommandItem) => {
+      const { start, query } = slashStateRef.current;
+      const current = inputRef.current;
+      setInput(current.slice(0, start) + current.slice(start + 1 + query.length));
+      setSlashOpen(false);
+      onCommand?.(cmd.id);
+    },
+    [setInput, onCommand]
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (slashOpen) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setSlashHighlightedIndex((i) => (i + 1) % Math.max(1, filteredSlashCommands.length));
+          return;
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSlashHighlightedIndex((i) =>
+            i <= 0 ? Math.max(0, filteredSlashCommands.length - 1) : i - 1
+          );
+          return;
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const cmd = filteredSlashCommands[slashHighlightedIndex];
+          if (cmd) runSlashCommand(cmd);
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setSlashOpen(false);
+          return;
+        }
+      }
+
+      if (mention.mentionOpen && mention.handleMentionKeyDown(e)) return;
+
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        onSend();
+        return;
+      }
+      if (e.key === 'Tab' && !e.shiftKey) {
+        e.preventDefault();
+        const nextIndex = (modelNames.indexOf(model) + 1) % Math.max(1, modelNames.length);
+        setModel(modelNames[nextIndex] ?? model);
+        return;
+      }
+      if (e.key === 'Tab' && e.shiftKey) {
+        e.preventDefault();
+        const agentsList: AgentType[] = ['Agent', 'Plan'];
+        const nextIndex = (agentsList.indexOf(agent) + 1) % agentsList.length;
+        setAgent(agentsList[nextIndex] ?? agent);
+      }
+    },
+    [
+      slashOpen,
+      slashHighlightedIndex,
+      filteredSlashCommands,
+      runSlashCommand,
+      mention.mentionOpen,
+      mention.handleMentionKeyDown,
+      onSend,
+      model,
+      modelNames,
+      setModel,
+      agent,
+      setAgent,
+    ]
+  );
 
   return (
     <div className="p-2 theme-bg-panel border-t theme-border shrink-0">
-      <div className="rounded-lg border theme-border theme-bg-main relative focus-within:border-primary/50 transition-colors flex flex-col">
-        <textarea 
-          data-ai-input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={t('ai.placeholder')}
-          className="w-full h-24 bg-transparent text-xs p-3 focus:outline-none resize-none placeholder:text-muted-foreground/50"
+      <div
+        className={`rounded-lg border theme-border theme-bg-main relative transition-colors flex flex-col ${AGENT_COLORS[agent].focusBorder}`}
+      >
+        <MentionPopup
+          open={mention.mentionOpen}
+          level={mention.mentionLevel}
+          levelLabel={mention.mentionLevelLabel}
+          items={mention.mentionItems}
+          loading={mention.mentionLoading}
+          error={mention.mentionError}
+          highlightedIndex={mention.mentionHighlightedIndex}
+          onSelect={mention.handleMentionSelect}
+          onHighlight={mention.setMentionHighlightedIndex}
+          highlightClassName={AGENT_COLORS[agent].popupHighlight}
         />
-        
-        <div className="flex items-center justify-between px-2 pb-2">
-          <div className="flex items-center space-x-2">
-            {/* Agent Selector */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center space-x-1.5 text-[10px] theme-text-primary bg-accent/30 border theme-border rounded-full px-2 py-0.5 hover:bg-accent/50 transition-colors">
-                  <CurrentAgentIcon className="w-3 h-3 text-purple-400" />
-                  <span className="font-medium">{agents.find(a => a.type === agent)?.label}</span>
-                  <ChevronDown className="w-2.5 h-2.5 opacity-50" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-32">
-                {agents.map(a => (
-                  <DropdownMenuItem key={a.type} onClick={() => setAgent(a.type)} className="text-[10px] flex items-center space-x-2">
-                    <a.icon className="w-3 h-3" />
-                    <span>{a.label}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
 
-            {/* Model Selector */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="text-[10px] theme-text-secondary hover:theme-text-primary transition-colors flex items-center space-x-1">
-                  <span>{model}</span>
-                  <ChevronDown className="w-2.5 h-2.5 opacity-50" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-32">
-                {models.map(m => (
-                  <DropdownMenuItem key={m} onClick={() => setModel(m)} className="text-[10px]">
-                    {m}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+        <SlashCommandPopup
+          open={slashOpen}
+          query={slashQuery}
+          commands={SLASH_COMMANDS}
+          highlightedIndex={Math.min(slashHighlightedIndex, Math.max(0, filteredSlashCommands.length - 1))}
+          onSelect={runSlashCommand}
+          onHighlight={setSlashHighlightedIndex}
+          highlightClassName={AGENT_COLORS[agent].popupHighlight}
+        />
 
-          <div className="flex items-center space-x-2">
-            <button className="p-1.5 theme-text-secondary hover:theme-text-primary transition-colors">
-              <Mic className="w-3.5 h-3.5" />
-            </button>
-            <button className="p-1.5 theme-text-secondary hover:theme-text-primary transition-colors">
-              <Paperclip className="w-3.5 h-3.5" />
-            </button>
-            <button 
-              onClick={onSend}
-              className="p-1.5 text-primary hover:text-primary/80 transition-colors"
-            >
-              <Send className="w-3.5 h-3.5" />
-            </button>
+        <div className="relative min-h-24">
+          {/* Mirror layer: same layout as textarea, shows colored @mention text */}
+          <div
+            className="absolute inset-0 overflow-hidden pointer-events-none text-xs p-3 whitespace-pre-wrap break-words theme-text-primary"
+            aria-hidden
+          >
+            {inputSegments.map((seg, i) =>
+              seg.type === 'mention' ? (
+                <span key={i} className={AGENT_COLORS[agent].mentionText}>
+                  {seg.text}
+                </span>
+              ) : (
+                <span key={i}>{seg.text}</span>
+              )
+            )}
           </div>
+          <textarea
+            data-ai-input
+            value={input}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder={t('ai.placeholder_mention')}
+            className={`relative z-10 w-full h-24 bg-transparent text-xs p-3 focus:outline-none resize-none placeholder:text-muted-foreground/50 text-transparent min-h-0 ${agent === 'Agent' ? 'caret-violet-400' : 'caret-amber-400'}`}
+          />
         </div>
+
+        <ChatInputToolbar
+          agent={agent}
+          setAgent={setAgent}
+          model={model}
+          setModel={setModel}
+          modelOptions={modelOptions}
+          onSend={onSend}
+          onStop={onStop}
+          isLoading={isLoading}
+          agents={agents}
+          CurrentAgentIcon={CurrentAgentIcon}
+        />
       </div>
     </div>
   );

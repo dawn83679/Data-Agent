@@ -18,28 +18,28 @@ public class TableServiceImpl implements TableService {
     private final ConnectionService connectionService;
 
     @Override
-    public List<String> listTables(Long connectionId, String catalog, String schema) {
-        connectionService.openConnection(connectionId, catalog, schema);
+    public List<String> listTables(Long connectionId, String catalog, String schema, Long userId) {
+        connectionService.openConnection(connectionId, catalog, schema, userId);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
 
         TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
         return provider.getTableNames(active.connection(), catalog, schema);
     }
 
     @Override
-    public String getTableDdl(Long connectionId, String catalog, String schema, String tableName) {
-        log.info("Getting DDL for table: connectionId={}, catalog={}, schema={}, tableName={}", 
+    public String getTableDdl(Long connectionId, String catalog, String schema, String tableName, Long userId) {
+        log.info("Getting DDL for table: connectionId={}, catalog={}, schema={}, tableName={}",
                 connectionId, catalog, schema, tableName);
-        
-        connectionService.openConnection(connectionId, catalog, schema);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema);
+        connectionService.openConnection(connectionId, catalog, schema, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
 
         TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
-        
+
         String ddl = provider.getTableDdl(active.connection(), catalog, schema, tableName);
-        
+
         log.debug("Successfully retrieved DDL for table: {}", tableName);
         return ddl;
     }

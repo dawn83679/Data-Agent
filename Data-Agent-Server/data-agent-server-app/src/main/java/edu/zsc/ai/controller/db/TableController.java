@@ -1,5 +1,6 @@
 package edu.zsc.ai.controller.db;
 
+import cn.dev33.satoken.stp.StpUtil;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.service.db.TableService;
 import jakarta.validation.constraints.NotNull;
@@ -28,7 +29,8 @@ public class TableController {
             @RequestParam(required = false) String catalog,
             @RequestParam(required = false) String schema) {
         log.info("Listing tables: connectionId={}, catalog={}, schema={}", connectionId, catalog, schema);
-        List<String> tables = tableService.listTables(connectionId, catalog, schema);
+        long userId = StpUtil.getLoginIdAsLong();
+        List<String> tables = tableService.listTables(connectionId, catalog, schema, userId);
         return ApiResponse.success(tables);
     }
 
@@ -38,9 +40,10 @@ public class TableController {
             @RequestParam @NotNull(message = "tableName is required") String tableName,
             @RequestParam(required = false) String catalog,
             @RequestParam(required = false) String schema) {
-        log.info("Getting table DDL: connectionId={}, tableName={}, catalog={}, schema={}", 
+        log.info("Getting table DDL: connectionId={}, tableName={}, catalog={}, schema={}",
                 connectionId, tableName, catalog, schema);
-        String ddl = tableService.getTableDdl(connectionId, catalog, schema, tableName);
+        long userId = StpUtil.getLoginIdAsLong();
+        String ddl = tableService.getTableDdl(connectionId, catalog, schema, tableName, userId);
         return ApiResponse.success(ddl);
     }
 }

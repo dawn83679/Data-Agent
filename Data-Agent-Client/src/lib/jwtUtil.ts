@@ -72,3 +72,25 @@ export const decodeJwt = (token: string): DecodedJwt | null => {
 export const isTokenExpired = (expiresAt: number): boolean => {
     return Date.now() >= expiresAt;
 };
+
+/**
+ * Check if token expires within the given buffer time.
+ * @param expiresAt - Expiration timestamp in milliseconds
+ * @param bufferMs - Buffer time in milliseconds (e.g. 5 * 60 * 1000 for 5 minutes)
+ * @returns True if token expires within bufferMs from now
+ */
+export const isTokenExpiringWithin = (expiresAt: number, bufferMs: number): boolean => {
+    return expiresAt - Date.now() < bufferMs;
+};
+
+/** Default buffer: refresh when token expires within 5 minutes */
+const REFRESH_BUFFER_MS = 5 * 60 * 1000;
+
+/**
+ * Whether the access token should be refreshed (expired or expiring within 5 minutes).
+ * @param expiresAt - Expiration timestamp in milliseconds
+ * @returns True if token is expired or expires within 5 minutes
+ */
+export const shouldRefreshToken = (expiresAt: number): boolean => {
+    return isTokenExpired(expiresAt) || isTokenExpiringWithin(expiresAt, REFRESH_BUFFER_MS);
+};

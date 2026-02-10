@@ -4,6 +4,7 @@ import edu.zsc.ai.annotation.EnableRequestContext;
 import edu.zsc.ai.domain.model.dto.response.agent.ChatResponseBlock;
 import edu.zsc.ai.domain.service.agent.ChatService;
 import edu.zsc.ai.model.request.ChatRequest;
+import edu.zsc.ai.model.request.SubmitToolAnswerRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,8 +30,14 @@ public class ChatController {
 
     @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ChatResponseBlock> chat(@Valid @RequestBody ChatRequest request) {
-        log.info("Chat request received: message={}, conversationId={}, connectionId={}",
-                request.getMessage(), request.getConversationId(), request.getConnectionId());
+        log.info("Chat request received: model={}, message={}, conversationId={}, connectionId={}",
+                request.getModel(), request.getMessage(), request.getConversationId(), request.getConnectionId());
         return chatService.chat(request);
+    }
+
+    @PostMapping(value = "/submit-tool-answer", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ChatResponseBlock> submitToolAnswer(@Valid @RequestBody SubmitToolAnswerRequest request) {
+        log.info("Submit tool answer: conversationId={}, toolCallId={}", request.getConversationId(), request.getToolCallId());
+        return chatService.submitToolAnswerAndContinue(request);
     }
 }

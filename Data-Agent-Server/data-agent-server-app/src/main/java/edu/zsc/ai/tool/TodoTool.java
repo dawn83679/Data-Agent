@@ -2,65 +2,40 @@ package edu.zsc.ai.tool;
 
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
-import edu.zsc.ai.context.RequestContext;
-import edu.zsc.ai.domain.model.entity.ai.AiTodoTask;
-import edu.zsc.ai.domain.service.ai.AiTodoTaskService;
 import edu.zsc.ai.model.Todo;
-import edu.zsc.ai.model.TodoList;
-import edu.zsc.ai.common.enums.ai.TodoPriorityEnum;
-import edu.zsc.ai.common.enums.ai.TodoStatusEnum;
-import edu.zsc.ai.model.request.TodoRequest;
 import edu.zsc.ai.util.JsonUtil;
-import edu.zsc.ai.util.ToolResultFormatter;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
-
+import java.util.Map;
 
 @Component
 @Slf4j
-@RequiredArgsConstructor
 public class TodoTool {
 
-    private final AiTodoTaskService aiTodoTaskService;
-
-
-    @Tool("Retrieve the entire current list of tasks. Use this to see all tasks before making updates.")
-    public String getTodoList() {
-        AiTodoTask task = aiTodoTaskService.getByConversationId(RequestContext.getConversationId());
-        return (task == null || task.getContent() == null) ? ToolResultFormatter.empty("[]") : ToolResultFormatter.success(task.getContent());
+    @Tool({
+        "Update the entire todo list (full overwrite).",
+        "Pass todoId to identify the list (e.g. use a new id when starting a new list after the previous one is done or cleared).",
+        "Pass a list of tasks; each task has title and optional description, priority, status. Pass an empty list to clear. Data is not persisted."
+    })
+    public String updateTodoList(
+            @P("Id of the todo list (e.g. 'list-1'). Use the same id for updates; use a new id only when creating a new list after the current one is all completed or cleared.")
+            String todoId,
+            @P("The complete list of todo tasks; each element has title and optional description, priority, status.")
+            List<Todo> items) {
+        log.info("[Tool before] updateTodoList, todoId={}, itemsSize={}", todoId, items != null ? items.size() : 0);
+        List<Todo> list = items != null && !items.isEmpty() ? items : List.of();
+        log.info("[Tool done] updateTodoList, todoId={}, count={}", todoId, list.size());
+        return buildTodoResponse(todoId, list);
     }
 
-
-    @Tool("Update the entire todo list (Full Overwrite). Valid status: NOT_STARTED, IN_PROGRESS, PAUSED, COMPLETED. Valid priority: LOW, MEDIUM, HIGH.")
-    public String updateTodoList(@P("The complete list of tasks") List<TodoRequest> requests) {
-        Long cid = RequestContext.getConversationId();
-        if (requests == null || requests.isEmpty()) {
-            aiTodoTaskService.removeByConversationId(cid);
-            return ToolResultFormatter.success("Cleared.");
-        }
-
-        List<Todo> todos = requests.stream().map(req -> Todo.builder()
-                .title(req.getTitle())
-                .description(req.getDescription())
-                .status(req.getStatus() != null ? req.getStatus() : TodoStatusEnum.NOT_STARTED.name())
-                .priority(req.getPriority() != null ? req.getPriority() : TodoPriorityEnum.MEDIUM.name())
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build()).toList();
-
-        String content = JsonUtil.object2json(TodoList.builder().conversationId(cid).todos(todos).updatedAt(LocalDateTime.now()).build());
-        AiTodoTask task = AiTodoTask.builder().conversationId(cid).content(content).build();
-
-        if (aiTodoTaskService.getByConversationId(cid) == null) {
-            aiTodoTaskService.saveByConversationId(task);
-        } else {
-            aiTodoTaskService.updateByConversationId(task);
-        }
-
-        return ToolResultFormatter.success();
+    /** Response format: { "todoId": string, "items": Todo[] }. Frontend uses todoId for single-box logic. */
+    private static String buildTodoResponse(String todoId, List<Todo> items) {
+        Map<String, Object> out = new HashMap<>();
+        out.put("todoId", todoId != null ? todoId : "");
+        out.put("items", items != null ? items : List.of());
+        return JsonUtil.object2json(out);
     }
 }

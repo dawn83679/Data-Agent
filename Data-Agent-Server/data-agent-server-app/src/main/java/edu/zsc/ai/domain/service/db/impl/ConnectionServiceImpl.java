@@ -78,7 +78,12 @@ public class ConnectionServiceImpl implements ConnectionService {
 
     @Override
     public Boolean openConnection(Long connectionId, String catalog, String schema) {
-        DbConnection dbConnection = dbConnectionService.getOwnedById(connectionId);
+        return openConnection(connectionId, catalog, schema, null);
+    }
+
+    @Override
+    public Boolean openConnection(Long connectionId, String catalog, String schema, Long userId) {
+        DbConnection dbConnection = dbConnectionService.getOwnedById(connectionId, userId);
 
         if (ConnectionManager.getConnection(connectionId, catalog, schema).isPresent()) {
             return Boolean.TRUE;

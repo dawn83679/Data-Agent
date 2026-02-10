@@ -12,5 +12,11 @@ public interface ConnectionService {
     Boolean openConnection(Long connectionId);
 
     Boolean openConnection(Long connectionId, String catalog, String schema);
+
+    /**
+     * Open connection with explicit user for ownership check.
+     * When {@code userId} is null, uses current login (StpUtil); use for request-thread callers.
+     */
+    Boolean openConnection(Long connectionId, String catalog, String schema, Long userId);
 }
 

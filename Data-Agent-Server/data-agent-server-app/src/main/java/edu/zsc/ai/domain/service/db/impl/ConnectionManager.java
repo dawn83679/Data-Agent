@@ -70,14 +70,22 @@ public class ConnectionManager {
     }
 
     /**
-     * Get active connection for a dbConnectionId and specific catalog/schema, 
-     * and verify ownership by current user.
+     * Get active connection for a dbConnectionId and specific catalog/schema,
+     * and verify ownership by current user (StpUtil). Use on request thread only.
      */
     public static ActiveConnection getOwnedConnection(Long dbConnectionId, String catalog, String schema) {
+        return getOwnedConnection(dbConnectionId, catalog, schema, StpUtil.getLoginIdAsLong());
+    }
+
+    /**
+     * Get active connection and verify ownership by the given user.
+     * Use this overload when userId is passed explicitly (e.g. from tool InvocationParameters).
+     */
+    public static ActiveConnection getOwnedConnection(Long dbConnectionId, String catalog, String schema, Long userId) {
         ActiveConnection active = getConnection(dbConnectionId, catalog, schema)
                 .orElseThrow(() -> BusinessException.notFound(ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE));
-        
-        if (!active.userId().equals(StpUtil.getLoginIdAsLong())) {
+
+        if (!active.userId().equals(userId)) {
             throw new BusinessException(ResponseCode.PARAM_ERROR, ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE);
         }
         return active;
@@ -92,13 +100,20 @@ public class ConnectionManager {
     }
 
     /**
-     * Get any active connection for a dbConnectionId and verify ownership.
+     * Get any active connection for a dbConnectionId and verify ownership by current user (StpUtil). Use on request thread only.
      */
     public static ActiveConnection getAnyOwnedActiveConnection(Long dbConnectionId) {
+        return getAnyOwnedActiveConnection(dbConnectionId, StpUtil.getLoginIdAsLong());
+    }
+
+    /**
+     * Get any active connection and verify ownership by the given user.
+     */
+    public static ActiveConnection getAnyOwnedActiveConnection(Long dbConnectionId, Long userId) {
         ActiveConnection active = getAnyActiveConnection(dbConnectionId)
                 .orElseThrow(() -> BusinessException.notFound(ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE));
 
-        if (!active.userId().equals(StpUtil.getLoginIdAsLong())) {
+        if (!active.userId().equals(userId)) {
             throw new BusinessException(ResponseCode.PARAM_ERROR, ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE);
         }
         return active;

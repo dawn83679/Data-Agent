@@ -10,20 +10,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+/**
+ * Aggregate for one conversation's todo list. Stored as one row (JSON in content) in persistence.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class TodoList {
 
-    private Long id;
-
     private Long conversationId;
 
     @Builder.Default
     private List<Todo> todos = new ArrayList<>();
-
-    private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
 }
