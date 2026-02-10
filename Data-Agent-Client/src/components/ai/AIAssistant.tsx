@@ -39,6 +39,7 @@ export function AIAssistant() {
     input,
     setInput,
     isLoading,
+    showPlanning,
     stop,
     error,
     handleSubmit,
@@ -145,6 +146,7 @@ export function AIAssistant() {
           messages={chatMessages}
           messagesEndRef={messagesEndRef}
           isLoading={isLoading}
+          showPlanning={showPlanning}
           queue={messageQueue.queue}
           onRemoveFromQueue={messageQueue.removeFromQueue}
         />

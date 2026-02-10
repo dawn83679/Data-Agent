@@ -1,4 +1,4 @@
-export { markdownComponents } from './markdownComponents';
+export { markdownComponents, markdownRemarkPlugins } from './markdownComponents';
 export { TextBlock } from './TextBlock';
 export { ThoughtBlock } from './ThoughtBlock';
 export { TodoListBlock } from './TodoListBlock';

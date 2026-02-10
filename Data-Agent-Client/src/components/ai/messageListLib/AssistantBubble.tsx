@@ -9,6 +9,7 @@ export interface AssistantBubbleProps {
   hideTodoSegments: boolean;
   overrideTodoBoxes: TodoBoxSpec[];
   isLastAssistantStreaming: boolean;
+  showPlanningIndicator?: boolean;
 }
 
 export function AssistantBubble({
@@ -17,6 +18,7 @@ export function AssistantBubble({
   hideTodoSegments,
   overrideTodoBoxes,
   isLastAssistantStreaming,
+  showPlanningIndicator = false,
 }: AssistantBubbleProps) {
   const { t } = useTranslation();
   return (
@@ -34,6 +36,7 @@ export function AssistantBubble({
           hideTodoSegments={hideTodoSegments}
           overrideTodoBoxes={overrideTodoBoxes}
           isLastAssistantStreaming={isLastAssistantStreaming}
+          showPlanningIndicator={showPlanningIndicator}
         />
       </div>
     </div>
