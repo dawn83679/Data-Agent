@@ -1,14 +1,18 @@
-import { Send, Mic, Paperclip, ChevronDown } from 'lucide-react';
+import { Send, Square, Mic, Paperclip, ChevronDown, Brain } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../ui/DropdownMenu';
-import type { AgentType } from './ChatInput';
-import { AGENT_COLORS } from './ChatInput';
+import { AGENT_COLORS, type AgentType } from './agentTypes';
+import type { ModelOption } from '../../types/ai';
 
-const MODELS = ['Gemini 3 Pro', 'GPT-4o', 'Claude 3.5'];
+function modelDisplayLabel(option: ModelOption): string {
+  return option.supportThinking
+    ? (option.modelName.replace(/-thinking$/, '') || option.modelName)
+    : option.modelName;
+}
 
 interface AgentOption {
   type: AgentType;
@@ -21,7 +25,13 @@ interface ChatInputToolbarProps {
   setAgent: (agent: AgentType) => void;
   model: string;
   setModel: (model: string) => void;
+  /** Available models from API (or fallback). */
+  modelOptions: ModelOption[];
   onSend: () => void;
+  /** Abort current stream when user clicks stop. */
+  onStop?: () => void;
+  /** When true, show stop button instead of send. */
+  isLoading?: boolean;
   agents: AgentOption[];
   CurrentAgentIcon: React.ElementType;
 }
@@ -31,10 +41,15 @@ export function ChatInputToolbar({
   setAgent,
   model,
   setModel,
+  modelOptions,
   onSend,
+  onStop,
+  isLoading = false,
   agents,
   CurrentAgentIcon,
 }: ChatInputToolbarProps) {
+  const currentOption = modelOptions.find((m) => m.modelName === model);
+
   return (
     <div className="flex items-center justify-between px-2 pb-2">
       <div className="flex items-center space-x-2">
@@ -67,16 +82,26 @@ export function ChatInputToolbar({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="text-[10px] theme-text-secondary hover:theme-text-primary transition-colors flex items-center space-x-1"
+              className="text-[10px] theme-text-secondary hover:theme-text-primary transition-colors flex items-center gap-1.5"
             >
-              <span>{model}</span>
-              <ChevronDown className="w-2.5 h-2.5 opacity-50" />
+              <span>{currentOption ? modelDisplayLabel(currentOption) : model}</span>
+              {currentOption?.supportThinking && (
+                <Brain className="w-3 h-3 opacity-70 shrink-0" aria-hidden />
+              )}
+              <ChevronDown className="w-2.5 h-2.5 opacity-50 shrink-0" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-32">
-            {MODELS.map((m) => (
-              <DropdownMenuItem key={m} onClick={() => setModel(m)} className="text-[10px]">
-                {m}
+          <DropdownMenuContent align="start" className="w-40">
+            {modelOptions.map((m) => (
+              <DropdownMenuItem
+                key={m.modelName}
+                onClick={() => setModel(m.modelName)}
+                className="text-[10px] flex items-center gap-2"
+              >
+                <span>{modelDisplayLabel(m)}</span>
+                {m.supportThinking && (
+                  <Brain className="w-3.5 h-3.5 theme-text-secondary shrink-0" aria-hidden />
+                )}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -100,11 +125,15 @@ export function ChatInputToolbar({
         </button>
         <button
           type="button"
-          onClick={onSend}
+          onClick={isLoading ? (onStop ?? (() => {})) : onSend}
           className={`p-1.5 transition-colors ${AGENT_COLORS[agent].sendBtn}`}
-          aria-label="Send"
+          aria-label={isLoading ? 'Stop' : 'Send'}
         >
-          <Send className="w-3.5 h-3.5" />
+          {isLoading ? (
+            <Square className="w-3.5 h-3.5 fill-current" />
+          ) : (
+            <Send className="w-3.5 h-3.5" />
+          )}
         </button>
       </div>
     </div>

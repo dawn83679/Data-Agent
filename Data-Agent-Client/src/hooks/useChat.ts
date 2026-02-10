@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/authStore';
 import { parseSSEResponse } from '../lib/sse';
 import { ensureValidAccessToken } from '../lib/authToken';
 import type { ChatRequest, ChatMessage, UseChatOptions, UseChatReturn, ChatResponseBlock } from '../types/chat';
-import { isContentBlockType } from '../types/chat';
+import { isContentBlockType, MessageRole } from '../types/chat';
 import type { TokenPairResponse } from '../types/auth';
 
 const DEFAULT_API = '/api/chat/stream';
@@ -40,6 +40,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   const [error, setError] = useState<Error>();
 
   const abortControllerRef = useRef<AbortController | null>(null);
+  const submittingRef = useRef(false);
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
 
@@ -53,6 +54,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
     async (request: ChatRequest, retryCount = 0) => {
       const token = await ensureValidAccessToken();
       if (!token) {
+        submittingRef.current = false;
         const err = new Error('Not authenticated');
         setError(err);
         options.onError?.(err);
@@ -84,6 +86,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
             return;
           } else {
             // Refresh failed - clear auth and show login modal
+            submittingRef.current = false;
             setAuth(null, null, null);
             openLoginModal();
             const err = new Error('Session expired, please login again');
@@ -95,6 +98,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
         }
 
         if (!response.ok) {
+          submittingRef.current = false;
           const err = new Error(`Stream request failed: ${response.status} ${response.statusText}`);
           setError(err);
           options.onError?.(err);
@@ -107,7 +111,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
         // Create assistant message placeholder
         const assistantMessage: ChatMessage = {
           id: crypto.randomUUID(),
-          role: 'assistant',
+          role: MessageRole.ASSISTANT,
           content: '',
           blocks: [],
           createdAt: new Date(),
@@ -120,7 +124,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
 
         for await (const block of parseSSEResponse(response)) {
           const lastMessage = messagesRef.current[messagesRef.current.length - 1];
-          if (lastMessage?.role !== 'assistant') continue;
+          if (lastMessage?.role !== MessageRole.ASSISTANT) continue;
 
           if (block.conversationId != null) {
             options.onConversationId?.(block.conversationId);
@@ -158,44 +162,66 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
           options.onError?.(err);
         }
       } finally {
+        submittingRef.current = false;
         setIsLoading(false);
       }
     },
     [api, user, setAuth, openLoginModal, appendMessage, options]
   );
 
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!input.trim() || isLoading) return;
+  /** Shared core: append user message and start stream. Does not touch input state. */
+  const submitCore = useCallback(
+    async (text: string) => {
+      const trimmed = (text ?? '').trim();
+      if (submittingRef.current || !trimmed) return;
+      submittingRef.current = true;
+      setIsLoading(true);
 
       const userMessage: ChatMessage = {
         id: crypto.randomUUID(),
-        role: 'user',
-        content: input,
+        role: MessageRole.USER,
+        content: trimmed,
         createdAt: new Date(),
       };
       appendMessage(userMessage);
 
       const request: ChatRequest = {
-        message: input.trim(),
+        message: trimmed,
         ...(options.body as Partial<ChatRequest>),
       };
-      setInput('');
-
       await processStream(request);
     },
-    [input, isLoading, appendMessage, processStream, options.body]
+    [appendMessage, processStream, options.body]
+  );
+
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!input.trim() || isLoading) return;
+      const messageText = input.trim();
+      setInput('');
+      await submitCore(messageText);
+    },
+    [input, isLoading, setInput, submitCore]
+  );
+
+  /** Send a specific message (e.g. next from queue) without using input. */
+  const submitMessage = useCallback(
+    async (message: string) => {
+      await submitCore(message ?? '');
+    },
+    [submitCore]
   );
 
   const stop = useCallback(() => {
     abortControllerRef.current?.abort();
+    submittingRef.current = false;
     setIsLoading(false);
   }, []);
 
   const reload = useCallback(async () => {
     const lastMessage = messagesRef.current[messagesRef.current.length - 1];
-    if (lastMessage?.role === 'user') {
+    if (lastMessage?.role === MessageRole.USER) {
       const request: ChatRequest = {
         message: lastMessage.content,
         ...(options.body as Partial<ChatRequest>),
@@ -215,6 +241,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
     setInput,
     handleInputChange,
     handleSubmit,
+    submitMessage,
     isLoading,
     stop,
     reload,

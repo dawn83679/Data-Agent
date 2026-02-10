@@ -6,6 +6,8 @@ export interface ChatContext {
 
 export interface ChatRequest {
   message: string;
+  /** Model name for chat (e.g. qwen3-max, qwen3-max-thinking). */
+  model?: string;
   conversationId?: number;
   connectionId?: number;
   databaseName?: string;
@@ -27,16 +29,20 @@ export function isContentBlockType(type: MessageBlockType | undefined): boolean 
   return type === MessageBlockType.TEXT || type === MessageBlockType.THOUGHT;
 }
 
-/** Parsed from TOOL_CALL block.data */
+/** Parsed from TOOL_CALL block.data (id from LangChain4j ToolExecutionRequest for merging streaming chunks). */
 export interface ToolCallData {
+  id?: string;
   toolName: string;
   arguments: string;
 }
 
-/** Parsed from TOOL_RESULT block.data */
+/** Parsed from TOOL_RESULT block.data (id matches tool call for pairing). */
 export interface ToolResultData {
+  id?: string;
   toolName: string;
   result: string;
+  /** True when tool execution failed (backend ToolExecution.hasFailed()). */
+  error?: boolean;
 }
 
 export interface ChatResponseBlock {
@@ -46,9 +52,14 @@ export interface ChatResponseBlock {
   done: boolean;
 }
 
+export enum MessageRole {
+  USER = 'user',
+  ASSISTANT = 'assistant',
+}
+
 export interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: MessageRole;
   content: string;
   blocks?: ChatResponseBlock[];
   createdAt?: Date;
@@ -72,6 +83,8 @@ export interface UseChatReturn {
   setInput: (value: string) => void;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSubmit: (e: React.FormEvent) => Promise<void>;
+  /** Send a specific message (e.g. from queue) without using input state. */
+  submitMessage: (message: string) => Promise<void>;
   isLoading: boolean;
   stop: () => void;
   reload: () => Promise<void>;

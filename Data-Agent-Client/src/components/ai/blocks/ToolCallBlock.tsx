@@ -1,4 +1,3 @@
-import React from 'react';
 import { Wrench } from 'lucide-react';
 import type { ChatResponseBlock, ToolCallData } from '../../../types/chat';
 

@@ -1,29 +1,37 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import {
-  Brain,
-  History,
-  Settings as SettingsIcon,
-  X,
-} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { MessageList, Message } from './MessageList';
-import { ChatInput, AgentType } from './ChatInput';
-import { AISettings } from './AISettings';
-import { ConversationHistoryPanel } from './ConversationHistoryPanel';
+import { AgentType } from './agentTypes';
+import { AIAssistantProvider } from './AIAssistantContext';
+import { ChatInput } from './ChatInput';
+import { AIAssistantHeader } from './AIAssistantHeader';
+import { AIAssistantContent } from './AIAssistantContent';
 import { useChat } from '../../hooks/useChat';
+import { useMessageQueue } from '../../hooks/useMessageQueue';
 import { useAuthStore } from '../../store/authStore';
 import { conversationService } from '../../services/conversation.service';
-import type { ChatMessage, ChatContext } from '../../types/chat';
+import { aiService } from '../../services/ai.service';
+import type { ChatContext } from '../../types/chat';
+import type { ModelOption } from '../../types/ai';
+import { chatMessagesToMessages } from './MessageList';
+
+const FALLBACK_MODELS: ModelOption[] = [
+  { modelName: 'qwen3-max', supportThinking: false },
+  { modelName: 'qwen3-max-thinking', supportThinking: true },
+];
 
 export function AIAssistant() {
   const { t } = useTranslation();
   const accessToken = useAuthStore((s) => s.accessToken);
 
   const [agent, setAgent] = useState<AgentType>('Agent');
-  const [model, setModel] = useState('Gemini 3 Pro');
+  const [modelOptions, setModelOptions] = useState<ModelOption[]>(FALLBACK_MODELS);
+  const [model, setModel] = useState('qwen3-max');
   const [chatContext, setChatContext] = useState<ChatContext>({});
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const messageQueue = useMessageQueue();
 
   const {
     messages,
@@ -31,126 +39,115 @@ export function AIAssistant() {
     input,
     setInput,
     isLoading,
+    stop,
     error,
     handleSubmit,
+    submitMessage,
   } = useChat({
     api: '/api/chat/stream',
     body: {
+      model,
       ...(currentConversationId != null && { conversationId: currentConversationId }),
       ...(chatContext.connectionId != null && { connectionId: chatContext.connectionId }),
       ...(chatContext.databaseName != null && chatContext.databaseName !== '' && { databaseName: chatContext.databaseName }),
       ...(chatContext.schemaName != null && chatContext.schemaName !== '' && { schemaName: chatContext.schemaName }),
     },
     onConversationId: (id) => setCurrentConversationId(id),
-    onFinish: (message) => {
-      console.log('Stream finished:', message);
-    },
+    onFinish: messageQueue.drainOnFinish,
     onError: (err) => {
       console.error('Stream error:', err);
     },
   });
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  useEffect(() => {
+    messageQueue.setSubmitMessage(submitMessage);
+  }, [messageQueue, submitMessage]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = useCallback(() => {
-    if (!input.trim() || isLoading) return;
-    handleSubmit({ preventDefault: () => {} } as unknown as React.FormEvent);
-  }, [input, isLoading, handleSubmit]);
+  useEffect(() => {
+    aiService.getModels().then((list) => {
+      if (list.length > 0) {
+        setModelOptions(list);
+        setModel((current) => {
+          const exists = list.some((m) => m.modelName === current);
+          return exists ? current : list[0].modelName;
+        });
+      }
+    });
+  }, []);
 
-  // Convert ChatMessage to Message
-  const chatMessages: Message[] = messages.map((msg: ChatMessage) => ({
-    id: msg.id,
-    role: msg.role,
-    content: msg.content,
-    timestamp: msg.createdAt ?? new Date(),
-    blocks: msg.blocks,
-  }));
+  const handleSend = useCallback(() => {
+    if (!input.trim()) return;
+    if (isLoading) {
+      messageQueue.addToQueue(input);
+      setInput('');
+      return;
+    }
+    handleSubmit({ preventDefault: () => {} } as unknown as React.FormEvent);
+  }, [input, isLoading, handleSubmit, setInput, messageQueue.addToQueue]);
+
+  const chatMessages = chatMessagesToMessages(messages);
+
+  const contextValue = {
+    input,
+    setInput,
+    onSend: handleSend,
+    onStop: stop,
+    isLoading,
+    modelState: { model, setModel, modelOptions },
+    agentState: { agent, setAgent },
+    chatContextState: { chatContext, setChatContext },
+    onCommand: (id: string) => {
+      if (id === 'new') {
+        setCurrentConversationId(null);
+        setMessages([]);
+      }
+    },
+  };
 
   return (
-    <div className="flex flex-col h-full theme-bg-panel overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 theme-bg-panel border-b theme-border shrink-0">
-        <div className="flex items-center space-x-2">
-          <Brain className="w-4 h-4 text-purple-400" />
-          <span className="theme-text-primary text-xs font-bold">{t('ai.title')}</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          {accessToken && (
-            <div className="relative">
-              <History
-                className="w-3.5 h-3.5 theme-text-secondary hover:theme-text-primary cursor-pointer transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsHistoryOpen((v) => !v);
-                }}
-                aria-label={t('ai.history')}
-              />
-              {isHistoryOpen && (
-                <ConversationHistoryPanel
-                  open={isHistoryOpen}
-                  onClose={() => setIsHistoryOpen(false)}
-                  onSelectConversation={async (id) => {
-                    setCurrentConversationId(id);
-                    try {
-                      const list = await conversationService.getMessages(id);
-                      setMessages(list);
-                    } catch {
-                      setMessages([]);
-                    }
-                  }}
-                  onNewChat={() => {
-                    setCurrentConversationId(null);
-                    setMessages([]);
-                  }}
-                  currentConversationId={currentConversationId}
-                />
-              )}
-            </div>
-          )}
-          <div className="relative">
-            <SettingsIcon
-              className="w-3.5 h-3.5 theme-text-secondary hover:theme-text-primary cursor-pointer transition-colors"
-              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-            />
-            {isSettingsOpen && (
-              <AISettings onClose={() => setIsSettingsOpen(false)} />
-            )}
-          </div>
-          <X className="w-3.5 h-3.5 theme-text-secondary hover:theme-text-primary cursor-pointer transition-colors" />
-        </div>
+    <AIAssistantProvider value={contextValue}>
+      <div className="flex flex-col h-full theme-bg-panel overflow-hidden">
+        <AIAssistantHeader
+          title={t('ai.title')}
+          historyAriaLabel={t('ai.history')}
+          accessToken={!!accessToken}
+          isHistoryOpen={isHistoryOpen}
+          setIsHistoryOpen={setIsHistoryOpen}
+          isSettingsOpen={isSettingsOpen}
+          setIsSettingsOpen={setIsSettingsOpen}
+          currentConversationId={currentConversationId}
+          onSelectConversation={async (id) => {
+            setCurrentConversationId(id);
+            try {
+              const list = await conversationService.getMessages(id);
+              setMessages(list);
+            } catch {
+              setMessages([]);
+            }
+          }}
+          onNewChat={() => {
+            setCurrentConversationId(null);
+            setMessages([]);
+          }}
+        />
+
+        <AIAssistantContent
+          error={error}
+          messages={chatMessages}
+          messagesEndRef={messagesEndRef}
+          isLoading={isLoading}
+          queue={messageQueue.queue}
+          onRemoveFromQueue={messageQueue.removeFromQueue}
+        />
+
+        <ChatInput />
       </div>
-
-      {/* Error Display */}
-      {error && (
-        <div className="px-3 py-2 bg-red-500/10 border-b border-red-500/20">
-          <p className="text-xs text-red-500">Error: {error.message}</p>
-        </div>
-      )}
-
-      {/* Messages Area */}
-      <MessageList messages={chatMessages} messagesEndRef={messagesEndRef} />
-
-      {/* Input Area */}
-      <ChatInput
-        input={input}
-        setInput={setInput}
-        onSend={handleSend}
-        agent={agent}
-        setAgent={setAgent}
-        model={model}
-        setModel={setModel}
-        chatContext={chatContext}
-        setChatContext={setChatContext}
-      />
-    </div>
+    </AIAssistantProvider>
   );
 }

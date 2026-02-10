@@ -1,4 +1,3 @@
-import React from 'react';
 import { CheckCircle } from 'lucide-react';
 import type { ChatResponseBlock, ToolResultData } from '../../../types/chat';
 
