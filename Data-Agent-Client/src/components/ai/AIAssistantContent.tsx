@@ -7,6 +7,7 @@ export interface AIAssistantContentProps {
   messages: Message[];
   messagesEndRef: React.Ref<HTMLDivElement>;
   isLoading: boolean;
+  showPlanning?: boolean;
   queue: string[];
   onRemoveFromQueue: (index: number) => void;
 }
@@ -16,6 +17,7 @@ export function AIAssistantContent({
   messages,
   messagesEndRef,
   isLoading,
+  showPlanning = false,
   queue,
   onRemoveFromQueue,
 }: AIAssistantContentProps) {
@@ -26,6 +28,7 @@ export function AIAssistantContent({
         messages={messages}
         messagesEndRef={messagesEndRef}
         isLoading={isLoading}
+        showPlanning={showPlanning}
       />
       <MessageQueuePanel
         queue={queue}

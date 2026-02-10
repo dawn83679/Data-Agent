@@ -14,12 +14,14 @@ export interface MessageListProps {
   messages: Message[];
   messagesEndRef: React.Ref<HTMLDivElement>;
   isLoading?: boolean;
+  showPlanning?: boolean;
 }
 
 export function MessageList({
   messages,
   messagesEndRef,
   isLoading = false,
+  showPlanning = false,
 }: MessageListProps) {
   const displayMessages = mergeAssistantToolPairs(messages);
   const {
@@ -35,6 +37,8 @@ export function MessageList({
         const isLastMessage = msgIndex === displayMessages.length - 1;
         const isLastAssistantStreaming =
           isLastMessage && msg.role === MessageRole.ASSISTANT && isLoading;
+        const showPlanningIndicator =
+          isLastAssistantStreaming && showPlanning;
         const segments =
           msg.blocks && msg.blocks.length > 0
             ? blocksToSegments(msg.blocks)
@@ -61,6 +65,7 @@ export function MessageList({
             showAllCompletedPrompt={showAllCompletedPrompt}
             latestTodoItemsForPrompt={latestTodoItems}
             isLastAssistantStreaming={isLastAssistantStreaming}
+            showPlanningIndicator={showPlanningIndicator}
           />
         );
       })}
