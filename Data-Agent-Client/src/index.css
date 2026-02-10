@@ -70,9 +70,10 @@
     --text-markdown-strong: #ffffff;
     --border-markdown-block: #4e5155;
 
-    /* User Message Bubble (Dark) */
-    --user-msg-bg-dark: #3574f0;
-    --user-msg-text-dark: #ffffff;
+    /* User Message Bubble (Dark) - hollow/outline */
+    --user-bubble-bg: transparent;
+    --user-bubble-text: 220 10% 92%;
+    --user-bubble-border: 212 5% 42%;
   }
 
   .light {
@@ -137,10 +138,10 @@
     --text-markdown-strong: #000000;
     --border-markdown-block: #d1d5db;
 
-    /* User Message Bubble (Light) */
-    --user-msg-bg-light: #ffffff;
-    --user-msg-text-light: #1f2937;
-    --user-msg-border-light: #e5e7eb;
+    /* User Message Bubble (Light) - hollow/outline */
+    --user-bubble-bg: transparent;
+    --user-bubble-text: 215 25% 17%;
+    --user-bubble-border: 214 32% 75%;
   }
 }
 

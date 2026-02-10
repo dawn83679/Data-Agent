@@ -34,7 +34,14 @@ export function UserBubble({ message }: UserBubbleProps) {
         </span>
         <User className="w-3 h-3 shrink-0" />
       </div>
-      <div className="px-3 py-2 rounded-lg text-xs bg-primary/90 text-primary-foreground w-fit max-w-full">
+      <div
+        className="w-full px-3 py-2 rounded-lg text-xs border"
+        style={{
+          backgroundColor: 'var(--user-bubble-bg)',
+          color: 'hsl(var(--user-bubble-text))',
+          borderColor: 'hsl(var(--user-bubble-border))',
+        }}
+      >
         <p className="mb-0 leading-relaxed whitespace-pre-wrap">
           {renderContentWithMentions(message.content)}
         </p>
