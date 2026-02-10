@@ -2,11 +2,14 @@ package edu.zsc.ai.plugin.manager;
 
 import edu.zsc.ai.plugin.Plugin;
 import edu.zsc.ai.plugin.capability.ColumnProvider;
+import edu.zsc.ai.plugin.capability.CommandExecutor;
 import edu.zsc.ai.plugin.capability.ConnectionProvider;
 import edu.zsc.ai.plugin.capability.DatabaseProvider;
 import edu.zsc.ai.plugin.capability.SchemaProvider;
 import edu.zsc.ai.plugin.capability.TableProvider;
 import edu.zsc.ai.plugin.capability.ViewProvider;
+import edu.zsc.ai.plugin.model.command.sql.SqlCommandRequest;
+import edu.zsc.ai.plugin.model.command.sql.SqlCommandResult;
 import edu.zsc.ai.plugin.enums.DbType;
 import edu.zsc.ai.plugin.driver.MavenCoordinates;
 import jakarta.validation.constraints.NotBlank;
@@ -189,5 +192,10 @@ public class DefaultPluginManager implements PluginManager {
     @Override
     public ColumnProvider getColumnProviderByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion) {
         return PluginCapabilityResolver.getProviderByDbTypeAndVersion(getPluginsByDbTypeInternal(dbTypeCode), databaseVersion, ColumnProvider.class);
+    }
+
+    @Override
+    public CommandExecutor<SqlCommandRequest, SqlCommandResult> getSqlCommandExecutorByPluginId(@NotBlank String pluginId) {
+        return (CommandExecutor<SqlCommandRequest, SqlCommandResult>) PluginCapabilityResolver.getProviderByPluginId(pluginMap, pluginId, CommandExecutor.class);
     }
 }
