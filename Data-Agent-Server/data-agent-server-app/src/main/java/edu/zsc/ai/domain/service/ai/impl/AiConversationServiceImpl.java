@@ -8,9 +8,7 @@ import edu.zsc.ai.common.constant.ResponseCode;
 import edu.zsc.ai.common.constant.ResponseMessageKey;
 import edu.zsc.ai.domain.mapper.ai.AiConversationMapper;
 import edu.zsc.ai.domain.model.dto.request.base.PageRequest;
-import edu.zsc.ai.domain.model.entity.ai.AiCompressionRecord;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
-import edu.zsc.ai.domain.service.ai.AiCompressionRecordService;
 import edu.zsc.ai.domain.service.ai.AiConversationService;
 import edu.zsc.ai.domain.service.ai.AiMessageService;
 import edu.zsc.ai.util.exception.BusinessException;
@@ -37,7 +35,6 @@ public class AiConversationServiceImpl extends ServiceImpl<AiConversationMapper,
         implements AiConversationService {
 
     private final AiMessageService aiMessageService;
-    private final AiCompressionRecordService aiCompressionRecordService;
 
     private long getCurrentUserId() {
         return StpUtil.getLoginIdAsLong();
@@ -104,8 +101,6 @@ public class AiConversationServiceImpl extends ServiceImpl<AiConversationMapper,
         long userId = getCurrentUserId();
         checkAccess(userId, conversationId);
         aiMessageService.removeByConversationId(conversationId);
-        aiCompressionRecordService.remove(new LambdaQueryWrapper<AiCompressionRecord>()
-                .eq(AiCompressionRecord::getConversationId, conversationId));
         removeById(conversationId);
         log.info("Deleted conversation {} for user {}", conversationId, userId);
     }
