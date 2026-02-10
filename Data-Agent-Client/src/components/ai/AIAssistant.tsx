@@ -43,6 +43,7 @@ export function AIAssistant() {
     error,
     handleSubmit,
     submitMessage,
+    submitToolAnswer,
   } = useChat({
     api: '/api/chat/stream',
     body: {
@@ -98,6 +99,8 @@ export function AIAssistant() {
     setInput,
     onSend: handleSend,
     onStop: stop,
+    submitMessage,
+    submitToolAnswer,
     isLoading,
     modelState: { model, setModel, modelOptions },
     agentState: { agent, setAgent },

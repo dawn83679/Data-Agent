@@ -26,6 +26,7 @@ export type Segment =
       responseData: string;
       responseError?: boolean;
       pending?: boolean;
+      toolCallId?: string;
     };
 
 /** One todo box to show in the list: todoId and latest items for that list. */

@@ -151,7 +151,15 @@
     "rename_success": "Saved",
     "delete_success": "Deleted",
     "today": "Today",
-    "yesterday": "Yesterday"
+    "yesterday": "Yesterday",
+    "copy": "Copy",
+    "askUserQuestion": {
+      "label": "Question",
+      "inputPlaceholder": "Enter your answer",
+      "submitAnswer": "Submit answer",
+      "answerPrefix": "User answered: ",
+      "submittedAnswer": "Your answer"
+    }
   },
   "explorer": {
     "title": "Database Explorer",

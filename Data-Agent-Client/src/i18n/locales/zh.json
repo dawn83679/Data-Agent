@@ -151,7 +151,15 @@
     "rename_success": "已保存",
     "delete_success": "已删除",
     "today": "今天",
-    "yesterday": "昨天"
+    "yesterday": "昨天",
+    "copy": "复制",
+    "askUserQuestion": {
+      "label": "问题",
+      "inputPlaceholder": "输入您的答案",
+      "submitAnswer": "提交答案",
+      "answerPrefix": "用户回答：",
+      "submittedAnswer": "您的答案"
+    }
   },
   "explorer": {
     "title": "数据库资源管理器",

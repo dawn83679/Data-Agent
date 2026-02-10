@@ -1,7 +1,15 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle, ChevronDown, ChevronRight, XCircle } from 'lucide-react';
 import { TodoListBlock } from './TodoListBlock';
+import { AskUserQuestionBlock } from './AskUserQuestionBlock';
 import { isTodoTool, parseTodoListResponse } from './todoTypes';
+import {
+  isAskUserQuestionTool,
+  parseAskUserQuestionParameters,
+  parseAskUserQuestionResponse,
+} from './askUserQuestionTypes';
+import { useAIAssistantContext } from '../AIAssistantContext';
 
 export interface ToolRunBlockProps {
   toolName: string;
@@ -11,18 +19,35 @@ export interface ToolRunBlockProps {
   responseError?: boolean;
   /** True while waiting for TOOL_RESULT (no icon, tool name blinks). */
   pending?: boolean;
+  /** LangChain4j tool call id; when set with askUserQuestion, submitToolAnswer is used instead of submitMessage. */
+  toolCallId?: string;
+  /** When true, this block has later segments in the same message (e.g. user already answered and model continued). */
+  hasSegmentsAfter?: boolean;
 }
 
-/** One tool run: pending = tool name only (blink); completed = icon + Ran/Failed + expandable details. Todo tools render TodoListBlock when response is valid JSON array. Default is expanded. */
+/** One tool run: pending = tool name only (blink); completed = icon + Ran/Failed + expandable details. Todo tools render TodoListBlock; askUserQuestion renders AskUserQuestionBlock. */
 export function ToolRunBlock({
   toolName,
   parametersData,
   responseData,
   responseError = false,
   pending = false,
+  toolCallId,
+  hasSegmentsAfter = false,
 }: ToolRunBlockProps) {
+  const { t } = useTranslation();
+  const { submitMessage, submitToolAnswer, isLoading } = useAIAssistantContext();
   const todoItems = !responseError && isTodoTool(toolName) ? parseTodoListResponse(responseData)?.items ?? null : null;
   const isTodoResult = todoItems !== null;
+  const isAskUserTool = !responseError && isAskUserQuestionTool(toolName);
+  const askUserPayloadFromResponse = isAskUserTool ? parseAskUserQuestionResponse(responseData) : null;
+  const askUserPayloadFromParams = isAskUserTool ? parseAskUserQuestionParameters(parametersData) : null;
+  const askUserPayload = askUserPayloadFromResponse ?? askUserPayloadFromParams ?? null;
+  const askUserSubmittedAnswer =
+    isAskUserTool && askUserPayloadFromResponse == null && askUserPayloadFromParams != null && (responseData ?? '').trim() !== ''
+      ? responseData.trim()
+      : undefined;
+  const isAskUserResult = askUserPayload !== null;
   const [collapsed, setCollapsed] = useState(false);
 
   if (pending) {
@@ -39,6 +64,25 @@ export function ToolRunBlock({
     return (
       <div className="mb-2">
         <TodoListBlock items={todoItems} />
+      </div>
+    );
+  }
+
+  if (isAskUserResult) {
+    const useToolAnswer = !!toolCallId;
+    const blockDisabled = isLoading || (useToolAnswer && hasSegmentsAfter);
+    return (
+      <div className="mb-2">
+        <AskUserQuestionBlock
+          payload={askUserPayload}
+          disabled={blockDisabled}
+          submittedAnswer={askUserSubmittedAnswer}
+          onSubmit={(answer) =>
+            useToolAnswer
+              ? submitToolAnswer(toolCallId, answer)
+              : submitMessage(t('ai.askUserQuestion.answerPrefix') + answer)
+          }
+        />
       </div>
     );
   }

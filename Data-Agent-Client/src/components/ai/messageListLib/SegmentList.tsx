@@ -57,13 +57,13 @@ export function SegmentList({
               </div>
             );
           }
-          return renderSegment(seg, i, false);
+          return renderSegment(seg, i, false, segments.length);
         }
         const isStreamingThought =
           isLastAssistantStreaming &&
           seg.kind === SegmentKind.THOUGHT &&
           seg === lastSeg;
-        return renderSegment(seg, i, isStreamingThought);
+        return renderSegment(seg, i, isStreamingThought, segments.length);
       })}
     </div>
   );

@@ -108,6 +108,7 @@ export function blocksToSegments(blocks: ChatResponseBlock[]): Segment[] {
             responseData: resultPayload.result ?? '',
             responseError: resultPayload.error ?? false,
             pending: false,
+            toolCallId: lastCall.id,
           });
           i = j;
         } else {
@@ -118,6 +119,7 @@ export function blocksToSegments(blocks: ChatResponseBlock[]): Segment[] {
             responseData: '',
             responseError: false,
             pending: true,
+            toolCallId: lastCall.id,
           });
           i = j;
           i++;
@@ -137,6 +139,7 @@ export function blocksToSegments(blocks: ChatResponseBlock[]): Segment[] {
             responseData: resultPayload.result ?? '',
             responseError: resultPayload.error ?? false,
             pending: false,
+            toolCallId: resultPayload.id,
           });
         }
         break;

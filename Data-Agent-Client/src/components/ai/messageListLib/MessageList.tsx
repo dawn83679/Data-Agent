@@ -6,6 +6,7 @@ import { MessageListItem } from './MessageListItem';
 import { segmentsHaveTodo } from './segmentTodoUtils';
 import { useTodoInMessages } from './useTodoInMessages';
 import type { Message } from './types';
+import { SegmentKind } from './types';
 
 export type { Message } from './types';
 
@@ -37,7 +38,9 @@ export function MessageList({
         const segments =
           msg.blocks && msg.blocks.length > 0
             ? blocksToSegments(msg.blocks)
-            : [];
+            : msg.role === MessageRole.ASSISTANT && (msg.content ?? '').trim() !== ''
+              ? [{ kind: SegmentKind.TEXT as const, data: msg.content ?? '' }]
+              : [];
         const hasTodoSegments =
           msg.role === MessageRole.ASSISTANT && segmentsHaveTodo(segments);
         const overrideTodoBoxes = todoBoxesByMessageIndex[msgIndex] ?? [];

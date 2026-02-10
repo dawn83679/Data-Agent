@@ -6,7 +6,8 @@ import { SegmentKind } from './types';
 export function renderSegment(
   segment: Segment,
   index: number,
-  isStreamingThought: boolean
+  isStreamingThought: boolean,
+  totalSegments: number
 ): React.ReactNode {
   const key = `seg-${index}-${segment.kind}`;
   switch (segment.kind) {
@@ -29,6 +30,8 @@ export function renderSegment(
           responseData={segment.responseData}
           responseError={segment.responseError}
           pending={segment.pending}
+          toolCallId={segment.toolCallId}
+          hasSegmentsAfter={index < totalSegments - 1}
         />
       );
   }

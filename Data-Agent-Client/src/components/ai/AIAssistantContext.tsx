@@ -24,6 +24,10 @@ export interface AIAssistantContextValue {
   setInput: (value: string) => void;
   onSend: () => void;
   onStop?: () => void;
+  /** Send a message as the user (e.g. answer to askUserQuestion); uses current conversationId. */
+  submitMessage: (message: string) => Promise<void>;
+  /** Submit user answer to askUserQuestion tool and continue (no user message; streams into last assistant message). */
+  submitToolAnswer: (toolCallId: string, answer: string) => Promise<void>;
   isLoading: boolean;
   modelState: ModelState;
   agentState: AgentState;
