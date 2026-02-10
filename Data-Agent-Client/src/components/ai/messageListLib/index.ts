@@ -1,4 +1,5 @@
 export { MessageList, type MessageListProps } from './MessageList';
+export { SegmentList, type SegmentListProps } from './SegmentList';
 export type { Message } from './types';
 export { SegmentKind } from './types';
 export { blocksToSegments } from './blocksToSegments';

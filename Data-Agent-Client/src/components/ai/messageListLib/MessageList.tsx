@@ -2,7 +2,9 @@ import React from 'react';
 import { MessageRole } from '../../../types/chat';
 import { mergeAssistantToolPairs } from './mergeMessages';
 import { blocksToSegments } from './blocksToSegments';
-import { MessageBubble } from './MessageBubble';
+import { MessageListItem } from './MessageListItem';
+import { segmentsHaveTodo } from './segmentTodoUtils';
+import { useTodoInMessages } from './useTodoInMessages';
 import type { Message } from './types';
 
 export type { Message } from './types';
@@ -19,6 +21,12 @@ export function MessageList({
   isLoading = false,
 }: MessageListProps) {
   const displayMessages = mergeAssistantToolPairs(messages);
+  const {
+    lastAssistantMessageIndexWithTodo,
+    latestTodoItems,
+    allTodoCompleted,
+    todoBoxesByMessageIndex,
+  } = useTodoInMessages(displayMessages);
 
   return (
     <div className="flex-1 overflow-y-auto p-3 space-y-4 no-scrollbar theme-bg-main">
@@ -30,14 +38,27 @@ export function MessageList({
           msg.blocks && msg.blocks.length > 0
             ? blocksToSegments(msg.blocks)
             : [];
+        const hasTodoSegments =
+          msg.role === MessageRole.ASSISTANT && segmentsHaveTodo(segments);
+        const overrideTodoBoxes = todoBoxesByMessageIndex[msgIndex] ?? [];
+        const showAllCompletedPrompt =
+          msgIndex === lastAssistantMessageIndexWithTodo &&
+          allTodoCompleted &&
+          latestTodoItems != null;
         return (
-          <div key={msg.id} className="flex flex-col w-full">
-            <MessageBubble
-              message={msg}
-              segments={segments}
-              isLastAssistantStreaming={isLastAssistantStreaming}
-            />
-          </div>
+          <MessageListItem
+            key={msg.id}
+            msg={msg}
+            msgIndex={msgIndex}
+            totalCount={displayMessages.length}
+            isLoading={isLoading}
+            segments={segments}
+            overrideTodoBoxes={overrideTodoBoxes}
+            hideTodoInThisMessage={hasTodoSegments}
+            showAllCompletedPrompt={showAllCompletedPrompt}
+            latestTodoItemsForPrompt={latestTodoItems}
+            isLastAssistantStreaming={isLastAssistantStreaming}
+          />
         );
       })}
       <div ref={messagesEndRef} />

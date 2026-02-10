@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { CheckCircle, ChevronDown, ChevronRight, XCircle } from 'lucide-react';
+import { TodoListBlock } from './TodoListBlock';
+import { isTodoTool, parseTodoListResponse } from './todoTypes';
 
 export interface ToolRunBlockProps {
   toolName: string;
@@ -9,20 +11,19 @@ export interface ToolRunBlockProps {
   responseError?: boolean;
   /** True while waiting for TOOL_RESULT (no icon, tool name blinks). */
   pending?: boolean;
-  /** When true, details (parameters + response) are shown by default so user sees each tool result without expanding. */
-  defaultExpanded?: boolean;
 }
 
-/** One tool run: pending = tool name only (blink); completed = icon + Ran/Failed + expandable details. Same style for success and failure (icon only differs). */
+/** One tool run: pending = tool name only (blink); completed = icon + Ran/Failed + expandable details. Todo tools render TodoListBlock when response is valid JSON array. Default is expanded. */
 export function ToolRunBlock({
   toolName,
   parametersData,
   responseData,
   responseError = false,
   pending = false,
-  defaultExpanded = false,
 }: ToolRunBlockProps) {
-  const [collapsed, setCollapsed] = useState(!defaultExpanded);
+  const todoItems = !responseError && isTodoTool(toolName) ? parseTodoListResponse(responseData)?.items ?? null : null;
+  const isTodoResult = todoItems !== null;
+  const [collapsed, setCollapsed] = useState(false);
 
   if (pending) {
     return (
@@ -30,6 +31,14 @@ export function ToolRunBlock({
         <div className="w-full py-1.5 flex items-center gap-2 text-left rounded theme-text-primary">
           <span className="font-medium animate-pulse">{toolName}</span>
         </div>
+      </div>
+    );
+  }
+
+  if (isTodoResult) {
+    return (
+      <div className="mb-2">
+        <TodoListBlock items={todoItems} />
       </div>
     );
   }

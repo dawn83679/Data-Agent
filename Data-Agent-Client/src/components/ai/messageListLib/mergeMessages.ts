@@ -1,40 +1,39 @@
-import { MessageBlockType } from '../../../types/chat';
 import { MessageRole } from '../../../types/chat';
 import type { Message } from './types';
 
 /**
- * Merge consecutive assistant messages so TOOL_CALL and TOOL_RESULT live in one bubble.
- * History API returns them as separate messages; merging here matches streaming behaviour.
+ * Merge all consecutive assistant messages into one so each assistant "turn" is a single bubble.
+ * History API returns TOOL_CALL, TOOL_RESULT, TEXT as separate messages; merging here produces
+ * one message with blocks [TOOL_CALL, TOOL_RESULT, ..., TEXT] so blocksToSegments can pair and order correctly.
  */
 export function mergeAssistantToolPairs(messages: Message[]): Message[] {
   const result: Message[] = [];
-  for (let i = 0; i < messages.length; i++) {
+  let i = 0;
+  while (i < messages.length) {
     const msg = messages[i]!;
-    if (msg.role !== MessageRole.ASSISTANT || !msg.blocks?.length) {
+    if (msg.role !== MessageRole.ASSISTANT) {
       result.push(msg);
+      i++;
       continue;
     }
-    const hasUnpairedToolCall = msg.blocks.some(
-      (b, j) =>
-        b.type === MessageBlockType.TOOL_CALL &&
-        msg.blocks![j + 1]?.type !== MessageBlockType.TOOL_RESULT
-    );
-    const next = messages[i + 1];
-    if (
-      hasUnpairedToolCall &&
-      next?.role === MessageRole.ASSISTANT &&
-      next.blocks?.length &&
-      next.blocks.every((b) => b.type === MessageBlockType.TOOL_RESULT)
-    ) {
-      result.push({
-        ...msg,
-        blocks: [...(msg.blocks ?? []), ...next.blocks],
-        content: msg.content || next.content,
-      });
+    const mergedBlocks: Message['blocks'] = [];
+    let lastContent = msg.content ?? '';
+    let lastId = msg.id;
+    while (i < messages.length && messages[i]?.role === MessageRole.ASSISTANT) {
+      const m = messages[i]!;
+      if (m.blocks?.length) mergedBlocks.push(...m.blocks);
+      if (m.content) lastContent = m.content;
+      lastId = m.id;
       i++;
-    } else {
-      result.push(msg);
     }
+    const merged = {
+      ...msg,
+      id: lastId,
+      blocks: mergedBlocks.length > 0 ? mergedBlocks : msg.blocks,
+      content: lastContent,
+    };
+    result.push(merged);
   }
+
   return result;
 }

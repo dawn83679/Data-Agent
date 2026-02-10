@@ -1,5 +1,6 @@
 import type { ChatResponseBlock } from '../../../types/chat';
 import type { MessageRole } from '../../../types/chat';
+import type { TodoItem } from '../blocks';
 
 export enum SegmentKind {
   TEXT = 'TEXT',
@@ -26,3 +27,9 @@ export type Segment =
       responseError?: boolean;
       pending?: boolean;
     };
+
+/** One todo box to show in the list: todoId and latest items for that list. */
+export interface TodoBoxSpec {
+  todoId: string;
+  items: TodoItem[];
+}
