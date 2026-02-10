@@ -1,11 +1,12 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { markdownComponents, TodoListBlock } from '../blocks';
+import { markdownComponents, markdownRemarkPlugins, TodoListBlock } from '../blocks';
 import { renderSegment } from './segmentRenderer';
 import { findLastTodoSegmentIndex, isTodoSegment } from './segmentTodoUtils';
 import type { TodoBoxSpec } from './types';
 import type { Segment } from './types';
 import { SegmentKind } from './types';
+import { PLANNING_LABEL } from '../../../constants/chat';
 
 export interface SegmentListProps {
   /** Segments to render in order (from blocksToSegments). Same pipeline for streaming and history. */
@@ -18,6 +19,8 @@ export interface SegmentListProps {
   overrideTodoBoxes?: TodoBoxSpec[];
   /** When true and the last segment is THOUGHT, pass true to ThoughtBlock defaultExpanded. */
   isLastAssistantStreaming?: boolean;
+  /** When true, show "planning..." with blink (no backend data for 100ms). */
+  showPlanningIndicator?: boolean;
 }
 
 /**
@@ -30,12 +33,20 @@ export function SegmentList({
   hideTodoSegments = false,
   overrideTodoBoxes = [],
   isLastAssistantStreaming = false,
+  showPlanningIndicator = false,
 }: SegmentListProps): React.ReactElement {
   if (segments.length === 0) {
     return (
-      <ReactMarkdown components={markdownComponents}>
-        {fallbackContent || ''}
-      </ReactMarkdown>
+      <div className="space-y-1">
+        {showPlanningIndicator && (
+          <span className="inline-block text-xs theme-text-secondary animate-blink">
+            {PLANNING_LABEL}
+          </span>
+        )}
+        <ReactMarkdown components={markdownComponents} remarkPlugins={markdownRemarkPlugins}>
+          {fallbackContent || ''}
+        </ReactMarkdown>
+      </div>
     );
   }
 
@@ -65,6 +76,11 @@ export function SegmentList({
           seg === lastSeg;
         return renderSegment(seg, i, isStreamingThought, segments.length);
       })}
+      {showPlanningIndicator && (
+        <span className="inline-block text-xs theme-text-secondary animate-blink mt-1">
+          {PLANNING_LABEL}
+        </span>
+      )}
     </div>
   );
 }

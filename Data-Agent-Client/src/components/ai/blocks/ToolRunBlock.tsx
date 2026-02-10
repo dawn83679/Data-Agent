@@ -9,7 +9,10 @@ import {
   parseAskUserQuestionParameters,
   parseAskUserQuestionResponse,
 } from './askUserQuestionTypes';
+import { ToolRunDetail } from './ToolRunDetail';
 import { useAIAssistantContext } from '../AIAssistantContext';
+import { cn } from '../../../lib/utils';
+import { TOOL_RUN_LABEL_FAILED, TOOL_RUN_LABEL_RAN } from '../../../constants/chat';
 
 export interface ToolRunBlockProps {
   toolName: string;
@@ -48,7 +51,17 @@ export function ToolRunBlock({
       ? responseData.trim()
       : undefined;
   const isAskUserResult = askUserPayload !== null;
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => !isAskUserQuestionTool(toolName));
+
+  const { formattedParameters, isParametersJson } = (() => {
+    if (!parametersData?.trim()) return { formattedParameters: parametersData, isParametersJson: false };
+    try {
+      const parsed = JSON.parse(parametersData);
+      return { formattedParameters: JSON.stringify(parsed, null, 2), isParametersJson: true };
+    } catch {
+      return { formattedParameters: parametersData, isParametersJson: false };
+    }
+  })();
 
   if (pending) {
     return (
@@ -88,7 +101,12 @@ export function ToolRunBlock({
   }
 
   return (
-    <div className="mb-2 text-xs opacity-70 theme-text-secondary">
+    <div
+      className={cn(
+        'mb-2 text-xs rounded transition-colors',
+        collapsed ? 'opacity-70 theme-text-secondary' : 'opacity-100 theme-text-primary'
+      )}
+    >
       <button
         type="button"
         onClick={() => setCollapsed((c) => !c)}
@@ -100,34 +118,20 @@ export function ToolRunBlock({
           <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" aria-hidden />
         )}
         <span className="font-medium">
-          {responseError ? 'Failed ' : 'Ran '}
+          {responseError ? TOOL_RUN_LABEL_FAILED : TOOL_RUN_LABEL_RAN}
           {toolName}
         </span>
-        <span className="ml-auto shrink-0 opacity-60">
+        <span className={cn('ml-auto shrink-0', collapsed ? 'opacity-60' : 'opacity-80')}>
           {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </span>
       </button>
 
       {!collapsed && (
-        <div className="mt-1 space-y-2">
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wide theme-text-secondary mb-1 flex items-center gap-1">
-              PARAMETERS
-              <span className="opacity-50" aria-hidden>☰</span>
-            </div>
-            <pre className="py-1.5 px-2 rounded bg-black/10 dark:bg-black/20 font-mono text-[11px] overflow-x-auto whitespace-pre-wrap break-words">
-              {parametersData || '—'}
-            </pre>
-          </div>
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wide theme-text-secondary mb-1">
-              RESPONSE
-            </div>
-            <pre className="py-1.5 px-2 rounded bg-black/10 dark:bg-black/20 font-mono text-[11px] overflow-x-auto max-h-[220px] overflow-y-auto whitespace-pre-wrap break-words">
-              {responseData || '—'}
-            </pre>
-          </div>
-        </div>
+        <ToolRunDetail
+          formattedParameters={formattedParameters}
+          isParametersJson={isParametersJson}
+          responseData={responseData}
+        />
       )}
     </div>
   );

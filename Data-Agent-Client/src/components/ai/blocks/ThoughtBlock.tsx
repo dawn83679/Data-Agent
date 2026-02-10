@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '../../../lib/utils';
-import { markdownComponents } from './markdownComponents';
+import { THOUGHT_LABEL_THINKING, THOUGHT_LABEL_THOUGHT } from '../../../constants/chat';
+import { markdownComponents, markdownRemarkPlugins } from './markdownComponents';
 
 export interface ThoughtBlockProps {
   data: string;
@@ -10,7 +11,7 @@ export interface ThoughtBlockProps {
   defaultExpanded?: boolean;
 }
 
-/** Renders a THOUGHT block (reasoning content). Default expanded while streaming, collapses when thought is done. */
+/** Renders a THOUGHT block (reasoning content). Shows "Thinking" while streaming (defaultExpanded), "Thought" when done. Expanded area has fixed height and scroll. */
 export function ThoughtBlock({ data, defaultExpanded = false }: ThoughtBlockProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
@@ -19,6 +20,8 @@ export function ThoughtBlock({ data, defaultExpanded = false }: ThoughtBlockProp
   }, [defaultExpanded]);
 
   if (!data) return null;
+
+  const label = defaultExpanded ? THOUGHT_LABEL_THINKING : THOUGHT_LABEL_THOUGHT;
 
   return (
     <div className="mb-1.5 last:mb-0 text-[11px] opacity-60 theme-text-secondary">
@@ -31,12 +34,12 @@ export function ThoughtBlock({ data, defaultExpanded = false }: ThoughtBlockProp
         )}
       >
         <span className="opacity-80">{expanded ? <ChevronDown className="w-3 h-3 shrink-0" aria-hidden /> : <ChevronRight className="w-3 h-3 shrink-0" aria-hidden />}</span>
-        <span className="font-normal">Thought</span>
+        <span className="font-normal">{label}</span>
       </button>
       {expanded && (
-        <div className="pl-4 pr-0 py-1 border-l border-current/20">
+        <div className="pl-4 pr-0 py-1 border-l border-current/20 max-h-[280px] overflow-y-auto">
           <div className="opacity-90">
-            <ReactMarkdown components={markdownComponents}>{data}</ReactMarkdown>
+            <ReactMarkdown components={markdownComponents} remarkPlugins={markdownRemarkPlugins}>{data}</ReactMarkdown>
           </div>
         </div>
       )}

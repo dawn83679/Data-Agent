@@ -1,12 +1,17 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { parseSSEResponse } from '../lib/sse';
 import { ensureValidAccessToken } from '../lib/authToken';
 import type { ChatRequest, ChatMessage, UseChatOptions, UseChatReturn, ChatResponseBlock } from '../types/chat';
 import { isContentBlockType, MessageRole } from '../types/chat';
 import type { TokenPairResponse } from '../types/auth';
-
-const DEFAULT_API = '/api/chat/stream';
+import {
+  CHAT_STREAM_API,
+  SUBMIT_TOOL_ANSWER_API,
+  NOT_AUTHENTICATED,
+  SESSION_EXPIRED_MESSAGE,
+  CONVERSATION_ID_REQUIRED_FOR_TOOL_ANSWER,
+} from '../constants/chat';
 
 async function refreshAccessToken(): Promise<TokenPairResponse | null> {
   const { refreshToken } = useAuthStore.getState();
@@ -32,9 +37,13 @@ async function refreshAccessToken(): Promise<TokenPairResponse | null> {
   }
 }
 
+const PLANNING_DELAY_MS = 500;
+const PLANNING_POLL_MS = 50;
+
 interface ConsumeStreamOptions {
   onConversationId?: (id: number) => void;
   onFinish?: (message: ChatMessage) => void;
+  onBlockReceived?: () => void;
 }
 
 async function consumeStreamIntoLastAssistantMessage(
@@ -49,6 +58,7 @@ async function consumeStreamIntoLastAssistantMessage(
   const accumulatedBlocks: ChatResponseBlock[] = initialBlocks ? [...initialBlocks] : [];
 
   for await (const block of parseSSEResponse(response)) {
+    options.onBlockReceived?.();
     const lastMessage = messagesRef.current[messagesRef.current.length - 1];
     if (lastMessage?.role !== MessageRole.ASSISTANT) continue;
 
@@ -92,7 +102,7 @@ async function fetchWithAuthRetry(
   retryCount = 0
 ): Promise<Response> {
   const token = await ensureValidAccessToken();
-  if (!token) throw new Error('Not authenticated');
+  if (!token) throw new Error(NOT_AUTHENTICATED);
 
   const response = await fetch(url, {
     method: 'POST',
@@ -114,14 +124,14 @@ async function fetchWithAuthRetry(
     const { setAuth, openLoginModal } = useAuthStore.getState();
     setAuth(null, null, null);
     openLoginModal();
-    throw new Error('Session expired, please login again');
+    throw new Error(SESSION_EXPIRED_MESSAGE);
   }
 
   return response;
 }
 
 export function useChat(options: UseChatOptions = {}): UseChatReturn {
-  const { api = DEFAULT_API } = options;
+  const { api = CHAT_STREAM_API } = options;
   const [messages, setMessages] = useState<ChatMessage[]>(options.initialMessages || []);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -130,7 +140,21 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   const abortControllerRef = useRef<AbortController | null>(null);
   const submittingRef = useRef(false);
   const messagesRef = useRef(messages);
+  const lastStreamEventAtRef = useRef(0);
   messagesRef.current = messages;
+
+  const [showPlanning, setShowPlanning] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setShowPlanning(false);
+      return;
+    }
+    const id = setInterval(() => {
+      setShowPlanning(Date.now() - lastStreamEventAtRef.current > PLANNING_DELAY_MS);
+    }, PLANNING_POLL_MS);
+    return () => clearInterval(id);
+  }, [isLoading]);
 
   const appendMessage = useCallback((message: ChatMessage) => {
     setMessages((prev) => [...prev, message]);
@@ -166,10 +190,14 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
           createdAt: new Date(),
         };
         appendMessage(assistantMessage);
+        lastStreamEventAtRef.current = Date.now();
 
         await consumeStreamIntoLastAssistantMessage(response, messagesRef, setMessages, {
           onConversationId: options.onConversationId,
           onFinish: options.onFinish,
+          onBlockReceived: () => {
+            lastStreamEventAtRef.current = Date.now();
+          },
         });
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
@@ -241,7 +269,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
       };
       const conversationId = body.conversationId as number | undefined;
       if (conversationId == null) {
-        setError(new Error('conversationId is required for submit-tool-answer'));
+        setError(new Error(CONVERSATION_ID_REQUIRED_FOR_TOOL_ANSWER));
         return;
       }
 
@@ -252,7 +280,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
 
       try {
         const response = await fetchWithAuthRetry(
-          '/api/chat/submit-tool-answer',
+          SUBMIT_TOOL_ANSWER_API,
           body,
           abortControllerRef.current.signal
         );
@@ -270,10 +298,14 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
           submittingRef.current = false;
           return;
         }
+        lastStreamEventAtRef.current = Date.now();
 
         await consumeStreamIntoLastAssistantMessage(response, messagesRef, setMessages, {
           onConversationId: options.onConversationId,
           onFinish: options.onFinish,
+          onBlockReceived: () => {
+            lastStreamEventAtRef.current = Date.now();
+          },
         }, lastMessage.content ?? '', lastMessage.blocks);
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
@@ -319,6 +351,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
     submitMessage,
     submitToolAnswer,
     isLoading,
+    showPlanning,
     stop,
     reload,
     error,
