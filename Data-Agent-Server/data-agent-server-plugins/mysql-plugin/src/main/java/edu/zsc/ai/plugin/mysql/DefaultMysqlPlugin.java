@@ -1,7 +1,19 @@
 package edu.zsc.ai.plugin.mysql;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Properties;
+import java.util.logging.Logger;
+
 import edu.zsc.ai.plugin.base.AbstractDatabasePlugin;
-import edu.zsc.ai.plugin.capability.*;
+import edu.zsc.ai.plugin.capability.CommandExecutor;
+import edu.zsc.ai.plugin.capability.ConnectionProvider;
+import edu.zsc.ai.plugin.capability.DatabaseProvider;
+import edu.zsc.ai.plugin.capability.SchemaProvider;
+import edu.zsc.ai.plugin.capability.TableProvider;
+import edu.zsc.ai.plugin.capability.ViewProvider;
 import edu.zsc.ai.plugin.connection.ConnectionConfig;
 import edu.zsc.ai.plugin.connection.JdbcConnectionBuilder;
 import edu.zsc.ai.plugin.driver.DriverLoader;
@@ -11,16 +23,9 @@ import edu.zsc.ai.plugin.model.command.sql.SqlCommandResult;
 import edu.zsc.ai.plugin.mysql.connection.MysqlJdbcConnectionBuilder;
 import edu.zsc.ai.plugin.mysql.executor.MySQLSqlExecutor;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Properties;
-import java.util.logging.Logger;
-
 public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
         implements ConnectionProvider, CommandExecutor<SqlCommandRequest, SqlCommandResult>, DatabaseProvider,
-        SchemaProvider, TableProvider {
+        SchemaProvider, TableProvider, ViewProvider {
 
     private static final Logger logger = Logger.getLogger(DefaultMysqlPlugin.class.getName());
 
@@ -173,5 +178,42 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
         }
         return firstRow.get(1).toString();
 
+    }
+
+    @Override
+    public String getViewDdl(Connection connection, String catalog, String schema, String viewName) {
+        if (connection == null || viewName == null || viewName.isEmpty()) {
+            return "";
+        }
+
+        String fullViewName = (catalog != null && !catalog.isEmpty()) 
+                ? String.format("`%s`.`%s`", catalog, viewName) 
+                : String.format("`%s`", viewName);
+        String sql = String.format("SHOW CREATE VIEW %s", fullViewName);
+
+        SqlCommandRequest request = new SqlCommandRequest();
+        request.setConnection(connection);
+        request.setOriginalSql(sql);
+        request.setExecuteSql(sql);
+        request.setDatabase(catalog);
+        request.setNeedTransaction(false);
+
+        SqlCommandResult result = sqlExecutor.executeCommand(request);
+
+        if (!result.isSuccess()) {
+            logger.severe(String.format("Failed to get DDL for view %s: %s",
+                    fullViewName, result.getErrorMessage()));
+            throw new RuntimeException("Failed to get view DDL: " + result.getErrorMessage());
+        }
+
+        if (result.getRows() == null || result.getRows().isEmpty()) {
+            throw new RuntimeException("Failed to get view DDL: No result returned");
+        }
+
+        List<Object> firstRow = result.getRows().get(0);
+        if (firstRow.size() < 2) {
+            throw new RuntimeException("Failed to get view DDL: Unexpected result format");
+        }
+        return firstRow.get(1).toString();
     }
 }
