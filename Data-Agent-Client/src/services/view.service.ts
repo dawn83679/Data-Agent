@@ -27,4 +27,20 @@ export const viewService = {
     const response = await http.get<string>(ApiPaths.VIEWS_DDL, { params });
     return response.data;
   },
+
+  deleteView: async (
+    connectionId: string,
+    viewName: string,
+    catalog?: string,
+    schema?: string
+  ): Promise<void> => {
+    const params: Record<string, string> = {
+      connectionId,
+      viewName,
+    };
+    if (catalog != null && catalog !== '') params.catalog = catalog;
+    if (schema != null && schema !== '') params.schema = schema;
+
+    await http.post(`${ApiPaths.VIEWS}/delete`, null, { params });
+  },
 };

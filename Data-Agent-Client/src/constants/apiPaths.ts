@@ -1,5 +1,6 @@
 export const ApiPaths = {
   COLUMNS: '/columns',
+  DATABASES: '/databases',
   TABLES: '/tables',
   TABLES_DDL: '/tables/ddl',
   VIEWS: '/views',

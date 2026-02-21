@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,5 +47,18 @@ public class ProcedureController {
         long userId = StpUtil.getLoginIdAsLong();
         String ddl = procedureService.getProcedureDdl(connectionId, catalog, schema, procedureName, userId);
         return ApiResponse.success(ddl);
+    }
+
+    @PostMapping("/delete")
+    public ApiResponse<Void> deleteProcedure(
+            @RequestParam @NotNull(message = "connectionId is required") Long connectionId,
+            @RequestParam @NotNull(message = "procedureName is required") String procedureName,
+            @RequestParam(required = false) String catalog,
+            @RequestParam(required = false) String schema) {
+        log.info("Deleting procedure: connectionId={}, procedureName={}, catalog={}, schema={}",
+                connectionId, procedureName, catalog, schema);
+        long userId = StpUtil.getLoginIdAsLong();
+        procedureService.deleteProcedure(connectionId, catalog, schema, procedureName, userId);
+        return ApiResponse.success(null);
     }
 }

@@ -38,4 +38,17 @@ public class TriggerServiceImpl implements TriggerService {
                     return provider.getTriggerDdl(active.connection(), catalog, schema, triggerName);
                 });
     }
+
+    @Override
+    public void deleteTrigger(Long connectionId, String catalog, String schema, String triggerName, Long userId) {
+        connectionService.openConnection(connectionId, catalog, schema, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+
+        TriggerProvider provider = DefaultPluginManager.getInstance().getTriggerProviderByPluginId(active.pluginId());
+        provider.deleteTrigger(active.connection(), active.pluginId(), catalog, schema, triggerName);
+
+        log.info("Trigger deleted successfully: connectionId={}, catalog={}, schema={}, triggerName={}",
+                connectionId, catalog, schema, triggerName);
+    }
 }

@@ -37,4 +37,17 @@ public class ViewServiceImpl implements ViewService {
                     return provider.getViewDdl(active.connection(), catalog, schema, viewName);
                 });
     }
+
+    @Override
+    public void deleteView(Long connectionId, String catalog, String schema, String viewName, Long userId) {
+        connectionService.openConnection(connectionId, catalog, schema, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+
+        ViewProvider provider = DefaultPluginManager.getInstance().getViewProviderByPluginId(active.pluginId());
+        provider.deleteView(active.connection(), active.pluginId(), catalog, schema, viewName);
+
+        log.info("View deleted successfully: connectionId={}, catalog={}, schema={}, viewName={}",
+                connectionId, catalog, schema, viewName);
+    }
 }

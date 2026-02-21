@@ -193,7 +193,29 @@
     "copy_ddl": "Copy DDL",
     "ddl_copied": "DDL copied to clipboard",
     "load_ddl_failed": "Failed to load DDL",
-    "close": "Close"
+    "close": "Close",
+    "delete_table": "Delete table",
+    "delete_table_confirm": "Are you sure you want to delete table \"{{name}}\"? This action cannot be undone.",
+    "delete_table_failed": "Failed to delete table",
+    "delete_view": "Delete view",
+    "delete_view_confirm": "Are you sure you want to delete view \"{{name}}\"? This action cannot be undone.",
+    "delete_view_failed": "Failed to delete view",
+    "delete_function": "Delete function",
+    "delete_function_confirm": "Are you sure you want to delete function \"{{name}}\"? This action cannot be undone.",
+    "delete_function_failed": "Failed to delete function",
+    "delete_procedure": "Delete procedure",
+    "delete_procedure_confirm": "Are you sure you want to delete procedure \"{{name}}\"? This action cannot be undone.",
+    "delete_procedure_failed": "Failed to delete procedure",
+    "delete_trigger": "Delete trigger",
+    "delete_trigger_confirm": "Are you sure you want to delete trigger \"{{name}}\"? This action cannot be undone.",
+    "delete_trigger_failed": "Failed to delete trigger",
+    "delete_all_in_folder": "Delete all",
+    "delete_all_in_folder_confirm": "Are you sure you want to delete all {{count}} objects in \"{{name}}\" folder? This action cannot be undone.",
+    "delete_folder_success": "Successfully deleted all objects in folder",
+    "delete_folder_failed": "Failed to delete objects in folder",
+    "delete_database": "Delete database",
+    "delete_database_confirm": "Are you sure you want to delete database \"{{name}}\"? This action cannot be undone.",
+    "delete_database_failed": "Failed to delete database"
   },
   "connections": {
     "new": "New connection",
@@ -240,7 +262,8 @@
     "update_failed": "Failed to update connection",
     "delete_confirm_title": "Delete connection",
     "delete_confirm_desc": "Are you sure you want to delete this connection? This cannot be undone.",
-    "delete": "Delete"
+    "delete": "Delete",
+    "deleting": "Deleting..."
   },
   "drivers": {
     "title": "Driver management",

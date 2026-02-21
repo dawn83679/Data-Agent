@@ -13,6 +13,7 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSeparator,
   ContextMenuTrigger,
 } from '../ui/ContextMenu';
 import { Button } from '../ui/Button';
@@ -30,6 +31,13 @@ export interface ExplorerTreeNodeProps {
   onEditConnection: (connId: number) => void;
   onDeleteConnection: (connId: number) => void;
   onViewDdl: (node: ExplorerNode) => void;
+  onDeleteTable: (node: ExplorerNode) => void;
+  onDeleteView: (node: ExplorerNode) => void;
+  onDeleteFunction: (node: ExplorerNode) => void;
+  onDeleteProcedure: (node: ExplorerNode) => void;
+  onDeleteTrigger: (node: ExplorerNode) => void;
+  onDeleteAllInFolder: (node: ExplorerNode) => void;
+  onDeleteDatabase: (node: ExplorerNode) => void;
 }
 
 export function ExplorerTreeNode({
@@ -42,6 +50,13 @@ export function ExplorerTreeNode({
   onEditConnection,
   onDeleteConnection,
   onViewDdl,
+  onDeleteTable,
+  onDeleteView,
+  onDeleteFunction,
+  onDeleteProcedure,
+  onDeleteTrigger,
+  onDeleteAllInFolder,
+  onDeleteDatabase,
 }: ExplorerTreeNodeProps) {
   const { t } = useTranslation();
   const isConnected = !!node.data.connectionId;
@@ -54,6 +69,11 @@ export function ExplorerTreeNode({
   const isRoutine =
     node.data.type === ExplorerNodeType.FUNCTION || node.data.type === ExplorerNodeType.PROCEDURE;
   const isFolder = node.data.type === ExplorerNodeType.FOLDER;
+  const isDb = node.data.type === ExplorerNodeType.DB;
+  // 文件夹中只有包含可删除对象的文件夹才显示删除按钮（Tables、Views、Routines、Triggers）
+  // Columns、Keys、Indexes 是结构文件夹，不显示删除按钮
+  const isDeletableFolder = isFolder && node.data.folderName &&
+    ['tables', 'views', 'routines', 'triggers'].includes(node.data.folderName);
   const folderCount =
     isFolder &&
     node.data.children &&
@@ -136,7 +156,10 @@ export function ExplorerTreeNode({
     node.isSelected && 'bg-accent/30'
   );
 
-  if (isDdlNode) {
+  // 判断是否需要显示右键菜单
+  const showContextMenu = isDdlNode || isDb || isDeletableFolder;
+
+  if (showContextMenu) {
     return (
       <ContextMenu>
         <ContextMenuTrigger asChild>
@@ -152,10 +175,55 @@ export function ExplorerTreeNode({
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent>
-          <ContextMenuItem onSelect={handleDdlClick}>
-            <FileText className="w-3.5 h-3.5 mr-2" />
-            {t('explorer.view_ddl')}
-          </ContextMenuItem>
+          {isDdlNode && (
+            <ContextMenuItem onSelect={handleDdlClick}>
+              <FileText className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.view_ddl')}
+            </ContextMenuItem>
+          )}
+          {isDdlNode && <ContextMenuSeparator />}
+          {node.data.type === ExplorerNodeType.TABLE && (
+            <ContextMenuItem onSelect={() => onDeleteTable(node.data)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_table')}
+            </ContextMenuItem>
+          )}
+          {node.data.type === ExplorerNodeType.VIEW && (
+            <ContextMenuItem onSelect={() => onDeleteView(node.data)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_view')}
+            </ContextMenuItem>
+          )}
+          {node.data.type === ExplorerNodeType.FUNCTION && (
+            <ContextMenuItem onSelect={() => onDeleteFunction(node.data)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_function')}
+            </ContextMenuItem>
+          )}
+          {node.data.type === ExplorerNodeType.PROCEDURE && (
+            <ContextMenuItem onSelect={() => onDeleteProcedure(node.data)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_procedure')}
+            </ContextMenuItem>
+          )}
+          {node.data.type === ExplorerNodeType.TRIGGER && (
+            <ContextMenuItem onSelect={() => onDeleteTrigger(node.data)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_trigger')}
+            </ContextMenuItem>
+          )}
+          {isDb && (
+            <ContextMenuItem onSelect={() => onDeleteDatabase(node.data)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_database')}
+            </ContextMenuItem>
+          )}
+          {isDeletableFolder && folderCount != null && folderCount > 0 && (
+            <ContextMenuItem onSelect={() => onDeleteAllInFolder(node.data)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_all_in_folder')}
+            </ContextMenuItem>
+          )}
         </ContextMenuContent>
       </ContextMenu>
     );

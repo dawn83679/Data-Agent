@@ -38,4 +38,17 @@ public class FunctionServiceImpl implements FunctionService {
                     return provider.getFunctionDdl(active.connection(), catalog, schema, functionName);
                 });
     }
+
+    @Override
+    public void deleteFunction(Long connectionId, String catalog, String schema, String functionName, Long userId) {
+        connectionService.openConnection(connectionId, catalog, schema, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+
+        FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
+        provider.deleteFunction(active.connection(), active.pluginId(), catalog, schema, functionName);
+
+        log.info("Function deleted successfully: connectionId={}, catalog={}, schema={}, functionName={}",
+                connectionId, catalog, schema, functionName);
+    }
 }
