@@ -64,8 +64,14 @@ public class McpToolProviderConfig {
                     for (ToolSpecification toolSpec : toolSpecs) {
                         ToolExecutor executor = (toolExecutionRequest, memoryId) -> {
                             ToolExecutionResult result = defaultClient.executeTool(toolExecutionRequest);
-                            // Convert result to string
-                            return result.resultText();
+                            String resultText = result.resultText();
+                            
+                            // Post-process chart tool results: add .png extension to image URLs
+                            if (isChartTool(toolSpec.name()) && isImageUrl(resultText)) {
+                                resultText = addImageExtension(resultText);
+                            }
+                            
+                            return resultText;
                         };
                         
                         toolsMap.put(toolSpec, executor);
@@ -81,5 +87,52 @@ public class McpToolProviderConfig {
         
         log.info("MCP tools created successfully: {} tools total", toolsMap.size());
         return toolsMap;
+    }
+    
+    /**
+     * Check if the tool is a chart generation tool.
+     */
+    private boolean isChartTool(String toolName) {
+        if (toolName == null) {
+            return false;
+        }
+        String lowerName = toolName.toLowerCase();
+        return lowerName.contains("chart") 
+            || lowerName.contains("graph") 
+            || lowerName.contains("diagram")
+            || lowerName.contains("visualization");
+    }
+    
+    /**
+     * Check if the text is an image URL (typically from Aliyun OSS).
+     */
+    private boolean isImageUrl(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return false;
+        }
+        String trimmed = text.trim();
+        return (trimmed.startsWith("http://") || trimmed.startsWith("https://"))
+            && (trimmed.contains("alipayobjects.com") 
+                || trimmed.contains("/img/") 
+                || trimmed.contains("/image/"));
+    }
+    
+    /**
+     * Add .png extension to image URL if it doesn't have one.
+     */
+    private String addImageExtension(String url) {
+        if (url == null) {
+            return url;
+        }
+        
+        String trimmed = url.trim();
+        
+        // Check if URL already has an image extension
+        if (trimmed.matches(".*\\.(png|jpg|jpeg|gif|svg|webp)$")) {
+            return url;
+        }
+        
+        // Add .png extension
+        return trimmed + ".png";
     }
 }
