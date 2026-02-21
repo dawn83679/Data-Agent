@@ -30,7 +30,12 @@
     "data_sources": "Data Sources",
     "default": "Default",
     "logout_failed": "Logout failed",
-    "run": "Run"
+    "run": "Run",
+    "select_connection_first": "Please select a connection first",
+    "rows_retrieved": "{{count}} row(s) retrieved",
+    "execution_time_ms": "{{ms}} ms",
+    "affected_rows": "{{count}} row(s) affected",
+    "format_sql": "Format SQL"
   },
   "settingsPage": {
     "title": "Settings",

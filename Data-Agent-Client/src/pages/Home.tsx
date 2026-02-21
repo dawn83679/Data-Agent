@@ -8,6 +8,7 @@ import { Toolbar } from "../components/workspace/Toolbar";
 import { EmptyState } from "../components/workspace/EmptyState";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { sqlExecutionService } from "../services/sqlExecution.service";
+import { formatSql } from "../utils/sql";
 import type { ExecuteSqlResponse } from "../types/sql";
 
 export default function Home() {
@@ -66,6 +67,17 @@ export default function Home() {
         }
     }, [getSqlToRun, sqlContext.connectionId, sqlContext.databaseName, sqlContext.schemaName, t]);
 
+    const handleFormatSql = useCallback(() => {
+        if (editorRef.current && activeTab?.type === 'file') {
+            const current = activeTab.content || '';
+            const formatted = formatSql(current);
+            if (formatted !== current) {
+                editorRef.current.setValue(formatted);
+                updateTabContent(activeTab.id, formatted);
+            }
+        }
+    }, [activeTab, updateTabContent]);
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -92,7 +104,7 @@ export default function Home() {
                     {activeTab && (
                         <div className="h-8 flex items-center px-4 theme-bg-main border-b theme-border text-[10px] theme-text-secondary shrink-0 justify-between">
                             <Breadcrumbs activeTabName={activeTab.name} />
-                            <Toolbar onRun={handleRunQuery} isRunning={isRunning} />
+                            <Toolbar onRun={handleRunQuery} onFormat={handleFormatSql} isRunning={isRunning} />
                         </div>
                     )}
 
