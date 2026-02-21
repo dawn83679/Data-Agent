@@ -4,15 +4,17 @@ import { useTranslation } from 'react-i18next';
 interface ToolbarProps {
     onRun: () => void;
     onRollback?: () => void;
+    isRunning?: boolean;
 }
 
-export function Toolbar({ onRun, onRollback }: ToolbarProps) {
+export function Toolbar({ onRun, onRollback, isRunning }: ToolbarProps) {
     const { t } = useTranslation();
     return (
         <div className="flex items-center space-x-3">
             <button 
                 onClick={onRun}
-                className="flex items-center space-x-1 text-green-500 hover:text-green-400 transition-colors"
+                disabled={isRunning}
+                className="flex items-center space-x-1 text-green-500 hover:text-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 title={t('workspace.run_shortcut')}
             >
                 <Play className="w-3.5 h-3.5 fill-current" />
