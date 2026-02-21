@@ -1,7 +1,14 @@
+import { forwardRef, useImperativeHandle, useRef } from 'react';
 import Editor, { loader } from '@monaco-editor/react';
 
 // You can configure the loader to use a specific version or CDN
 loader.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs' } });
+
+/** Ref handle for MonacoEditor: get selection/all content and set value (e.g. after format). */
+export interface MonacoEditorHandle {
+  getSelectionOrAllContent: () => string;
+  setValue: (value: string) => void;
+}
 
 interface MonacoEditorProps {
   value: string;
@@ -12,17 +19,43 @@ interface MonacoEditorProps {
   theme?: 'jetbrains-dark' | 'vs-dark' | 'light';
 }
 
-export function MonacoEditor({
-  value,
-  onChange,
-  language = 'sql',
-  readOnly = false,
-  height = '100%',
-  theme = 'jetbrains-dark'
-}: MonacoEditorProps) {
-  
-  const handleEditorWillMount = (monaco: any) => {
-    // Define JetBrains-like theme
+type MonacoEditorInstance = {
+  getModel: () => { getValue: () => string; getValueInRange: (r: { isEmpty: () => boolean }) => string; setValue: (v: string) => void } | null;
+  getSelection: () => { isEmpty: () => boolean } | null;
+};
+
+export const MonacoEditor = forwardRef<MonacoEditorHandle, MonacoEditorProps>(function MonacoEditor(
+  { value, onChange, language = 'sql', readOnly = false, height = '100%', theme = 'jetbrains-dark' },
+  ref
+) {
+  const editorRef = useRef<MonacoEditorInstance | null>(null);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getSelectionOrAllContent: () => {
+        const ed = editorRef.current;
+        if (!ed) return value;
+        const model = ed.getModel();
+        if (!model) return value;
+        const selection = ed.getSelection();
+        if (selection && !selection.isEmpty()) {
+          return model.getValueInRange(selection);
+        }
+        return model.getValue();
+      },
+      setValue: (newValue: string) => {
+        const ed = editorRef.current;
+        if (ed) {
+          const model = ed.getModel();
+          if (model) model.setValue(newValue);
+        }
+      },
+    }),
+    [value]
+  );
+
+  const handleEditorWillMount = (monaco: { editor: { defineTheme: (name: string, theme: object) => void } }) => {
     monaco.editor.defineTheme('jetbrains-dark', {
       base: 'vs-dark',
       inherit: true,
@@ -45,8 +78,12 @@ export function MonacoEditor({
         'editorLineNumber.activeForeground': '#a9b7c6',
         'editorIndentGuide.background': '#373737',
         'editor.border': '#4e5155',
-      }
+      },
     });
+  };
+
+  const handleEditorDidMount = (ed: unknown) => {
+    editorRef.current = ed as MonacoEditorInstance;
   };
 
   return (
@@ -57,6 +94,7 @@ export function MonacoEditor({
       theme={theme}
       onChange={onChange}
       beforeMount={handleEditorWillMount}
+      onMount={handleEditorDidMount}
       options={{
         readOnly,
         minimap: { enabled: false },
@@ -72,8 +110,8 @@ export function MonacoEditor({
           horizontal: 'visible',
           verticalScrollbarSize: 10,
           horizontalScrollbarSize: 10,
-        }
+        },
       }}
     />
   );
-}
+});
