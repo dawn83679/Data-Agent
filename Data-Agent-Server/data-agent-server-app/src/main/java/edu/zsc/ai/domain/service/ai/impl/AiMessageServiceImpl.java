@@ -1,7 +1,9 @@
 package edu.zsc.ai.domain.service.ai.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import dev.langchain4j.data.message.ChatMessageType;
 import edu.zsc.ai.domain.mapper.ai.AiMessageMapper;
 import edu.zsc.ai.domain.model.entity.ai.StoredChatMessage;
 import edu.zsc.ai.domain.service.ai.AiMessageService;
@@ -44,5 +46,38 @@ public class AiMessageServiceImpl extends ServiceImpl<AiMessageMapper, StoredCha
         remove(wrapper);
         log.debug("Deleted {} messages for conversation {}", count, conversationId);
         return count;
+    }
+
+    @Override
+    public void updateLastAiMessageTokenCount(Long conversationId, Integer tokenCount) {
+        if (conversationId == null || tokenCount == null) {
+            return;
+        }
+
+        // Find the last AI message
+        LambdaQueryWrapper<StoredChatMessage> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(StoredChatMessage::getConversationId, conversationId)
+                .eq(StoredChatMessage::getRole, ChatMessageType.AI.name())
+                .orderByDesc(StoredChatMessage::getCreatedAt)
+                .orderByDesc(StoredChatMessage::getId)
+                .last("LIMIT 1");
+
+        StoredChatMessage lastAiMessage = getOne(queryWrapper);
+        if (lastAiMessage == null) {
+            log.warn("No AI message found for conversation {}", conversationId);
+            return;
+        }
+
+        // Update token count
+        LambdaUpdateWrapper<StoredChatMessage> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(StoredChatMessage::getId, lastAiMessage.getId())
+                .set(StoredChatMessage::getTokenCount, tokenCount)
+                .set(StoredChatMessage::getUpdatedAt, java.time.LocalDateTime.now());
+
+        boolean updated = update(updateWrapper);
+        if (updated) {
+            log.info("Updated token count for message {} in conversation {}: {} tokens",
+                    lastAiMessage.getId(), conversationId, tokenCount);
+        }
     }
 }

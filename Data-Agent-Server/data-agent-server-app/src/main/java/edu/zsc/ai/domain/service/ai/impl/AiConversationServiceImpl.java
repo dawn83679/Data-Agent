@@ -121,4 +121,20 @@ public class AiConversationServiceImpl extends ServiceImpl<AiConversationMapper,
         }
         return result;
     }
+
+    @Override
+    public void addTokenCount(Long conversationId, Integer tokenCount) {
+        if (conversationId == null || tokenCount == null || tokenCount <= 0) {
+            return;
+        }
+
+        // Increment token_count atomically
+        LambdaUpdateWrapper<AiConversation> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(AiConversation::getId, conversationId)
+                .setSql("token_count = token_count + " + tokenCount)
+                .set(AiConversation::getUpdatedAt, LocalDateTime.now());
+
+        update(wrapper);
+
+    }
 }

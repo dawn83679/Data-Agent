@@ -16,6 +16,7 @@ import edu.zsc.ai.domain.model.dto.response.agent.ChatResponseBlock;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
 import edu.zsc.ai.domain.service.agent.ChatService;
 import edu.zsc.ai.domain.service.ai.AiConversationService;
+import edu.zsc.ai.domain.service.ai.AiMessageService;
 import edu.zsc.ai.model.request.ChatRequest;
 import edu.zsc.ai.model.request.SubmitToolAnswerRequest;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class ChatServiceImpl implements ChatService {
 
     private final ReActAgentProvider reActAgentProvider;
     private final AiConversationService aiConversationService;
+    private final AiMessageService aiMessageService;
     private final ChatMemoryStore chatMemoryStore;
 
     @Override
@@ -150,6 +152,27 @@ public class ChatServiceImpl implements ChatService {
         });
 
         tokenStream.onCompleteResponse(response -> {
+            // Extract and persist token usage
+            if (response.tokenUsage() != null) {
+                Integer outputTokens = response.tokenUsage().outputTokenCount();
+                Integer totalTokens = response.tokenUsage().totalTokenCount();
+
+                if (totalTokens != null && totalTokens > 0) {
+                    log.info("Chat completed for conversation {}: {} total tokens (output: {})",
+                            conversationId, totalTokens, outputTokens);
+
+                    // Update the last AI message's token count (output tokens only)
+                    if (outputTokens != null && outputTokens > 0) {
+                        aiMessageService.updateLastAiMessageTokenCount(conversationId, outputTokens);
+                    }
+
+                    // Add total tokens to conversation (includes input + output)
+                    aiConversationService.addTokenCount(conversationId, totalTokens);
+                } else {
+                    log.debug("No token usage available for conversation {}", conversationId);
+                }
+            }
+
             sink.tryEmitNext(ChatResponseBlock.doneBlock(conversationId));
             sink.tryEmitComplete();
         });

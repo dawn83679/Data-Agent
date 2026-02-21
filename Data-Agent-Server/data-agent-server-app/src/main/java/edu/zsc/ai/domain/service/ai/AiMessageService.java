@@ -12,4 +12,13 @@ public interface AiMessageService extends IService<StoredChatMessage> {
     void saveBatchMessages(List<StoredChatMessage> messages);
 
     int removeByConversationId(Long conversationId);
+
+    /**
+     * Updates the token count of the last AI message in a conversation.
+     * Used to persist token usage after streaming chat completes.
+     *
+     * @param conversationId conversation ID
+     * @param tokenCount     output token count for the AI response (from response.tokenUsage().outputTokenCount())
+     */
+    void updateLastAiMessageTokenCount(Long conversationId, Integer tokenCount);
 }

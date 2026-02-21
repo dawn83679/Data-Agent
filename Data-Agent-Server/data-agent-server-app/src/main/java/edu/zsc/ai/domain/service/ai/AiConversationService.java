@@ -54,4 +54,12 @@ public interface AiConversationService extends IService<AiConversation> {
      * Returns history messages for the conversation. Verifies current user has access.
      */
     List<ConversationMessageResponse> getMessagesForCurrentUser(Long conversationId);
+
+    /**
+     * Adds token count to the conversation's total token usage.
+     *
+     * @param conversationId conversation ID
+     * @param tokenCount     tokens to add
+     */
+    void addTokenCount(Long conversationId, Integer tokenCount);
 }
