@@ -37,4 +37,17 @@ export const triggerService = {
     const response = await http.get<string>(ApiPaths.TRIGGERS_DDL, { params });
     return response.data;
   },
+
+  deleteTrigger: async (
+    connectionId: string,
+    triggerName: string,
+    catalog?: string,
+    schema?: string
+  ): Promise<void> => {
+    const params: Record<string, string> = { connectionId, triggerName };
+    if (catalog != null && catalog !== '') params.catalog = catalog;
+    if (schema != null && schema !== '') params.schema = schema;
+
+    await http.post(`${ApiPaths.TRIGGERS}/delete`, null, { params });
+  },
 };

@@ -39,4 +39,17 @@ export const functionService = {
     const response = await http.get<string>(ApiPaths.FUNCTIONS_DDL, { params });
     return response.data;
   },
+
+  deleteFunction: async (
+    connectionId: string,
+    functionName: string,
+    catalog?: string,
+    schema?: string
+  ): Promise<void> => {
+    const params: Record<string, string> = { connectionId, functionName };
+    if (catalog != null && catalog !== '') params.catalog = catalog;
+    if (schema != null && schema !== '') params.schema = schema;
+
+    await http.post(`${ApiPaths.FUNCTIONS}/delete`, null, { params });
+  },
 };

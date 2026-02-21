@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -45,5 +46,18 @@ public class ViewController {
         long userId = StpUtil.getLoginIdAsLong();
         String ddl = viewService.getViewDdl(connectionId, catalog, schema, viewName, userId);
         return ApiResponse.success(ddl);
+    }
+
+    @PostMapping("/delete")
+    public ApiResponse<Void> deleteView(
+            @RequestParam @NotNull(message = "connectionId is required") Long connectionId,
+            @RequestParam @NotNull(message = "viewName is required") String viewName,
+            @RequestParam(required = false) String catalog,
+            @RequestParam(required = false) String schema) {
+        log.info("Deleting view: connectionId={}, viewName={}, catalog={}, schema={}",
+                connectionId, viewName, catalog, schema);
+        long userId = StpUtil.getLoginIdAsLong();
+        viewService.deleteView(connectionId, catalog, schema, viewName, userId);
+        return ApiResponse.success(null);
     }
 }
