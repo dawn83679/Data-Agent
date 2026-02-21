@@ -20,6 +20,13 @@ export type ResultBehavior = 'multi' | 'overwrite';
 export type TableDblClickMode = 'table' | 'console';
 export type TableDblClickConsoleTarget = 'reuse' | 'new';
 
+/** Current connection/database/schema for SQL execution in the middle editor. */
+export interface SqlContext {
+    connectionId: number | null;
+    databaseName: string | null;
+    schemaName: string | null;
+}
+
 interface PreferenceState {
     resultBehavior: ResultBehavior;
     tableDblClickMode: TableDblClickMode;
@@ -36,6 +43,8 @@ interface WorkspaceState extends PreferenceState {
     isSettingsModalOpen: boolean;
     supportedDbTypes: DbTypeOption[];
     supportedDbTypesLoading: boolean;
+    /** Current connection/database/schema for SQL execution. */
+    sqlContext: SqlContext;
 
     // Actions
     openTab: (tab: Omit<Tab, 'active'>) => void;
@@ -46,6 +55,7 @@ interface WorkspaceState extends PreferenceState {
     updatePreferences: (prefs: Partial<PreferenceState>) => void;
     resetPreferences: () => void;
     fetchSupportedDbTypes: () => Promise<void>;
+    setSqlContext: (ctx: Partial<SqlContext>) => void;
 }
 
 const DEFAULT_PREFERENCES: PreferenceState = {
@@ -67,6 +77,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             isSettingsModalOpen: false,
             supportedDbTypes: [],
             supportedDbTypesLoading: false,
+            sqlContext: { connectionId: null, databaseName: null, schemaName: null },
 
             openTab: (newTab) => set((state) => {
                 const existingTab = state.tabs.find(t => t.id === newTab.id);
@@ -110,6 +121,14 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             updatePreferences: (prefs) => set((state) => ({ ...state, ...prefs })),
 
             resetPreferences: () => set((state) => ({ ...state, ...DEFAULT_PREFERENCES })),
+
+            setSqlContext: (ctx) => set((state) => ({
+                sqlContext: {
+                    connectionId: ctx.connectionId !== undefined ? ctx.connectionId : state.sqlContext.connectionId,
+                    databaseName: ctx.databaseName !== undefined ? ctx.databaseName : state.sqlContext.databaseName,
+                    schemaName: ctx.schemaName !== undefined ? ctx.schemaName : state.sqlContext.schemaName,
+                },
+            })),
 
             fetchSupportedDbTypes: async () => {
                 const state = get();

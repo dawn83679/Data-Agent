@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import { Database, Plus, Search, RefreshCw, Settings } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { useWorkspaceStore } from '../../store/workspaceStore';
+import { useWorkspaceStore, type SqlContext } from '../../store/workspaceStore';
 import { useTranslation } from 'react-i18next';
 import { Tree as ArboristTree, NodeApi } from 'react-arborist';
 import { ConnectionFormModal, type ConnectionFormMode } from '../common/ConnectionFormModal';
@@ -29,9 +29,29 @@ import { functionService } from '../../services/function.service';
 import { procedureService } from '../../services/procedure.service';
 import { triggerService } from '../../services/trigger.service';
 
+function getSqlContextFromNode(node: ExplorerNode): Partial<SqlContext> | null {
+  const id = node.dbConnection?.id ?? (node.connectionId != null ? Number(node.connectionId) : NaN);
+  if (!id || isNaN(id)) return null;
+  const connectionId = id as number;
+  switch (node.type) {
+    case ExplorerNodeType.ROOT:
+      return { connectionId, databaseName: null, schemaName: null };
+    case ExplorerNodeType.DB:
+      return { connectionId, databaseName: node.name, schemaName: null };
+    case ExplorerNodeType.SCHEMA:
+      return { connectionId, databaseName: node.catalog ?? null, schemaName: node.name };
+    default:
+      return {
+        connectionId,
+        databaseName: node.catalog ?? null,
+        schemaName: node.schema ?? null,
+      };
+  }
+}
+
 export function DatabaseExplorer() {
   const { t } = useTranslation();
-  const { supportedDbTypes } = useWorkspaceStore();
+  const { supportedDbTypes, setSqlContext } = useWorkspaceStore();
   const {
     treeDataState,
     loadNodeData,
@@ -136,6 +156,10 @@ export function DatabaseExplorer() {
         onEditConnection={openEditModal}
         onDeleteConnection={(id) => setDeleteConfirmId(id)}
         onViewDdl={handleViewDdl}
+        onNodeClick={(data) => {
+          const ctx = getSqlContextFromNode(data);
+          if (ctx) setSqlContext(ctx);
+        }}
       />
     );
   };

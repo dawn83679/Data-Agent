@@ -30,7 +30,12 @@
     "data_sources": "数据源",
     "default": "默认",
     "logout_failed": "退出登录失败",
-    "run": "运行"
+    "run": "运行",
+    "select_connection_first": "请先选择连接",
+    "rows_retrieved": "共 {{count}} 行",
+    "execution_time_ms": "{{ms}} ms",
+    "affected_rows": "影响 {{count}} 行",
+    "format_sql": "格式化 SQL"
   },
   "settingsPage": {
     "title": "设置",
