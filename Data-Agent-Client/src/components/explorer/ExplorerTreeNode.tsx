@@ -13,6 +13,7 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSeparator,
   ContextMenuTrigger,
 } from '../ui/ContextMenu';
 import { Button } from '../ui/Button';
@@ -69,6 +70,10 @@ export function ExplorerTreeNode({
     node.data.type === ExplorerNodeType.FUNCTION || node.data.type === ExplorerNodeType.PROCEDURE;
   const isFolder = node.data.type === ExplorerNodeType.FOLDER;
   const isDb = node.data.type === ExplorerNodeType.DB;
+  // 文件夹中只有包含可删除对象的文件夹才显示删除按钮（Tables、Views、Routines、Triggers）
+  // Columns、Keys、Indexes 是结构文件夹，不显示删除按钮
+  const isDeletableFolder = isFolder && node.data.folderName &&
+    ['tables', 'views', 'routines', 'triggers'].includes(node.data.folderName);
   const folderCount =
     isFolder &&
     node.data.children &&
@@ -132,40 +137,6 @@ export function ExplorerTreeNode({
         )}
       </span>
 
-      {isFolder && folderCount != null && folderCount > 0 && (
-        <div className="opacity-0 group-hover:opacity-100 flex items-center ml-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-5 w-5 text-destructive hover:text-destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeleteAllInFolder(node.data);
-            }}
-            title={t('explorer.delete_all_in_folder')}
-          >
-            <Trash2 className="w-3 h-3" />
-          </Button>
-        </div>
-      )}
-
-      {isDb && (
-        <div className="opacity-0 group-hover:opacity-100 flex items-center ml-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-5 w-5 text-destructive hover:text-destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeleteDatabase(node.data);
-            }}
-            title={t('explorer.delete_database')}
-          >
-            <Trash2 className="w-3 h-3" />
-          </Button>
-        </div>
-      )}
-
       {node.data.type === ExplorerNodeType.ROOT && (
         <RootNodeActions
           isLoading={isLoading}
@@ -177,91 +148,6 @@ export function ExplorerTreeNode({
           t={t}
         />
       )}
-
-      {node.data.type === ExplorerNodeType.TABLE && (
-        <div className="opacity-0 group-hover:opacity-100 flex items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 text-destructive hover:text-destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeleteTable(node.data);
-            }}
-            title={t('explorer.delete_table')}
-          >
-            <Trash2 className="w-3 h-3" />
-          </Button>
-        </div>
-      )}
-
-      {node.data.type === ExplorerNodeType.VIEW && (
-        <div className="opacity-0 group-hover:opacity-100 flex items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 text-destructive hover:text-destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeleteView(node.data);
-            }}
-            title={t('explorer.delete_view')}
-          >
-            <Trash2 className="w-3 h-3" />
-          </Button>
-        </div>
-      )}
-
-      {node.data.type === ExplorerNodeType.FUNCTION && (
-        <div className="opacity-0 group-hover:opacity-100 flex items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 text-destructive hover:text-destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeleteFunction(node.data);
-            }}
-            title={t('explorer.delete_function')}
-          >
-            <Trash2 className="w-3 h-3" />
-          </Button>
-        </div>
-      )}
-
-      {node.data.type === ExplorerNodeType.PROCEDURE && (
-        <div className="opacity-0 group-hover:opacity-100 flex items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 text-destructive hover:text-destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeleteProcedure(node.data);
-            }}
-            title={t('explorer.delete_procedure')}
-          >
-            <Trash2 className="w-3 h-3" />
-          </Button>
-        </div>
-      )}
-
-      {node.data.type === ExplorerNodeType.TRIGGER && (
-        <div className="opacity-0 group-hover:opacity-100 flex items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 text-destructive hover:text-destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeleteTrigger(node.data);
-            }}
-            title={t('explorer.delete_trigger')}
-          >
-            <Trash2 className="w-3 h-3" />
-          </Button>
-        </div>
-      )}
     </>
   );
 
@@ -270,7 +156,10 @@ export function ExplorerTreeNode({
     node.isSelected && 'bg-accent/30'
   );
 
-  if (isDdlNode) {
+  // 判断是否需要显示右键菜单
+  const showContextMenu = isDdlNode || isDb || isDeletableFolder;
+
+  if (showContextMenu) {
     return (
       <ContextMenu>
         <ContextMenuTrigger asChild>
@@ -286,10 +175,55 @@ export function ExplorerTreeNode({
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent>
-          <ContextMenuItem onSelect={handleDdlClick}>
-            <FileText className="w-3.5 h-3.5 mr-2" />
-            {t('explorer.view_ddl')}
-          </ContextMenuItem>
+          {isDdlNode && (
+            <ContextMenuItem onSelect={handleDdlClick}>
+              <FileText className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.view_ddl')}
+            </ContextMenuItem>
+          )}
+          {isDdlNode && <ContextMenuSeparator />}
+          {node.data.type === ExplorerNodeType.TABLE && (
+            <ContextMenuItem onSelect={() => onDeleteTable(node.data)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_table')}
+            </ContextMenuItem>
+          )}
+          {node.data.type === ExplorerNodeType.VIEW && (
+            <ContextMenuItem onSelect={() => onDeleteView(node.data)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_view')}
+            </ContextMenuItem>
+          )}
+          {node.data.type === ExplorerNodeType.FUNCTION && (
+            <ContextMenuItem onSelect={() => onDeleteFunction(node.data)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_function')}
+            </ContextMenuItem>
+          )}
+          {node.data.type === ExplorerNodeType.PROCEDURE && (
+            <ContextMenuItem onSelect={() => onDeleteProcedure(node.data)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_procedure')}
+            </ContextMenuItem>
+          )}
+          {node.data.type === ExplorerNodeType.TRIGGER && (
+            <ContextMenuItem onSelect={() => onDeleteTrigger(node.data)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_trigger')}
+            </ContextMenuItem>
+          )}
+          {isDb && (
+            <ContextMenuItem onSelect={() => onDeleteDatabase(node.data)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_database')}
+            </ContextMenuItem>
+          )}
+          {isDeletableFolder && folderCount != null && folderCount > 0 && (
+            <ContextMenuItem onSelect={() => onDeleteAllInFolder(node.data)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_all_in_folder')}
+            </ContextMenuItem>
+          )}
         </ContextMenuContent>
       </ContextMenu>
     );
