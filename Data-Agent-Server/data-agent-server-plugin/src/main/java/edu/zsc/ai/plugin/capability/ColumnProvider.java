@@ -8,26 +8,24 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-/**
- * Capability for listing columns of a table or view.
- * Plugins that implement this can provide column metadata for schema browsing, SQL editing, etc.
- */
 public interface ColumnProvider {
 
-    /**
-     * Get column metadata for the specified table or view.
-     *
-     * @param connection      the active connection
-     * @param catalog         catalog/database name; may be null
-     * @param schema          schema name; may be null
-     * @param tableOrViewName table or view name
-     * @return list of column metadata, ordered by ordinal position; never null
-     * @throws RuntimeException if listing fails
-     */
     default List<ColumnMetadata> getColumns(Connection connection, String catalog, String schema, String tableOrViewName) {
         try {
+            Set<String> primaryKeyColumns = new HashSet<>();
+            try (ResultSet pkRs = connection.getMetaData().getPrimaryKeys(catalog, schema, tableOrViewName)) {
+                while (pkRs.next()) {
+                    String col = pkRs.getString(JdbcMetaDataConstants.COLUMN_NAME);
+                    if (col != null) {
+                        primaryKeyColumns.add(col);
+                    }
+                }
+            }
+
             List<ColumnMetadata> list = new ArrayList<>();
             try (ResultSet rs = connection.getMetaData().getColumns(catalog, schema, tableOrViewName, null)) {
                 while (rs.next()) {
@@ -39,9 +37,11 @@ public interface ColumnProvider {
                     int nullable = rs.getInt(JdbcMetaDataConstants.NULLABLE);
                     int ordinalPosition = rs.getInt(JdbcMetaDataConstants.ORDINAL_POSITION);
                     String remarks = rs.getString(JdbcMetaDataConstants.REMARKS);
+                    String columnDef = rs.getString(JdbcMetaDataConstants.COLUMN_DEF);
                     if (remarks == null) {
                         remarks = "";
                     }
+                    boolean isPk = primaryKeyColumns.contains(name);
                     list.add(new ColumnMetadata(
                             name,
                             dataType,
@@ -50,7 +50,11 @@ public interface ColumnProvider {
                             decimalDigits,
                             nullable == ResultSetMetaData.columnNullable,
                             ordinalPosition,
-                            remarks
+                            remarks,
+                            isPk,
+                            false,
+                            false,
+                            columnDef
                     ));
                 }
             }

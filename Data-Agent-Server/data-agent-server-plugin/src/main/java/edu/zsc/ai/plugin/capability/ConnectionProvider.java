@@ -3,30 +3,14 @@ package edu.zsc.ai.plugin.capability;
 import edu.zsc.ai.plugin.connection.ConnectionConfig;
 import java.sql.*;
 
-/**
- * Connection provider capability interface.
- * Plugins implementing this interface can establish and manage database connections.
- */
 public interface ConnectionProvider {
-    
-    /**
-     * Establish a database connection based on the provided configuration.
-     */
+
     Connection connect(ConnectionConfig config);
-    
-    /**
-     * Test whether a connection can be established with the given configuration.
-     */
+
     boolean testConnection(ConnectionConfig config);
-    
-    /**
-     * Close a database connection and release associated resources.
-     */
+
     void closeConnection(Connection connection);
 
-    /**
-     * Get database metadata from a connection.
-     */
     default DatabaseMetaData getMetaData(Connection connection) {
         try {
             return connection.getMetaData();
@@ -35,9 +19,6 @@ public interface ConnectionProvider {
         }
     }
 
-    /**
-     * Get database product version from a connection.
-     */
     default String getDatabaseProductVersion(Connection connection) {
         try {
             DatabaseMetaData metaData = getMetaData(connection);
@@ -47,9 +28,6 @@ public interface ConnectionProvider {
         }
     }
 
-    /**
-     * Get formatted database information string.
-     */
     default String getDbmsInfo(Connection connection) {
         try {
             DatabaseMetaData metaData = getMetaData(connection);
@@ -61,9 +39,6 @@ public interface ConnectionProvider {
         }
     }
 
-    /**
-     * Get formatted driver information string.
-     */
     default String getDriverInfo(Connection connection) {
         try {
             DatabaseMetaData metaData = getMetaData(connection);
@@ -77,4 +52,3 @@ public interface ConnectionProvider {
         }
     }
 }
-
