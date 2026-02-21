@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "mcpadvisor": {
+      "command": "npx.cmd",
+      "args": [
+        "-y",
+        "@xiaohui-wang/mcpadvisor"
+      ]
+    }
+  }
+}
