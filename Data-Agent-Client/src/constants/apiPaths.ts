@@ -1,0 +1,15 @@
+export const ApiPaths = {
+  COLUMNS: '/columns',
+  TABLES: '/tables',
+  TABLES_DDL: '/tables/ddl',
+  VIEWS: '/views',
+  VIEWS_DDL: '/views/ddl',
+  FUNCTIONS: '/functions',
+  FUNCTIONS_DDL: '/functions/ddl',
+  PROCEDURES: '/procedures',
+  PROCEDURES_DDL: '/procedures/ddl',
+  TRIGGERS: '/triggers',
+  TRIGGERS_DDL: '/triggers/ddl',
+  INDEXES: '/indexes',
+  PRIMARY_KEYS: '/primary-keys',
+} as const;
