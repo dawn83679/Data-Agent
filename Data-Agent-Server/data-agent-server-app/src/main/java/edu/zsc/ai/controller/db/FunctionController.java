@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,5 +47,18 @@ public class FunctionController {
         long userId = StpUtil.getLoginIdAsLong();
         String ddl = functionService.getFunctionDdl(connectionId, catalog, schema, functionName, userId);
         return ApiResponse.success(ddl);
+    }
+
+    @PostMapping("/delete")
+    public ApiResponse<Void> deleteFunction(
+            @RequestParam @NotNull(message = "connectionId is required") Long connectionId,
+            @RequestParam @NotNull(message = "functionName is required") String functionName,
+            @RequestParam(required = false) String catalog,
+            @RequestParam(required = false) String schema) {
+        log.info("Deleting function: connectionId={}, functionName={}, catalog={}, schema={}",
+                connectionId, functionName, catalog, schema);
+        long userId = StpUtil.getLoginIdAsLong();
+        functionService.deleteFunction(connectionId, catalog, schema, functionName, userId);
+        return ApiResponse.success(null);
     }
 }

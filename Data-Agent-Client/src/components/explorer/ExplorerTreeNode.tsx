@@ -30,6 +30,13 @@ export interface ExplorerTreeNodeProps {
   onEditConnection: (connId: number) => void;
   onDeleteConnection: (connId: number) => void;
   onViewDdl: (node: ExplorerNode) => void;
+  onDeleteTable: (node: ExplorerNode) => void;
+  onDeleteView: (node: ExplorerNode) => void;
+  onDeleteFunction: (node: ExplorerNode) => void;
+  onDeleteProcedure: (node: ExplorerNode) => void;
+  onDeleteTrigger: (node: ExplorerNode) => void;
+  onDeleteAllInFolder: (node: ExplorerNode) => void;
+  onDeleteDatabase: (node: ExplorerNode) => void;
 }
 
 export function ExplorerTreeNode({
@@ -42,6 +49,13 @@ export function ExplorerTreeNode({
   onEditConnection,
   onDeleteConnection,
   onViewDdl,
+  onDeleteTable,
+  onDeleteView,
+  onDeleteFunction,
+  onDeleteProcedure,
+  onDeleteTrigger,
+  onDeleteAllInFolder,
+  onDeleteDatabase,
 }: ExplorerTreeNodeProps) {
   const { t } = useTranslation();
   const isConnected = !!node.data.connectionId;
@@ -54,6 +68,7 @@ export function ExplorerTreeNode({
   const isRoutine =
     node.data.type === ExplorerNodeType.FUNCTION || node.data.type === ExplorerNodeType.PROCEDURE;
   const isFolder = node.data.type === ExplorerNodeType.FOLDER;
+  const isDb = node.data.type === ExplorerNodeType.DB;
   const folderCount =
     isFolder &&
     node.data.children &&
@@ -117,6 +132,40 @@ export function ExplorerTreeNode({
         )}
       </span>
 
+      {isFolder && folderCount != null && folderCount > 0 && (
+        <div className="opacity-0 group-hover:opacity-100 flex items-center ml-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 text-destructive hover:text-destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteAllInFolder(node.data);
+            }}
+            title={t('explorer.delete_all_in_folder')}
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
+      )}
+
+      {isDb && (
+        <div className="opacity-0 group-hover:opacity-100 flex items-center ml-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 text-destructive hover:text-destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteDatabase(node.data);
+            }}
+            title={t('explorer.delete_database')}
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
+      )}
+
       {node.data.type === ExplorerNodeType.ROOT && (
         <RootNodeActions
           isLoading={isLoading}
@@ -127,6 +176,91 @@ export function ExplorerTreeNode({
           onDelete={() => onDeleteConnection(Number(connId))}
           t={t}
         />
+      )}
+
+      {node.data.type === ExplorerNodeType.TABLE && (
+        <div className="opacity-0 group-hover:opacity-100 flex items-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-destructive hover:text-destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteTable(node.data);
+            }}
+            title={t('explorer.delete_table')}
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
+      )}
+
+      {node.data.type === ExplorerNodeType.VIEW && (
+        <div className="opacity-0 group-hover:opacity-100 flex items-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-destructive hover:text-destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteView(node.data);
+            }}
+            title={t('explorer.delete_view')}
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
+      )}
+
+      {node.data.type === ExplorerNodeType.FUNCTION && (
+        <div className="opacity-0 group-hover:opacity-100 flex items-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-destructive hover:text-destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteFunction(node.data);
+            }}
+            title={t('explorer.delete_function')}
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
+      )}
+
+      {node.data.type === ExplorerNodeType.PROCEDURE && (
+        <div className="opacity-0 group-hover:opacity-100 flex items-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-destructive hover:text-destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteProcedure(node.data);
+            }}
+            title={t('explorer.delete_procedure')}
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
+      )}
+
+      {node.data.type === ExplorerNodeType.TRIGGER && (
+        <div className="opacity-0 group-hover:opacity-100 flex items-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-destructive hover:text-destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteTrigger(node.data);
+            }}
+            title={t('explorer.delete_trigger')}
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
       )}
     </>
   );
