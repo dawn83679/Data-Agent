@@ -30,6 +30,8 @@ export interface ExplorerTreeNodeProps {
   onEditConnection: (connId: number) => void;
   onDeleteConnection: (connId: number) => void;
   onViewDdl: (node: ExplorerNode) => void;
+  /** Called when the node row is clicked (for setting SQL editor execution context). */
+  onNodeClick?: (node: ExplorerNode) => void;
 }
 
 export function ExplorerTreeNode({
@@ -42,6 +44,7 @@ export function ExplorerTreeNode({
   onEditConnection,
   onDeleteConnection,
   onViewDdl,
+  onNodeClick,
 }: ExplorerTreeNodeProps) {
   const { t } = useTranslation();
   const isConnected = !!node.data.connectionId;
@@ -144,7 +147,10 @@ export function ExplorerTreeNode({
             style={style}
             ref={dragHandle}
             className={rowClassName}
-            onClick={() => node.select()}
+            onClick={() => {
+              node.select();
+              onNodeClick?.(node.data);
+            }}
             onDoubleClick={handleToggle}
             onContextMenu={handleContextMenu}
           >
@@ -166,7 +172,10 @@ export function ExplorerTreeNode({
       style={style}
       ref={dragHandle}
       className={rowClassName}
-      onClick={() => node.select()}
+      onClick={() => {
+        node.select();
+        onNodeClick?.(node.data);
+      }}
       onDoubleClick={handleToggle}
       onContextMenu={handleContextMenu}
     >
