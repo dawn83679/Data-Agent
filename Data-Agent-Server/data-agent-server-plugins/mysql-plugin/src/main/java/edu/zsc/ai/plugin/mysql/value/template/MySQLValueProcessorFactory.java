@@ -1,6 +1,6 @@
 package edu.zsc.ai.plugin.mysql.value.template;
 
-import edu.zsc.ai.plugin.mysql.value.MySQLDataType;
+import edu.zsc.ai.plugin.mysql.value.MySQLDataTypeEnum;
 import edu.zsc.ai.plugin.value.DefaultValueProcessor;
 
 import java.util.EnumMap;
@@ -41,42 +41,44 @@ public class MySQLValueProcessorFactory {
     /**
      * Enum-based processor cache for fast lookup
      */
-    private static final Map<MySQLDataType, DefaultValueProcessor> PROCESSOR_MAP = new EnumMap<>(MySQLDataType.class);
+    private static final Map<MySQLDataTypeEnum, DefaultValueProcessor> PROCESSOR_MAP = new EnumMap<>(MySQLDataTypeEnum.class);
 
     static {
         // Register shared processor instances using enum keys
-        PROCESSOR_MAP.put(MySQLDataType.TINYINT, TINYINT_PROCESSOR);
-        PROCESSOR_MAP.put(MySQLDataType.SMALLINT, SMALLINT_PROCESSOR);
-        PROCESSOR_MAP.put(MySQLDataType.INT, INT_PROCESSOR);
-        PROCESSOR_MAP.put(MySQLDataType.INTEGER, INT_PROCESSOR);  // Alias
-        PROCESSOR_MAP.put(MySQLDataType.BIGINT, BIGINT_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.TINYINT, TINYINT_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.SMALLINT, SMALLINT_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.INT, INT_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.INTEGER, INT_PROCESSOR);  // Alias
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.BIGINT, BIGINT_PROCESSOR);
         
-        PROCESSOR_MAP.put(MySQLDataType.FLOAT, FLOAT_PROCESSOR);
-        PROCESSOR_MAP.put(MySQLDataType.DOUBLE, DOUBLE_PROCESSOR);
-        PROCESSOR_MAP.put(MySQLDataType.DECIMAL, DECIMAL_PROCESSOR);
-        PROCESSOR_MAP.put(MySQLDataType.NUMERIC, DECIMAL_PROCESSOR);  // Alias
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.FLOAT, FLOAT_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.DOUBLE, DOUBLE_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.DECIMAL, DECIMAL_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.NUMERIC, DECIMAL_PROCESSOR);  // Alias
         
-        PROCESSOR_MAP.put(MySQLDataType.DATE, DATE_PROCESSOR);
-        PROCESSOR_MAP.put(MySQLDataType.TIME, TIME_PROCESSOR);
-        PROCESSOR_MAP.put(MySQLDataType.DATETIME, DATETIME_PROCESSOR);
-        PROCESSOR_MAP.put(MySQLDataType.TIMESTAMP, TIMESTAMP_PROCESSOR);
-        PROCESSOR_MAP.put(MySQLDataType.YEAR, YEAR_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.DATE, DATE_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.TIME, TIME_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.DATETIME, DATETIME_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.TIMESTAMP, TIMESTAMP_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.YEAR, YEAR_PROCESSOR);
         
 
-        PROCESSOR_MAP.put(MySQLDataType.TEXT, TEXT_PROCESSOR);
-        PROCESSOR_MAP.put(MySQLDataType.TINYTEXT, TEXT_PROCESSOR);
-        PROCESSOR_MAP.put(MySQLDataType.MEDIUMTEXT, TEXT_PROCESSOR);
-        PROCESSOR_MAP.put(MySQLDataType.LONGTEXT, TEXT_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.TEXT, TEXT_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.TINYTEXT, TEXT_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.MEDIUMTEXT, TEXT_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.LONGTEXT, TEXT_PROCESSOR);
         
-        PROCESSOR_MAP.put(MySQLDataType.BINARY, BINARY_PROCESSOR);
-        PROCESSOR_MAP.put(MySQLDataType.VARBINARY, BINARY_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.BINARY, BINARY_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.VARBINARY, BINARY_PROCESSOR);
+
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.BLOB, BLOB_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.TINYBLOB, BLOB_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.MEDIUMBLOB, BLOB_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.LONGBLOB, BLOB_PROCESSOR);
         
-        // BLOB type (all BLOB variants are handled by MySQLDataType.BLOB)
-        PROCESSOR_MAP.put(MySQLDataType.BLOB, BLOB_PROCESSOR);
-        
-        PROCESSOR_MAP.put(MySQLDataType.BIT, BIT_PROCESSOR);
-        PROCESSOR_MAP.put(MySQLDataType.BOOLEAN, BOOLEAN_PROCESSOR);
-        PROCESSOR_MAP.put(MySQLDataType.BOOL, BOOLEAN_PROCESSOR);  // Alias
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.BIT, BIT_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.BOOLEAN, BOOLEAN_PROCESSOR);
+        PROCESSOR_MAP.put(MySQLDataTypeEnum.BOOL, BOOLEAN_PROCESSOR);  // Alias
     }
 
     /**
@@ -90,11 +92,9 @@ public class MySQLValueProcessorFactory {
             return null;
         }
 
-        // Extract base type name (remove size, unsigned, zerofill, etc.)
         String baseTypeName = extractBaseTypeName(columnTypeName);
         
-        // Convert to enum and lookup processor
-        MySQLDataType dataType = MySQLDataType.fromTypeName(baseTypeName);
+        MySQLDataTypeEnum dataType = MySQLDataTypeEnum.fromTypeName(baseTypeName);
         return dataType != null ? PROCESSOR_MAP.get(dataType) : null;
     }
 
