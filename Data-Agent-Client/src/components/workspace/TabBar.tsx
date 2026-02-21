@@ -13,24 +13,23 @@ export function TabBar() {
       id,
       name: 'new_console.sql',
       type: 'file',
-      content: ''
+      content: '',
     });
   };
 
-    return (
-    <div className={cn(
-      "h-9 theme-bg-panel flex items-end space-x-1 overflow-x-auto no-scrollbar border-b theme-border shrink-0",
-      tabs.length === 0 && "hidden"
-    )}>
+  return (
+    <div
+      className="h-9 theme-bg-panel flex items-end space-x-1 overflow-x-auto no-scrollbar border-b theme-border shrink-0"
+    >
       {tabs.map((tab) => (
         <div
           key={tab.id}
           onClick={() => switchTab(tab.id)}
           className={cn(
-            "flex items-center px-3 py-1.5 text-[11px] rounded-t min-w-[120px] max-w-[200px] group select-none cursor-pointer border-t-2 transition-colors relative",
-            tab.active 
-              ? "tab-active border-primary" 
-              : "theme-bg-panel theme-text-secondary hover:bg-accent/50 border-transparent"
+            'flex items-center px-3 py-1.5 text-[11px] rounded-t min-w-[120px] max-w-[200px] group select-none cursor-pointer border-t-2 transition-colors relative',
+            tab.active
+              ? 'tab-active border-primary'
+              : 'theme-bg-panel theme-text-secondary hover:bg-accent/50 border-transparent'
           )}
         >
           <span className="mr-2 shrink-0">
@@ -54,7 +53,7 @@ export function TabBar() {
           </button>
         </div>
       ))}
-      <button 
+      <button
         onClick={handleAddTab}
         className="flex items-center justify-center w-8 h-8 mb-0.5 theme-text-secondary hover:text-blue-500 transition-colors"
         title={t('workspace.new_console_tab_title')}
