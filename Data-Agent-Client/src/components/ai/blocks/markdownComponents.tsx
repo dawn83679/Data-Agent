@@ -70,4 +70,11 @@ export const markdownComponents: React.ComponentProps<typeof ReactMarkdown>['com
   td: ({ children }: { children?: React.ReactNode }) => (
     <td className="border theme-border px-2 py-1.5 text-left">{children}</td>
   ),
+  img: ({ src, alt }: { src?: string; alt?: string }) => {
+    // Filter out Aliyun OSS images (already shown in McpToolBlock)
+    if (src && src.includes('alipayobjects.com')) {
+      return null;
+    }
+    return <img src={src} alt={alt} className="max-w-full h-auto rounded my-2" />;
+  },
 };
