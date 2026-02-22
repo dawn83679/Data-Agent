@@ -704,17 +704,15 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
 
         StringBuilder sb = new StringBuilder();
 
-        // Export database creation
-        String dbSql = String.format(MysqlSqlConstants.SQL_SHOW_CREATE_DATABASE, databaseName);
-        try (ResultSet rs = connection.prepareStatement(dbSql).executeQuery()) {
-            if (rs.next()) {
-                sb.append(rs.getString(2)).append(";\n\n");
-            }
-        } catch (SQLException e) {
-            logger.warning("Failed to export database DDL: " + e.getMessage());
-        }
+        // Add header like Navicat
+        sb.append("--\n");
+        sb.append("-- Database: ").append(databaseName).append("\n");
+        sb.append("-- Please select the database first before executing this script\n");
+        sb.append("--\n\n");
 
-        sb.append("USE `").append(databaseName.replace("`", "``")).append("`;\n\n");
+        // Add SET statements like Navicat
+        sb.append("SET NAMES utf8mb4;\n");
+        sb.append("SET FOREIGN_KEY_CHECKS = 0;\n\n");
 
         // Export all tables DDL (direct JDBC query)
         String tablesSql = "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = '" + databaseName + "' AND TABLE_TYPE = 'BASE TABLE'";
@@ -829,6 +827,9 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
         } catch (Exception e) {
             logger.warning("Failed to export procedures: " + e.getMessage());
         }
+
+        // Add final SET statement like Navicat
+        sb.append("\nSET FOREIGN_KEY_CHECKS = 1;");
 
         return sb.toString();
     }
