@@ -642,7 +642,7 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
         }
         StringBuilder inClause = new StringBuilder();
         for (String sn : specificNames) {
-            if (inClause.length() > 0) inClause.append(',');
+            if (!inClause.isEmpty()) inClause.append(',');
             inClause.append("'").append(sn.replace("'", "''")).append("'");
         }
         String escapedDb = db.replace("'", "''");
@@ -854,9 +854,9 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
                         // Convert Boolean to 0/1 for MySQL tinyint(1)
                         values.append(((Boolean) value) ? 1 : 0);
                     } else if (value instanceof Number) {
-                        values.append(value.toString());
+                        values.append(String.valueOf(value));
                     } else if (value instanceof java.util.Date) {
-                        values.append("'").append(value.toString()).append("'");
+                        values.append("'").append(value).append("'");
                     } else {
                         // Escape single quotes and backslashes
                         String str = value.toString().replace("\\", "\\\\").replace("'", "\\'");
