@@ -9,4 +9,6 @@ public interface ProcedureService {
     List<ProcedureMetadata> listProcedures(Long connectionId, String catalog, String schema, Long userId);
 
     String getProcedureDdl(Long connectionId, String catalog, String schema, String procedureName, Long userId);
+
+    void deleteProcedure(Long connectionId, String catalog, String schema, String procedureName, Long userId);
 }

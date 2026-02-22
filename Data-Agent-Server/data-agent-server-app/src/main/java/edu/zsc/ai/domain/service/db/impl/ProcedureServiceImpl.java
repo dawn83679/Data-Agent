@@ -38,4 +38,17 @@ public class ProcedureServiceImpl implements ProcedureService {
                     return provider.getProcedureDdl(active.connection(), catalog, schema, procedureName);
                 });
     }
+
+    @Override
+    public void deleteProcedure(Long connectionId, String catalog, String schema, String procedureName, Long userId) {
+        connectionService.openConnection(connectionId, catalog, schema, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+
+        ProcedureProvider provider = DefaultPluginManager.getInstance().getProcedureProviderByPluginId(active.pluginId());
+        provider.deleteProcedure(active.connection(), active.pluginId(), catalog, schema, procedureName);
+
+        log.info("Procedure deleted successfully: connectionId={}, catalog={}, schema={}, procedureName={}",
+                connectionId, catalog, schema, procedureName);
+    }
 }

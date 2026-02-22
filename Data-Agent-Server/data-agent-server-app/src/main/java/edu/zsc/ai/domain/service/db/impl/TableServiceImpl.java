@@ -37,4 +37,17 @@ public class TableServiceImpl implements TableService {
                     return provider.getTableDdl(active.connection(), catalog, schema, tableName);
                 });
     }
+
+    @Override
+    public void deleteTable(Long connectionId, String catalog, String schema, String tableName, Long userId) {
+        connectionService.openConnection(connectionId, catalog, schema, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+
+        TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
+        provider.deleteTable(active.connection(), active.pluginId(), catalog, schema, tableName);
+
+        log.info("Table deleted successfully: connectionId={}, catalog={}, schema={}, tableName={}",
+                connectionId, catalog, schema, tableName);
+    }
 }

@@ -1,4 +1,5 @@
 import http from '../lib/http';
+import { ApiPaths } from '../constants/apiPaths';
 
 /**
  * List database names on an active connection.
@@ -6,9 +7,15 @@ import http from '../lib/http';
  */
 export const databaseService = {
   listDatabases: async (connectionId: string): Promise<string[]> => {
-    const response = await http.get<string[]>('/databases', {
+    const response = await http.get<string[]>(ApiPaths.DATABASES, {
       params: { connectionId },
     });
     return response.data;
+  },
+
+  deleteDatabase: async (connectionId: string, databaseName: string): Promise<void> => {
+    await http.post(`${ApiPaths.DATABASES}/delete`, null, {
+      params: { connectionId, databaseName },
+    });
   },
 };
