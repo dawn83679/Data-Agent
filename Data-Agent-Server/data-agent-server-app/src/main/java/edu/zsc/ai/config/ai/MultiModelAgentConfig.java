@@ -10,13 +10,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
-import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.community.model.dashscope.QwenChatRequestParameters;
 import dev.langchain4j.community.model.dashscope.QwenStreamingChatModel;
+import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
-import dev.langchain4j.service.tool.ToolExecutor;
 import edu.zsc.ai.agent.ReActAgent;
 import edu.zsc.ai.agent.ReActAgentProvider;
 import edu.zsc.ai.common.enums.ai.ModelEnum;
@@ -85,12 +84,12 @@ public class MultiModelAgentConfig {
             TodoTool todoTool,
             TableTool tableTool,
             AskUserQuestionTool askUserQuestionTool,
-            @Qualifier("mcpToolProvider") Map<ToolSpecification, ToolExecutor> mcpToolProvider) {
+            @Qualifier("mcpToolProvider") McpToolProvider mcpToolProvider) {
         return AiServices.builder(ReActAgent.class)
                 .streamingChatModel(streamingChatModel)
                 .chatMemoryProvider(chatMemoryProvider)
                 .tools(todoTool, tableTool, askUserQuestionTool)
-                .tools(mcpToolProvider)  // Add MCP tools via map
+                .toolProvider(mcpToolProvider)  // Use LangChain4j's McpToolProvider
                 .build();
     }
 
@@ -101,12 +100,12 @@ public class MultiModelAgentConfig {
             TodoTool todoTool,
             TableTool tableTool,
             AskUserQuestionTool askUserQuestionTool,
-            @Qualifier("mcpToolProvider") Map<ToolSpecification, ToolExecutor> mcpToolProvider) {
+            @Qualifier("mcpToolProvider") McpToolProvider mcpToolProvider) {
         return AiServices.builder(ReActAgent.class)
                 .streamingChatModel(streamingChatModel)
                 .chatMemoryProvider(chatMemoryProvider)
                 .tools(todoTool, tableTool, askUserQuestionTool)
-                .tools(mcpToolProvider)  // Add MCP tools via map
+                .toolProvider(mcpToolProvider)  // Use LangChain4j's McpToolProvider
                 .build();
     }
 
@@ -117,12 +116,12 @@ public class MultiModelAgentConfig {
             TodoTool todoTool,
             TableTool tableTool,
             AskUserQuestionTool askUserQuestionTool,
-            @Qualifier("mcpToolProvider") Map<ToolSpecification, ToolExecutor> mcpToolProvider) {
+            @Qualifier("mcpToolProvider") McpToolProvider mcpToolProvider) {
         return AiServices.builder(ReActAgent.class)
                 .streamingChatModel(streamingChatModel)
                 .chatMemoryProvider(chatMemoryProvider)
                 .tools(todoTool, tableTool, askUserQuestionTool)
-                .tools(mcpToolProvider)  // Add MCP tools via map
+                .toolProvider(mcpToolProvider)  // Use LangChain4j's McpToolProvider
                 .build();
     }
 
