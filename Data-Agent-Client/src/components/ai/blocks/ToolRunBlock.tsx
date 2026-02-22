@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { CheckCircle, ChevronDown, ChevronRight, XCircle } from 'lucide-react';
 import { TodoListBlock } from './TodoListBlock';
 import { AskUserQuestionBlock } from './AskUserQuestionBlock';
+import { McpToolBlock } from './McpToolBlock';
 import { isTodoTool, parseTodoListResponse } from './todoTypes';
 import {
   isAskUserQuestionTool,
@@ -28,7 +29,23 @@ export interface ToolRunBlockProps {
   hasSegmentsAfter?: boolean;
 }
 
-/** One tool run: pending = tool name only (blink); completed = icon + Ran/Failed + expandable details. Todo tools render TodoListBlock; askUserQuestion renders AskUserQuestionBlock. */
+/** Detect if tool is an MCP tool (chart, visualization, database, etc.) */
+function isMcpTool(toolName: string): boolean {
+  const lowerName = toolName.toLowerCase();
+  return (
+    lowerName.includes('chart') ||
+    lowerName.includes('graph') ||
+    lowerName.includes('diagram') ||
+    lowerName.includes('visualization') ||
+    lowerName.includes('generate_') ||
+    lowerName.startsWith('mcp_') ||
+    lowerName.includes('ddl') ||
+    lowerName.includes('sql') ||
+    lowerName.includes('query')
+  );
+}
+
+/** One tool run: pending = tool name only (blink); completed = icon + Ran/Failed + expandable details. Todo tools render TodoListBlock; askUserQuestion renders AskUserQuestionBlock; MCP tools render McpToolBlock. */
 export function ToolRunBlock({
   toolName,
   parametersData,
@@ -51,6 +68,7 @@ export function ToolRunBlock({
       ? responseData.trim()
       : undefined;
   const isAskUserResult = askUserPayload !== null;
+  const isMcpResult = !responseError && isMcpTool(toolName);
   const [collapsed, setCollapsed] = useState(() => !isAskUserQuestionTool(toolName));
 
   const { formattedParameters, isParametersJson } = (() => {
@@ -100,6 +118,17 @@ export function ToolRunBlock({
     );
   }
 
+  if (isMcpResult) {
+    return (
+      <McpToolBlock
+        toolName={toolName}
+        parametersData={parametersData}
+        responseData={responseData}
+        responseError={responseError}
+      />
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -131,6 +160,7 @@ export function ToolRunBlock({
           formattedParameters={formattedParameters}
           isParametersJson={isParametersJson}
           responseData={responseData}
+          toolName={toolName}
         />
       )}
     </div>
