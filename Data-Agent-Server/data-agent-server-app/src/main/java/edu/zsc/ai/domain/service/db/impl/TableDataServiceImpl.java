@@ -1,6 +1,7 @@
 package edu.zsc.ai.domain.service.db.impl;
 
 import edu.zsc.ai.domain.model.dto.response.db.TableDataResponse;
+import edu.zsc.ai.domain.service.db.ConnectionManager;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.TableDataService;
 import edu.zsc.ai.plugin.capability.TableProvider;

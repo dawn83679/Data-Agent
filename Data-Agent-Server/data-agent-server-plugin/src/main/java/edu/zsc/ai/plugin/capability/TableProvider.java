@@ -16,6 +16,16 @@ import java.util.List;
 
 public interface TableProvider {
 
+    /**
+     * Escapes backticks in an identifier for MySQL by doubling them
+     */
+    default String escapeIdentifier(String identifier) {
+        if (identifier == null) {
+            return null;
+        }
+        return identifier.replace("`", "``");
+    }
+
     default List<String> getTableNames(Connection connection, String catalog, String schema) {
         try {
             List<String> list = new ArrayList<>();
@@ -65,9 +75,9 @@ public interface TableProvider {
     default String buildDropTableSql(String schema, String tableName) {
         StringBuilder sql = new StringBuilder("DROP TABLE ");
         if (schema != null && !schema.isEmpty()) {
-            sql.append("`").append(schema).append("`.");
+            sql.append("`").append(escapeIdentifier(schema)).append("`.");
         }
-        sql.append("`").append(tableName).append("`");
+        sql.append("`").append(escapeIdentifier(tableName)).append("`");
         return sql.toString();
     }
 

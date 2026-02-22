@@ -74,8 +74,8 @@ export function ExplorerTreeNode({
     node.data.type === ExplorerNodeType.FUNCTION || node.data.type === ExplorerNodeType.PROCEDURE;
   const isFolder = node.data.type === ExplorerNodeType.FOLDER;
   const isDb = node.data.type === ExplorerNodeType.DB;
-  // 文件夹中只有包含可删除对象的文件夹才显示删除按钮（Tables、Views、Routines、Triggers）
-  // Columns、Keys、Indexes 是结构文件夹，不显示删除按钮
+  // Only folders containing deletable objects (Tables, Views, Routines, Triggers) show delete button
+  // Structural folders (Columns, Keys, Indexes) do not show delete button
   const isDeletableFolder = isFolder && node.data.folderName &&
     ['tables', 'views', 'routines', 'triggers'].includes(node.data.folderName);
   const folderCount =

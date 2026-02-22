@@ -12,6 +12,16 @@ import java.util.List;
 
 public interface TriggerProvider {
 
+    /**
+     * Escapes backticks in an identifier for MySQL by doubling them
+     */
+    default String escapeIdentifier(String identifier) {
+        if (identifier == null) {
+            return null;
+        }
+        return identifier.replace("`", "``");
+    }
+
     List<TriggerMetadata> getTriggers(Connection connection, String catalog, String schema, String tableName);
 
     default String getTriggerDdl(Connection connection, String catalog, String schema, String triggerName) {
@@ -53,9 +63,9 @@ public interface TriggerProvider {
 
         StringBuilder sql = new StringBuilder("DROP TRIGGER IF EXISTS ");
         if (schema != null && !schema.isEmpty()) {
-            sql.append("`").append(schema).append("`.");
+            sql.append("`").append(escapeIdentifier(schema)).append("`.");
         }
-        sql.append("`").append(cleanTriggerName).append("`");
+        sql.append("`").append(escapeIdentifier(cleanTriggerName)).append("`");
         return sql.toString();
     }
 }

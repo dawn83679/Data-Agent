@@ -17,6 +17,16 @@ import java.util.List;
 
 public interface FunctionProvider {
 
+    /**
+     * Escapes backticks in an identifier for MySQL by doubling them
+     */
+    default String escapeIdentifier(String identifier) {
+        if (identifier == null) {
+            return null;
+        }
+        return identifier.replace("`", "``");
+    }
+
     default List<FunctionMetadata> getFunctions(Connection connection, String catalog, String schema) {
         try {
             List<FunctionMetadata> list = new ArrayList<>();
@@ -65,9 +75,9 @@ public interface FunctionProvider {
     default String buildDropFunctionSql(String schema, String functionName) {
         StringBuilder sql = new StringBuilder("DROP FUNCTION ");
         if (schema != null && !schema.isEmpty()) {
-            sql.append("`").append(schema).append("`.");
+            sql.append("`").append(escapeIdentifier(schema)).append("`.");
         }
-        sql.append("`").append(functionName).append("`");
+        sql.append("`").append(escapeIdentifier(functionName)).append("`");
         return sql.toString();
     }
 }

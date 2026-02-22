@@ -18,6 +18,16 @@ import java.util.List;
 
 public interface ProcedureProvider {
 
+    /**
+     * Escapes backticks in an identifier for MySQL by doubling them
+     */
+    default String escapeIdentifier(String identifier) {
+        if (identifier == null) {
+            return null;
+        }
+        return identifier.replace("`", "``");
+    }
+
     default List<ProcedureMetadata> getProcedures(Connection connection, String catalog, String schema) {
         try {
             List<ProcedureMetadata> list = new ArrayList<>();
@@ -72,9 +82,9 @@ public interface ProcedureProvider {
     default String buildDropProcedureSql(String schema, String procedureName) {
         StringBuilder sql = new StringBuilder("DROP PROCEDURE ");
         if (schema != null && !schema.isEmpty()) {
-            sql.append("`").append(schema).append("`.");
+            sql.append("`").append(escapeIdentifier(schema)).append("`.");
         }
-        sql.append("`").append(procedureName).append("`");
+        sql.append("`").append(escapeIdentifier(procedureName)).append("`");
         return sql.toString();
     }
 }

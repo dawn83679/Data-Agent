@@ -25,6 +25,7 @@ import edu.zsc.ai.plugin.model.metadata.ProcedureMetadata;
 import edu.zsc.ai.plugin.model.metadata.TriggerMetadata;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -435,9 +436,13 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
             throw new IllegalArgumentException("Connection and table name must not be null or empty");
         }
 
-        String fullTableName = (catalog != null && !catalog.isEmpty())
-                ? String.format("`%s`.`%s`", catalog, tableName)
-                : String.format("`%s`", tableName);
+        // Escape backticks to prevent SQL injection
+        String escapedCatalog = catalog != null ? catalog.replace("`", "``") : null;
+        String escapedTableName = tableName.replace("`", "``");
+
+        String fullTableName = (escapedCatalog != null && !escapedCatalog.isEmpty())
+                ? String.format("`%s`.`%s`", escapedCatalog, escapedTableName)
+                : String.format("`%s`", escapedTableName);
 
         String sql = String.format(MysqlSqlConstants.SQL_SELECT_TABLE_DATA, fullTableName, pageSize, offset);
 
@@ -454,20 +459,21 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
             throw new IllegalArgumentException("Connection and table name must not be null or empty");
         }
 
-        String fullTableName = (catalog != null && !catalog.isEmpty())
-                ? String.format("`%s`.`%s`", catalog, tableName)
-                : String.format("`%s`", tableName);
+        // Escape backticks to prevent SQL injection
+        String escapedCatalog = catalog != null ? catalog.replace("`", "``") : null;
+        String escapedTableName = tableName.replace("`", "``");
+
+        String fullTableName = (escapedCatalog != null && !escapedCatalog.isEmpty())
+                ? String.format("`%s`.`%s`", escapedCatalog, escapedTableName)
+                : String.format("`%s`", escapedTableName);
 
         String sql = String.format(MysqlSqlConstants.SQL_COUNT_TABLE_DATA, fullTableName);
 
-        try {
-            ResultSet rs = connection.prepareStatement(sql).executeQuery();
+        try (PreparedStatement stmt = connection.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
             if (rs.next()) {
-                long count = rs.getLong("total");
-                rs.close();
-                return count;
+                return rs.getLong("total");
             }
-            rs.close();
             return 0;
         } catch (SQLException e) {
             throw new RuntimeException("Failed to get table data count: " + e.getMessage(), e);

@@ -16,6 +16,16 @@ import java.util.List;
 
 public interface ViewProvider {
 
+    /**
+     * Escapes backticks in an identifier for MySQL by doubling them
+     */
+    default String escapeIdentifier(String identifier) {
+        if (identifier == null) {
+            return null;
+        }
+        return identifier.replace("`", "``");
+    }
+
     default List<String> getViews(Connection connection, String catalog, String schema) {
         try {
             List<String> list = new ArrayList<>();
@@ -63,9 +73,9 @@ public interface ViewProvider {
     default String buildDropViewSql(String schema, String viewName) {
         StringBuilder sql = new StringBuilder("DROP VIEW ");
         if (schema != null && !schema.isEmpty()) {
-            sql.append("`").append(schema).append("`.");
+            sql.append("`").append(escapeIdentifier(schema)).append("`.");
         }
-        sql.append("`").append(viewName).append("`");
+        sql.append("`").append(escapeIdentifier(viewName)).append("`");
         return sql.toString();
     }
 

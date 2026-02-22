@@ -16,6 +16,16 @@ import java.util.List;
 
 public interface DatabaseProvider {
 
+    /**
+     * Escapes backticks in an identifier for MySQL by doubling them
+     */
+    default String escapeIdentifier(String identifier) {
+        if (identifier == null) {
+            return null;
+        }
+        return identifier.replace("`", "``");
+    }
+
     default List<String> getDatabases(Connection connection) {
         try {
             List<String> list = new ArrayList<>();
@@ -38,7 +48,7 @@ public interface DatabaseProvider {
         CommandExecutor<SqlCommandRequest, SqlCommandResult> executor = DefaultPluginManager.getInstance()
                 .getSqlCommandExecutorByPluginId(pluginId);
 
-        String dropSql = String.format("DROP DATABASE `%s`", databaseName);
+        String dropSql = String.format("DROP DATABASE `%s`", escapeIdentifier(databaseName));
 
         SqlCommandRequest pluginRequest = new SqlCommandRequest();
         pluginRequest.setConnection(connection);
