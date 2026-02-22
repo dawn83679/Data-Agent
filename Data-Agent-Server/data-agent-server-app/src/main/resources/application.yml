@@ -9,6 +9,8 @@ spring:
     url: jdbc:postgresql://localhost:5432/data_agent
     username: postgres
     password: postgres
+  profiles:
+    active: local
 
 # MyBatis-Plus configuration
 mybatis-plus:
@@ -23,7 +25,7 @@ mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
 
 sa-token:
-  jwt-secret-key: deepImage-secret-key
+  jwt-secret-key: deepImage-secret-key  
   timeout: 1800
   token-name: Authorization
   is-log: true
@@ -48,24 +50,46 @@ auth:
         redirect-uri: ${GITHUB_REDIRECT_URI}
 
 # LangChain4j Configuration for Qwen (DashScope)
+# Note: Actual API keys are configured in application-local.yml
 langchain4j:
   community:
     dashscope:
       chat-model:
-        api-key: ${ALIYUN_AI_API_KEY}
+        api-key: ${ALIYUN_AI_API_KEY:}
         model-name: qwen3-max
         parameters:
           enable-thinking: true
           thinking-budget: 1000
       streaming-chat-model:
-        api-key: ${ALIYUN_AI_API_KEY}
+        api-key: ${ALIYUN_AI_API_KEY:}
         model-name: qwen3-max
         parameters:
           enable-thinking: true
           thinking-budget: 1000
       embedding-model:
-        api-key: ${ALIYUN_AI_API_KEY}
+        api-key: ${ALIYUN_AI_API_KEY:}
         model-name: text-embedding-v4
       tokenizer:
-        api-key: ${ALIYUN_AI_API_KEY}
+        api-key: ${ALIYUN_AI_API_KEY:}
         model-name: qwen-plus
+
+# MCP (Model Context Protocol) Configuration
+mcp:
+  enabled: true  # Set to false to disable MCP integration
+  servers:
+    # 简化配置示例（推荐）- 只需指定 package
+    chart-server:
+      packageName: "@modelcontextprotocol/server-everything"
+      enabled: true
+      timeoutSeconds: 60
+      debug: false
+    
+    # 完整配置示例（高级）- 指定完整命令和参数
+    # custom-server:
+    #   command: npx
+    #   args: ["@custom/mcp-server@1.0.0", "--option", "value"]
+    #   env:
+    #     API_KEY: ${CUSTOM_API_KEY}
+    #   enabled: true
+    #   timeoutSeconds: 60
+    #   debug: false
