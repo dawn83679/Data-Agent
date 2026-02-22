@@ -25,6 +25,7 @@ import edu.zsc.ai.plugin.model.metadata.ProcedureMetadata;
 import edu.zsc.ai.plugin.model.metadata.TriggerMetadata;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -426,6 +427,61 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
             throw new RuntimeException("Failed to get trigger DDL: Column '" + MysqlShowColumnConstants.SQL_ORIGINAL_STATEMENT + "' not found in result");
         }
         return ddl.toString();
+    }
+
+    @Override
+    public ResultSet getTableData(Connection connection, String catalog, String schema, String tableName, int offset, int pageSize) {
+        if (connection == null || tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("Connection and table name must not be null or empty");
+        }
+
+        String fullTableName = (catalog != null && !catalog.isEmpty())
+                ? String.format("`%s`.`%s`", catalog, tableName)
+                : String.format("`%s`", tableName);
+
+        String sql = String.format(MysqlSqlConstants.SQL_SELECT_TABLE_DATA, fullTableName, pageSize, offset);
+
+        try {
+            return connection.prepareStatement(sql).executeQuery();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to get table data: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public long getTableDataCount(Connection connection, String catalog, String schema, String tableName) {
+        if (connection == null || tableName == null || tableName.isEmpty()) {
+            throw new IllegalArgumentException("Connection and table name must not be null or empty");
+        }
+
+        String fullTableName = (catalog != null && !catalog.isEmpty())
+                ? String.format("`%s`.`%s`", catalog, tableName)
+                : String.format("`%s`", tableName);
+
+        String sql = String.format(MysqlSqlConstants.SQL_COUNT_TABLE_DATA, fullTableName);
+
+        try {
+            ResultSet rs = connection.prepareStatement(sql).executeQuery();
+            if (rs.next()) {
+                long count = rs.getLong("total");
+                rs.close();
+                return count;
+            }
+            rs.close();
+            return 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to get table data count: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public ResultSet getViewData(Connection connection, String catalog, String schema, String viewName, int offset, int pageSize) {
+        return getTableData(connection, catalog, schema, viewName, offset, pageSize);
+    }
+
+    @Override
+    public long getViewDataCount(Connection connection, String catalog, String schema, String viewName) {
+        return getTableDataCount(connection, catalog, schema, viewName);
     }
 
     @Override

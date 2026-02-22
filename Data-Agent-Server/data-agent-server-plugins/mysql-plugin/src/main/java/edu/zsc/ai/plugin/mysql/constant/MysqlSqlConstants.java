@@ -67,6 +67,15 @@ public final class MysqlSqlConstants {
                     + " AND " + ORDINAL_POSITION + " > 0"
                     + " AND " + PARAMETER_NAME + " IS NOT NULL";
 
+    // --- Table/View Data Query (with pagination) ---
+    /** %1$s = table/view name, %2$s = offset, %3$s = page size */
+    public static final String SQL_SELECT_TABLE_DATA =
+            "SELECT * FROM %s LIMIT %d OFFSET %d";
+
+    /** %1$s = table/view name */
+    public static final String SQL_COUNT_TABLE_DATA =
+            "SELECT COUNT(*) AS total FROM %s";
+
     private MysqlSqlConstants() {
     }
 }

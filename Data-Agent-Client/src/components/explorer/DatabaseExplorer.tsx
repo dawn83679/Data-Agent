@@ -10,6 +10,7 @@ import { DriverManageModal } from '../common/DriverManageModal';
 import { DeleteConnectionDialog } from './DeleteConnectionDialog';
 import { DeleteTableDialog } from './DeleteTableDialog';
 import { DdlViewerDialog } from './DdlViewerDialog';
+import { TableDataDialog } from './TableDataDialog';
 import { ExplorerTreeNode } from './ExplorerTreeNode';
 import {
   DropdownMenu,
@@ -104,6 +105,18 @@ export function DatabaseExplorer() {
   const handleViewDdl = (node: ExplorerNode) => {
     setSelectedDdlNode(node);
     setDdlDialogOpen(true);
+  };
+
+  const [tableDataDialogOpen, setTableDataDialogOpen] = useState(false);
+  const [selectedTableDataNode, setSelectedTableDataNode] = useState<ExplorerNode | null>(null);
+
+  const [highlightColumn, setHighlightColumn] = useState<string | undefined>(undefined);
+
+  const handleViewData = (node: ExplorerNode, highlightCol?: string) => {
+    if (!node.connectionId) return;
+    setHighlightColumn(highlightCol);
+    setSelectedTableDataNode(node);
+    setTableDataDialogOpen(true);
   };
 
   const handleDeleteTable = (node: ExplorerNode) => {
@@ -516,6 +529,7 @@ export function DatabaseExplorer() {
         onEditConnection={openEditModal}
         onDeleteConnection={(id) => setDeleteConfirmId(id)}
         onViewDdl={handleViewDdl}
+        onViewData={handleViewData}
         onDeleteTable={handleDeleteTable}
         onDeleteView={handleDeleteView}
         onDeleteFunction={handleDeleteFunction}
@@ -670,6 +684,27 @@ export function DatabaseExplorer() {
           title={ddlConfig.title}
           displayName={ddlConfig.displayName}
           loadDdl={ddlConfig.loadDdl}
+        />
+      )}
+
+      {selectedTableDataNode && (
+        <TableDataDialog
+          open={tableDataDialogOpen}
+          onOpenChange={(open) => {
+            setTableDataDialogOpen(open);
+            if (!open) {
+              setSelectedTableDataNode(null);
+              setHighlightColumn(undefined);
+            }
+          }}
+          title={selectedTableDataNode.type === ExplorerNodeType.TABLE ? t('explorer.table_data') : t('explorer.view_data_title')}
+          displayName={[selectedTableDataNode.catalog, selectedTableDataNode.schema, selectedTableDataNode.tableName || selectedTableDataNode.name].filter(Boolean).join('.')}
+          connectionId={selectedTableDataNode.connectionId!}
+          objectName={selectedTableDataNode.tableName || selectedTableDataNode.objectName || selectedTableDataNode.name}
+          objectType={selectedTableDataNode.type === ExplorerNodeType.TABLE ? 'table' : selectedTableDataNode.type === ExplorerNodeType.VIEW ? 'view' : 'table'}
+          catalog={selectedTableDataNode.catalog}
+          schema={selectedTableDataNode.schema}
+          highlightColumn={highlightColumn}
         />
       )}
 
