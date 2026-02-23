@@ -96,16 +96,9 @@ public final class MysqlSqlConstants {
     /** Show all storage engines */
     public static final String SQL_SHOW_ENGINES = "SHOW ENGINES";
 
-    // --- Database Create ---
-    /** %1$s = database name, %2$s = charset, %3$s = collation (optional) */
-    public static final String SQL_CREATE_DATABASE =
-            "CREATE DATABASE `%s` DEFAULT CHARACTER SET %s" +
-            "%s";
-
-    // --- Table Create ---
-    /** %1$s = full table name (database.table), %2$s = table definition (columns, keys, indexes, etc), %3$s = table options */
-    public static final String SQL_CREATE_TABLE_START =
-            "CREATE TABLE %s (";
+    // --- Table Drop ---
+    /** %s = table name */
+    public static final String SQL_DROP_TABLE_IF_EXISTS = "DROP TABLE IF EXISTS `%s`";
 
     private MysqlSqlConstants() {
     }

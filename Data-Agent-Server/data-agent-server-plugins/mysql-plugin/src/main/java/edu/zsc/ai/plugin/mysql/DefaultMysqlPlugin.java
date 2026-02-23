@@ -720,10 +720,11 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
         try (ResultSet rs = connection.prepareStatement(tablesSql).executeQuery()) {
             while (rs.next()) {
                 String tableName = rs.getString("TABLE_NAME");
-                String tableSql = "SHOW CREATE TABLE `" + tableName + "`";
+                String tableSql = String.format(MysqlSqlConstants.SQL_SHOW_CREATE_TABLE, "`" + tableName + "`");
                 try (ResultSet rs2 = connection.prepareStatement(tableSql).executeQuery()) {
                     if (rs2.next()) {
-                        sb.append("DROP TABLE IF EXISTS `").append(tableName).append("`;\n");
+                        sb.append(String.format(MysqlSqlConstants.SQL_DROP_TABLE_IF_EXISTS, tableName));
+                        sb.append(";\n");
                         sb.append(rs2.getString(2)).append(";\n\n");
                     }
                 }
