@@ -164,6 +164,11 @@
       "submitAnswer": "提交答案",
       "answerPrefix": "用户回答：",
       "submittedAnswer": "您的答案"
+    },
+    "toolRun": {
+      "streamingArguments": "正在流式传输参数...",
+      "executing": "正在执行...",
+      "parameters": "参数"
     }
   },
   "explorer": {
@@ -182,6 +187,16 @@
     "driver": "驱动",
     "view_ddl": "查看 DDL",
     "view_ddl_title": "视图 DDL",
+    "view_data": "查看数据",
+    "view_data_title": "视图数据",
+    "table_data": "表数据",
+    "load_table_data_failed": "加载表数据失败",
+    "total_records": "共 {{count}} 条记录",
+    "pages": "页",
+    "page_info": "第 {{current}} 页，共 {{total}} 页",
+    "no_data": "暂无数据",
+    "previous": "上一页",
+    "next": "下一页",
     "table_ddl": "表结构 DDL",
     "function_ddl_title": "函数 DDL",
     "procedure_ddl_title": "存储过程 DDL",
@@ -198,7 +213,29 @@
     "copy_ddl": "复制 DDL",
     "ddl_copied": "DDL 已复制到剪贴板",
     "load_ddl_failed": "加载 DDL 失败",
-    "close": "关闭"
+    "close": "关闭",
+    "delete_table": "删除表",
+    "delete_table_confirm": "确定要删除表 \"{{name}}\" 吗？此操作不可恢复。",
+    "delete_table_failed": "删除表失败",
+    "delete_view": "删除视图",
+    "delete_view_confirm": "确定要删除视图 \"{{name}}\" 吗？此操作不可恢复。",
+    "delete_view_failed": "删除视图失败",
+    "delete_function": "删除函数",
+    "delete_function_confirm": "确定要删除函数 \"{{name}}\" 吗？此操作不可恢复。",
+    "delete_function_failed": "删除函数失败",
+    "delete_procedure": "删除存储过程",
+    "delete_procedure_confirm": "确定要删除存储过程 \"{{name}}\" 吗？此操作不可恢复。",
+    "delete_procedure_failed": "删除存储过程失败",
+    "delete_trigger": "删除触发器",
+    "delete_trigger_confirm": "确定要删除触发器 \"{{name}}\" 吗？此操作不可恢复。",
+    "delete_trigger_failed": "删除触发器失败",
+    "delete_all_in_folder": "删除全部",
+    "delete_all_in_folder_confirm": "确定要删除 \"{{name}}\" 文件夹下的全部 {{count}} 个对象吗？此操作不可恢复。",
+    "delete_folder_success": "已成功删除文件夹下的所有对象",
+    "delete_folder_failed": "删除文件夹下的对象失败",
+    "delete_database": "删除数据库",
+    "delete_database_confirm": "确定要删除数据库 \"{{name}}\" 吗？此操作不可恢复。",
+    "delete_database_failed": "删除数据库失败"
   },
   "connections": {
     "new": "新建连接",
@@ -245,7 +282,8 @@
     "update_failed": "更新连接失败",
     "delete_confirm_title": "删除连接",
     "delete_confirm_desc": "确定要删除该连接配置吗？此操作不可撤销。",
-    "delete": "删除"
+    "delete": "删除",
+    "deleting": "删除中..."
   },
   "drivers": {
     "title": "驱动管理",

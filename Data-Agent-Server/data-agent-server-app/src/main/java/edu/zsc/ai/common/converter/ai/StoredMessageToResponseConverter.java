@@ -9,26 +9,32 @@ import edu.zsc.ai.common.enums.ai.MessageRoleEnum;
 import edu.zsc.ai.domain.model.dto.response.ai.ConversationMessageResponse;
 import edu.zsc.ai.domain.model.dto.response.agent.ChatResponseBlock;
 import edu.zsc.ai.domain.model.entity.ai.StoredChatMessage;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * Converts stored chat message + deserialized ChatMessage to API response DTO.
  */
-public final class StoredMessageToResponseConverter {
+@Component
+@RequiredArgsConstructor
+public class StoredMessageToResponseConverter {
 
-    private StoredMessageToResponseConverter() {
-    }
+    @Qualifier("mcpToolNameToServerMap")
+    private final Map<String, String> mcpToolNameToServerMap;
 
     /**
      * Converts one stored message (with its deserialized payload) to ConversationMessageResponse.
      * Role is normalized to "user" or "assistant" for frontend.
      */
-    public static ConversationMessageResponse toResponse(StoredChatMessage stored, ChatMessage message) {
+    public ConversationMessageResponse toResponse(StoredChatMessage stored, ChatMessage message) {
         String role = MessageRoleEnum.fromBackendType(message.type().name()).getValue();
         String content;
         List<ChatResponseBlock> blocks;
@@ -42,11 +48,16 @@ public final class StoredMessageToResponseConverter {
         } else if (message instanceof ToolExecutionResultMessage toolMsg) {
             content = StringUtils.defaultString(toolMsg.text());
             boolean isError = Boolean.TRUE.equals(toolMsg.isError());
+
+            // Query serverName from mapping table
+            String serverName = mcpToolNameToServerMap.get(toolMsg.toolName());
+
             blocks = List.of(ChatResponseBlock.toolResult(
                     toolMsg.id(),
                     toolMsg.toolName(),
                     toolMsg.text(),
-                    isError));
+                    isError,
+                    serverName));
         } else {
             content = "";
             blocks = List.of();
@@ -61,7 +72,7 @@ public final class StoredMessageToResponseConverter {
                 .build();
     }
 
-    private static String userMessageContent(UserMessage userMsg) {
+    private String userMessageContent(UserMessage userMsg) {
         if (CollectionUtils.isEmpty(userMsg.contents())) {
             return "";
         }
@@ -71,7 +82,7 @@ public final class StoredMessageToResponseConverter {
                 .collect(Collectors.joining("\n"));
     }
 
-    private static List<ChatResponseBlock> aiMessageBlocks(AiMessage aiMsg) {
+    private List<ChatResponseBlock> aiMessageBlocks(AiMessage aiMsg) {
         List<ChatResponseBlock> out = new ArrayList<>();
         if (StringUtils.isNotBlank(aiMsg.thinking())) {
             out.add(ChatResponseBlock.thought(aiMsg.thinking()));
@@ -81,11 +92,14 @@ public final class StoredMessageToResponseConverter {
         }
         if (CollectionUtils.isNotEmpty(aiMsg.toolExecutionRequests())) {
             for (var req : aiMsg.toolExecutionRequests()) {
+                // Query serverName from mapping table
+                String serverName = mcpToolNameToServerMap.get(req.name());
+
                 out.add(ChatResponseBlock.toolCall(
                         req.id(),
                         StringUtils.defaultString(req.name()),
-                        StringUtils.defaultString(req.arguments())
-                ));
+                        StringUtils.defaultString(req.arguments()),
+                        serverName));
             }
         }
         return CollectionUtils.isEmpty(out) ? List.of() : out;

@@ -37,8 +37,7 @@ export function MessageList({
         const isLastMessage = msgIndex === displayMessages.length - 1;
         const isLastAssistantStreaming =
           isLastMessage && msg.role === MessageRole.ASSISTANT && isLoading;
-        const showPlanningIndicator =
-          isLastAssistantStreaming && showPlanning;
+        const showPlanningIndicator = isLoading && showPlanning;
         const segments =
           msg.blocks && msg.blocks.length > 0
             ? blocksToSegments(msg.blocks)

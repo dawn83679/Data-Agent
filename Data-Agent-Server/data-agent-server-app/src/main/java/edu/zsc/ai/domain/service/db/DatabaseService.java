@@ -10,4 +10,6 @@ public interface DatabaseService {
      * List databases for a connection, with explicit user for ownership. When userId is null, uses current login (StpUtil).
      */
     List<String> listDatabases(Long connectionId, Long userId);
+
+    void deleteDatabase(Long connectionId, String databaseName, Long userId);
 }

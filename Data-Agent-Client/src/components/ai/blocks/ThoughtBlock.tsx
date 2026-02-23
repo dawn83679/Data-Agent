@@ -3,7 +3,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '../../../lib/utils';
 import { THOUGHT_LABEL_THINKING, THOUGHT_LABEL_THOUGHT } from '../../../constants/chat';
-import { markdownComponents, markdownRemarkPlugins } from './markdownComponents';
+import { useMarkdownComponents, markdownRemarkPlugins } from './markdownComponents';
 
 export interface ThoughtBlockProps {
   data: string;
@@ -13,6 +13,7 @@ export interface ThoughtBlockProps {
 
 /** Renders a THOUGHT block (reasoning content). Shows "Thinking" while streaming (defaultExpanded), "Thought" when done. Expanded area has fixed height and scroll. */
 export function ThoughtBlock({ data, defaultExpanded = false }: ThoughtBlockProps) {
+  const markdownComponents = useMarkdownComponents();
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export function ThoughtBlock({ data, defaultExpanded = false }: ThoughtBlockProp
         )}
       >
         <span className="opacity-80">{expanded ? <ChevronDown className="w-3 h-3 shrink-0" aria-hidden /> : <ChevronRight className="w-3 h-3 shrink-0" aria-hidden />}</span>
-        <span className="font-normal">{label}</span>
+        <span className={cn('font-normal', defaultExpanded && 'animate-blink')}>{label}</span>
       </button>
       {expanded && (
         <div className="pl-4 pr-0 py-1 border-l border-current/20 max-h-[280px] overflow-y-auto">

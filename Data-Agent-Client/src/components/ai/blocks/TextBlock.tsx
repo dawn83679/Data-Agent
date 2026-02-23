@@ -1,5 +1,5 @@
 import ReactMarkdown from 'react-markdown';
-import { markdownComponents, markdownRemarkPlugins } from './markdownComponents';
+import { useMarkdownComponents, markdownRemarkPlugins } from './markdownComponents';
 
 export interface TextBlockProps {
   data: string;
@@ -7,6 +7,7 @@ export interface TextBlockProps {
 
 /** Renders a TEXT block (Markdown body). */
 export function TextBlock({ data }: TextBlockProps) {
+  const markdownComponents = useMarkdownComponents();
   if (!data) return null;
   return (
     <div className="mb-2 last:mb-0">

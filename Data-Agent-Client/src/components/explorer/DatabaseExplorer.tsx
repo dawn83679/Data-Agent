@@ -2,13 +2,15 @@ import * as React from 'react';
 import { useState } from 'react';
 import { Database, Plus, Search, RefreshCw, Settings } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { useWorkspaceStore, type SqlContext } from '../../store/workspaceStore';
+import { useWorkspaceStore } from '../../store/workspaceStore';
 import { useTranslation } from 'react-i18next';
 import { Tree as ArboristTree, NodeApi } from 'react-arborist';
 import { ConnectionFormModal, type ConnectionFormMode } from '../common/ConnectionFormModal';
 import { DriverManageModal } from '../common/DriverManageModal';
 import { DeleteConnectionDialog } from './DeleteConnectionDialog';
+import { DeleteEntityDialog } from './DeleteEntityDialog';
 import { DdlViewerDialog } from './DdlViewerDialog';
+import { TableDataDialog } from './TableDataDialog';
 import { ExplorerTreeNode } from './ExplorerTreeNode';
 import {
   DropdownMenu,
@@ -23,37 +25,21 @@ import {
 import { useConnectionTree, type ExplorerNode } from '../../hooks/useConnectionTree';
 import { ExplorerTreeConfig, ExplorerNodeType } from '../../constants/explorer';
 import { DataAttributes } from '../../constants/dataAttributes';
+import { getDeleteService } from '../../utils/deleteHandlers';
+import { removeNodeById, clearFolderChildren } from '../../utils/treeOperations';
+import { DELETE_DIALOG_CONFIG } from '../../constants/deleteConfig';
 import { tableService } from '../../services/table.service';
 import { viewService } from '../../services/view.service';
 import { functionService } from '../../services/function.service';
 import { procedureService } from '../../services/procedure.service';
 import { triggerService } from '../../services/trigger.service';
 
-function getSqlContextFromNode(node: ExplorerNode): Partial<SqlContext> | null {
-  const id = node.dbConnection?.id ?? (node.connectionId != null ? Number(node.connectionId) : NaN);
-  if (!id || isNaN(id)) return null;
-  const connectionId = id as number;
-  switch (node.type) {
-    case ExplorerNodeType.ROOT:
-      return { connectionId, databaseName: null, schemaName: null };
-    case ExplorerNodeType.DB:
-      return { connectionId, databaseName: node.name, schemaName: null };
-    case ExplorerNodeType.SCHEMA:
-      return { connectionId, databaseName: node.catalog ?? null, schemaName: node.name };
-    default:
-      return {
-        connectionId,
-        databaseName: node.catalog ?? null,
-        schemaName: node.schema ?? null,
-      };
-  }
-}
-
 export function DatabaseExplorer() {
   const { t } = useTranslation();
-  const { supportedDbTypes, setSqlContext } = useWorkspaceStore();
+  const { supportedDbTypes } = useWorkspaceStore();
   const {
     treeDataState,
+    setTreeDataState,
     loadNodeData,
     handleDisconnect,
     isConnectionsLoading,
@@ -72,6 +58,21 @@ export function DatabaseExplorer() {
 
   const [ddlDialogOpen, setDdlDialogOpen] = useState(false);
   const [selectedDdlNode, setSelectedDdlNode] = useState<ExplorerNode | null>(null);
+
+  // Unified delete state for all entity types
+  interface DeleteState {
+    type: ExplorerNodeType | null;
+    node: ExplorerNode | null;
+    isOpen: boolean;
+    isPending: boolean;
+  }
+
+  const [deleteState, setDeleteState] = useState<DeleteState>({
+    type: null,
+    node: null,
+    isOpen: false,
+    isPending: false,
+  });
 
   React.useEffect(() => {
     useWorkspaceStore.getState().fetchSupportedDbTypes();
@@ -93,6 +94,79 @@ export function DatabaseExplorer() {
   const handleViewDdl = (node: ExplorerNode) => {
     setSelectedDdlNode(node);
     setDdlDialogOpen(true);
+  };
+
+  const [tableDataDialogOpen, setTableDataDialogOpen] = useState(false);
+  const [selectedTableDataNode, setSelectedTableDataNode] = useState<ExplorerNode | null>(null);
+
+  const [highlightColumn, setHighlightColumn] = useState<string | undefined>(undefined);
+
+  const handleViewData = (node: ExplorerNode, highlightCol?: string) => {
+    if (!node.connectionId) return;
+    setHighlightColumn(highlightCol);
+    setSelectedTableDataNode(node);
+    setTableDataDialogOpen(true);
+  };
+
+  // Unified delete handler for all entity types
+  const handleDelete = (node: ExplorerNode, type: ExplorerNodeType) => {
+    if (!node.connectionId && type !== ExplorerNodeType.FOLDER) return;
+    setDeleteState({ type, node, isOpen: true, isPending: false });
+  };
+
+  // Helper function to delete all items in a folder
+  const handleFolderDelete = async (folderNode: ExplorerNode) => {
+    if (!folderNode.connectionId || !folderNode.children) return;
+
+    for (const child of folderNode.children.filter(c => c.type !== 'empty')) {
+      const deleteService = getDeleteService(child.type as ExplorerNodeType);
+      if (deleteService) {
+        try {
+          await deleteService({
+            connectionId: folderNode.connectionId,
+            name: child.name,
+            catalog: folderNode.catalog,
+            schema: folderNode.schema,
+          });
+        } catch (err) {
+          console.error(`Failed to delete ${child.type} ${child.name}:`, err);
+        }
+      }
+    }
+
+    setTreeDataState(prev => clearFolderChildren(prev, folderNode.id));
+  };
+
+  // Unified confirm delete function for all entity types
+  const confirmDelete = async () => {
+    const { type, node } = deleteState;
+    if (!node || !type) return;
+
+    setDeleteState(prev => ({ ...prev, isPending: true }));
+
+    try {
+      if (type === ExplorerNodeType.FOLDER) {
+        await handleFolderDelete(node);
+      } else {
+        const deleteService = getDeleteService(type);
+        if (!deleteService) throw new Error(`No delete service for ${type}`);
+
+        await deleteService({
+          connectionId: node.connectionId!,
+          name: node.name,
+          catalog: node.catalog,
+          schema: node.schema,
+        });
+
+        setTreeDataState(prev => removeNodeById(prev, node.id));
+      }
+    } catch (error) {
+      console.error(`Failed to delete ${type}:`, error);
+      const config = DELETE_DIALOG_CONFIG[type];
+      if (config) alert(t(config.errorKey));
+    } finally {
+      setDeleteState({ type: null, node: null, isOpen: false, isPending: false });
+    }
   };
 
   const getDdlConfig = () => {
@@ -156,10 +230,8 @@ export function DatabaseExplorer() {
         onEditConnection={openEditModal}
         onDeleteConnection={(id) => setDeleteConfirmId(id)}
         onViewDdl={handleViewDdl}
-        onNodeClick={(data) => {
-          const ctx = getSqlContextFromNode(data);
-          if (ctx) setSqlContext(ctx);
-        }}
+        onViewData={handleViewData}
+        onDelete={handleDelete}
       />
     );
   };
@@ -307,6 +379,48 @@ export function DatabaseExplorer() {
           title={ddlConfig.title}
           displayName={ddlConfig.displayName}
           loadDdl={ddlConfig.loadDdl}
+        />
+      )}
+
+      {selectedTableDataNode && (
+        <TableDataDialog
+          open={tableDataDialogOpen}
+          onOpenChange={(open) => {
+            setTableDataDialogOpen(open);
+            if (!open) {
+              setSelectedTableDataNode(null);
+              setHighlightColumn(undefined);
+            }
+          }}
+          title={selectedTableDataNode.type === ExplorerNodeType.TABLE ? t('explorer.table_data') : t('explorer.view_data_title')}
+          displayName={[selectedTableDataNode.catalog, selectedTableDataNode.schema, selectedTableDataNode.tableName || selectedTableDataNode.name].filter(Boolean).join('.')}
+          connectionId={Number(selectedTableDataNode.connectionId!)}
+          objectName={selectedTableDataNode.tableName || selectedTableDataNode.objectName || selectedTableDataNode.name}
+          objectType={selectedTableDataNode.type === ExplorerNodeType.TABLE ? 'table' : selectedTableDataNode.type === ExplorerNodeType.VIEW ? 'view' : 'table'}
+          catalog={selectedTableDataNode.catalog}
+          schema={selectedTableDataNode.schema}
+          highlightColumn={highlightColumn}
+        />
+      )}
+
+      {deleteState.type && deleteState.node && (
+        <DeleteEntityDialog
+          open={deleteState.isOpen}
+          onOpenChange={(open) => {
+            setDeleteState(prev => ({ ...prev, isOpen: open }));
+            if (!open) {
+              setDeleteState({ type: null, node: null, isOpen: false, isPending: false });
+            }
+          }}
+          entityName={deleteState.node.name}
+          entityType={deleteState.type}
+          onConfirm={confirmDelete}
+          isPending={deleteState.isPending}
+          itemCount={
+            deleteState.type === ExplorerNodeType.FOLDER
+              ? deleteState.node.children?.filter(c => c.type !== 'empty').length
+              : undefined
+          }
         />
       )}
     </div>

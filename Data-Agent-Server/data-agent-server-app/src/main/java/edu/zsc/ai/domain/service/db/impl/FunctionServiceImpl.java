@@ -1,6 +1,5 @@
 package edu.zsc.ai.domain.service.db.impl;
 
-import edu.zsc.ai.common.enums.db.DdlResourceTypeEnum;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.FunctionService;
 import edu.zsc.ai.plugin.capability.FunctionProvider;
@@ -18,10 +17,9 @@ import java.util.List;
 public class FunctionServiceImpl implements FunctionService {
 
     private final ConnectionService connectionService;
-    private final DdlFetcher ddlFetcher;
 
     @Override
-    public List<FunctionMetadata> listFunctions(Long connectionId, String catalog, String schema, Long userId) {
+    public List<FunctionMetadata> getFunctions(Long connectionId, String catalog, String schema, Long userId) {
         connectionService.openConnection(connectionId, catalog, schema, userId);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
@@ -32,10 +30,24 @@ public class FunctionServiceImpl implements FunctionService {
 
     @Override
     public String getFunctionDdl(Long connectionId, String catalog, String schema, String functionName, Long userId) {
-        return ddlFetcher.fetch(connectionId, catalog, schema, functionName, userId, DdlResourceTypeEnum.FUNCTION,
-                active -> {
-                    FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
-                    return provider.getFunctionDdl(active.connection(), catalog, schema, functionName);
-                });
+        connectionService.openConnection(connectionId, catalog, schema, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+
+        FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
+        return provider.getFunctionDdl(active.connection(), catalog, schema, functionName);
+    }
+
+    @Override
+    public void deleteFunction(Long connectionId, String catalog, String schema, String functionName, Long userId) {
+        connectionService.openConnection(connectionId, catalog, schema, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+
+        FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
+        provider.deleteFunction(active.connection(), catalog, schema, functionName);
+
+        log.info("Function deleted successfully: connectionId={}, catalog={}, schema={}, functionName={}",
+                connectionId, catalog, schema, functionName);
     }
 }

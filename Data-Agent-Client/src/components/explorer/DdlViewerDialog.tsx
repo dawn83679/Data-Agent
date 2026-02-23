@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Copy, Check, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { useTheme } from '../../hooks/useTheme';
 import {
   Dialog,
   DialogContent,
@@ -29,10 +30,14 @@ export function DdlViewerDialog({
   loadDdl,
 }: DdlViewerDialogProps) {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const [ddl, setDdl] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const syntaxTheme = theme === 'dark' ? oneDark : oneLight;
+  const syntaxBg = theme === 'dark' ? '#282c34' : '#fafafa';
 
   useEffect(() => {
     if (open) {
@@ -121,14 +126,14 @@ export function DdlViewerDialog({
                 <div className="text-[11px] max-h-[50vh] overflow-auto">
                   <SyntaxHighlighter
                     language={DdlViewerConfig.SYNTAX_LANGUAGE}
-                    style={oneDark}
+                    style={syntaxTheme}
                     showLineNumbers={false}
                     customStyle={{
                       margin: 0,
                       padding: '1rem',
                       fontSize: '11px',
                       lineHeight: 1.5,
-                      background: 'var(--code-bg, #282c34)',
+                      background: syntaxBg,
                       minHeight: '100%',
                     }}
                     codeTagProps={{ style: { fontFamily: 'inherit' } }}

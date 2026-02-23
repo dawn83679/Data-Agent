@@ -19,7 +19,7 @@ public class PrimaryKeyServiceImpl implements PrimaryKeyService {
 
     @Override
     public List<PrimaryKeyMetadata> listPrimaryKeys(Long connectionId, String catalog, String schema, String tableName, Long userId) {
-        List<IndexMetadata> indexes = indexService.listIndexes(connectionId, catalog, schema, tableName, userId);
+        List<IndexMetadata> indexes = indexService.getIndexes(connectionId, catalog, schema, tableName, userId);
         return indexes.stream()
                 .filter(IndexMetadata::isPrimaryKey)
                 .map(idx -> new PrimaryKeyMetadata(idx.name(), idx.columns()))

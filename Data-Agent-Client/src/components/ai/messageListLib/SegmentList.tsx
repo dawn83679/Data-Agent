@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { markdownComponents, markdownRemarkPlugins, TodoListBlock } from '../blocks';
+import { useMarkdownComponents, markdownRemarkPlugins, TodoListBlock } from '../blocks';
 import { renderSegment } from './segmentRenderer';
 import { findLastTodoSegmentIndex, isTodoSegment } from './segmentTodoUtils';
 import type { TodoBoxSpec } from './types';
@@ -35,6 +35,7 @@ export function SegmentList({
   isLastAssistantStreaming = false,
   showPlanningIndicator = false,
 }: SegmentListProps): React.ReactElement {
+  const markdownComponents = useMarkdownComponents();
   if (segments.length === 0) {
     return (
       <div className="space-y-1">
@@ -76,11 +77,15 @@ export function SegmentList({
           seg === lastSeg;
         return renderSegment(seg, i, isStreamingThought, segments.length);
       })}
-      {showPlanningIndicator && (
-        <span className="inline-block text-xs theme-text-secondary animate-blink mt-1">
-          {PLANNING_LABEL}
-        </span>
-      )}
+      {(() => {
+        const lastSegment = segments[segments.length - 1];
+        const isPendingTool = lastSegment?.kind === SegmentKind.TOOL_RUN && lastSegment.pending === true;
+        return showPlanningIndicator && !isPendingTool ? (
+          <span className="inline-block text-xs theme-text-secondary animate-blink mt-1">
+            {PLANNING_LABEL}
+          </span>
+        ) : null;
+      })()}
     </div>
   );
 }

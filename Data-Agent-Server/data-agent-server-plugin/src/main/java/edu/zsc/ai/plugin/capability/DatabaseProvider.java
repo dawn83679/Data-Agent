@@ -27,4 +27,8 @@ public interface DatabaseProvider {
             throw new RuntimeException("Failed to list databases: " + e.getMessage(), e);
         }
     }
+
+    default void deleteDatabase(Connection connection, String catalog) {
+        throw new UnsupportedOperationException("Plugin does not support deleting database");
+    }
 }

@@ -148,11 +148,25 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   useEffect(() => {
     if (!isLoading) {
       setShowPlanning(false);
+      lastStreamEventAtRef.current = 0;
       return;
     }
+
+    // Show planning immediately when loading starts
+    setShowPlanning(true);
+    lastStreamEventAtRef.current = 0;
+
     const id = setInterval(() => {
-      setShowPlanning(Date.now() - lastStreamEventAtRef.current > PLANNING_DELAY_MS);
+      const hasReceivedData = lastStreamEventAtRef.current > 0;
+      const timeSinceLastEvent = Date.now() - lastStreamEventAtRef.current;
+
+      if (hasReceivedData && timeSinceLastEvent < PLANNING_DELAY_MS) {
+        setShowPlanning(false);
+      } else if (hasReceivedData && timeSinceLastEvent >= PLANNING_DELAY_MS) {
+        setShowPlanning(true);
+      }
     }, PLANNING_POLL_MS);
+
     return () => clearInterval(id);
   }, [isLoading]);
 

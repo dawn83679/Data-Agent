@@ -1,14 +1,18 @@
 package edu.zsc.ai.controller.db;
 
 import cn.dev33.satoken.stp.StpUtil;
+import edu.zsc.ai.domain.model.dto.request.db.DeleteProcedureRequest;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.service.db.ProcedureService;
 import edu.zsc.ai.plugin.model.metadata.ProcedureMetadata;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,7 +35,7 @@ public class ProcedureController {
             @RequestParam(required = false) String schema) {
         log.info("Listing procedures: connectionId={}, catalog={}, schema={}", connectionId, catalog, schema);
         long userId = StpUtil.getLoginIdAsLong();
-        List<ProcedureMetadata> procedures = procedureService.listProcedures(connectionId, catalog, schema, userId);
+        List<ProcedureMetadata> procedures = procedureService.getProcedures(connectionId, catalog, schema, userId);
         return ApiResponse.success(procedures);
     }
 
@@ -46,5 +50,15 @@ public class ProcedureController {
         long userId = StpUtil.getLoginIdAsLong();
         String ddl = procedureService.getProcedureDdl(connectionId, catalog, schema, procedureName, userId);
         return ApiResponse.success(ddl);
+    }
+
+    @DeleteMapping
+    public ApiResponse<Void> deleteProcedure(@Valid @RequestBody DeleteProcedureRequest request) {
+        log.info("Deleting procedure: connectionId={}, procedureName={}, catalog={}, schema={}",
+                request.getConnectionId(), request.getProcedureName(), request.getCatalog(), request.getSchema());
+        long userId = StpUtil.getLoginIdAsLong();
+        procedureService.deleteProcedure(request.getConnectionId(), request.getCatalog(),
+                request.getSchema(), request.getProcedureName(), userId);
+        return ApiResponse.success(null);
     }
 }

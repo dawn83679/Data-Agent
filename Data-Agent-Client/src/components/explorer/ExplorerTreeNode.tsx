@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ChevronRight, ChevronDown, RefreshCw, MoreVertical, Pencil, Trash2, Plug, FileText } from 'lucide-react';
+import { ChevronRight, ChevronDown, RefreshCw, MoreVertical, Pencil, Trash2, Plug, FileText, Table } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { NodeApi } from 'react-arborist';
@@ -30,8 +30,8 @@ export interface ExplorerTreeNodeProps {
   onEditConnection: (connId: number) => void;
   onDeleteConnection: (connId: number) => void;
   onViewDdl: (node: ExplorerNode) => void;
-  /** Called when the node row is clicked (for setting SQL editor execution context). */
-  onNodeClick?: (node: ExplorerNode) => void;
+  onViewData: (node: ExplorerNode, highlightColumn?: string) => void;
+  onDelete: (node: ExplorerNode, type: ExplorerNodeType) => void;
 }
 
 export function ExplorerTreeNode({
@@ -44,7 +44,8 @@ export function ExplorerTreeNode({
   onEditConnection,
   onDeleteConnection,
   onViewDdl,
-  onNodeClick,
+  onViewData,
+  onDelete,
 }: ExplorerTreeNodeProps) {
   const { t } = useTranslation();
   const isConnected = !!node.data.connectionId;
@@ -54,9 +55,17 @@ export function ExplorerTreeNode({
     node.data.type === ExplorerNodeType.FUNCTION ||
     node.data.type === ExplorerNodeType.PROCEDURE ||
     node.data.type === ExplorerNodeType.TRIGGER;
+  const isTableOrView = node.data.type === ExplorerNodeType.TABLE || node.data.type === ExplorerNodeType.VIEW;
+  const isColumnOrIndexOrKey = node.data.type === ExplorerNodeType.COLUMN || node.data.type === ExplorerNodeType.INDEX || node.data.type === ExplorerNodeType.KEY;
+  const isRoutineOrTrigger = node.data.type === ExplorerNodeType.FUNCTION || node.data.type === ExplorerNodeType.PROCEDURE || node.data.type === ExplorerNodeType.TRIGGER;
   const isRoutine =
     node.data.type === ExplorerNodeType.FUNCTION || node.data.type === ExplorerNodeType.PROCEDURE;
   const isFolder = node.data.type === ExplorerNodeType.FOLDER;
+  const isDb = node.data.type === ExplorerNodeType.DB;
+  // Only folders containing deletable objects (Tables, Views, Routines, Triggers) show delete button
+  // Structural folders (Columns, Keys, Indexes) do not show delete button
+  const isDeletableFolder = isFolder && node.data.folderName &&
+    ['tables', 'views', 'routines', 'triggers'].includes(node.data.folderName);
   const folderCount =
     isFolder &&
     node.data.children &&
@@ -67,6 +76,40 @@ export function ExplorerTreeNode({
   const handleToggle = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (node.isInternal) {
+      if (!node.isOpen && (!node.data.children || node.data.children.length === 0)) {
+        onLoadData(node);
+      }
+      node.toggle();
+    }
+  };
+
+  // Extract column name from key/index name (format: "name (col1, col2)" or just "name")
+  const extractColumnName = (nodeName: string): string | undefined => {
+    const match = nodeName.match(/\(([^)]+)\)/);
+    if (match) {
+      // If multiple columns, return the first one
+      return match[1].split(',')[0].trim();
+    }
+    return undefined;
+  };
+
+  // Only handle double-click for showing data, not single click on arrow
+  const handleDoubleClick = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    // For tables/views - show data
+    if (isTableOrView) {
+      onViewData(node.data);
+    } else if (isColumnOrIndexOrKey) {
+      // For columns/indexes/keys - show data with highlighted column
+      const highlightCol = node.data.type === ExplorerNodeType.COLUMN
+        ? node.data.name
+        : extractColumnName(node.data.name);
+      onViewData(node.data, highlightCol);
+    } else if (isRoutineOrTrigger) {
+      // For functions, procedures, triggers - show DDL
+      onViewDdl(node.data);
+    } else if (node.isInternal) {
+      // For other nodes (folders), double-click toggles expansion
       if (!node.isOpen && (!node.data.children || node.data.children.length === 0)) {
         onLoadData(node);
       }
@@ -139,7 +182,10 @@ export function ExplorerTreeNode({
     node.isSelected && 'bg-accent/30'
   );
 
-  if (isDdlNode) {
+  // 判断是否需要显示右键菜单
+  const showContextMenu = isDdlNode || isDb || isDeletableFolder || isColumnOrIndexOrKey;
+
+  if (showContextMenu) {
     return (
       <ContextMenu>
         <ContextMenuTrigger asChild>
@@ -147,21 +193,73 @@ export function ExplorerTreeNode({
             style={style}
             ref={dragHandle}
             className={rowClassName}
-            onClick={() => {
-              node.select();
-              onNodeClick?.(node.data);
-            }}
-            onDoubleClick={handleToggle}
+            onClick={() => node.select()}
+            onDoubleClick={handleDoubleClick}
             onContextMenu={handleContextMenu}
           >
             {rowContent}
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent>
-          <ContextMenuItem onSelect={handleDdlClick}>
-            <FileText className="w-3.5 h-3.5 mr-2" />
-            {t('explorer.view_ddl')}
-          </ContextMenuItem>
+          {isDdlNode && (
+            <ContextMenuItem onSelect={handleDdlClick}>
+              <FileText className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.view_ddl')}
+            </ContextMenuItem>
+          )}
+          {(isTableOrView || isColumnOrIndexOrKey) && (
+            <ContextMenuItem onSelect={() => {
+              const highlightCol = node.data.type === ExplorerNodeType.COLUMN
+                ? node.data.name
+                : extractColumnName(node.data.name);
+              onViewData(node.data, highlightCol);
+            }}>
+              <Table className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.view_data')}
+            </ContextMenuItem>
+          )}
+          {node.data.type === ExplorerNodeType.TABLE && (
+            <ContextMenuItem onSelect={() => onDelete(node.data, ExplorerNodeType.TABLE)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_table')}
+            </ContextMenuItem>
+          )}
+          {node.data.type === ExplorerNodeType.VIEW && (
+            <ContextMenuItem onSelect={() => onDelete(node.data, ExplorerNodeType.VIEW)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_view')}
+            </ContextMenuItem>
+          )}
+          {node.data.type === ExplorerNodeType.FUNCTION && (
+            <ContextMenuItem onSelect={() => onDelete(node.data, ExplorerNodeType.FUNCTION)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_function')}
+            </ContextMenuItem>
+          )}
+          {node.data.type === ExplorerNodeType.PROCEDURE && (
+            <ContextMenuItem onSelect={() => onDelete(node.data, ExplorerNodeType.PROCEDURE)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_procedure')}
+            </ContextMenuItem>
+          )}
+          {node.data.type === ExplorerNodeType.TRIGGER && (
+            <ContextMenuItem onSelect={() => onDelete(node.data, ExplorerNodeType.TRIGGER)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_trigger')}
+            </ContextMenuItem>
+          )}
+          {isDb && (
+            <ContextMenuItem onSelect={() => onDelete(node.data, ExplorerNodeType.DB)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_database')}
+            </ContextMenuItem>
+          )}
+          {isDeletableFolder && folderCount != null && folderCount > 0 && (
+            <ContextMenuItem onSelect={() => onDelete(node.data, ExplorerNodeType.FOLDER)} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              {t('explorer.delete_all_in_folder')}
+            </ContextMenuItem>
+          )}
         </ContextMenuContent>
       </ContextMenu>
     );
@@ -172,11 +270,8 @@ export function ExplorerTreeNode({
       style={style}
       ref={dragHandle}
       className={rowClassName}
-      onClick={() => {
-        node.select();
-        onNodeClick?.(node.data);
-      }}
-      onDoubleClick={handleToggle}
+      onClick={() => node.select()}
+      onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
     >
       {rowContent}

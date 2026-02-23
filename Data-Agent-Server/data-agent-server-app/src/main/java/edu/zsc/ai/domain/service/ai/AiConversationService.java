@@ -56,10 +56,10 @@ public interface AiConversationService extends IService<AiConversation> {
     List<ConversationMessageResponse> getMessagesForCurrentUser(Long conversationId);
 
     /**
-     * Adds token count to the conversation's total token usage.
+     * Updates the conversation's total token usage.
      *
      * @param conversationId conversation ID
-     * @param tokenCount     tokens to add
+     * @param tokenCount     total token count to set
      */
-    void addTokenCount(Long conversationId, Integer tokenCount);
+    void updateTokenCount(Long conversationId, Integer tokenCount);
 }

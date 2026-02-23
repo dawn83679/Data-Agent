@@ -1,8 +1,8 @@
 package edu.zsc.ai.plugin.capability;
 
 import edu.zsc.ai.plugin.constant.JdbcMetaDataConstants;
+import edu.zsc.ai.plugin.model.command.sql.SqlCommandResult;
 import org.apache.commons.lang3.StringUtils;
-
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -31,5 +31,17 @@ public interface TableProvider {
 
     default String getTableDdl(Connection connection, String catalog, String schema, String tableName) {
         throw new UnsupportedOperationException("Plugin does not support getting table DDL");
+    }
+
+    default void deleteTable(Connection connection, String catalog, String schema, String tableName) {
+        throw new UnsupportedOperationException("Plugin does not support deleting table");
+    }
+
+    default SqlCommandResult getTableData(Connection connection, String catalog, String schema, String tableName, int offset, int pageSize) {
+        throw new UnsupportedOperationException("Plugin does not support getting table data");
+    }
+
+    default long getTableDataCount(Connection connection, String catalog, String schema, String tableName) {
+        throw new UnsupportedOperationException("Plugin does not support getting table data count");
     }
 }

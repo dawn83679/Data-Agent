@@ -38,4 +38,20 @@ export const procedureService = {
     const response = await http.get<string>(ApiPaths.PROCEDURES_DDL, { params });
     return response.data;
   },
+
+  deleteProcedure: async (
+    connectionId: string,
+    procedureName: string,
+    catalog?: string,
+    schema?: string
+  ): Promise<void> => {
+    await http.delete(ApiPaths.PROCEDURES, {
+      data: {
+        connectionId,
+        procedureName,
+        catalog,
+        schema
+      }
+    });
+  },
 };

@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface IndexService {
 
-    List<IndexMetadata> listIndexes(Long connectionId, String catalog, String schema, String tableName, Long userId);
+    List<IndexMetadata> getIndexes(Long connectionId, String catalog, String schema, String tableName, Long userId);
 }

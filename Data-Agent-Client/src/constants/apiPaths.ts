@@ -1,9 +1,12 @@
 export const ApiPaths = {
   COLUMNS: '/columns',
+  DATABASES: '/databases',
   TABLES: '/tables',
   TABLES_DDL: '/tables/ddl',
+  TABLE_DATA: '/tables/data',
   VIEWS: '/views',
   VIEWS_DDL: '/views/ddl',
+  VIEW_DATA: '/views/data',
   FUNCTIONS: '/functions',
   FUNCTIONS_DDL: '/functions/ddl',
   PROCEDURES: '/procedures',

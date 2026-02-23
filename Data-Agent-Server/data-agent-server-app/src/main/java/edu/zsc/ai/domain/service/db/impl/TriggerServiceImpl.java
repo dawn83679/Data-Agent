@@ -1,6 +1,5 @@
 package edu.zsc.ai.domain.service.db.impl;
 
-import edu.zsc.ai.common.enums.db.DdlResourceTypeEnum;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.TriggerService;
 import edu.zsc.ai.plugin.capability.TriggerProvider;
@@ -18,10 +17,9 @@ import java.util.List;
 public class TriggerServiceImpl implements TriggerService {
 
     private final ConnectionService connectionService;
-    private final DdlFetcher ddlFetcher;
 
     @Override
-    public List<TriggerMetadata> listTriggers(Long connectionId, String catalog, String schema, String tableName, Long userId) {
+    public List<TriggerMetadata> getTriggers(Long connectionId, String catalog, String schema, String tableName, Long userId) {
         connectionService.openConnection(connectionId, catalog, schema, userId);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
@@ -32,10 +30,24 @@ public class TriggerServiceImpl implements TriggerService {
 
     @Override
     public String getTriggerDdl(Long connectionId, String catalog, String schema, String triggerName, Long userId) {
-        return ddlFetcher.fetch(connectionId, catalog, schema, triggerName, userId, DdlResourceTypeEnum.TRIGGER,
-                active -> {
-                    TriggerProvider provider = DefaultPluginManager.getInstance().getTriggerProviderByPluginId(active.pluginId());
-                    return provider.getTriggerDdl(active.connection(), catalog, schema, triggerName);
-                });
+        connectionService.openConnection(connectionId, catalog, schema, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+
+        TriggerProvider provider = DefaultPluginManager.getInstance().getTriggerProviderByPluginId(active.pluginId());
+        return provider.getTriggerDdl(active.connection(), catalog, schema, triggerName);
+    }
+
+    @Override
+    public void deleteTrigger(Long connectionId, String catalog, String schema, String triggerName, Long userId) {
+        connectionService.openConnection(connectionId, catalog, schema, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+
+        TriggerProvider provider = DefaultPluginManager.getInstance().getTriggerProviderByPluginId(active.pluginId());
+        provider.deleteTrigger(active.connection(), catalog, schema, triggerName);
+
+        log.info("Trigger deleted successfully: connectionId={}, catalog={}, schema={}, triggerName={}",
+                connectionId, catalog, schema, triggerName);
     }
 }

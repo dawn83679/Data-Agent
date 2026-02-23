@@ -32,6 +32,7 @@ export function renderSegment(
           pending={segment.pending}
           toolCallId={segment.toolCallId}
           hasSegmentsAfter={index < totalSegments - 1}
+          serverName={segment.serverName}
         />
       );
   }

@@ -10,6 +10,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import java.util.Objects;
+
 import java.util.List;
 
 
@@ -34,17 +38,17 @@ public class TableTool {
                 connectionId, databaseName, schemaName);
         try {
             Long userId = parameters.get(RequestContextConstant.USER_ID);
-            if (userId == null) {
+            if (Objects.isNull(userId)) {
                 return ToolMessageConstants.USER_CONTEXT_MISSING;
             }
-            List<String> tables = tableService.listTables(
+            List<String> tables = tableService.getTables(
                     connectionId,
                     databaseName,
                     schemaName,
                     userId
             );
 
-            if (tables == null || tables.isEmpty()) {
+            if (CollectionUtils.isEmpty(tables)) {
                 log.info("{} getTableNames -> {}", ToolMessageConstants.TOOL_LOG_PREFIX_DONE,
                         ToolMessageConstants.EMPTY_NO_TABLES);
                 return ToolMessageConstants.EMPTY_NO_TABLES;
@@ -72,7 +76,7 @@ public class TableTool {
                 ToolMessageConstants.TOOL_LOG_PREFIX_BEFORE, tableName, connectionId, databaseName, schemaName);
         try {
             Long userId = parameters.get(RequestContextConstant.USER_ID);
-            if (userId == null) {
+            if (Objects.isNull(userId)) {
                 return ToolMessageConstants.USER_CONTEXT_MISSING;
             }
             String ddl = tableService.getTableDdl(
@@ -84,7 +88,7 @@ public class TableTool {
             );
 
             log.info("{} getTableDdl, tableName={}, ddlLength={}", ToolMessageConstants.TOOL_LOG_PREFIX_DONE,
-                    tableName, ddl != null ? ddl.length() : 0);
+                    tableName, StringUtils.isNotBlank(ddl) ? ddl.length() : 0);
             return ddl;
         } catch (Exception e) {
             log.error("{} getTableDdl, tableName={}", ToolMessageConstants.TOOL_LOG_PREFIX_ERROR, tableName, e);

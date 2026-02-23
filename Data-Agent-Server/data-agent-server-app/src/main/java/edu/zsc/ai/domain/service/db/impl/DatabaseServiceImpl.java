@@ -34,4 +34,17 @@ public class DatabaseServiceImpl implements DatabaseService {
 
         return provider.getDatabases(active.connection());
     }
+
+    @Override
+    public void deleteDatabase(Long connectionId, String databaseName, Long userId) {
+        long uid = userId != null ? userId : StpUtil.getLoginIdAsLong();
+        connectionService.openConnection(connectionId, null, null, uid);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getAnyOwnedActiveConnection(connectionId, uid);
+
+        DatabaseProvider provider = DefaultPluginManager.getInstance().getDatabaseProviderByPluginId(active.pluginId());
+        provider.deleteDatabase(active.connection(), databaseName);
+
+        log.info("Database deleted successfully: connectionId={}, databaseName={}", connectionId, databaseName);
+    }
 }

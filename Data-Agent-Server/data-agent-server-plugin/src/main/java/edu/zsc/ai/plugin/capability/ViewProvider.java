@@ -1,6 +1,7 @@
 package edu.zsc.ai.plugin.capability;
 
 import edu.zsc.ai.plugin.constant.JdbcMetaDataConstants;
+import edu.zsc.ai.plugin.model.command.sql.SqlCommandResult;
 import org.apache.commons.lang3.StringUtils;
 
 import java.sql.Connection;
@@ -29,5 +30,19 @@ public interface ViewProvider {
         }
     }
 
-    String getViewDdl(Connection connection, String catalog, String schema, String viewName);
+    default String getViewDdl(Connection connection, String catalog, String schema, String viewName) {
+        throw new UnsupportedOperationException("Plugin does not support getting view DDL");
+    }
+
+    default void deleteView(Connection connection, String catalog, String schema, String viewName) {
+        throw new UnsupportedOperationException("Plugin does not support deleting view");
+    }
+
+    default SqlCommandResult getViewData(Connection connection, String catalog, String schema, String viewName, int offset, int pageSize) {
+        throw new UnsupportedOperationException("Plugin does not support getting view data");
+    }
+
+    default long getViewDataCount(Connection connection, String catalog, String schema, String viewName) {
+        throw new UnsupportedOperationException("Plugin does not support getting view data count");
+    }
 }

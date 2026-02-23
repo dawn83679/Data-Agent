@@ -23,7 +23,7 @@ mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
 
 sa-token:
-  jwt-secret-key: deepImage-secret-key
+  jwt-secret-key: DataAgent-secret-key  
   timeout: 1800
   token-name: Authorization
   is-log: true
@@ -48,24 +48,36 @@ auth:
         redirect-uri: ${GITHUB_REDIRECT_URI}
 
 # LangChain4j Configuration for Qwen (DashScope)
+# Note: Actual API keys are configured in application-local.yml
 langchain4j:
   community:
     dashscope:
       chat-model:
-        api-key: ${ALIYUN_AI_API_KEY}
+        api-key: ${ALIYUN_AI_API_KEY:}
         model-name: qwen3-max
         parameters:
           enable-thinking: true
           thinking-budget: 1000
       streaming-chat-model:
-        api-key: ${ALIYUN_AI_API_KEY}
+        api-key: ${ALIYUN_AI_API_KEY:}
         model-name: qwen3-max
         parameters:
           enable-thinking: true
           thinking-budget: 1000
       embedding-model:
-        api-key: ${ALIYUN_AI_API_KEY}
+        api-key: ${ALIYUN_AI_API_KEY:}
         model-name: text-embedding-v4
       tokenizer:
-        api-key: ${ALIYUN_AI_API_KEY}
+        api-key: ${ALIYUN_AI_API_KEY:}
         model-name: qwen-plus
+
+mcp:
+  enabled: true
+  servers:
+    chart-server:
+      packageName: "@antv/mcp-server-chart"
+      enabled: true
+      timeoutSeconds: 60
+      debug: false
+      autoHealthCheck: true
+      healthCheckIntervalSeconds: 60

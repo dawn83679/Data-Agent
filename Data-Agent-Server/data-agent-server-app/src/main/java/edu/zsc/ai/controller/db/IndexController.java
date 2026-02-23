@@ -33,7 +33,7 @@ public class IndexController {
         log.info("Listing indexes: connectionId={}, catalog={}, schema={}, tableName={}",
                 connectionId, catalog, schema, tableName);
         long userId = StpUtil.getLoginIdAsLong();
-        List<IndexMetadata> indexes = indexService.listIndexes(connectionId, catalog, schema, tableName, userId);
+        List<IndexMetadata> indexes = indexService.getIndexes(connectionId, catalog, schema, tableName, userId);
         return ApiResponse.success(indexes);
     }
 }

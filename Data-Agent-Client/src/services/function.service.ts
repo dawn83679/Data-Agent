@@ -39,4 +39,20 @@ export const functionService = {
     const response = await http.get<string>(ApiPaths.FUNCTIONS_DDL, { params });
     return response.data;
   },
+
+  deleteFunction: async (
+    connectionId: string,
+    functionName: string,
+    catalog?: string,
+    schema?: string
+  ): Promise<void> => {
+    await http.delete(ApiPaths.FUNCTIONS, {
+      data: {
+        connectionId,
+        functionName,
+        catalog,
+        schema
+      }
+    });
+  },
 };

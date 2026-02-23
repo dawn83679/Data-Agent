@@ -35,6 +35,7 @@ public class AiConversationServiceImpl extends ServiceImpl<AiConversationMapper,
         implements AiConversationService {
 
     private final AiMessageService aiMessageService;
+    private final StoredMessageToResponseConverter messageConverter;
 
     private long getCurrentUserId() {
         return StpUtil.getLoginIdAsLong();
@@ -114,7 +115,7 @@ public class AiConversationServiceImpl extends ServiceImpl<AiConversationMapper,
         for (StoredChatMessage s : stored) {
             try {
                 ChatMessage message = ChatMessageDeserializer.messageFromJson(s.getData());
-                result.add(StoredMessageToResponseConverter.toResponse(s, message));
+                result.add(messageConverter.toResponse(s, message));
             } catch (Exception e) {
                 log.warn("Failed to deserialize message id={}, skipping", s.getId(), e);
             }
@@ -123,18 +124,20 @@ public class AiConversationServiceImpl extends ServiceImpl<AiConversationMapper,
     }
 
     @Override
-    public void addTokenCount(Long conversationId, Integer tokenCount) {
+    public void updateTokenCount(Long conversationId, Integer tokenCount) {
         if (conversationId == null || tokenCount == null || tokenCount <= 0) {
             return;
         }
 
-        // Increment token_count atomically
+        // Update token_count
         LambdaUpdateWrapper<AiConversation> wrapper = new LambdaUpdateWrapper<>();
         wrapper.eq(AiConversation::getId, conversationId)
-                .setSql("token_count = token_count + " + tokenCount)
+                .set(AiConversation::getTokenCount, tokenCount)
                 .set(AiConversation::getUpdatedAt, LocalDateTime.now());
 
-        update(wrapper);
-
+        boolean updated = update(wrapper);
+        if (!updated) {
+            log.warn("Failed to update token count for conversation {}, conversation may not exist", conversationId);
+        }
     }
 }

@@ -57,7 +57,7 @@ public class ConnectionController {
         return ApiResponse.success(dbConnectionService.getConnectionById(id));
     }
 
-    @PostMapping("/update")
+    @PutMapping
     public ApiResponse<ConnectionResponse> updateConnection(@Valid @RequestBody ConnectionCreateRequest request) {
         return ApiResponse.success(dbConnectionService.updateConnection(request));
     }

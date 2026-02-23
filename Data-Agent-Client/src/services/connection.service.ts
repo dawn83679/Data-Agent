@@ -35,7 +35,7 @@ export const connectionService = {
    * Update connection config
    */
   updateConnection: async (data: ConnectionCreateRequest): Promise<DbConnection> => {
-    const response = await http.post<DbConnection>('/connections/update', data);
+    const response = await http.put<DbConnection>('/connections', data);
     return response.data;
   },
 

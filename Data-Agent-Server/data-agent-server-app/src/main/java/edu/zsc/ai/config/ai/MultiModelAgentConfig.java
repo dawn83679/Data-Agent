@@ -1,5 +1,18 @@
 package edu.zsc.ai.config.ai;
 
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+
+import dev.langchain4j.community.model.dashscope.QwenChatRequestParameters;
+import dev.langchain4j.community.model.dashscope.QwenStreamingChatModel;
+import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
@@ -10,22 +23,15 @@ import edu.zsc.ai.tool.AskUserQuestionTool;
 import edu.zsc.ai.tool.ConnectionTool;
 import edu.zsc.ai.tool.DatabaseTool;
 import edu.zsc.ai.tool.ExecuteSqlTool;
+import edu.zsc.ai.tool.FunctionTool;
+import edu.zsc.ai.tool.IndexTool;
+import edu.zsc.ai.tool.ProcedureTool;
 import edu.zsc.ai.tool.TableTool;
 import edu.zsc.ai.tool.TodoTool;
+import edu.zsc.ai.tool.TriggerTool;
+import edu.zsc.ai.tool.ViewTool;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
-
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import dev.langchain4j.community.model.dashscope.QwenChatRequestParameters;
-import dev.langchain4j.community.model.dashscope.QwenStreamingChatModel;
 
 /**
  * Configures multiple StreamingChatModel and ReActAgent beans per supported model (ModelEnum),
@@ -38,7 +44,7 @@ public class MultiModelAgentConfig {
 
     private static final int THINKING_BUDGET = 1000;
 
-    @Value("${ALIYUN_AI_API_KEY:}")
+    @Value("${langchain4j.community.dashscope.streaming-chat-model.api-key}")
     private String apiKey;
 
     @Bean("streamingChatModelQwen3Max")
@@ -88,11 +94,20 @@ public class MultiModelAgentConfig {
             AskUserQuestionTool askUserQuestionTool,
             ConnectionTool connectionTool,
             DatabaseTool databaseTool,
-            ExecuteSqlTool executeSqlTool) {
+            ExecuteSqlTool executeSqlTool,
+            ViewTool viewTool,
+            FunctionTool functionTool,
+            ProcedureTool procedureTool,
+            TriggerTool triggerTool,
+            IndexTool indexTool,
+            @Qualifier("mcpToolProvider") McpToolProvider mcpToolProvider) {
         return AiServices.builder(ReActAgent.class)
                 .streamingChatModel(streamingChatModel)
                 .chatMemoryProvider(chatMemoryProvider)
-                .tools(todoTool, tableTool, askUserQuestionTool, connectionTool, databaseTool, executeSqlTool)
+                .tools(todoTool, tableTool, askUserQuestionTool,
+                       connectionTool, databaseTool, executeSqlTool,
+                       viewTool, functionTool, procedureTool, triggerTool, indexTool)
+                .toolProvider(mcpToolProvider)  // Use LangChain4j's McpToolProvider
                 .build();
     }
 
@@ -105,11 +120,20 @@ public class MultiModelAgentConfig {
             AskUserQuestionTool askUserQuestionTool,
             ConnectionTool connectionTool,
             DatabaseTool databaseTool,
-            ExecuteSqlTool executeSqlTool) {
+            ExecuteSqlTool executeSqlTool,
+            ViewTool viewTool,
+            FunctionTool functionTool,
+            ProcedureTool procedureTool,
+            TriggerTool triggerTool,
+            IndexTool indexTool,
+            @Qualifier("mcpToolProvider") McpToolProvider mcpToolProvider) {
         return AiServices.builder(ReActAgent.class)
                 .streamingChatModel(streamingChatModel)
                 .chatMemoryProvider(chatMemoryProvider)
-                .tools(todoTool, tableTool, askUserQuestionTool, connectionTool, databaseTool, executeSqlTool)
+                .tools(todoTool, tableTool, askUserQuestionTool,
+                       connectionTool, databaseTool, executeSqlTool,
+                       viewTool, functionTool, procedureTool, triggerTool, indexTool)
+                .toolProvider(mcpToolProvider)  // Use LangChain4j's McpToolProvider
                 .build();
     }
 
@@ -122,11 +146,20 @@ public class MultiModelAgentConfig {
             AskUserQuestionTool askUserQuestionTool,
             ConnectionTool connectionTool,
             DatabaseTool databaseTool,
-            ExecuteSqlTool executeSqlTool) {
+            ExecuteSqlTool executeSqlTool,
+            ViewTool viewTool,
+            FunctionTool functionTool,
+            ProcedureTool procedureTool,
+            TriggerTool triggerTool,
+            IndexTool indexTool,
+            @Qualifier("mcpToolProvider") McpToolProvider mcpToolProvider) {
         return AiServices.builder(ReActAgent.class)
                 .streamingChatModel(streamingChatModel)
                 .chatMemoryProvider(chatMemoryProvider)
-                .tools(todoTool, tableTool, askUserQuestionTool, connectionTool, databaseTool, executeSqlTool)
+                .tools(todoTool, tableTool, askUserQuestionTool,
+                       connectionTool, databaseTool, executeSqlTool,
+                       viewTool, functionTool, procedureTool, triggerTool, indexTool)
+                .toolProvider(mcpToolProvider)  // Use LangChain4j's McpToolProvider
                 .build();
     }
 
