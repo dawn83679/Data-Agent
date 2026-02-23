@@ -3,10 +3,12 @@ package edu.zsc.ai.controller.db;
 import cn.dev33.satoken.stp.StpUtil;
 import edu.zsc.ai.domain.model.dto.request.db.CreateDatabaseRequest;
 import edu.zsc.ai.domain.model.dto.request.db.CreateTableRequest;
+import edu.zsc.ai.domain.model.dto.request.db.CreateViewRequest;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.service.db.DatabaseService;
 import edu.zsc.ai.plugin.capability.DatabaseProvider.ColumnDefinition;
 import edu.zsc.ai.plugin.capability.DatabaseProvider.CreateTableOptions;
+import edu.zsc.ai.plugin.capability.DatabaseProvider.CreateViewOptions;
 import edu.zsc.ai.plugin.capability.DatabaseProvider.ForeignKeyDefinition;
 import edu.zsc.ai.plugin.capability.DatabaseProvider.IndexDefinition;
 import jakarta.validation.constraints.NotNull;
@@ -160,6 +162,24 @@ public class DatabaseController {
         long userId = StpUtil.getLoginIdAsLong();
         databaseService.createTable(request.getConnectionId(), request.getDatabaseName(), request.getTableName(),
                 columns, options, userId);
+        return ApiResponse.success(null);
+    }
+
+    @PostMapping("/views/create")
+    public ApiResponse<Void> createView(@RequestBody @Validated CreateViewRequest request) {
+        log.info("Creating view: connectionId={}, databaseName={}, viewName={}",
+                request.getConnectionId(), request.getDatabaseName(), request.getViewName());
+
+        // Build CreateViewOptions
+        CreateViewOptions options = new CreateViewOptions();
+        options.setAlgorithm(request.getAlgorithm());
+        options.setDefiner(request.getDefiner());
+        options.setSqlSecurity(request.getSqlSecurity());
+        options.setCheckOption(request.getCheckOption());
+
+        long userId = StpUtil.getLoginIdAsLong();
+        databaseService.createView(request.getConnectionId(), request.getDatabaseName(), request.getViewName(),
+                request.getQuery(), options, userId);
         return ApiResponse.success(null);
     }
 }

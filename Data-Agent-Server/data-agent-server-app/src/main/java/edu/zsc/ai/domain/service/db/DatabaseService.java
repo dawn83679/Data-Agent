@@ -2,6 +2,7 @@ package edu.zsc.ai.domain.service.db;
 
 import edu.zsc.ai.plugin.capability.DatabaseProvider.ColumnDefinition;
 import edu.zsc.ai.plugin.capability.DatabaseProvider.CreateTableOptions;
+import edu.zsc.ai.plugin.capability.DatabaseProvider.CreateViewOptions;
 
 import java.util.List;
 
@@ -68,4 +69,16 @@ public interface DatabaseService {
      */
     void createTable(Long connectionId, String databaseName, String tableName,
                     List<ColumnDefinition> columns, CreateTableOptions options, Long userId);
+
+    /**
+     * Create a new view
+     * @param connectionId connection id
+     * @param databaseName database name
+     * @param viewName view name
+     * @param query SELECT query for the view
+     * @param options view creation options (algorithm, definer, sqlSecurity, checkOption, comment)
+     * @param userId user id
+     */
+    void createView(Long connectionId, String databaseName, String viewName,
+                  String query, CreateViewOptions options, Long userId);
 }

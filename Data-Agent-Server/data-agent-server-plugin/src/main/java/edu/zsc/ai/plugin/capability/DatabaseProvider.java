@@ -149,6 +149,19 @@ public interface DatabaseProvider {
     }
 
     /**
+     * Create a new view
+     * @param connection database connection
+     * @param databaseName database name
+     * @param viewName view name
+     * @param query SELECT query for the view
+     * @param options view creation options (algorithm, definer, sqlSecurity, checkOption, comment)
+     */
+    default void createView(Connection connection, String databaseName, String viewName,
+                           String query, CreateViewOptions options) {
+        throw new UnsupportedOperationException("Plugin does not support creating view");
+    }
+
+    /**
      * Table creation options
      */
     class CreateTableOptions {
@@ -227,6 +240,28 @@ public interface DatabaseProvider {
         public void setOnDelete(String onDelete) { this.onDelete = onDelete; }
         public String getOnUpdate() { return onUpdate; }
         public void setOnUpdate(String onUpdate) { this.onUpdate = onUpdate; }
+    }
+
+    /**
+     * View creation options
+     */
+    class CreateViewOptions {
+        private String algorithm;
+        private String definer;
+        private String sqlSecurity;
+        private String checkOption;
+
+        public CreateViewOptions() {}
+
+        // Getters and setters
+        public String getAlgorithm() { return algorithm; }
+        public void setAlgorithm(String algorithm) { this.algorithm = algorithm; }
+        public String getDefiner() { return definer; }
+        public void setDefiner(String definer) { this.definer = definer; }
+        public String getSqlSecurity() { return sqlSecurity; }
+        public void setSqlSecurity(String sqlSecurity) { this.sqlSecurity = sqlSecurity; }
+        public String getCheckOption() { return checkOption; }
+        public void setCheckOption(String checkOption) { this.checkOption = checkOption; }
     }
 
     /**

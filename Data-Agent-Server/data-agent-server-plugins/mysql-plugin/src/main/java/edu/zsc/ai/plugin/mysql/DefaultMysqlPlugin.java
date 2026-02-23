@@ -1297,4 +1297,65 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
 
         logger.info("Table created successfully: databaseName=" + databaseName + ", tableName=" + tableName);
     }
+
+    @Override
+    public void createView(Connection connection, String databaseName, String viewName,
+                         String query, CreateViewOptions options) {
+        if (connection == null || viewName == null || viewName.isEmpty() || query == null || query.isEmpty()) {
+            throw new IllegalArgumentException("Connection, viewName, and query must not be null or empty");
+        }
+
+        StringBuilder sql = new StringBuilder("CREATE ");
+
+        // Add options after CREATE (MySQL syntax: CREATE [ALGORITHM] [DEFINER] [SQL SECURITY] VIEW ...)
+        boolean hasPrefix = false;
+        if (options != null) {
+            // Order: ALGORITHM, DEFINER, SQL SECURITY
+            if (options.getAlgorithm() != null && !options.getAlgorithm().isEmpty()) {
+                sql.append("ALGORITHM=").append(options.getAlgorithm());
+                hasPrefix = true;
+            }
+            // definer is optional - if not provided, MySQL will use current user
+            if (options.getDefiner() != null && !options.getDefiner().isEmpty()) {
+                if (hasPrefix) sql.append(" ");
+                sql.append("DEFINER=").append("`").append(options.getDefiner().replace("`", "``")).append("`");
+                hasPrefix = true;
+            }
+            if (options.getSqlSecurity() != null && !options.getSqlSecurity().isEmpty()) {
+                if (hasPrefix) sql.append(" ");
+                sql.append("SQL SECURITY ").append(options.getSqlSecurity());
+                hasPrefix = true;
+            }
+            // Note: MySQL does not support COMMENT for views
+        }
+
+        // Add VIEW keyword and view name with database prefix
+        if (hasPrefix) sql.append(" ");
+        sql.append("VIEW ");
+        if (databaseName != null && !databaseName.isEmpty()) {
+            sql.append("`").append(databaseName.replace("`", "``")).append("`.");
+        }
+        sql.append("`").append(viewName.replace("`", "``")).append("` AS ").append(query);
+
+        // Add check option after AS (MySQL syntax requires it after the query)
+        if (options != null && options.getCheckOption() != null && !options.getCheckOption().isEmpty()) {
+            sql.append(" WITH ").append(options.getCheckOption()).append(" CHECK OPTION");
+        }
+
+        SqlCommandRequest request = new SqlCommandRequest();
+        request.setConnection(connection);
+        request.setDatabase(databaseName);
+        request.setOriginalSql(sql.toString());
+        request.setExecuteSql(sql.toString());
+        request.setNeedTransaction(false);
+
+        SqlCommandResult result = sqlExecutor.executeCommand(request);
+
+        if (!result.isSuccess()) {
+            logger.severe("Failed to create view: " + result.getErrorMessage());
+            throw new RuntimeException("Failed to create view: " + result.getErrorMessage());
+        }
+
+        logger.info("View created successfully: databaseName=" + databaseName + ", viewName=" + viewName);
+    }
 }
