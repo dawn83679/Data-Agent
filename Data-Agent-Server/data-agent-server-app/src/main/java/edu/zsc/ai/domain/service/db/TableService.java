@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface TableService {
 
-    List<String> listTables(Long connectionId, String catalog, String schema, Long userId);
+    List<String> getTables(Long connectionId, String catalog, String schema, Long userId);
 
     String getTableDdl(Long connectionId, String catalog, String schema, String tableName, Long userId);
 

@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface ProcedureService {
 
-    List<ProcedureMetadata> listProcedures(Long connectionId, String catalog, String schema, Long userId);
+    List<ProcedureMetadata> getProcedures(Long connectionId, String catalog, String schema, Long userId);
 
     String getProcedureDdl(Long connectionId, String catalog, String schema, String procedureName, Long userId);
 

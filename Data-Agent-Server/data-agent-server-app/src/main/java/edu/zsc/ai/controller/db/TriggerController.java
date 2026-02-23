@@ -37,7 +37,7 @@ public class TriggerController {
         log.info("Listing triggers: connectionId={}, catalog={}, schema={}, tableName={}",
                 connectionId, catalog, schema, tableName);
         long userId = StpUtil.getLoginIdAsLong();
-        List<TriggerMetadata> triggers = triggerService.listTriggers(connectionId, catalog, schema, tableName, userId);
+        List<TriggerMetadata> triggers = triggerService.getTriggers(connectionId, catalog, schema, tableName, userId);
         return ApiResponse.success(triggers);
     }
 

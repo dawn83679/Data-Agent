@@ -20,7 +20,7 @@ public class ViewServiceImpl implements ViewService {
     private final ConnectionService connectionService;
 
     @Override
-    public List<String> listViews(Long connectionId, String catalog, String schema, Long userId) {
+    public List<String> getViews(Long connectionId, String catalog, String schema, Long userId) {
         connectionService.openConnection(connectionId, catalog, schema, userId);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);

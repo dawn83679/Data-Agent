@@ -20,7 +20,7 @@ public class TableServiceImpl implements TableService {
     private final ConnectionService connectionService;
 
     @Override
-    public List<String> listTables(Long connectionId, String catalog, String schema, Long userId) {
+    public List<String> getTables(Long connectionId, String catalog, String schema, Long userId) {
         connectionService.openConnection(connectionId, catalog, schema, userId);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);

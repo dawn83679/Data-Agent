@@ -35,7 +35,7 @@ public class ViewController {
             @RequestParam(required = false) String schema) {
         log.info("Listing views: connectionId={}, catalog={}, schema={}", connectionId, catalog, schema);
         long userId = StpUtil.getLoginIdAsLong();
-        List<String> views = viewService.listViews(connectionId, catalog, schema, userId);
+        List<String> views = viewService.getViews(connectionId, catalog, schema, userId);
         return ApiResponse.success(views);
     }
 

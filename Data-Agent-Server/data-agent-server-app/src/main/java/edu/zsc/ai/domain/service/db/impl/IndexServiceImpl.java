@@ -19,7 +19,7 @@ public class IndexServiceImpl implements IndexService {
     private final ConnectionService connectionService;
 
     @Override
-    public List<IndexMetadata> listIndexes(Long connectionId, String catalog, String schema, String tableName, Long userId) {
+    public List<IndexMetadata> getIndexes(Long connectionId, String catalog, String schema, String tableName, Long userId) {
         connectionService.openConnection(connectionId, catalog, schema, userId);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);

@@ -35,7 +35,7 @@ public class TableController {
             @RequestParam(required = false) String schema) {
         log.info("Listing tables: connectionId={}, catalog={}, schema={}", connectionId, catalog, schema);
         long userId = StpUtil.getLoginIdAsLong();
-        List<String> tables = tableService.listTables(connectionId, catalog, schema, userId);
+        List<String> tables = tableService.getTables(connectionId, catalog, schema, userId);
         return ApiResponse.success(tables);
     }
 

@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface TriggerService {
 
-    List<TriggerMetadata> listTriggers(Long connectionId, String catalog, String schema, String tableName, Long userId);
+    List<TriggerMetadata> getTriggers(Long connectionId, String catalog, String schema, String tableName, Long userId);
 
     String getTriggerDdl(Long connectionId, String catalog, String schema, String triggerName, Long userId);
 

@@ -19,7 +19,7 @@ public class TriggerServiceImpl implements TriggerService {
     private final ConnectionService connectionService;
 
     @Override
-    public List<TriggerMetadata> listTriggers(Long connectionId, String catalog, String schema, String tableName, Long userId) {
+    public List<TriggerMetadata> getTriggers(Long connectionId, String catalog, String schema, String tableName, Long userId) {
         connectionService.openConnection(connectionId, catalog, schema, userId);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);

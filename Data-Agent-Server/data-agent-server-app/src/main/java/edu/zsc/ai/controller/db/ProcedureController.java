@@ -35,7 +35,7 @@ public class ProcedureController {
             @RequestParam(required = false) String schema) {
         log.info("Listing procedures: connectionId={}, catalog={}, schema={}", connectionId, catalog, schema);
         long userId = StpUtil.getLoginIdAsLong();
-        List<ProcedureMetadata> procedures = procedureService.listProcedures(connectionId, catalog, schema, userId);
+        List<ProcedureMetadata> procedures = procedureService.getProcedures(connectionId, catalog, schema, userId);
         return ApiResponse.success(procedures);
     }
 

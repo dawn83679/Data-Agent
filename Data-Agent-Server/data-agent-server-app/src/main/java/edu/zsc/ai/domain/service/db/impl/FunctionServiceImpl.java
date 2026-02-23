@@ -19,7 +19,7 @@ public class FunctionServiceImpl implements FunctionService {
     private final ConnectionService connectionService;
 
     @Override
-    public List<FunctionMetadata> listFunctions(Long connectionId, String catalog, String schema, Long userId) {
+    public List<FunctionMetadata> getFunctions(Long connectionId, String catalog, String schema, Long userId) {
         connectionService.openConnection(connectionId, catalog, schema, userId);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);

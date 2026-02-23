@@ -35,7 +35,7 @@ public class FunctionController {
             @RequestParam(required = false) String schema) {
         log.info("Listing functions: connectionId={}, catalog={}, schema={}", connectionId, catalog, schema);
         long userId = StpUtil.getLoginIdAsLong();
-        List<FunctionMetadata> functions = functionService.listFunctions(connectionId, catalog, schema, userId);
+        List<FunctionMetadata> functions = functionService.getFunctions(connectionId, catalog, schema, userId);
         return ApiResponse.success(functions);
     }
 

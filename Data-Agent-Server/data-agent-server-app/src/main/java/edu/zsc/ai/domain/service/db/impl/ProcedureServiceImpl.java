@@ -19,7 +19,7 @@ public class ProcedureServiceImpl implements ProcedureService {
     private final ConnectionService connectionService;
 
     @Override
-    public List<ProcedureMetadata> listProcedures(Long connectionId, String catalog, String schema, Long userId) {
+    public List<ProcedureMetadata> getProcedures(Long connectionId, String catalog, String schema, Long userId) {
         connectionService.openConnection(connectionId, catalog, schema, userId);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);

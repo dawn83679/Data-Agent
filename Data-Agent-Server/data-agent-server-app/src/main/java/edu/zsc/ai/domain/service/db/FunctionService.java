@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface FunctionService {
 
-    List<FunctionMetadata> listFunctions(Long connectionId, String catalog, String schema, Long userId);
+    List<FunctionMetadata> getFunctions(Long connectionId, String catalog, String schema, Long userId);
 
     String getFunctionDdl(Long connectionId, String catalog, String schema, String functionName, Long userId);
 
