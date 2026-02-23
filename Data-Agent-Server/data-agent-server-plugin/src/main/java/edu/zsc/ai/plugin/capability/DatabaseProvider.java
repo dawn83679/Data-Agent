@@ -162,6 +162,54 @@ public interface DatabaseProvider {
     }
 
     /**
+     * Create a new trigger
+     * @param connection database connection
+     * @param databaseName database name (catalog)
+     * @param schemaName schema name
+     * @param triggerName trigger name
+     * @param tableName table name to associate with trigger
+     * @param timing timing (BEFORE, AFTER)
+     * @param event event type (INSERT, UPDATE, DELETE)
+     * @param body trigger body (BEGIN...END)
+     * @param options trigger creation options (definer, characteristics)
+     */
+    default void createTrigger(Connection connection, String databaseName, String schemaName, String triggerName,
+                              String tableName, String timing, String event, String body, CreateTriggerOptions options) {
+        throw new UnsupportedOperationException("Plugin does not support creating trigger");
+    }
+
+    /**
+     * Create a new stored procedure
+     * @param connection database connection
+     * @param databaseName database name (catalog)
+     * @param schemaName schema name
+     * @param procedureName procedure name
+     * @param parameters procedure parameters
+     * @param body procedure body
+     * @param options procedure creation options
+     */
+    default void createProcedure(Connection connection, String databaseName, String schemaName, String procedureName,
+                                List<ParameterDefinition> parameters, String body, CreateRoutineOptions options) {
+        throw new UnsupportedOperationException("Plugin does not support creating procedure");
+    }
+
+    /**
+     * Create a new function
+     * @param connection database connection
+     * @param databaseName database name (catalog)
+     * @param schemaName schema name
+     * @param functionName function name
+     * @param parameters function parameters
+     * @param returnType return data type
+     * @param body function body
+     * @param options function creation options
+     */
+    default void createFunction(Connection connection, String databaseName, String schemaName, String functionName,
+                               List<ParameterDefinition> parameters, String returnType, String body, CreateRoutineOptions options) {
+        throw new UnsupportedOperationException("Plugin does not support creating function");
+    }
+
+    /**
      * Table creation options
      */
     class CreateTableOptions {
@@ -262,6 +310,75 @@ public interface DatabaseProvider {
         public void setSqlSecurity(String sqlSecurity) { this.sqlSecurity = sqlSecurity; }
         public String getCheckOption() { return checkOption; }
         public void setCheckOption(String checkOption) { this.checkOption = checkOption; }
+    }
+
+    /**
+     * Trigger creation options
+     */
+    class CreateTriggerOptions {
+        private String definer;
+        private String comment;
+        private String sqlSecurity;
+
+        public CreateTriggerOptions() {}
+
+        // Getters and setters
+        public String getDefiner() { return definer; }
+        public void setDefiner(String definer) { this.definer = definer; }
+        public String getComment() { return comment; }
+        public void setComment(String comment) { this.comment = comment; }
+        public String getSqlSecurity() { return sqlSecurity; }
+        public void setSqlSecurity(String sqlSecurity) { this.sqlSecurity = sqlSecurity; }
+    }
+
+    /**
+     * Stored procedure/function creation options
+     */
+    class CreateRoutineOptions {
+        private String definer;
+        private String comment;
+        private String sqlSecurity;
+        private String language;
+        private String algorithm;
+
+        public CreateRoutineOptions() {}
+
+        // Getters and setters
+        public String getDefiner() { return definer; }
+        public void setDefiner(String definer) { this.definer = definer; }
+        public String getComment() { return comment; }
+        public void setComment(String comment) { this.comment = comment; }
+        public String getSqlSecurity() { return sqlSecurity; }
+        public void setSqlSecurity(String sqlSecurity) { this.sqlSecurity = sqlSecurity; }
+        public String getLanguage() { return language; }
+        public void setLanguage(String language) { this.language = language; }
+        public String getAlgorithm() { return algorithm; }
+        public void setAlgorithm(String algorithm) { this.algorithm = algorithm; }
+    }
+
+    /**
+     * Parameter definition for stored procedure/function
+     */
+    class ParameterDefinition {
+        private String name;
+        private String type;
+        private String mode; // IN, OUT, INOUT
+
+        public ParameterDefinition() {}
+
+        public ParameterDefinition(String name, String type, String mode) {
+            this.name = name;
+            this.type = type;
+            this.mode = mode;
+        }
+
+        // Getters and setters
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        public String getType() { return type; }
+        public void setType(String type) { this.type = type; }
+        public String getMode() { return mode; }
+        public void setMode(String mode) { this.mode = mode; }
     }
 
     /**

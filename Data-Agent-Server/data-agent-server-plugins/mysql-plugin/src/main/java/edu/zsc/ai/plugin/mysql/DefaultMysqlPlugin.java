@@ -1358,4 +1358,163 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
 
         logger.info("View created successfully: databaseName=" + databaseName + ", viewName=" + viewName);
     }
+
+    @Override
+    public void createTrigger(Connection connection, String databaseName, String schemaName, String triggerName,
+                            String tableName, String timing, String event, String body, CreateTriggerOptions options) {
+        if (connection == null || triggerName == null || triggerName.isEmpty()
+                || tableName == null || tableName.isEmpty()
+                || timing == null || timing.isEmpty()
+                || event == null || event.isEmpty()
+                || body == null || body.isEmpty()) {
+            throw new IllegalArgumentException("Connection, triggerName, tableName, timing, event, and body must not be null or empty");
+        }
+
+        StringBuilder sql = new StringBuilder("CREATE ");
+
+        // Add options after CREATE (MySQL syntax: CREATE [DEFINER] TRIGGER ...)
+        boolean hasPrefix = false;
+        if (options != null) {
+            // DEFINER
+            if (options.getDefiner() != null && !options.getDefiner().isEmpty()) {
+                sql.append("DEFINER=").append("`").append(options.getDefiner().replace("`", "``")).append("`");
+                hasPrefix = true;
+            }
+        }
+
+        if (hasPrefix) sql.append(" ");
+        sql.append("TRIGGER `").append(triggerName.replace("`", "``")).append("` ");
+        sql.append(timing).append(" ").append(event);
+        sql.append(" ON `").append(tableName.replace("`", "``")).append("` FOR EACH ROW ");
+        sql.append(body);
+
+        // Add comment if provided
+        if (options != null && options.getComment() != null && !options.getComment().isEmpty()) {
+            sql.append(" COMMENT='").append(options.getComment().replace("'", "''")).append("'");
+        }
+
+        SqlCommandRequest request = new SqlCommandRequest();
+        request.setConnection(connection);
+        request.setDatabase(databaseName);
+        request.setOriginalSql(sql.toString());
+        request.setExecuteSql(sql.toString());
+        request.setNeedTransaction(false);
+
+        SqlCommandResult result = sqlExecutor.executeCommand(request);
+
+        if (!result.isSuccess()) {
+            logger.severe("Failed to create trigger: " + result.getErrorMessage());
+            throw new RuntimeException("Failed to create trigger: " + result.getErrorMessage());
+        }
+
+        logger.info("Trigger created successfully: databaseName=" + databaseName + ", triggerName=" + triggerName);
+    }
+
+    @Override
+    public void createProcedure(Connection connection, String databaseName, String schemaName, String procedureName,
+                              List<ParameterDefinition> parameters, String body, CreateRoutineOptions options) {
+        if (connection == null || procedureName == null || procedureName.isEmpty()
+                || body == null || body.isEmpty()) {
+            throw new IllegalArgumentException("Connection, procedureName, and body must not be null or empty");
+        }
+
+        // Simplified MySQL PROCEDURE syntax:
+        // CREATE PROCEDURE name(param1 TYPE1, param2 TYPE2) BEGIN ... END
+        StringBuilder sql = new StringBuilder("CREATE PROCEDURE ");
+
+        // Add schema prefix if provided
+        if (schemaName != null && !schemaName.isEmpty()) {
+            sql.append("`").append(schemaName.replace("`", "``")).append("`.");
+        }
+        sql.append("`").append(procedureName.replace("`", "``")).append("`");
+
+        // Add parameters
+        if (parameters != null && !parameters.isEmpty()) {
+            sql.append(" (");
+            boolean first = true;
+            for (ParameterDefinition param : parameters) {
+                if (!first) sql.append(", ");
+                first = false;
+                if (param.getMode() != null && !param.getMode().isEmpty()) {
+                    sql.append(param.getMode()).append(" ");
+                }
+                sql.append(param.getName()).append(" ").append(param.getType());
+            }
+            sql.append(")");
+        } else {
+            sql.append(" ()");
+        }
+
+        sql.append(" ").append(body);
+
+        SqlCommandRequest request = new SqlCommandRequest();
+        request.setConnection(connection);
+        request.setDatabase(databaseName);
+        request.setSchema(schemaName);
+        request.setOriginalSql(sql.toString());
+        request.setExecuteSql(sql.toString());
+        request.setNeedTransaction(false);
+
+        SqlCommandResult result = sqlExecutor.executeCommand(request);
+
+        if (!result.isSuccess()) {
+            logger.severe("Failed to create procedure: " + result.getErrorMessage());
+            throw new RuntimeException("Failed to create procedure: " + result.getErrorMessage());
+        }
+
+        logger.info("Procedure created successfully: databaseName=" + databaseName + ", schemaName=" + schemaName + ", procedureName=" + procedureName);
+    }
+
+    @Override
+    public void createFunction(Connection connection, String databaseName, String schemaName, String functionName,
+                              List<ParameterDefinition> parameters, String returnType, String body, CreateRoutineOptions options) {
+        if (connection == null || functionName == null || functionName.isEmpty()
+                || returnType == null || returnType.isEmpty()
+                || body == null || body.isEmpty()) {
+            throw new IllegalArgumentException("Connection, functionName, returnType, and body must not be null or empty");
+        }
+
+        // Simplified MySQL FUNCTION syntax:
+        // CREATE FUNCTION name(param1 TYPE1, param2 TYPE2) RETURNS return_type BEGIN ... END
+        StringBuilder sql = new StringBuilder("CREATE FUNCTION ");
+
+        // Add schema prefix if provided
+        if (schemaName != null && !schemaName.isEmpty()) {
+            sql.append("`").append(schemaName.replace("`", "``")).append("`.");
+        }
+        sql.append("`").append(functionName.replace("`", "``")).append("`");
+
+        // Add parameters
+        if (parameters != null && !parameters.isEmpty()) {
+            sql.append(" (");
+            boolean first = true;
+            for (ParameterDefinition param : parameters) {
+                if (!first) sql.append(", ");
+                first = false;
+                sql.append(param.getName()).append(" ").append(param.getType());
+            }
+            sql.append(")");
+        }
+
+        // Add characteristic (required when binary logging is enabled)
+        sql.append(" RETURNS ").append(returnType).append(" READS SQL DATA");
+        sql.append(" ").append(body);
+
+        SqlCommandRequest request = new SqlCommandRequest();
+        request.setConnection(connection);
+        request.setDatabase(databaseName);
+        request.setSchema(schemaName);
+        request.setOriginalSql(sql.toString());
+        request.setExecuteSql(sql.toString());
+        request.setNeedTransaction(false);
+
+        SqlCommandResult result = sqlExecutor.executeCommand(request);
+
+        if (!result.isSuccess()) {
+            logger.severe("Failed to create function: " + result.getErrorMessage());
+            throw new RuntimeException("Failed to create function: " + result.getErrorMessage());
+        }
+
+        logger.info("Function created successfully: databaseName=" + databaseName + ", schemaName=" + schemaName + ", functionName=" + functionName);
+    }
 }

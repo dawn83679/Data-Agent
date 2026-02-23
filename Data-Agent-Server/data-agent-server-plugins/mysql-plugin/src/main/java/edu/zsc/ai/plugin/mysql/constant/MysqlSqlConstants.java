@@ -100,6 +100,44 @@ public final class MysqlSqlConstants {
     /** %s = table name */
     public static final String SQL_DROP_TABLE_IF_EXISTS = "DROP TABLE IF EXISTS `%s`";
 
+    // --- Database Drop ---
+    /** %s = database name */
+    public static final String SQL_DROP_DATABASE = "DROP DATABASE `%s`";
+
+    // --- Database Create ---
+    /** %1$s = database name, %2$s = charset (may be empty), %3$s = collation (may be empty) */
+    public static final String SQL_CREATE_DATABASE = "CREATE DATABASE `%s`%s%s";
+
+    // --- Routine (Procedure/Function) Create ---
+    /** %1$s = schema prefix, %2$s = routine name, %3$s = parameters, %4$s = body */
+    public static final String SQL_CREATE_PROCEDURE = "CREATE PROCEDURE %s`%s`%s %s";
+
+    /** %1$s = schema prefix, %2$s = routine name, %3$s = parameters, %4$s = return type, %5$s = body */
+    public static final String SQL_CREATE_FUNCTION = "CREATE FUNCTION %s`%s`%s RETURNS %s %s";
+
+    // --- Routine Drop ---
+    /** %1$s = schema prefix, %2$s = procedure name */
+    public static final String SQL_DROP_PROCEDURE = "DROP PROCEDURE %s`%s`";
+
+    /** %1$s = schema prefix, %2$s = function name */
+    public static final String SQL_DROP_FUNCTION = "DROP FUNCTION %s`%s`";
+
+    // --- Trigger Create ---
+    /** %1$s = trigger name, %2$s = table name, %3$s = timing, %4$s = event, %5$s = body */
+    public static final String SQL_CREATE_TRIGGER = "CREATE TRIGGER `%s` %s %s ON `%s` FOR EACH ROW %s";
+
+    // --- Trigger Drop ---
+    /** %1$s = schema prefix, %2$s = trigger name */
+    public static final String SQL_DROP_TRIGGER = "DROP TRIGGER %s`%s`";
+
+    // --- View Create ---
+    /** %1$s = view name, %2$s = query */
+    public static final String SQL_CREATE_VIEW = "CREATE VIEW `%s` AS %s";
+
+    // --- View Drop ---
+    /** %s = view name */
+    public static final String SQL_DROP_VIEW = "DROP VIEW IF EXISTS `%s`";
+
     private MysqlSqlConstants() {
     }
 }

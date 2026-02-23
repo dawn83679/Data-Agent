@@ -2,15 +2,22 @@ package edu.zsc.ai.controller.db;
 
 import cn.dev33.satoken.stp.StpUtil;
 import edu.zsc.ai.domain.model.dto.request.db.CreateDatabaseRequest;
+import edu.zsc.ai.domain.model.dto.request.db.CreateFunctionRequest;
+import edu.zsc.ai.domain.model.dto.request.db.CreateProcedureRequest;
 import edu.zsc.ai.domain.model.dto.request.db.CreateTableRequest;
+import edu.zsc.ai.domain.model.dto.request.db.CreateTriggerRequest;
 import edu.zsc.ai.domain.model.dto.request.db.CreateViewRequest;
+import edu.zsc.ai.domain.model.dto.request.db.DeleteDatabaseRequest;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.service.db.DatabaseService;
 import edu.zsc.ai.plugin.capability.DatabaseProvider.ColumnDefinition;
+import edu.zsc.ai.plugin.capability.DatabaseProvider.CreateRoutineOptions;
 import edu.zsc.ai.plugin.capability.DatabaseProvider.CreateTableOptions;
+import edu.zsc.ai.plugin.capability.DatabaseProvider.CreateTriggerOptions;
 import edu.zsc.ai.plugin.capability.DatabaseProvider.CreateViewOptions;
 import edu.zsc.ai.plugin.capability.DatabaseProvider.ForeignKeyDefinition;
 import edu.zsc.ai.plugin.capability.DatabaseProvider.IndexDefinition;
+import edu.zsc.ai.plugin.capability.DatabaseProvider.ParameterDefinition;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,12 +49,10 @@ public class DatabaseController {
     }
 
     @PostMapping("/delete")
-    public ApiResponse<Void> deleteDatabase(
-            @RequestParam @NotNull(message = "connectionId is required") Long connectionId,
-            @RequestParam @NotNull(message = "databaseName is required") String databaseName) {
-        log.info("Deleting database: connectionId={}, databaseName={}", connectionId, databaseName);
+    public ApiResponse<Void> deleteDatabase(@RequestBody @Validated DeleteDatabaseRequest request) {
+        log.info("Deleting database: connectionId={}, databaseName={}", request.getConnectionId(), request.getDatabaseName());
         long userId = StpUtil.getLoginIdAsLong();
-        databaseService.deleteDatabase(connectionId, databaseName, userId);
+        databaseService.deleteDatabase(request.getConnectionId(), request.getDatabaseName(), userId);
         return ApiResponse.success(null);
     }
 
@@ -180,6 +185,69 @@ public class DatabaseController {
         long userId = StpUtil.getLoginIdAsLong();
         databaseService.createView(request.getConnectionId(), request.getDatabaseName(), request.getViewName(),
                 request.getQuery(), options, userId);
+        return ApiResponse.success(null);
+    }
+
+    @PostMapping("/triggers/create")
+    public ApiResponse<Void> createTrigger(@RequestBody @Validated CreateTriggerRequest request) {
+        log.info("Creating trigger: connectionId={}, databaseName={}, triggerName={}",
+                request.getConnectionId(), request.getDatabaseName(), request.getTriggerName());
+
+        long userId = StpUtil.getLoginIdAsLong();
+        databaseService.createTrigger(request.getConnectionId(), request.getDatabaseName(), request.getSchemaName(),
+                request.getTriggerName(), request.getTableName(), request.getTiming(), request.getEvent(),
+                request.getBody(), null, userId);
+        return ApiResponse.success(null);
+    }
+
+    @PostMapping("/procedures/create")
+    public ApiResponse<Void> createProcedure(@RequestBody @Validated CreateProcedureRequest request) {
+        log.info("Creating procedure: connectionId={}, databaseName={}, procedureName={}",
+                request.getConnectionId(), request.getDatabaseName(), request.getProcedureName());
+
+        // Convert parameters
+        List<ParameterDefinition> parameters = null;
+        if (request.getParameters() != null) {
+            parameters = request.getParameters().stream()
+                    .map(param -> {
+                        ParameterDefinition definition = new ParameterDefinition();
+                        definition.setName(param.getName());
+                        definition.setType(param.getType());
+                        definition.setMode(param.getMode());
+                        return definition;
+                    })
+                    .toList();
+        }
+
+        long userId = StpUtil.getLoginIdAsLong();
+        databaseService.createProcedure(request.getConnectionId(), request.getDatabaseName(), request.getSchemaName(),
+                request.getProcedureName(), parameters, request.getBody(), null, userId);
+        return ApiResponse.success(null);
+    }
+
+    @PostMapping("/functions/create")
+    public ApiResponse<Void> createFunction(@RequestBody @Validated CreateFunctionRequest request) {
+        log.info("Creating function: connectionId={}, databaseName={}, functionName={}",
+                request.getConnectionId(), request.getDatabaseName(), request.getFunctionName());
+
+        // Convert parameters
+        List<ParameterDefinition> parameters = null;
+        if (request.getParameters() != null) {
+            parameters = request.getParameters().stream()
+                    .map(param -> {
+                        ParameterDefinition definition = new ParameterDefinition();
+                        definition.setName(param.getName());
+                        definition.setType(param.getType());
+                        // Functions only support IN mode
+                        definition.setMode("IN");
+                        return definition;
+                    })
+                    .toList();
+        }
+
+        long userId = StpUtil.getLoginIdAsLong();
+        databaseService.createFunction(request.getConnectionId(), request.getDatabaseName(), request.getSchema(),
+                request.getFunctionName(), parameters, request.getReturns(), request.getBody(), null, userId);
         return ApiResponse.success(null);
     }
 }

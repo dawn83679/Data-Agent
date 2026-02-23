@@ -1,8 +1,11 @@
 package edu.zsc.ai.domain.service.db;
 
 import edu.zsc.ai.plugin.capability.DatabaseProvider.ColumnDefinition;
+import edu.zsc.ai.plugin.capability.DatabaseProvider.CreateRoutineOptions;
 import edu.zsc.ai.plugin.capability.DatabaseProvider.CreateTableOptions;
+import edu.zsc.ai.plugin.capability.DatabaseProvider.CreateTriggerOptions;
 import edu.zsc.ai.plugin.capability.DatabaseProvider.CreateViewOptions;
+import edu.zsc.ai.plugin.capability.DatabaseProvider.ParameterDefinition;
 
 import java.util.List;
 
@@ -81,4 +84,52 @@ public interface DatabaseService {
      */
     void createView(Long connectionId, String databaseName, String viewName,
                   String query, CreateViewOptions options, Long userId);
+
+    /**
+     * Create a new trigger
+     * @param connectionId connection id
+     * @param databaseName database name (catalog)
+     * @param schemaName schema name
+     * @param triggerName trigger name
+     * @param tableName table name to associate with trigger
+     * @param timing timing (BEFORE, AFTER)
+     * @param event event type (INSERT, UPDATE, DELETE)
+     * @param body trigger body (BEGIN...END)
+     * @param options trigger creation options
+     * @param userId user id
+     */
+    void createTrigger(Long connectionId, String databaseName, String schemaName, String triggerName,
+                     String tableName, String timing, String event, String body,
+                     CreateTriggerOptions options, Long userId);
+
+    /**
+     * Create a new stored procedure
+     * @param connectionId connection id
+     * @param databaseName database name (catalog)
+     * @param schemaName schema name
+     * @param procedureName procedure name
+     * @param parameters procedure parameters
+     * @param body procedure body
+     * @param options procedure creation options
+     * @param userId user id
+     */
+    void createProcedure(Long connectionId, String databaseName, String schemaName, String procedureName,
+                        List<ParameterDefinition> parameters, String body,
+                        CreateRoutineOptions options, Long userId);
+
+    /**
+     * Create a new function
+     * @param connectionId connection id
+     * @param databaseName database name (catalog)
+     * @param schemaName schema name
+     * @param functionName function name
+     * @param parameters function parameters
+     * @param returnType return data type
+     * @param body function body
+     * @param options function creation options
+     * @param userId user id
+     */
+    void createFunction(Long connectionId, String databaseName, String schemaName, String functionName,
+                       List<ParameterDefinition> parameters, String returnType, String body,
+                       CreateRoutineOptions options, Long userId);
 }
