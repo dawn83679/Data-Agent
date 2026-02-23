@@ -125,4 +125,149 @@ public interface DatabaseProvider {
     default boolean databaseExists(Connection connection, String databaseName) {
         throw new UnsupportedOperationException("Plugin does not support checking database existence");
     }
+
+    /**
+     * Get list of available table engines
+     * @param connection database connection
+     * @return list of engine names
+     */
+    default List<String> getTableEngines(Connection connection) {
+        throw new UnsupportedOperationException("Plugin does not support getting table engines");
+    }
+
+    /**
+     * Create a new table
+     * @param connection database connection
+     * @param databaseName database name
+     * @param tableName table name
+     * @param columns column definitions
+     * @param options table creation options (engine, charset, collation, comment, primaryKey, indexes, foreignKeys, constraints)
+     */
+    default void createTable(Connection connection, String databaseName, String tableName,
+                            List<ColumnDefinition> columns, CreateTableOptions options) {
+        throw new UnsupportedOperationException("Plugin does not support creating table");
+    }
+
+    /**
+     * Table creation options
+     */
+    class CreateTableOptions {
+        private String engine;
+        private String charset;
+        private String collation;
+        private String comment;
+        private List<String> primaryKey;
+        private List<IndexDefinition> indexes;
+        private List<ForeignKeyDefinition> foreignKeys;
+        private List<String> constraints;
+
+        public CreateTableOptions() {}
+
+        // Getters and setters
+        public String getEngine() { return engine; }
+        public void setEngine(String engine) { this.engine = engine; }
+        public String getCharset() { return charset; }
+        public void setCharset(String charset) { this.charset = charset; }
+        public String getCollation() { return collation; }
+        public void setCollation(String collation) { this.collation = collation; }
+        public String getComment() { return comment; }
+        public void setComment(String comment) { this.comment = comment; }
+        public List<String> getPrimaryKey() { return primaryKey; }
+        public void setPrimaryKey(List<String> primaryKey) { this.primaryKey = primaryKey; }
+        public List<IndexDefinition> getIndexes() { return indexes; }
+        public void setIndexes(List<IndexDefinition> indexes) { this.indexes = indexes; }
+        public List<ForeignKeyDefinition> getForeignKeys() { return foreignKeys; }
+        public void setForeignKeys(List<ForeignKeyDefinition> foreignKeys) { this.foreignKeys = foreignKeys; }
+        public List<String> getConstraints() { return constraints; }
+        public void setConstraints(List<String> constraints) { this.constraints = constraints; }
+    }
+
+    /**
+     * Index definition for table creation
+     */
+    class IndexDefinition {
+        private String name;
+        private List<String> columns;
+        private String type;
+
+        public IndexDefinition() {}
+
+        // Getters and setters
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        public List<String> getColumns() { return columns; }
+        public void setColumns(List<String> columns) { this.columns = columns; }
+        public String getType() { return type; }
+        public void setType(String type) { this.type = type; }
+    }
+
+    /**
+     * Foreign key definition for table creation
+     */
+    class ForeignKeyDefinition {
+        private String name;
+        private String column;
+        private String referencedTable;
+        private String referencedColumn;
+        private String onDelete;
+        private String onUpdate;
+
+        public ForeignKeyDefinition() {}
+
+        // Getters and setters
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        public String getColumn() { return column; }
+        public void setColumn(String column) { this.column = column; }
+        public String getReferencedTable() { return referencedTable; }
+        public void setReferencedTable(String referencedTable) { this.referencedTable = referencedTable; }
+        public String getReferencedColumn() { return referencedColumn; }
+        public void setReferencedColumn(String referencedColumn) { this.referencedColumn = referencedColumn; }
+        public String getOnDelete() { return onDelete; }
+        public void setOnDelete(String onDelete) { this.onDelete = onDelete; }
+        public String getOnUpdate() { return onUpdate; }
+        public void setOnUpdate(String onUpdate) { this.onUpdate = onUpdate; }
+    }
+
+    /**
+     * Column definition for table creation
+     */
+    class ColumnDefinition {
+        private String name;
+        private String type;
+        private Integer length;
+        private Integer decimals;
+        private boolean nullable;
+        private String keyType; // PRI, UNI, MUL
+        private String defaultValue;
+        private String comment;
+        private boolean autoIncrement;
+
+        public ColumnDefinition() {}
+
+        public ColumnDefinition(String name, String type) {
+            this.name = name;
+            this.type = type;
+        }
+
+        // Getters and setters
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        public String getType() { return type; }
+        public void setType(String type) { this.type = type; }
+        public Integer getLength() { return length; }
+        public void setLength(Integer length) { this.length = length; }
+        public Integer getDecimals() { return decimals; }
+        public void setDecimals(Integer decimals) { this.decimals = decimals; }
+        public boolean isNullable() { return nullable; }
+        public void setNullable(boolean nullable) { this.nullable = nullable; }
+        public String getKeyType() { return keyType; }
+        public void setKeyType(String keyType) { this.keyType = keyType; }
+        public String getDefaultValue() { return defaultValue; }
+        public void setDefaultValue(String defaultValue) { this.defaultValue = defaultValue; }
+        public String getComment() { return comment; }
+        public void setComment(String comment) { this.comment = comment; }
+        public boolean isAutoIncrement() { return autoIncrement; }
+        public void setAutoIncrement(boolean autoIncrement) { this.autoIncrement = autoIncrement; }
+    }
 }

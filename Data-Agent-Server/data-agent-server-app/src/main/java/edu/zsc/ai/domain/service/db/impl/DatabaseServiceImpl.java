@@ -4,6 +4,8 @@ import cn.dev33.satoken.stp.StpUtil;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.DatabaseService;
 import edu.zsc.ai.plugin.capability.DatabaseProvider;
+import edu.zsc.ai.plugin.capability.DatabaseProvider.ColumnDefinition;
+import edu.zsc.ai.plugin.capability.DatabaseProvider.CreateTableOptions;
 import edu.zsc.ai.plugin.manager.DefaultPluginManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -96,5 +98,32 @@ public class DatabaseServiceImpl implements DatabaseService {
         DatabaseProvider provider = DefaultPluginManager.getInstance().getDatabaseProviderByPluginId(active.pluginId());
 
         return provider.databaseExists(active.connection(), databaseName);
+    }
+
+    @Override
+    public List<String> getTableEngines(Long connectionId) {
+        long uid = StpUtil.getLoginIdAsLong();
+        connectionService.openConnection(connectionId, null, null, uid);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getAnyOwnedActiveConnection(connectionId, uid);
+
+        DatabaseProvider provider = DefaultPluginManager.getInstance().getDatabaseProviderByPluginId(active.pluginId());
+
+        return provider.getTableEngines(active.connection());
+    }
+
+    @Override
+    public void createTable(Long connectionId, String databaseName, String tableName,
+                           List<ColumnDefinition> columns, CreateTableOptions options, Long userId) {
+        long uid = userId != null ? userId : StpUtil.getLoginIdAsLong();
+        connectionService.openConnection(connectionId, null, null, uid);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getAnyOwnedActiveConnection(connectionId, uid);
+
+        DatabaseProvider provider = DefaultPluginManager.getInstance().getDatabaseProviderByPluginId(active.pluginId());
+        provider.createTable(active.connection(), databaseName, tableName, columns, options);
+
+        log.info("Table created successfully: connectionId={}, databaseName={}, tableName={}",
+                connectionId, databaseName, tableName);
     }
 }

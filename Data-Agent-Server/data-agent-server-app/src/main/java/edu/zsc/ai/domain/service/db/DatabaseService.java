@@ -1,5 +1,8 @@
 package edu.zsc.ai.domain.service.db;
 
+import edu.zsc.ai.plugin.capability.DatabaseProvider.ColumnDefinition;
+import edu.zsc.ai.plugin.capability.DatabaseProvider.CreateTableOptions;
+
 import java.util.List;
 
 public interface DatabaseService {
@@ -46,4 +49,23 @@ public interface DatabaseService {
      * @return true if database exists
      */
     boolean databaseExists(Long connectionId, String databaseName, Long userId);
+
+    /**
+     * Get list of available table engines
+     * @param connectionId connection id
+     * @return list of engine names
+     */
+    List<String> getTableEngines(Long connectionId);
+
+    /**
+     * Create a new table
+     * @param connectionId connection id
+     * @param databaseName database name
+     * @param tableName table name
+     * @param columns column definitions
+     * @param options table creation options (engine, charset, collation, comment, primaryKey, indexes, foreignKeys, constraints)
+     * @param userId user id
+     */
+    void createTable(Long connectionId, String databaseName, String tableName,
+                    List<ColumnDefinition> columns, CreateTableOptions options, Long userId);
 }

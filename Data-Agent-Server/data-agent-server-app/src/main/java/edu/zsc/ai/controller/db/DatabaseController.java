@@ -1,14 +1,21 @@
 package edu.zsc.ai.controller.db;
 
 import cn.dev33.satoken.stp.StpUtil;
+import edu.zsc.ai.domain.model.dto.request.db.CreateDatabaseRequest;
+import edu.zsc.ai.domain.model.dto.request.db.CreateTableRequest;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.service.db.DatabaseService;
+import edu.zsc.ai.plugin.capability.DatabaseProvider.ColumnDefinition;
+import edu.zsc.ai.plugin.capability.DatabaseProvider.CreateTableOptions;
+import edu.zsc.ai.plugin.capability.DatabaseProvider.ForeignKeyDefinition;
+import edu.zsc.ai.plugin.capability.DatabaseProvider.IndexDefinition;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -60,15 +67,12 @@ public class DatabaseController {
     }
 
     @PostMapping("/create")
-    public ApiResponse<Void> createDatabase(
-            @RequestParam @NotNull(message = "connectionId is required") Long connectionId,
-            @RequestParam @NotNull(message = "databaseName is required") String databaseName,
-            @RequestParam @NotNull(message = "charset is required") String charset,
-            @RequestParam String collation) {
+    public ApiResponse<Void> createDatabase(@RequestBody @Validated CreateDatabaseRequest request) {
         log.info("Creating database: connectionId={}, databaseName={}, charset={}, collation={}",
-                connectionId, databaseName, charset, collation);
+                request.getConnectionId(), request.getDatabaseName(), request.getCharset(), request.getCollation());
         long userId = StpUtil.getLoginIdAsLong();
-        databaseService.createDatabase(connectionId, databaseName, charset, collation, userId);
+        databaseService.createDatabase(request.getConnectionId(), request.getDatabaseName(),
+                request.getCharset(), request.getCollation(), userId);
         return ApiResponse.success(null);
     }
 
@@ -80,5 +84,82 @@ public class DatabaseController {
         long userId = StpUtil.getLoginIdAsLong();
         boolean exists = databaseService.databaseExists(connectionId, databaseName, userId);
         return ApiResponse.success(exists);
+    }
+
+    @GetMapping("/engines")
+    public ApiResponse<List<String>> getTableEngines(
+            @RequestParam @NotNull(message = "connectionId is required") Long connectionId) {
+        log.info("Getting table engines: connectionId={}", connectionId);
+        List<String> engines = databaseService.getTableEngines(connectionId);
+        return ApiResponse.success(engines);
+    }
+
+    @PostMapping("/tables/create")
+    public ApiResponse<Void> createTable(@RequestBody @Validated CreateTableRequest request) {
+        log.info("Creating table: connectionId={}, databaseName={}, tableName={}",
+                request.getConnectionId(), request.getDatabaseName(), request.getTableName());
+
+        // Convert DTO ColumnDefinition to Provider ColumnDefinition
+        List<ColumnDefinition> columns = request.getColumns().stream()
+                .map(col -> {
+                    ColumnDefinition definition = new ColumnDefinition();
+                    definition.setName(col.getName());
+                    definition.setType(col.getType());
+                    definition.setLength(col.getLength());
+                    definition.setDecimals(col.getDecimals());
+                    definition.setNullable(col.isNullable());
+                    definition.setKeyType(col.getKeyType());
+                    definition.setDefaultValue(col.getDefaultValue());
+                    definition.setComment(col.getComment());
+                    definition.setAutoIncrement(col.isAutoIncrement());
+                    return definition;
+                })
+                .toList();
+
+        // Build CreateTableOptions
+        CreateTableOptions options = new CreateTableOptions();
+        options.setEngine(request.getEngine());
+        options.setCharset(request.getCharset());
+        options.setCollation(request.getCollation());
+        options.setComment(request.getComment());
+        options.setPrimaryKey(request.getPrimaryKey());
+
+        // Convert indexes
+        if (request.getIndexes() != null) {
+            List<IndexDefinition> indexes = request.getIndexes().stream()
+                    .map(idx -> {
+                        IndexDefinition definition = new IndexDefinition();
+                        definition.setName(idx.getName());
+                        definition.setColumns(idx.getColumns());
+                        definition.setType(idx.getType());
+                        return definition;
+                    })
+                    .toList();
+            options.setIndexes(indexes);
+        }
+
+        // Convert foreignKeys
+        if (request.getForeignKeys() != null) {
+            List<ForeignKeyDefinition> foreignKeys = request.getForeignKeys().stream()
+                    .map(fk -> {
+                        ForeignKeyDefinition definition = new ForeignKeyDefinition();
+                        definition.setName(fk.getName());
+                        definition.setColumn(fk.getColumn());
+                        definition.setReferencedTable(fk.getReferencedTable());
+                        definition.setReferencedColumn(fk.getReferencedColumn());
+                        definition.setOnDelete(fk.getOnDelete());
+                        definition.setOnUpdate(fk.getOnUpdate());
+                        return definition;
+                    })
+                    .toList();
+            options.setForeignKeys(foreignKeys);
+        }
+
+        options.setConstraints(request.getConstraints());
+
+        long userId = StpUtil.getLoginIdAsLong();
+        databaseService.createTable(request.getConnectionId(), request.getDatabaseName(), request.getTableName(),
+                columns, options, userId);
+        return ApiResponse.success(null);
     }
 }

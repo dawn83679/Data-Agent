@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
         implements ConnectionProvider, CommandExecutor<SqlCommandRequest, SqlCommandResult>, DatabaseProvider,
@@ -1063,6 +1064,7 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
 
         SqlCommandRequest request = new SqlCommandRequest();
         request.setConnection(connection);
+        request.setDatabase(databaseName);
         request.setOriginalSql(sql.toString());
         request.setExecuteSql(sql.toString());
         request.setNeedTransaction(false);
@@ -1097,5 +1099,201 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
         }
 
         return result.getRows() != null && !result.getRows().isEmpty();
+    }
+
+    @Override
+    public List<String> getTableEngines(Connection connection) {
+        if (connection == null) {
+            return List.of();
+        }
+        String sql = MysqlSqlConstants.SQL_SHOW_ENGINES;
+        SqlCommandRequest request = new SqlCommandRequest();
+        request.setConnection(connection);
+        request.setOriginalSql(sql);
+        request.setExecuteSql(sql);
+        request.setNeedTransaction(false);
+
+        SqlCommandResult result = sqlExecutor.executeCommand(request);
+        if (!result.isSuccess()) {
+            logger.severe("Failed to get table engines: " + result.getErrorMessage());
+            throw new RuntimeException("Failed to get table engines: " + result.getErrorMessage());
+        }
+
+        List<String> engines = new ArrayList<>();
+        if (result.getRows() != null) {
+            for (List<Object> row : result.getRows()) {
+                Object supportObj = result.getValueByColumnName(row, "Support");
+                if (supportObj != null && (supportObj.toString().equals("YES") || supportObj.toString().equals("DEFAULT"))) {
+                    Object engineObj = result.getValueByColumnName(row, "Engine");
+                    if (engineObj != null) {
+                        engines.add(engineObj.toString());
+                    }
+                }
+            }
+        }
+        return engines;
+    }
+
+    @Override
+    public void createTable(Connection connection, String databaseName, String tableName,
+                          List<ColumnDefinition> columns, CreateTableOptions options) {
+        if (connection == null || tableName == null || tableName.isEmpty() || columns == null || columns.isEmpty()) {
+            throw new IllegalArgumentException("Connection, tableName, and columns must not be null or empty");
+        }
+
+        // Build full table name with database
+        String fullTableName = databaseName != null && !databaseName.isEmpty()
+            ? "`" + databaseName.replace("`", "``") + "`.`" + tableName.replace("`", "``") + "`"
+            : "`" + tableName.replace("`", "``") + "`";
+
+        StringBuilder sql = new StringBuilder("CREATE TABLE ");
+        sql.append(fullTableName);
+        sql.append(" (");
+
+        // Build column definitions
+        boolean firstColumn = true;
+        for (ColumnDefinition col : columns) {
+            // Skip invalid column definitions
+            if (col.getName() == null || col.getName().isEmpty() || col.getType() == null || col.getType().isEmpty()) {
+                continue;
+            }
+            if (!firstColumn) {
+                sql.append(", ");
+            }
+            sql.append("`").append(col.getName().replace("`", "``")).append("` ");
+            sql.append(col.getType());
+            if (col.getLength() != null && col.getLength() > 0) {
+                sql.append("(").append(col.getLength());
+                if (col.getDecimals() != null && col.getDecimals() > 0) {
+                    sql.append(",").append(col.getDecimals());
+                }
+                sql.append(")");
+            }
+            if (!col.isNullable()) {
+                sql.append(" NOT NULL");
+            }
+            if (col.isAutoIncrement()) {
+                sql.append(" AUTO_INCREMENT");
+            }
+            if (col.getDefaultValue() != null && !col.getDefaultValue().isEmpty()) {
+                sql.append(" DEFAULT ").append(col.getDefaultValue());
+            }
+            if (col.getComment() != null && !col.getComment().isEmpty()) {
+                sql.append(" COMMENT '").append(col.getComment().replace("'", "''")).append("'");
+            }
+            firstColumn = false;
+        }
+
+        // Check if we have any valid columns after filtering
+        if (firstColumn) {
+            throw new IllegalArgumentException("At least one valid column is required");
+        }
+
+        // Add primary key
+        if (options != null && options.getPrimaryKey() != null && !options.getPrimaryKey().isEmpty()) {
+            // Filter out empty primary key column names
+            List<String> validPkColumns = options.getPrimaryKey().stream()
+                    .filter(col -> col != null && !col.isEmpty())
+                    .collect(Collectors.toList());
+            if (!validPkColumns.isEmpty()) {
+                sql.append(", PRIMARY KEY (");
+                for (int i = 0; i < validPkColumns.size(); i++) {
+                    if (i > 0) sql.append(", ");
+                    sql.append("`").append(validPkColumns.get(i).replace("`", "``")).append("`");
+                }
+                sql.append(")");
+            }
+        }
+
+        // Add indexes
+        if (options != null && options.getIndexes() != null && !options.getIndexes().isEmpty()) {
+            for (IndexDefinition idx : options.getIndexes()) {
+                if (idx.getColumns() == null || idx.getColumns().isEmpty()) {
+                    continue; // Skip index without columns
+                }
+                // Filter out empty column names
+                List<String> validIndexCols = idx.getColumns().stream()
+                        .filter(col -> col != null && !col.isEmpty())
+                        .collect(Collectors.toList());
+                if (validIndexCols.isEmpty()) {
+                    continue;
+                }
+                sql.append(", ");
+                if (idx.getName() != null && !idx.getName().isEmpty()) {
+                    sql.append("INDEX `").append(idx.getName().replace("`", "``")).append("`");
+                } else {
+                    sql.append("INDEX");
+                }
+                sql.append(" (");
+                for (int i = 0; i < validIndexCols.size(); i++) {
+                    if (i > 0) sql.append(", ");
+                    sql.append("`").append(validIndexCols.get(i).replace("`", "``")).append("`");
+                }
+                sql.append(")");
+            }
+        }
+
+        // Add foreign keys
+        if (options != null && options.getForeignKeys() != null && !options.getForeignKeys().isEmpty()) {
+            for (ForeignKeyDefinition fk : options.getForeignKeys()) {
+                // Skip invalid foreign key definitions
+                if (fk.getColumn() == null || fk.getColumn().isEmpty() ||
+                    fk.getReferencedTable() == null || fk.getReferencedTable().isEmpty() ||
+                    fk.getReferencedColumn() == null || fk.getReferencedColumn().isEmpty()) {
+                    continue;
+                }
+                String fkName = (fk.getName() != null && !fk.getName().isEmpty()) ? fk.getName() : fk.getColumn();
+                sql.append(", FOREIGN KEY `").append(fkName.replace("`", "``")).append("`");
+                sql.append(" (`").append(fk.getColumn().replace("`", "``")).append("`)");
+                sql.append(" REFERENCES `").append(fk.getReferencedTable().replace("`", "``")).append("`");
+                sql.append(" (`").append(fk.getReferencedColumn().replace("`", "``")).append("`)");
+                if (fk.getOnDelete() != null && !fk.getOnDelete().isEmpty()) {
+                    sql.append(" ON DELETE ").append(fk.getOnDelete());
+                }
+                if (fk.getOnUpdate() != null && !fk.getOnUpdate().isEmpty()) {
+                    sql.append(" ON UPDATE ").append(fk.getOnUpdate());
+                }
+            }
+        }
+
+        sql.append(")");
+
+        // Add table options
+        if (options != null) {
+            if (options.getEngine() != null && !options.getEngine().isEmpty()) {
+                sql.append(" ENGINE=").append(options.getEngine());
+            }
+            if (options.getCharset() != null && !options.getCharset().isEmpty()) {
+                sql.append(" DEFAULT CHARSET=").append(options.getCharset());
+            }
+            if (options.getCollation() != null && !options.getCollation().isEmpty()) {
+                sql.append(" COLLATE=").append(options.getCollation());
+            }
+            if (options.getComment() != null && !options.getComment().isEmpty()) {
+                sql.append(" COMMENT='").append(options.getComment().replace("'", "''")).append("'");
+            }
+            // Add table-level constraints
+            if (options.getConstraints() != null && !options.getConstraints().isEmpty()) {
+                for (String constraint : options.getConstraints()) {
+                    sql.append(", ").append(constraint);
+                }
+            }
+        }
+
+        SqlCommandRequest request = new SqlCommandRequest();
+        request.setConnection(connection);
+        request.setDatabase(databaseName);
+        request.setOriginalSql(sql.toString());
+        request.setExecuteSql(sql.toString());
+        request.setNeedTransaction(false);
+
+        SqlCommandResult result = sqlExecutor.executeCommand(request);
+
+        if (!result.isSuccess()) {
+            logger.severe("Failed to create table: " + result.getErrorMessage());
+            throw new RuntimeException("Failed to create table: " + result.getErrorMessage());
+        }
+
+        logger.info("Table created successfully: databaseName=" + databaseName + ", tableName=" + tableName);
     }
 }
