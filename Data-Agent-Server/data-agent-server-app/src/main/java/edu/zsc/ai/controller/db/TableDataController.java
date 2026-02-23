@@ -3,7 +3,8 @@ package edu.zsc.ai.controller.db;
 import cn.dev33.satoken.stp.StpUtil;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.model.dto.response.db.TableDataResponse;
-import edu.zsc.ai.domain.service.db.TableDataService;
+import edu.zsc.ai.domain.service.db.TableService;
+import edu.zsc.ai.domain.service.db.ViewService;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class TableDataController {
 
-    private final TableDataService tableDataService;
+    private final TableService tableService;
+    private final ViewService viewService;
 
     @GetMapping("/table")
     public ApiResponse<TableDataResponse> getTableData(
@@ -33,7 +35,7 @@ public class TableDataController {
         log.info("Getting table data: connectionId={}, tableName={}, catalog={}, schema={}, currentPage={}, pageSize={}",
                 connectionId, tableName, catalog, schema, currentPage, pageSize);
         long userId = StpUtil.getLoginIdAsLong();
-        TableDataResponse response = tableDataService.getTableData(connectionId, catalog, schema, tableName, userId, currentPage, pageSize);
+        TableDataResponse response = tableService.getTableData(connectionId, catalog, schema, tableName, userId, currentPage, pageSize);
         return ApiResponse.success(response);
     }
 
@@ -48,7 +50,7 @@ public class TableDataController {
         log.info("Getting view data: connectionId={}, viewName={}, catalog={}, schema={}, currentPage={}, pageSize={}",
                 connectionId, viewName, catalog, schema, currentPage, pageSize);
         long userId = StpUtil.getLoginIdAsLong();
-        TableDataResponse response = tableDataService.getViewData(connectionId, catalog, schema, viewName, userId, currentPage, pageSize);
+        TableDataResponse response = viewService.getViewData(connectionId, catalog, schema, viewName, userId, currentPage, pageSize);
         return ApiResponse.success(response);
     }
 }

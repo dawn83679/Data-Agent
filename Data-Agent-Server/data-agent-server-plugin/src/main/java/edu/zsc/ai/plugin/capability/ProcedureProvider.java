@@ -18,16 +18,6 @@ import java.util.List;
 
 public interface ProcedureProvider {
 
-    /**
-     * Escapes backticks in an identifier for MySQL by doubling them
-     */
-    default String escapeIdentifier(String identifier) {
-        if (identifier == null) {
-            return null;
-        }
-        return identifier.replace("`", "``");
-    }
-
     default List<ProcedureMetadata> getProcedures(Connection connection, String catalog, String schema) {
         try {
             List<ProcedureMetadata> list = new ArrayList<>();
@@ -55,36 +45,7 @@ public interface ProcedureProvider {
         throw new UnsupportedOperationException("Plugin does not support getting procedure DDL");
     }
 
-    default void deleteProcedure(Connection connection, String pluginId, String catalog, String schema, String procedureName) {
-        Logger log = LoggerFactory.getLogger(ProcedureProvider.class);
-        CommandExecutor<SqlCommandRequest, SqlCommandResult> executor = DefaultPluginManager.getInstance()
-                .getSqlCommandExecutorByPluginId(pluginId);
-
-        String dropSql = buildDropProcedureSql(schema, procedureName);
-
-        SqlCommandRequest pluginRequest = new SqlCommandRequest();
-        pluginRequest.setConnection(connection);
-        pluginRequest.setOriginalSql(dropSql);
-        pluginRequest.setExecuteSql(dropSql);
-        pluginRequest.setDatabase(catalog);
-        pluginRequest.setSchema(schema);
-        pluginRequest.setNeedTransaction(false);
-
-        SqlCommandResult result = executor.executeCommand(pluginRequest);
-
-        if (!result.isSuccess()) {
-            throw new RuntimeException("Failed to delete procedure: " + result.getErrorMessage());
-        }
-
-        log.info("Procedure deleted successfully: catalog={}, schema={}, procedureName={}", catalog, schema, procedureName);
-    }
-
-    default String buildDropProcedureSql(String schema, String procedureName) {
-        StringBuilder sql = new StringBuilder("DROP PROCEDURE ");
-        if (schema != null && !schema.isEmpty()) {
-            sql.append("`").append(escapeIdentifier(schema)).append("`.");
-        }
-        sql.append("`").append(escapeIdentifier(procedureName)).append("`");
-        return sql.toString();
+    default void deleteProcedure(Connection connection, String catalog, String schema, String procedureName) {
+        throw new UnsupportedOperationException("Plugin does not support deleting procedure");
     }
 }

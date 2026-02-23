@@ -43,7 +43,7 @@ public class DatabaseServiceImpl implements DatabaseService {
         ConnectionManager.ActiveConnection active = ConnectionManager.getAnyOwnedActiveConnection(connectionId, uid);
 
         DatabaseProvider provider = DefaultPluginManager.getInstance().getDatabaseProviderByPluginId(active.pluginId());
-        provider.deleteDatabase(active.connection(), active.pluginId(), databaseName);
+        provider.deleteDatabase(active.connection(), databaseName);
 
         log.info("Database deleted successfully: connectionId={}, databaseName={}", connectionId, databaseName);
     }

@@ -1,5 +1,7 @@
 package edu.zsc.ai.domain.service.db;
 
+import edu.zsc.ai.domain.model.dto.response.db.TableDataResponse;
+
 import java.util.List;
 
 public interface TableService {
@@ -9,4 +11,6 @@ public interface TableService {
     String getTableDdl(Long connectionId, String catalog, String schema, String tableName, Long userId);
 
     void deleteTable(Long connectionId, String catalog, String schema, String tableName, Long userId);
+
+    TableDataResponse getTableData(Long connectionId, String catalog, String schema, String tableName, Long userId, Integer currentPage, Integer pageSize);
 }

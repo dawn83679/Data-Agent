@@ -1,7 +1,8 @@
-package edu.zsc.ai.common.enums.db;
+package edu.zsc.ai.plugin.constant;
 
-public enum DdlResourceTypeEnum {
+public enum DatabaseObjectTypeEnum {
 
+    DATABASE("database"),
     TABLE("table"),
     VIEW("view"),
     FUNCTION("function"),
@@ -10,7 +11,7 @@ public enum DdlResourceTypeEnum {
 
     private final String value;
 
-    DdlResourceTypeEnum(String value) {
+    DatabaseObjectTypeEnum(String value) {
         this.value = value;
     }
 

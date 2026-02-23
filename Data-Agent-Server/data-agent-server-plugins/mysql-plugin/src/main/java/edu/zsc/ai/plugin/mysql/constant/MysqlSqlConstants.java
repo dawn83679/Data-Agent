@@ -20,6 +20,20 @@ public final class MysqlSqlConstants {
     /** %s = full trigger name (catalog.trigger or trigger) */
     public static final String SQL_SHOW_CREATE_TRIGGER = "SHOW CREATE TRIGGER %s";
 
+    // --- DROP commands ---
+    /** %s = database name (escaped and quoted) */
+    public static final String SQL_DROP_DATABASE = "DROP DATABASE %s";
+    /** %s = full table name (catalog.table or table, escaped and quoted) */
+    public static final String SQL_DROP_TABLE = "DROP TABLE %s";
+    /** %s = full view name (catalog.view or view, escaped and quoted) */
+    public static final String SQL_DROP_VIEW = "DROP VIEW %s";
+    /** %s = full function name (catalog.func or func, escaped and quoted) */
+    public static final String SQL_DROP_FUNCTION = "DROP FUNCTION %s";
+    /** %s = full procedure name (catalog.proc or proc, escaped and quoted) */
+    public static final String SQL_DROP_PROCEDURE = "DROP PROCEDURE %s";
+    /** %s = full trigger name (catalog.trigger or trigger, escaped and quoted) */
+    public static final String SQL_DROP_TRIGGER = "DROP TRIGGER %s";
+
     // --- information_schema.TRIGGERS ---
     /** %s = escaped schema. Append SQL_TRIGGER_FILTER_BY_TABLE + escapedTable + "'" for table filter. */
     public static final String SQL_LIST_TRIGGERS =

@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Table data response with pagination
@@ -18,14 +17,14 @@ import java.util.Map;
 public class TableDataResponse {
 
     /**
-     * Column names
+     * Column headers
      */
-    private List<String> columns;
+    private List<String> headers;
 
     /**
-     * Data rows, each row is a list of column values
+     * Data rows, each row is a list of column values in the same order as columns
      */
-    private List<Map<String, Object>> rows;
+    private List<List<Object>> rows;
 
     /**
      * Total number of records

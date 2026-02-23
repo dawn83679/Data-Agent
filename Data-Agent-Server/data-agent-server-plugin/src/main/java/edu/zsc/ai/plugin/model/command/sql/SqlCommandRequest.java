@@ -31,4 +31,16 @@ public class SqlCommandRequest implements CommandRequest {
     public String getCommand() {
         return originalSql;
     }
+
+    public static SqlCommandRequest ofWithoutTransaction(Connection connection, String originalSql, String executeSql,
+                                                         String database, String schema) {
+        SqlCommandRequest request = new SqlCommandRequest();
+        request.setConnection(connection);
+        request.setOriginalSql(originalSql);
+        request.setExecuteSql(executeSql);
+        request.setDatabase(database);
+        request.setSchema(schema);
+        request.setNeedTransaction(false);
+        return request;
+    }
 }

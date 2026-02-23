@@ -17,16 +17,6 @@ import java.util.List;
 
 public interface FunctionProvider {
 
-    /**
-     * Escapes backticks in an identifier for MySQL by doubling them
-     */
-    default String escapeIdentifier(String identifier) {
-        if (identifier == null) {
-            return null;
-        }
-        return identifier.replace("`", "``");
-    }
-
     default List<FunctionMetadata> getFunctions(Connection connection, String catalog, String schema) {
         try {
             List<FunctionMetadata> list = new ArrayList<>();
@@ -48,36 +38,7 @@ public interface FunctionProvider {
         throw new UnsupportedOperationException("Plugin does not support getting function DDL");
     }
 
-    default void deleteFunction(Connection connection, String pluginId, String catalog, String schema, String functionName) {
-        Logger log = LoggerFactory.getLogger(FunctionProvider.class);
-        CommandExecutor<SqlCommandRequest, SqlCommandResult> executor = DefaultPluginManager.getInstance()
-                .getSqlCommandExecutorByPluginId(pluginId);
-
-        String dropSql = buildDropFunctionSql(schema, functionName);
-
-        SqlCommandRequest pluginRequest = new SqlCommandRequest();
-        pluginRequest.setConnection(connection);
-        pluginRequest.setOriginalSql(dropSql);
-        pluginRequest.setExecuteSql(dropSql);
-        pluginRequest.setDatabase(catalog);
-        pluginRequest.setSchema(schema);
-        pluginRequest.setNeedTransaction(false);
-
-        SqlCommandResult result = executor.executeCommand(pluginRequest);
-
-        if (!result.isSuccess()) {
-            throw new RuntimeException("Failed to delete function: " + result.getErrorMessage());
-        }
-
-        log.info("Function deleted successfully: catalog={}, schema={}, functionName={}", catalog, schema, functionName);
-    }
-
-    default String buildDropFunctionSql(String schema, String functionName) {
-        StringBuilder sql = new StringBuilder("DROP FUNCTION ");
-        if (schema != null && !schema.isEmpty()) {
-            sql.append("`").append(escapeIdentifier(schema)).append("`.");
-        }
-        sql.append("`").append(escapeIdentifier(functionName)).append("`");
-        return sql.toString();
+    default void deleteFunction(Connection connection, String catalog, String schema, String functionName) {
+        throw new UnsupportedOperationException("Plugin does not support deleting function");
     }
 }
