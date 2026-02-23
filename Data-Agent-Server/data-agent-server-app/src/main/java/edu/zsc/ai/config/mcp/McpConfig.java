@@ -1,5 +1,6 @@
 package edu.zsc.ai.config.mcp;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -8,6 +9,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.McpTransport;
@@ -16,7 +18,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * MCP hybrid configuration with lifecycle management
+ * MCP configuration with lifecycle management
+ * Provides both MCP clients and tool provider in a single configuration class
  */
 @Configuration
 @Slf4j
@@ -45,6 +48,33 @@ public class McpConfig implements DisposableBean {
         return clients;
     }
 
+    @Bean("mcpToolProvider")
+    public McpToolProvider mcpToolProvider(List<McpClient> mcpClients) {
+        if (mcpClients == null || mcpClients.isEmpty()) {
+            log.warn("No MCP clients available, returning empty McpToolProvider");
+            return McpToolProvider.builder().build();
+        }
+
+        log.info("Creating MCP tool provider from {} clients", mcpClients.size());
+        
+        // Log tool count for each client (non-blocking, for monitoring)
+        mcpClients.forEach(client -> {
+            if (client instanceof DefaultMcpClient defaultClient) {
+                try {
+                    int toolCount = defaultClient.listTools().size();
+                    log.info("MCP client '{}' provides {} tools", defaultClient.key(), toolCount);
+                } catch (Exception e) {
+                    log.warn("Failed to list tools for MCP client '{}': {}", 
+                            defaultClient.key(), e.getMessage());
+                }
+            }
+        });
+        
+        return McpToolProvider.builder()
+                .mcpClients(mcpClients)
+                .build();
+    }
+
     @Override
     public void destroy() {
         if (clients != null && !clients.isEmpty()) {
@@ -71,27 +101,31 @@ public class McpConfig implements DisposableBean {
                     .command(command)
                     .environment(config.getEnv())
                     .build();
-
+            
             McpClient client = DefaultMcpClient.builder()
                     .transport(transport)
                     .key(name)
                     .build();
 
-            if (config.isDebug()) {
-                log.debug("Created MCP client '{}' with command: {}", name, command);
-            }
-
+            log.info("Successfully created MCP client '{}'", name);
             return client;
 
         } catch (Exception e) {
-            log.error("Failed to create MCP client '{}'", name, e);
+            log.error("Failed to create MCP client '{}': {}", name, e.getMessage(), e);
             return null;
         }
     }
 
     private List<String> buildCommand(McpProperties.ServerConfig config) {
         if (config.getPackageName() != null) {
-            return List.of(getNpxCommand(), config.getPackageName());
+            // Simplified mode: npx + packageName + optional args
+            List<String> command = new ArrayList<>();
+            command.add(getNpxCommand());
+            command.add(config.getPackageName());
+            if (config.getArgs() != null && !config.getArgs().isEmpty()) {
+                command.addAll(config.getArgs());
+            }
+            return command;
         }
 
         if (config.getCommand() != null) {
@@ -105,12 +139,10 @@ public class McpConfig implements DisposableBean {
     private List<String> buildFullCommand(McpProperties.ServerConfig config) {
         String adaptedCommand = adaptCommand(config.getCommand());
         if (config.getArgs() != null && !config.getArgs().isEmpty()) {
-            return List.of(
-                            List.of(adaptedCommand),
-                            config.getArgs()
-                    ).stream()
-                    .flatMap(List::stream)
-                    .toList();
+            List<String> command = new ArrayList<>();
+            command.add(adaptedCommand);
+            command.addAll(config.getArgs());
+            return command;
         }
         return List.of(adaptedCommand);
     }
