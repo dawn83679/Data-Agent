@@ -75,7 +75,7 @@ langchain4j:
 mcp:
   enabled: true  # Set to false to disable MCP integration
   servers:
-    # 简化配置示例（推荐）- 只需指定 package
+    # Simplified configuration example (recommended) - only specify package
     chart-server:
       packageName: "@modelcontextprotocol/server-everything"
       enabled: true
