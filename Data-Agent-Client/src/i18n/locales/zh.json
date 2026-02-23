@@ -159,6 +159,11 @@
       "submitAnswer": "提交答案",
       "answerPrefix": "用户回答：",
       "submittedAnswer": "您的答案"
+    },
+    "toolRun": {
+      "streamingArguments": "正在流式传输参数...",
+      "executing": "正在执行...",
+      "parameters": "参数"
     }
   },
   "explorer": {

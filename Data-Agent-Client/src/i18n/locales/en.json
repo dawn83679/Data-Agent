@@ -159,6 +159,11 @@
       "submitAnswer": "Submit answer",
       "answerPrefix": "User answered: ",
       "submittedAnswer": "Your answer"
+    },
+    "toolRun": {
+      "streamingArguments": "Streaming arguments...",
+      "executing": "Executing...",
+      "parameters": "Parameters"
     }
   },
   "explorer": {

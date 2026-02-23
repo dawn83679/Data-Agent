@@ -3,7 +3,7 @@ import type { ChatResponseBlock } from '../../../types/chat';
 import type { ToolCallData } from '../../../types/chat';
 import { parseToolCall, parseToolResult, idStr, matchById } from './blockParsing';
 import type { Segment } from './types';
-import { SegmentKind } from './types';
+import { SegmentKind, ToolExecutionState } from './types';
 
 /**
  * Merge consecutive TOOL_CALL blocks with the same id (streaming chunks) by concatenating arguments.
@@ -12,22 +12,24 @@ function mergeConsecutiveToolCalls(
   blocks: ChatResponseBlock[],
   startIndex: number,
   firstCall: ToolCallData
-): { endIndex: number; lastCall: ToolCallData; parametersData: string } {
+): { endIndex: number; lastCall: ToolCallData; parametersData: string; isStreaming: boolean } {
   let j = startIndex;
   let lastCall: ToolCallData = firstCall;
   const hasId = firstCall.id != null && firstCall.id !== '';
   const firstIdStr = idStr(firstCall.id);
+  let isStreaming = firstCall.streaming === true;
 
   while (hasId && j + 1 < blocks.length && blocks[j + 1]?.type === MessageBlockType.TOOL_CALL) {
     const nextCall = parseToolCall(blocks[j + 1]!);
     if (!nextCall || idStr(nextCall.id) !== firstIdStr) break;
     j++;
+    isStreaming = isStreaming || nextCall.streaming === true;
     lastCall = {
       ...nextCall,
       arguments: (lastCall.arguments ?? '') + (nextCall.arguments ?? ''),
     };
   }
-  return { endIndex: j, lastCall, parametersData: lastCall.arguments ?? '' };
+  return { endIndex: j, lastCall, parametersData: lastCall.arguments ?? '', isStreaming };
 }
 
 /**
@@ -95,23 +97,33 @@ export function blocksToSegments(blocks: ChatResponseBlock[]): Segment[] {
         if (!firstCall) {
           break;
         }
-        const { endIndex: j, lastCall, parametersData } = mergeConsecutiveToolCalls(blocks, i, firstCall);
-        
+        const { endIndex: j, lastCall, parametersData, isStreaming } = mergeConsecutiveToolCalls(blocks, i, firstCall);
+
         // Mark all merged TOOL_CALL blocks as processed
         for (let k = i; k <= j; k++) {
           processedIndices.add(k);
         }
-        
+
         const resultInfo =
           firstCall.id != null && firstCall.id !== ''
             ? findResultById(blocks, j, firstCall.id)
             : (blocks[j + 1]?.type === MessageBlockType.TOOL_RESULT
               ? { block: blocks[j + 1]!, index: j + 1 }
               : undefined);
-        
+
         const resultBlock = resultInfo?.block;
         const resultPayload = resultBlock ? parseToolResult(resultBlock) : null;
         const paired = resultBlock && matchById(lastCall, resultPayload, idStr);
+
+        // Determine execution state
+        let executionState: ToolExecutionState;
+        if (isStreaming || lastCall.streaming === true) {
+          executionState = ToolExecutionState.STREAMING_ARGUMENTS;
+        } else if (!paired || !resultPayload) {
+          executionState = ToolExecutionState.EXECUTING;
+        } else {
+          executionState = ToolExecutionState.COMPLETE;
+        }
 
         if (paired && resultPayload) {
           segments.push({
@@ -121,6 +133,7 @@ export function blocksToSegments(blocks: ChatResponseBlock[]): Segment[] {
             responseData: resultPayload.result ?? '',
             responseError: resultPayload.error ?? false,
             pending: false,
+            executionState,
             toolCallId: lastCall.id,
             serverName: lastCall.serverName ?? resultPayload.serverName,
           });
@@ -136,6 +149,7 @@ export function blocksToSegments(blocks: ChatResponseBlock[]): Segment[] {
             responseData: '',
             responseError: false,
             pending: true,
+            executionState,
             toolCallId: lastCall.id,
             serverName: lastCall.serverName,
           });

@@ -26,6 +26,8 @@ public class ChatResponseBlock {
     public static final String DATA_KEY_ERROR = "error";
     /** MCP server name (e.g., "chart-server") for external MCP tools */
     public static final String DATA_KEY_SERVER_NAME = "serverName";
+    /** True when tool arguments are still streaming (partial), false when complete */
+    public static final String DATA_KEY_STREAMING = "streaming";
 
     private static final String EMPTY = "";
 
@@ -73,6 +75,14 @@ public class ChatResponseBlock {
      * serverName identifies the MCP server (e.g., "chart-server") for server-specific rendering on frontend.
      */
     public static ChatResponseBlock toolCall(String id, String toolName, String arguments, String serverName) {
+        return toolCall(id, toolName, arguments, serverName, null);
+    }
+
+    /**
+     * Tool call block with server name and streaming indicator: data is JSON {"id":"...", "toolName":"...", "arguments":"...", "serverName":"...", "streaming": true|false}.
+     * @param streaming Optional: true when arguments are still streaming (partial), false when complete, null when not applicable
+     */
+    public static ChatResponseBlock toolCall(String id, String toolName, String arguments, String serverName, Boolean streaming) {
         Map<String, Object> map = new java.util.LinkedHashMap<>();
         if (id != null && !id.isEmpty()) {
             map.put(DATA_KEY_ID, id);
@@ -81,6 +91,9 @@ public class ChatResponseBlock {
         map.put(DATA_KEY_ARGUMENTS, arguments != null ? arguments : EMPTY);
         if (serverName != null && !serverName.isEmpty()) {
             map.put(DATA_KEY_SERVER_NAME, serverName);
+        }
+        if (streaming != null) {
+            map.put(DATA_KEY_STREAMING, streaming);
         }
         String data = JsonUtil.object2json(map);
         return ChatResponseBlock.builder()

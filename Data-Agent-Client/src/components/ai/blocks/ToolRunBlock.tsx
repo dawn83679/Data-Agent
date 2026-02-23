@@ -3,6 +3,8 @@ import { TodoListBlock } from './TodoListBlock';
 import { AskUserQuestionBlock } from './AskUserQuestionBlock';
 import { McpToolBlock } from './McpToolBlock';
 import { ToolRunPending } from './ToolRunPending';
+import { ToolRunStreaming } from './ToolRunStreaming';
+import { ToolRunExecuting } from './ToolRunExecuting';
 import { GenericToolRun } from './GenericToolRun';
 import { parseTodoListResponse } from './todoTypes';
 import {
@@ -12,6 +14,7 @@ import {
 import { getToolType, ToolType } from './toolTypes';
 import { formatParameters } from './formatParameters';
 import { useAIAssistantContext } from '../AIAssistantContext';
+import { ToolExecutionState } from '../messageListLib/types';
 
 export interface ToolRunBlockProps {
   toolName: string;
@@ -21,6 +24,8 @@ export interface ToolRunBlockProps {
   responseError?: boolean;
   /** True while waiting for TOOL_RESULT (no icon, tool name blinks). */
   pending?: boolean;
+  /** Execution state: streaming arguments, executing, or complete. */
+  executionState?: ToolExecutionState;
   /** LangChain4j tool call id; when set with askUserQuestion, submitToolAnswer is used instead of submitMessage. */
   toolCallId?: string;
   /** When true, this block has later segments in the same message (e.g. user already answered and model continued). */
@@ -44,6 +49,7 @@ export function ToolRunBlock({
   responseData,
   responseError = false,
   pending = false,
+  executionState,
   toolCallId,
   hasSegmentsAfter = false,
   serverName,
@@ -54,7 +60,17 @@ export function ToolRunBlock({
   const toolType = getToolType(toolName, serverName);
   const { formattedParameters, isParametersJson } = formatParameters(parametersData);
 
-  if (pending) {
+  // Handle execution state (new approach)
+  if (executionState === ToolExecutionState.STREAMING_ARGUMENTS) {
+    return <ToolRunStreaming toolName={toolName} partialArguments={parametersData} />;
+  }
+
+  if (executionState === ToolExecutionState.EXECUTING) {
+    return <ToolRunExecuting toolName={toolName} parametersData={parametersData} />;
+  }
+
+  // Backward compatibility: if no executionState but pending=true
+  if (pending && !executionState) {
     return <ToolRunPending toolName={toolName} />;
   }
 

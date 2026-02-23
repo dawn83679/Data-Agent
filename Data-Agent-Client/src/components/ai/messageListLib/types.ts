@@ -8,6 +8,12 @@ export enum SegmentKind {
   TOOL_RUN = 'TOOL_RUN',
 }
 
+export enum ToolExecutionState {
+  STREAMING_ARGUMENTS = 'streaming_arguments',
+  EXECUTING = 'executing',
+  COMPLETE = 'complete',
+}
+
 export interface Message {
   id: string;
   role: MessageRole;
@@ -26,6 +32,7 @@ export type Segment =
       responseData: string;
       responseError?: boolean;
       pending?: boolean;
+      executionState?: ToolExecutionState;
       toolCallId?: string;
       /** MCP server name (e.g., "chart-server") for server-specific rendering */
       serverName?: string;

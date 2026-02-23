@@ -36,6 +36,8 @@ export interface ToolCallData {
   arguments: string;
   /** MCP server name (e.g., "chart-server") for external MCP tools. Undefined for built-in tools. */
   serverName?: string;
+  /** True when arguments are still streaming (partial), false when complete, undefined for stored messages. */
+  streaming?: boolean;
 }
 
 /** Parsed from TOOL_RESULT block.data (id matches tool call for pairing). */
