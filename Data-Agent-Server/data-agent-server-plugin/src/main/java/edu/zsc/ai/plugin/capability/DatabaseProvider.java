@@ -85,4 +85,44 @@ public interface DatabaseProvider {
     default void executeSqlScript(Connection connection, String sqlScript) {
         throw new UnsupportedOperationException("Plugin does not support executing SQL script");
     }
+
+    /**
+     * Get list of available character sets for creating database
+     * @param connection database connection
+     * @return list of character set names
+     */
+    default List<String> getCharacterSets(Connection connection) {
+        throw new UnsupportedOperationException("Plugin does not support getting character sets");
+    }
+
+    /**
+     * Get list of available collations for a given character set
+     * @param connection database connection
+     * @param charset character set name
+     * @return list of collation names
+     */
+    default List<String> getCollations(Connection connection, String charset) {
+        throw new UnsupportedOperationException("Plugin does not support getting collations");
+    }
+
+    /**
+     * Create a new database
+     * @param connection database connection
+     * @param databaseName database name
+     * @param charset character set
+     * @param collation collation (sorting rule)
+     */
+    default void createDatabase(Connection connection, String databaseName, String charset, String collation) {
+        throw new UnsupportedOperationException("Plugin does not support creating database");
+    }
+
+    /**
+     * Check if a database exists
+     * @param connection database connection
+     * @param databaseName database name to check
+     * @return true if database exists
+     */
+    default boolean databaseExists(Connection connection, String databaseName) {
+        throw new UnsupportedOperationException("Plugin does not support checking database existence");
+    }
 }

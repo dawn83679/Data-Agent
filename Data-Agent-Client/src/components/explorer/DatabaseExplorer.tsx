@@ -11,6 +11,7 @@ import { DeleteConnectionDialog } from './DeleteConnectionDialog';
 import { DeleteTableDialog } from './DeleteTableDialog';
 import { DdlViewerDialog } from './DdlViewerDialog';
 import { TableDataDialog } from './TableDataDialog';
+import { CreateDatabaseDialog } from './CreateDatabaseDialog';
 import { ExplorerTreeNode } from './ExplorerTreeNode';
 import {
   DropdownMenu,
@@ -23,7 +24,7 @@ import {
   DropdownMenuPortal,
 } from '../ui/DropdownMenu';
 import { useConnectionTree, type ExplorerNode } from '../../hooks/useConnectionTree';
-import { ExplorerTreeConfig, ExplorerNodeType } from '../../constants/explorer';
+import { ExplorerTreeConfig, ExplorerNodeType, ExplorerIdPrefix } from '../../constants/explorer';
 import { DataAttributes } from '../../constants/dataAttributes';
 import { tableService } from '../../services/table.service';
 import { databaseService } from '../../services/database.service';
@@ -88,6 +89,9 @@ export function DatabaseExplorer() {
   const [deleteDatabaseDialogOpen, setDeleteDatabaseDialogOpen] = useState(false);
   const [deleteDatabaseNode, setDeleteDatabaseNode] = useState<ExplorerNode | null>(null);
   const [isDeletingDatabase, setIsDeletingDatabase] = useState(false);
+
+  const [createDatabaseDialogOpen, setCreateDatabaseDialogOpen] = useState(false);
+  const [createDatabaseNode, setCreateDatabaseNode] = useState<ExplorerNode | null>(null);
 
   React.useEffect(() => {
     useWorkspaceStore.getState().fetchSupportedDbTypes();
@@ -437,6 +441,12 @@ export function DatabaseExplorer() {
     setDeleteDatabaseDialogOpen(true);
   };
 
+  const handleCreateDatabase = (node: ExplorerNode) => {
+    if (!node.connectionId) return;
+    setCreateDatabaseNode(node);
+    setCreateDatabaseDialogOpen(true);
+  };
+
   const handleExportDatabase = async (node: ExplorerNode) => {
     if (!node.connectionId) return;
     try {
@@ -591,6 +601,7 @@ export function DatabaseExplorer() {
         onDeleteDatabase={handleDeleteDatabase}
         onExportDatabase={handleExportDatabase}
         onImportDatabase={handleImportDatabase}
+        onCreateDatabase={handleCreateDatabase}
       />
     );
   };
@@ -852,6 +863,44 @@ export function DatabaseExplorer() {
         isPending={isDeletingDatabase}
         title={t('explorer.delete_database')}
         confirmMessage={t('explorer.delete_database_confirm', { name: deleteDatabaseNode?.name || '' })}
+      />
+
+      <CreateDatabaseDialog
+        open={createDatabaseDialogOpen}
+        onOpenChange={(open) => {
+          setCreateDatabaseDialogOpen(open);
+          if (!open) setCreateDatabaseNode(null);
+        }}
+        connectionId={createDatabaseNode?.connectionId || 0}
+        onSuccess={(connectionId, databaseName) => {
+          // 直接更新树状态，添加新的数据库节点
+          const newDbNodeId = `${ExplorerIdPrefix.CONNECTION}${connectionId}${ExplorerIdPrefix.DB}${databaseName}`;
+          const newDbNode: ExplorerNode = {
+            id: newDbNodeId,
+            name: databaseName,
+            type: ExplorerNodeType.DB,
+            connectionId: String(connectionId),
+            children: [],
+          };
+
+          setTreeDataState((prev) => {
+            return prev.map((connNode) => {
+              if (connNode.type === ExplorerNodeType.ROOT && String(connNode.dbConnection?.id) === String(connectionId)) {
+                // 检查数据库是否已存在，避免重复添加
+                const dbExists = connNode.children?.some(
+                  (child) => child.type === ExplorerNodeType.DB && child.name === databaseName
+                );
+                if (!dbExists) {
+                  return {
+                    ...connNode,
+                    children: [...(connNode.children || []), newDbNode],
+                  };
+                }
+              }
+              return connNode;
+            });
+          });
+        }}
       />
     </div>
   );

@@ -41,4 +41,44 @@ public class DatabaseController {
         databaseService.deleteDatabase(connectionId, databaseName, userId);
         return ApiResponse.success(null);
     }
+
+    @GetMapping("/charsets")
+    public ApiResponse<List<String>> getCharacterSets(
+            @RequestParam @NotNull(message = "connectionId is required") Long connectionId) {
+        log.info("Getting character sets: connectionId={}", connectionId);
+        List<String> charsets = databaseService.getCharacterSets(connectionId);
+        return ApiResponse.success(charsets);
+    }
+
+    @GetMapping("/collations")
+    public ApiResponse<List<String>> getCollations(
+            @RequestParam @NotNull(message = "connectionId is required") Long connectionId,
+            @RequestParam @NotNull(message = "charset is required") String charset) {
+        log.info("Getting collations: connectionId={}, charset={}", connectionId, charset);
+        List<String> collations = databaseService.getCollations(connectionId, charset);
+        return ApiResponse.success(collations);
+    }
+
+    @PostMapping("/create")
+    public ApiResponse<Void> createDatabase(
+            @RequestParam @NotNull(message = "connectionId is required") Long connectionId,
+            @RequestParam @NotNull(message = "databaseName is required") String databaseName,
+            @RequestParam @NotNull(message = "charset is required") String charset,
+            @RequestParam String collation) {
+        log.info("Creating database: connectionId={}, databaseName={}, charset={}, collation={}",
+                connectionId, databaseName, charset, collation);
+        long userId = StpUtil.getLoginIdAsLong();
+        databaseService.createDatabase(connectionId, databaseName, charset, collation, userId);
+        return ApiResponse.success(null);
+    }
+
+    @GetMapping("/exists")
+    public ApiResponse<Boolean> databaseExists(
+            @RequestParam @NotNull(message = "connectionId is required") Long connectionId,
+            @RequestParam @NotNull(message = "databaseName is required") String databaseName) {
+        log.info("Checking database existence: connectionId={}, databaseName={}", connectionId, databaseName);
+        long userId = StpUtil.getLoginIdAsLong();
+        boolean exists = databaseService.databaseExists(connectionId, databaseName, userId);
+        return ApiResponse.success(exists);
+    }
 }

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ChevronRight, ChevronDown, RefreshCw, MoreVertical, Pencil, Trash2, Plug, FileText, Table, Download, Upload } from 'lucide-react';
+import { ChevronRight, ChevronDown, RefreshCw, MoreVertical, Pencil, Trash2, Plug, FileText, Table, Download, Upload, Plus } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { NodeApi } from 'react-arborist';
@@ -14,6 +14,9 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
+  ContextMenuSub,
+  ContextMenuSubTrigger,
+  ContextMenuSubContent,
 } from '../ui/ContextMenu';
 import { Button } from '../ui/Button';
 import { ExplorerNodeIcon } from './ExplorerNodeIcon';
@@ -40,6 +43,7 @@ export interface ExplorerTreeNodeProps {
   onDeleteDatabase: (node: ExplorerNode) => void;
   onExportDatabase: (node: ExplorerNode) => void;
   onImportDatabase: (node: ExplorerNode) => void;
+  onCreateDatabase: (node: ExplorerNode) => void;
 }
 
 export function ExplorerTreeNode({
@@ -62,6 +66,7 @@ export function ExplorerTreeNode({
   onDeleteDatabase,
   onExportDatabase,
   onImportDatabase,
+  onCreateDatabase,
 }: ExplorerTreeNodeProps) {
   const { t } = useTranslation();
   const isConnected = !!node.data.connectionId;
@@ -266,6 +271,16 @@ export function ExplorerTreeNode({
           )}
           {isDb && (
             <>
+              <ContextMenuSub>
+                <ContextMenuSubTrigger inset className="justify-center pl-[60px]">
+                  {t('explorer.new')}
+                </ContextMenuSubTrigger>
+                <ContextMenuSubContent className="w-48">
+                  <ContextMenuItem onSelect={() => onCreateDatabase(node.data)} className="justify-center">
+                    {t('explorer.create_database')}
+                  </ContextMenuItem>
+                </ContextMenuSubContent>
+              </ContextMenuSub>
               <ContextMenuItem onSelect={() => onExportDatabase(node.data)}>
                 <Upload className="w-3.5 h-3.5 mr-2" />
                 {t('explorer.export_database')}

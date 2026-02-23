@@ -231,7 +231,21 @@
     "export_database_success": "Database exported successfully",
     "import_database": "Import database",
     "import_database_success": "Database imported successfully",
-    "import_database_failed": "Failed to import database"
+    "import_database_failed": "Failed to import database",
+    "new": "New",
+    "create_database": "New Database",
+    "create_database_desc": "Create a new database on this connection",
+    "database_name": "Database Name",
+    "database_name_placeholder": "Enter database name",
+    "database_name_required": "Database name is required",
+    "database_name_exists": "Database name already exists",
+    "charset": "Character Set",
+    "charset_required": "Character set is required",
+    "collation": "Collation",
+    "select_charset_first": "Please select character set first",
+    "load_charsets_failed": "Failed to load character sets",
+    "create": "Create",
+    "creating": "Creating..."
   },
   "connections": {
     "new": "New connection",

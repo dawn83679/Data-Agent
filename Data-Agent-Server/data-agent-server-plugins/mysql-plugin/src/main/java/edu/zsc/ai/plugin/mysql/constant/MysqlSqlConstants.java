@@ -81,6 +81,17 @@ public final class MysqlSqlConstants {
     public static final String SQL_SHOW_CREATE_DATABASE =
             "SHOW CREATE DATABASE `%s`";
 
+    // --- Character Sets and Collations ---
+    /** Show all character sets */
+    public static final String SQL_SHOW_CHARACTER_SET = "SHOW CHARACTER SET";
+
+    /** %s = character set name */
+    public static final String SQL_SHOW_COLLATION = "SHOW COLLATION WHERE Charset = '%s'";
+
+    // --- Database Operations ---
+    /** %1$s = database name */
+    public static final String SQL_SHOW_DATABASES_LIKE = "SHOW DATABASES LIKE '%s'";
+
     private MysqlSqlConstants() {
     }
 }

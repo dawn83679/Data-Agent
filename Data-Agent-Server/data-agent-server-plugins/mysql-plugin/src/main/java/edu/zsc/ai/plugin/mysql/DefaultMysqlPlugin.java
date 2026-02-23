@@ -981,4 +981,121 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
         sql = sql.replaceAll("/\\*[\\s\\S]*?\\*/", "");
         return sql.trim();
     }
+
+    @Override
+    public List<String> getCharacterSets(Connection connection) {
+        if (connection == null) {
+            return List.of();
+        }
+        String sql = MysqlSqlConstants.SQL_SHOW_CHARACTER_SET;
+        SqlCommandRequest request = new SqlCommandRequest();
+        request.setConnection(connection);
+        request.setOriginalSql(sql);
+        request.setExecuteSql(sql);
+        request.setNeedTransaction(false);
+
+        SqlCommandResult result = sqlExecutor.executeCommand(request);
+        if (!result.isSuccess()) {
+            logger.severe("Failed to get character sets: " + result.getErrorMessage());
+            throw new RuntimeException("Failed to get character sets: " + result.getErrorMessage());
+        }
+
+        List<String> charsets = new ArrayList<>();
+        if (result.getRows() != null) {
+            for (List<Object> row : result.getRows()) {
+                Object charsetObj = result.getValueByColumnName(row, "Charset");
+                if (charsetObj != null) {
+                    charsets.add(charsetObj.toString());
+                }
+            }
+        }
+        return charsets;
+    }
+
+    @Override
+    public List<String> getCollations(Connection connection, String charset) {
+        if (connection == null || charset == null || charset.isEmpty()) {
+            return List.of();
+        }
+        String sql = String.format(MysqlSqlConstants.SQL_SHOW_COLLATION, charset);
+        SqlCommandRequest request = new SqlCommandRequest();
+        request.setConnection(connection);
+        request.setOriginalSql(sql);
+        request.setExecuteSql(sql);
+        request.setNeedTransaction(false);
+
+        SqlCommandResult result = sqlExecutor.executeCommand(request);
+        if (!result.isSuccess()) {
+            logger.severe("Failed to get collations for charset " + charset + ": " + result.getErrorMessage());
+            throw new RuntimeException("Failed to get collations: " + result.getErrorMessage());
+        }
+
+        List<String> collations = new ArrayList<>();
+        if (result.getRows() != null) {
+            for (List<Object> row : result.getRows()) {
+                Object collationObj = result.getValueByColumnName(row, "Collation");
+                if (collationObj != null) {
+                    collations.add(collationObj.toString());
+                }
+            }
+        }
+        return collations;
+    }
+
+    @Override
+    public void createDatabase(Connection connection, String databaseName, String charset, String collation) {
+        if (connection == null || databaseName == null || databaseName.isEmpty()) {
+            throw new IllegalArgumentException("Connection and database name must not be null or empty");
+        }
+
+        StringBuilder sql = new StringBuilder("CREATE DATABASE `");
+        sql.append(databaseName.replace("`", "``"));
+        sql.append("`");
+
+        if (charset != null && !charset.isEmpty()) {
+            sql.append(" CHARACTER SET ");
+            sql.append(charset);
+            if (collation != null && !collation.isEmpty()) {
+                sql.append(" COLLATE ");
+                sql.append(collation);
+            }
+        }
+
+        SqlCommandRequest request = new SqlCommandRequest();
+        request.setConnection(connection);
+        request.setOriginalSql(sql.toString());
+        request.setExecuteSql(sql.toString());
+        request.setNeedTransaction(false);
+
+        SqlCommandResult result = sqlExecutor.executeCommand(request);
+
+        if (!result.isSuccess()) {
+            logger.severe("Failed to create database: " + result.getErrorMessage());
+            throw new RuntimeException("Failed to create database: " + result.getErrorMessage());
+        }
+
+        logger.info("Database created successfully: databaseName=" + databaseName + ", charset=" + charset + ", collation=" + collation);
+    }
+
+    @Override
+    public boolean databaseExists(Connection connection, String databaseName) {
+        if (connection == null || databaseName == null || databaseName.isEmpty()) {
+            return false;
+        }
+
+        String sql = String.format(MysqlSqlConstants.SQL_SHOW_DATABASES_LIKE, databaseName.replace("'", "''"));
+        SqlCommandRequest request = new SqlCommandRequest();
+        request.setConnection(connection);
+        request.setOriginalSql(sql);
+        request.setExecuteSql(sql);
+        request.setNeedTransaction(false);
+
+        SqlCommandResult result = sqlExecutor.executeCommand(request);
+        if (!result.isSuccess()) {
+            // If query fails, assume database doesn't exist
+            return false;
+        }
+
+        return result.getRows() != null && !result.getRows().isEmpty();
+    }
 }

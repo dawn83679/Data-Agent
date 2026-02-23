@@ -47,4 +47,54 @@ public class DatabaseServiceImpl implements DatabaseService {
 
         log.info("Database deleted successfully: connectionId={}, databaseName={}", connectionId, databaseName);
     }
+
+    @Override
+    public List<String> getCharacterSets(Long connectionId) {
+        long uid = StpUtil.getLoginIdAsLong();
+        connectionService.openConnection(connectionId, null, null, uid);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getAnyOwnedActiveConnection(connectionId, uid);
+
+        DatabaseProvider provider = DefaultPluginManager.getInstance().getDatabaseProviderByPluginId(active.pluginId());
+
+        return provider.getCharacterSets(active.connection());
+    }
+
+    @Override
+    public List<String> getCollations(Long connectionId, String charset) {
+        long uid = StpUtil.getLoginIdAsLong();
+        connectionService.openConnection(connectionId, null, null, uid);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getAnyOwnedActiveConnection(connectionId, uid);
+
+        DatabaseProvider provider = DefaultPluginManager.getInstance().getDatabaseProviderByPluginId(active.pluginId());
+
+        return provider.getCollations(active.connection(), charset);
+    }
+
+    @Override
+    public void createDatabase(Long connectionId, String databaseName, String charset, String collation, Long userId) {
+        long uid = userId != null ? userId : StpUtil.getLoginIdAsLong();
+        connectionService.openConnection(connectionId, null, null, uid);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getAnyOwnedActiveConnection(connectionId, uid);
+
+        DatabaseProvider provider = DefaultPluginManager.getInstance().getDatabaseProviderByPluginId(active.pluginId());
+        provider.createDatabase(active.connection(), databaseName, charset, collation);
+
+        log.info("Database created successfully: connectionId={}, databaseName={}, charset={}, collation={}",
+                connectionId, databaseName, charset, collation);
+    }
+
+    @Override
+    public boolean databaseExists(Long connectionId, String databaseName, Long userId) {
+        long uid = userId != null ? userId : StpUtil.getLoginIdAsLong();
+        connectionService.openConnection(connectionId, null, null, uid);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getAnyOwnedActiveConnection(connectionId, uid);
+
+        DatabaseProvider provider = DefaultPluginManager.getInstance().getDatabaseProviderByPluginId(active.pluginId());
+
+        return provider.databaseExists(active.connection(), databaseName);
+    }
 }
