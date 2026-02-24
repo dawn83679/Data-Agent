@@ -156,9 +156,15 @@
     "askUserQuestion": {
       "label": "问题",
       "inputPlaceholder": "输入您的答案",
+      "customInputPlaceholder": "输入补充信息（可选）",
       "submitAnswer": "提交答案",
+      "reject": "拒绝回答",
+      "rejectMessage": "用户拒绝回答你的问题 请你重新梳理当前上下文是否已有足够的信息回答问题或者重新审视用户需求。",
+      "customLabel": "用户补充输入",
       "answerPrefix": "用户回答：",
-      "submittedAnswer": "您的答案"
+      "submittedAnswer": "您的答案",
+      "multiAnswerPrefix": "用户已回答您的问题：",
+      "continueSuffix": "您现在可以继续处理用户的答案"
     },
     "toolRun": {
       "streamingArguments": "正在流式传输参数...",
@@ -364,6 +370,7 @@
     "http_401": "认证失败，请重新登录。",
     "http_403": "您无权执行此操作。",
     "http_404": "请求的资源未找到。",
-    "http_500": "服务器错误，请稍后重试。"
+    "http_500": "服务器错误，请稍后重试。",
+    "context_not_provided": "useAIAssistantContext 必须在 AIAssistantProvider 内使用"
   }
 }
