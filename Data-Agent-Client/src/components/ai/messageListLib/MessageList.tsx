@@ -35,9 +35,10 @@ export function MessageList({
         const isLastMessage = msgIndex === displayMessages.length - 1;
         const isLastAssistantStreaming =
           isLastMessage && msg.role === MessageRole.ASSISTANT && isLoading;
+        // Filter out askUserQuestion when not streaming (history messages)
         const segments =
           msg.blocks && msg.blocks.length > 0
-            ? blocksToSegments(msg.blocks)
+            ? blocksToSegments(msg.blocks, !isLastAssistantStreaming)
             : msg.role === MessageRole.ASSISTANT && (msg.content ?? '').trim() !== ''
               ? [{ kind: SegmentKind.TEXT as const, data: msg.content ?? '' }]
               : [];
