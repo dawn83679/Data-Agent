@@ -1,7 +1,7 @@
 package edu.zsc.ai.domain.service.db.impl;
 
 import edu.zsc.ai.common.converter.db.SqlExecutionConverter;
-import edu.zsc.ai.domain.model.dto.request.db.ExecuteSqlRequest;
+import edu.zsc.ai.domain.model.dto.request.db.AgentExecuteSqlRequest;
 import edu.zsc.ai.domain.model.dto.response.db.ExecuteSqlResponse;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.SqlExecutionService;
@@ -21,7 +21,7 @@ public class SqlExecutionServiceImpl implements SqlExecutionService {
     private final ConnectionService connectionService;
 
     @Override
-    public ExecuteSqlResponse executeSql(ExecuteSqlRequest request) {
+    public ExecuteSqlResponse executeSql(AgentExecuteSqlRequest request) {
         Long connectionId = request.getConnectionId();
         String databaseName = request.getDatabaseName();
         String schemaName = request.getSchemaName();
