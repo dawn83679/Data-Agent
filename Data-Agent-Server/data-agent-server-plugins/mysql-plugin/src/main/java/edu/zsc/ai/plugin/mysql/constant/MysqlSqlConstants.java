@@ -138,6 +138,16 @@ public final class MysqlSqlConstants {
     /** %s = view name */
     public static final String SQL_DROP_VIEW = "DROP VIEW IF EXISTS `%s`";
 
+    // --- Table Data Modification ---
+    /** %1$s = table name, %2$s = columns (comma separated), %3$s = values (comma separated) */
+    public static final String SQL_INSERT_INTO = "INSERT INTO `%s` (%s) VALUES (%s)";
+
+    /** %1$s = table name, %2$s = set clause, %3$s = where clause */
+    public static final String SQL_UPDATE = "UPDATE `%s` SET %s WHERE %s";
+
+    /** %1$s = table name, %2$s = where clause */
+    public static final String SQL_DELETE_FROM = "DELETE FROM `%s` WHERE %s";
+
     private MysqlSqlConstants() {
     }
 }

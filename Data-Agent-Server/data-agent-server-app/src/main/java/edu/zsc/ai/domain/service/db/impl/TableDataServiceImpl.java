@@ -1,5 +1,6 @@
 package edu.zsc.ai.domain.service.db.impl;
 
+import edu.zsc.ai.domain.model.dto.response.db.DataModificationResponse;
 import edu.zsc.ai.domain.model.dto.response.db.TableDataResponse;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.TableDataService;
@@ -126,6 +127,114 @@ public class TableDataServiceImpl implements TableDataService {
                 .currentPage(currentPage)
                 .pageSize(pageSize)
                 .totalPages(totalPages)
+                .build();
+    }
+
+    @Override
+    public DataModificationResponse insertData(Long connectionId, String databaseName, String schemaName, String tableName,
+                                                List<String> columns, List<Map<String, Object>> valuesList, Long userId) {
+        connectionService.openConnection(connectionId, databaseName, schemaName, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, databaseName, schemaName, userId);
+
+        TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
+
+        int affectedRows = provider.insertTableData(active.connection(), databaseName, schemaName, tableName, columns, valuesList);
+
+        log.info("Data inserted successfully: tableName={}, affectedRows={}", tableName, affectedRows);
+
+        return DataModificationResponse.builder()
+                .affectedRows(affectedRows)
+                .build();
+    }
+
+    @Override
+    public DataModificationResponse updateData(Long connectionId, String databaseName, String schemaName, String tableName,
+                                               Map<String, Object> values, Map<String, Object> whereConditions, Long userId) {
+        connectionService.openConnection(connectionId, databaseName, schemaName, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, databaseName, schemaName, userId);
+
+        TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
+
+        int affectedRows = provider.updateTableData(active.connection(), databaseName, schemaName, tableName, values, whereConditions);
+
+        log.info("Data updated successfully: tableName={}, affectedRows={}", tableName, affectedRows);
+
+        return DataModificationResponse.builder()
+                .affectedRows(affectedRows)
+                .build();
+    }
+
+    @Override
+    public DataModificationResponse deleteData(Long connectionId, String databaseName, String schemaName, String tableName,
+                                               Map<String, Object> whereConditions, Long userId) {
+        connectionService.openConnection(connectionId, databaseName, schemaName, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, databaseName, schemaName, userId);
+
+        TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
+
+        int affectedRows = provider.deleteTableData(active.connection(), databaseName, schemaName, tableName, whereConditions);
+
+        log.info("Data deleted successfully: tableName={}, affectedRows={}", tableName, affectedRows);
+
+        return DataModificationResponse.builder()
+                .affectedRows(affectedRows)
+                .build();
+    }
+
+    @Override
+    public DataModificationResponse insertViewData(Long connectionId, String databaseName, String schemaName, String viewName,
+                                                  List<String> columns, List<Map<String, Object>> valuesList, Long userId) {
+        connectionService.openConnection(connectionId, databaseName, schemaName, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, databaseName, schemaName, userId);
+
+        ViewProvider provider = DefaultPluginManager.getInstance().getViewProviderByPluginId(active.pluginId());
+
+        int affectedRows = provider.insertViewData(active.connection(), databaseName, schemaName, viewName, columns, valuesList);
+
+        log.info("Data inserted into view successfully: viewName={}, affectedRows={}", viewName, affectedRows);
+
+        return DataModificationResponse.builder()
+                .affectedRows(affectedRows)
+                .build();
+    }
+
+    @Override
+    public DataModificationResponse updateViewData(Long connectionId, String databaseName, String schemaName, String viewName,
+                                                  Map<String, Object> values, Map<String, Object> whereConditions, Long userId) {
+        connectionService.openConnection(connectionId, databaseName, schemaName, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, databaseName, schemaName, userId);
+
+        ViewProvider provider = DefaultPluginManager.getInstance().getViewProviderByPluginId(active.pluginId());
+
+        int affectedRows = provider.updateViewData(active.connection(), databaseName, schemaName, viewName, values, whereConditions);
+
+        log.info("Data updated in view successfully: viewName={}, affectedRows={}", viewName, affectedRows);
+
+        return DataModificationResponse.builder()
+                .affectedRows(affectedRows)
+                .build();
+    }
+
+    @Override
+    public DataModificationResponse deleteViewData(Long connectionId, String databaseName, String schemaName, String viewName,
+                                                  Map<String, Object> whereConditions, Long userId) {
+        connectionService.openConnection(connectionId, databaseName, schemaName, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, databaseName, schemaName, userId);
+
+        ViewProvider provider = DefaultPluginManager.getInstance().getViewProviderByPluginId(active.pluginId());
+
+        int affectedRows = provider.deleteViewData(active.connection(), databaseName, schemaName, viewName, whereConditions);
+
+        log.info("Data deleted from view successfully: viewName={}, affectedRows={}", viewName, affectedRows);
+
+        return DataModificationResponse.builder()
+                .affectedRows(affectedRows)
                 .build();
     }
 }

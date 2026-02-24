@@ -9,10 +9,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.StringJoiner;
 
 public interface ViewProvider {
 
@@ -93,5 +96,128 @@ public interface ViewProvider {
      */
     default long getViewDataCount(Connection connection, String catalog, String schema, String viewName) {
         throw new UnsupportedOperationException("Plugin does not support getting view data count");
+    }
+
+    /**
+     * Insert data into view (for updatable views)
+     * @param connection database connection
+     * @param catalog catalog name (may be null)
+     * @param schema schema name (may be null)
+     * @param viewName view name
+     * @param columns column names
+     * @param valuesList list of value maps (each map represents a row)
+     * @return number of affected rows
+     */
+    default int insertViewData(Connection connection, String catalog, String schema, String viewName,
+                          List<String> columns, List<Map<String, Object>> valuesList) {
+        Logger log = LoggerFactory.getLogger(ViewProvider.class);
+
+        try {
+            StringJoiner columnJoiner = new StringJoiner(", ");
+            for (String column : columns) {
+                columnJoiner.add("`" + column + "`");
+            }
+            String columnList = columnJoiner.toString();
+
+            String placeholders = String.join(", ", java.util.Collections.nCopies(columns.size(), "?"));
+            String sql = String.format("INSERT INTO `%s` (%s) VALUES (%s)", viewName, columnList, placeholders);
+
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                for (Map<String, Object> row : valuesList) {
+                    ps.clearParameters();
+                    for (int i = 0; i < columns.size(); i++) {
+                        ps.setObject(i + 1, row.get(columns.get(i)));
+                    }
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+            }
+
+            log.info("Data inserted into view successfully: viewName={}", viewName);
+            return valuesList.size();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to insert data into view: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Update data in view (for updatable views)
+     * @param connection database connection
+     * @param catalog catalog name (may be null)
+     * @param schema schema name (may be null)
+     * @param viewName view name
+     * @param values column values to update
+     * @param whereConditions WHERE conditions
+     * @return number of affected rows
+     */
+    default int updateViewData(Connection connection, String catalog, String schema, String viewName,
+                          Map<String, Object> values, Map<String, Object> whereConditions) {
+        Logger log = LoggerFactory.getLogger(ViewProvider.class);
+
+        try {
+            StringJoiner setJoiner = new StringJoiner(", ");
+            List<Object> setValues = new ArrayList<>();
+            for (Map.Entry<String, Object> entry : values.entrySet()) {
+                setJoiner.add("`" + entry.getKey() + "` = ?");
+                setValues.add(entry.getValue());
+            }
+
+            StringJoiner whereJoiner = new StringJoiner(" AND ");
+            List<Object> whereValues = new ArrayList<>();
+            for (Map.Entry<String, Object> entry : whereConditions.entrySet()) {
+                whereJoiner.add("`" + entry.getKey() + "` = ?");
+                whereValues.add(entry.getValue());
+            }
+
+            String sql = String.format("UPDATE `%s` SET %s WHERE %s", viewName, setJoiner.toString(), whereJoiner.toString());
+
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                int paramIndex = 1;
+                for (Object value : setValues) {
+                    ps.setObject(paramIndex++, value);
+                }
+                for (Object value : whereValues) {
+                    ps.setObject(paramIndex++, value);
+                }
+                return ps.executeUpdate();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to update data in view: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Delete data from view (for updatable views)
+     * @param connection database connection
+     * @param catalog catalog name (may be null)
+     * @param schema schema name (may be null)
+     * @param viewName view name
+     * @param whereConditions WHERE conditions
+     * @return number of affected rows
+     */
+    default int deleteViewData(Connection connection, String catalog, String schema, String viewName,
+                          Map<String, Object> whereConditions) {
+        Logger log = LoggerFactory.getLogger(ViewProvider.class);
+
+        try {
+            StringJoiner whereJoiner = new StringJoiner(" AND ");
+            List<Object> whereValues = new ArrayList<>();
+            for (Map.Entry<String, Object> entry : whereConditions.entrySet()) {
+                whereJoiner.add("`" + entry.getKey() + "` = ?");
+                whereValues.add(entry.getValue());
+            }
+
+            String sql = String.format("DELETE FROM `%s` WHERE %s", viewName, whereJoiner.toString());
+
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                int paramIndex = 1;
+                for (Object value : whereValues) {
+                    ps.setObject(paramIndex++, value);
+                }
+                return ps.executeUpdate();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to delete data from view: " + e.getMessage(), e);
+        }
     }
 }
