@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { User, Copy, Check } from 'lucide-react';
+import { COPY_FEEDBACK_SHORT_MS } from '../../../constants/timing';
 import { parseMentionSegments } from '../mentionTypes';
 import type { Message } from './types';
 
@@ -33,7 +34,7 @@ export function UserBubble({ message }: UserBubbleProps) {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      setTimeout(() => setCopied(false), COPY_FEEDBACK_SHORT_MS);
     } catch {
       // ignore
     }

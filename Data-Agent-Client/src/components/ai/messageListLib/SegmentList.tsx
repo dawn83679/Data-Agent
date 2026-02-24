@@ -6,7 +6,6 @@ import { findLastTodoSegmentIndex, isTodoSegment } from './segmentTodoUtils';
 import type { TodoBoxSpec } from './types';
 import type { Segment } from './types';
 import { SegmentKind } from './types';
-import { PLANNING_LABEL } from '../../../constants/chat';
 
 export interface SegmentListProps {
   /** Segments to render in order (from blocksToSegments). Same pipeline for streaming and history. */
@@ -19,8 +18,6 @@ export interface SegmentListProps {
   overrideTodoBoxes?: TodoBoxSpec[];
   /** When true and the last segment is THOUGHT, pass true to ThoughtBlock defaultExpanded. */
   isLastAssistantStreaming?: boolean;
-  /** When true, show "planning..." with blink (no backend data for 100ms). */
-  showPlanningIndicator?: boolean;
 }
 
 /**
@@ -33,17 +30,11 @@ export function SegmentList({
   hideTodoSegments = false,
   overrideTodoBoxes = [],
   isLastAssistantStreaming = false,
-  showPlanningIndicator = false,
 }: SegmentListProps): React.ReactElement {
   const markdownComponents = useMarkdownComponents();
   if (segments.length === 0) {
     return (
       <div className="space-y-1">
-        {showPlanningIndicator && (
-          <span className="inline-block text-xs theme-text-secondary animate-blink">
-            {PLANNING_LABEL}
-          </span>
-        )}
         <ReactMarkdown components={markdownComponents} remarkPlugins={markdownRemarkPlugins}>
           {fallbackContent || ''}
         </ReactMarkdown>
@@ -69,23 +60,14 @@ export function SegmentList({
               </div>
             );
           }
-          return renderSegment(seg, i, false, segments.length);
+          return renderSegment(seg, i, false);
         }
         const isStreamingThought =
           isLastAssistantStreaming &&
           seg.kind === SegmentKind.THOUGHT &&
           seg === lastSeg;
-        return renderSegment(seg, i, isStreamingThought, segments.length);
+        return renderSegment(seg, i, isStreamingThought);
       })}
-      {(() => {
-        const lastSegment = segments[segments.length - 1];
-        const isPendingTool = lastSegment?.kind === SegmentKind.TOOL_RUN && lastSegment.pending === true;
-        return showPlanningIndicator && !isPendingTool ? (
-          <span className="inline-block text-xs theme-text-secondary animate-blink mt-1">
-            {PLANNING_LABEL}
-          </span>
-        ) : null;
-      })()}
     </div>
   );
 }

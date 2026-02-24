@@ -4,11 +4,7 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ChatMessageDeserializer;
 import dev.langchain4j.data.message.ChatMessageSerializer;
 import dev.langchain4j.data.message.ChatMessageType;
-import dev.langchain4j.data.message.Content;
-import dev.langchain4j.data.message.TextContent;
-import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
-import edu.zsc.ai.common.constant.HitlConstants;
 import edu.zsc.ai.domain.model.entity.ai.StoredChatMessage;
 import edu.zsc.ai.domain.service.ai.AiConversationService;
 import edu.zsc.ai.domain.service.ai.AiMessageService;
@@ -78,25 +74,28 @@ public class CustomChatMemoryStore implements ChatMemoryStore {
 
         aiMessageService.removeByConversationId(idInfo.conversationId);
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime baseTime = LocalDateTime.now();
         List<StoredChatMessage> toSave = new ArrayList<>(messages.size());
+        int index = 0;
+
         for (ChatMessage message : messages) {
             if (message.type() == ChatMessageType.SYSTEM) {
                 continue;
             }
-            if (message instanceof UserMessage userMsg && isHitlContinueMessage(userMsg)) {
-                continue;
-            }
-            // TODO: Populate tokenCount from request/response tokenUsage (or ResponseMetadata); ChatMemoryStore API does not expose it—obtain from caller or streaming callback
+
+            // Add microsecond offset for each message to ensure unique timestamps
+            LocalDateTime timestamp = baseTime.plusNanos(index * 1000L);
+
             StoredChatMessage stored = StoredChatMessage.builder()
                     .conversationId(idInfo.conversationId())
                     .role(message.type().name())
                     .tokenCount(0)
                     .data(ChatMessageSerializer.messageToJson(message))
-                    .createdAt(now)
-                    .updatedAt(now)
+                    .createdAt(timestamp)
+                    .updatedAt(baseTime)
                     .build();
             toSave.add(stored);
+            index++;
         }
 
         aiMessageService.saveBatchMessages(toSave);
@@ -141,22 +140,6 @@ public class CustomChatMemoryStore implements ChatMemoryStore {
             log.warn("Invalid memoryId format: {}. Expected format: '{{userId}}:{{conversationId}}'", id, e);
             return null;
         }
-    }
-
-    private static boolean isHitlContinueMessage(UserMessage userMsg) {
-        String text;
-        if (userMsg.hasSingleText()) {
-            text = userMsg.singleText();
-        } else {
-            StringBuilder sb = new StringBuilder();
-            for (Content c : userMsg.contents()) {
-                if (c instanceof TextContent tc) {
-                    sb.append(tc.text());
-                }
-            }
-            text = sb.toString();
-        }
-        return text != null && text.trim().startsWith(HitlConstants.HITL_CONTINUE_MESSAGE_PREFIX);
     }
 
     private record MemoryIdInfo(Long userId, Long conversationId) {

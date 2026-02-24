@@ -14,7 +14,6 @@ export interface MessageListItemProps {
   showAllCompletedPrompt: boolean;
   latestTodoItemsForPrompt: TodoItem[] | null;
   isLastAssistantStreaming: boolean;
-  showPlanningIndicator?: boolean;
 }
 
 export function MessageListItem({
@@ -28,7 +27,6 @@ export function MessageListItem({
   showAllCompletedPrompt,
   latestTodoItemsForPrompt,
   isLastAssistantStreaming,
-  showPlanningIndicator = false,
 }: MessageListItemProps) {
   return (
     <>
@@ -37,7 +35,6 @@ export function MessageListItem({
           message={msg}
           segments={segments}
           isLastAssistantStreaming={isLastAssistantStreaming}
-          showPlanningIndicator={showPlanningIndicator}
           hideTodoInThisMessage={hideTodoInThisMessage}
           overrideTodoBoxes={overrideTodoBoxes}
         />

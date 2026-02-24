@@ -1,4 +1,8 @@
-export type AgentType = 'Agent' | 'Plan';
+/** List of available agent types */
+export const AGENT_TYPES = ['Agent', 'Plan'] as const;
+
+/** Agent type definition derived from AGENT_TYPES */
+export type AgentType = (typeof AGENT_TYPES)[number];
 
 /** Theme colors per Agent mode: icon, border, background, focus border, send button, mention popup highlight, mention text. */
 export const AGENT_COLORS: Record<

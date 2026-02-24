@@ -1,9 +1,22 @@
 /**
+ * Single question structure matching backend UserQuestion model
+ */
+export interface SingleQuestion {
+  question: string;
+  options?: string[];
+  freeTextHint?: string | null;
+}
+
+/**
  * Ask-user-question tool: payload from backend AskUserQuestionTool (JSON).
- * Matches: { question: string, options?: string[], freeTextHint?: string }.
+ * Supports both single-question (legacy) and multi-question formats.
  */
 export interface AskUserQuestionPayload {
-  question: string;
+  // New multi-question format
+  questions?: SingleQuestion[];
+
+  // Legacy single-question format (backward compatibility)
+  question?: string;
   options?: string[];
   freeTextHint?: string | null;
 }
@@ -14,14 +27,44 @@ export function isAskUserQuestionTool(toolName: string): boolean {
   return toolName === ASK_USER_QUESTION_TOOL_NAME;
 }
 
-function payloadFromObject(obj: Record<string, unknown>): AskUserQuestionPayload | null {
+function parseSingleQuestion(obj: Record<string, unknown>): SingleQuestion | null {
   const question = obj.question;
   if (question == null || typeof question !== 'string') return null;
+
   const options = Array.isArray(obj.options)
-    ? (obj.options as unknown[]).filter((o): o is string => typeof o === 'string').slice(0, 3)
+    ? (obj.options as unknown[]).filter((o): o is string => typeof o === 'string')
     : undefined;
   const freeTextHint = obj.freeTextHint != null ? String(obj.freeTextHint) : undefined;
+
   return { question, options, freeTextHint };
+}
+
+function payloadFromObject(obj: Record<string, unknown>): AskUserQuestionPayload | null {
+  // Try parsing multi-question format first
+  if (Array.isArray(obj.questions)) {
+    const questions = (obj.questions as unknown[])
+      .map((q) => {
+        if (!q || typeof q !== 'object') return null;
+        return parseSingleQuestion(q as Record<string, unknown>);
+      })
+      .filter((q): q is SingleQuestion => q !== null);
+
+    if (questions.length > 0) {
+      return { questions };
+    }
+  }
+
+  // Fallback to legacy single-question format
+  const singleQuestion = parseSingleQuestion(obj);
+  if (singleQuestion) {
+    return {
+      question: singleQuestion.question,
+      options: singleQuestion.options,
+      freeTextHint: singleQuestion.freeTextHint,
+    };
+  }
+
+  return null;
 }
 
 /**
@@ -34,6 +77,23 @@ export function parseAskUserQuestionResponse(responseData: string | null | undef
   try {
     const parsed = JSON.parse(trimmed) as unknown;
     if (!parsed || typeof parsed !== 'object') return null;
+
+    // Handle direct array format: [{question: "...", options: [...]}, ...]
+    if (Array.isArray(parsed)) {
+      const questions = parsed
+        .map((q) => {
+          if (!q || typeof q !== 'object') return null;
+          return parseSingleQuestion(q as Record<string, unknown>);
+        })
+        .filter((q): q is SingleQuestion => q !== null);
+
+      if (questions.length > 0) {
+        return { questions };
+      }
+      return null;
+    }
+
+    // Handle object format: {questions: [{...}]} or {question: "...", options: [...]}
     return payloadFromObject(parsed as Record<string, unknown>);
   } catch {
     return null;
@@ -55,4 +115,28 @@ export function parseAskUserQuestionParameters(parametersData: string | null | u
   } catch {
     return null;
   }
+}
+
+/**
+ * Normalize payload to array of questions for easier component usage.
+ * Handles both multi-question and legacy single-question formats.
+ */
+export function normalizeToQuestions(payload: AskUserQuestionPayload | null): SingleQuestion[] {
+  if (!payload) return [];
+
+  // Multi-question format
+  if (payload.questions && payload.questions.length > 0) {
+    return payload.questions;
+  }
+
+  // Legacy single-question format
+  if (payload.question) {
+    return [{
+      question: payload.question,
+      options: payload.options,
+      freeTextHint: payload.freeTextHint,
+    }];
+  }
+
+  return [];
 }

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
+import { TOAST_DEFAULT_DURATION } from '../constants/timing';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -18,7 +19,7 @@ interface ToastStore {
 
 export const useToastStore = create<ToastStore>((set) => ({
     toasts: [],
-    addToast: (message, type, duration = 3000) => {
+    addToast: (message, type, duration = TOAST_DEFAULT_DURATION) => {
         const id = typeof crypto !== 'undefined' && crypto.randomUUID
             ? crypto.randomUUID()
             : Math.random().toString(36).substring(2, 9);

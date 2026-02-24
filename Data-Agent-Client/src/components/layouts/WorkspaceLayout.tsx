@@ -56,7 +56,7 @@ export function WorkspaceLayout({ children, showAI, showExplorer }: WorkspaceLay
                     <>
                         <PanelResizeHandle className="w-1 bg-border hover:bg-primary/50 transition-colors" />
                         {/* Right Sidebar: AI Assistant */}
-                        <Panel defaultSize="25%" minSize="20%" maxSize="50%" className="theme-bg-panel flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
+                        <Panel defaultSize="30%" minSize="20%" maxSize="50%" className="theme-bg-panel flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
                             <AIAssistant />
                         </Panel>
                     </>

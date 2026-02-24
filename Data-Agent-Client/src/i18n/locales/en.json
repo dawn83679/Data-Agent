@@ -161,9 +161,15 @@
     "askUserQuestion": {
       "label": "Question",
       "inputPlaceholder": "Enter your answer",
+      "customInputPlaceholder": "Enter additional input (optional)",
       "submitAnswer": "Submit answer",
+      "reject": "Reject",
+      "rejectMessage": "User declined to answer your question. Please review the current context to see if there is sufficient information to answer the question or reconsider the user's needs.",
+      "customLabel": "User Additional Input",
       "answerPrefix": "User answered: ",
-      "submittedAnswer": "Your answer"
+      "submittedAnswer": "Your answer",
+      "multiAnswerPrefix": "User has answered your questions: ",
+      "continueSuffix": "You can now continue with the user's answers in mind"
     },
     "toolRun": {
       "streamingArguments": "Streaming arguments...",
@@ -368,6 +374,7 @@
     "http_401": "Authentication failed. Please sign in again.",
     "http_403": "You are not allowed to perform this action.",
     "http_404": "Requested resource was not found.",
-    "http_500": "Server error. Please try again later."
+    "http_500": "Server error. Please try again later.",
+    "context_not_provided": "useAIAssistantContext must be used within AIAssistantProvider"
   }
 }

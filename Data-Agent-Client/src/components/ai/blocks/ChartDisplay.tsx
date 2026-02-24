@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Copy, Check, RefreshCw } from 'lucide-react';
+import { COPY_FEEDBACK_DELAY_MS } from '../../../constants/timing';
 
 export interface ChartDisplayProps {
   imageUrl: string;
@@ -16,7 +17,7 @@ export function ChartDisplay({ imageUrl, chartType }: ChartDisplayProps) {
   const handleCopyLink = () => {
     navigator.clipboard.writeText(imageUrl);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), COPY_FEEDBACK_DELAY_MS);
   };
 
   const handleRetryImage = () => {

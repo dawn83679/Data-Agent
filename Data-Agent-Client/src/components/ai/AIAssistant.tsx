@@ -10,14 +10,12 @@ import { useMessageQueue } from '../../hooks/useMessageQueue';
 import { useAuthStore } from '../../store/authStore';
 import { conversationService } from '../../services/conversation.service';
 import { aiService } from '../../services/ai.service';
+import { ChatPaths } from '../../constants/apiPaths';
+import { DEFAULT_MODEL, FALLBACK_MODELS } from '../../constants/models';
+import { SLASH_COMMAND_IDS } from './slashCommands';
 import type { ChatContext } from '../../types/chat';
 import type { ModelOption } from '../../types/ai';
 import { chatMessagesToMessages } from './MessageList';
-
-const FALLBACK_MODELS: ModelOption[] = [
-  { modelName: 'qwen3-max', supportThinking: false },
-  { modelName: 'qwen3-max-thinking', supportThinking: true },
-];
 
 export function AIAssistant() {
   const { t } = useTranslation();
@@ -25,7 +23,7 @@ export function AIAssistant() {
 
   const [agent, setAgent] = useState<AgentType>('Agent');
   const [modelOptions, setModelOptions] = useState<ModelOption[]>(FALLBACK_MODELS);
-  const [model, setModel] = useState('qwen3-max');
+  const [model, setModel] = useState<string>(DEFAULT_MODEL);
   const [chatContext, setChatContext] = useState<ChatContext>({});
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -39,14 +37,13 @@ export function AIAssistant() {
     input,
     setInput,
     isLoading,
-    showPlanning,
     stop,
     error,
     handleSubmit,
     submitMessage,
     submitToolAnswer,
   } = useChat({
-    api: '/api/chat/stream',
+    api: ChatPaths.STREAM,
     body: {
       model,
       ...(currentConversationId != null && { conversationId: currentConversationId }),
@@ -103,13 +100,16 @@ export function AIAssistant() {
     submitMessage,
     submitToolAnswer,
     isLoading,
+    conversationId: currentConversationId,
     modelState: { model, setModel, modelOptions },
     agentState: { agent, setAgent },
     chatContextState: { chatContext, setChatContext },
     onCommand: (id: string) => {
-      if (id === 'new') {
+      if (id === SLASH_COMMAND_IDS.NEW) {
         setCurrentConversationId(null);
         setMessages([]);
+      } else if (id === SLASH_COMMAND_IDS.HISTORY) {
+        setIsHistoryOpen(true);
       }
     },
   };
@@ -146,7 +146,6 @@ export function AIAssistant() {
           messages={chatMessages}
           messagesEndRef={messagesEndRef}
           isLoading={isLoading}
-          showPlanning={showPlanning}
           queue={messageQueue.queue}
           onRemoveFromQueue={messageQueue.removeFromQueue}
         />

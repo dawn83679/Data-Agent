@@ -29,6 +29,8 @@ export interface AIAssistantContextValue {
   /** Submit user answer to askUserQuestion tool and continue (no user message; streams into last assistant message). */
   submitToolAnswer: (toolCallId: string, answer: string) => Promise<void>;
   isLoading: boolean;
+  /** Current conversation ID (null for new conversations) */
+  conversationId: number | null;
   modelState: ModelState;
   agentState: AgentState;
   chatContextState: ChatContextState;
@@ -52,6 +54,7 @@ export function AIAssistantProvider({
 export function useAIAssistantContext(): AIAssistantContextValue {
   const ctx = useContext(AIAssistantContext);
   if (!ctx) {
+    // Development error - this indicates incorrect component tree structure
     throw new Error('useAIAssistantContext must be used within AIAssistantProvider');
   }
   return ctx;

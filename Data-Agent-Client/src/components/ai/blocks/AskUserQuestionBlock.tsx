@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AskUserAnswered } from './AskUserAnswered';
 import { AskUserUnanswered } from './AskUserUnanswered';
 import type { AskUserQuestionPayload } from './askUserQuestionTypes';
+import { normalizeToQuestions } from './askUserQuestionTypes';
 
 export interface AskUserQuestionBlockProps {
   payload: AskUserQuestionPayload;
@@ -35,15 +36,18 @@ export function AskUserQuestionBlock({
     onSubmit(answer);
   };
 
+  // Normalize payload to questions array
+  const questions = normalizeToQuestions(payload);
+
   return (
     <div
       className="mt-1 rounded-lg border theme-border overflow-hidden theme-bg-panel"
       aria-label={t('ai.askUserQuestion.label')}
     >
       {isAnswered ? (
-        <AskUserAnswered payload={payload} answer={displayAnswer} />
+        <AskUserAnswered questions={questions} answer={displayAnswer} />
       ) : (
-        <AskUserUnanswered payload={payload} onSubmit={handleSubmit} disabled={disabled} />
+        <AskUserUnanswered questions={questions} onSubmit={handleSubmit} disabled={disabled} />
       )}
     </div>
   );
