@@ -1,6 +1,5 @@
-import { useTranslation } from 'react-i18next';
+import { useEffect, useRef } from 'react';
 import { TodoListBlock } from './TodoListBlock';
-import { AskUserQuestionBlock } from './AskUserQuestionBlock';
 import { McpToolBlock } from './McpToolBlock';
 import { ToolRunPending } from './ToolRunPending';
 import { ToolRunStreaming } from './ToolRunStreaming';
@@ -10,11 +9,48 @@ import { parseTodoListResponse } from './todoTypes';
 import {
   parseAskUserQuestionParameters,
   parseAskUserQuestionResponse,
+  normalizeToQuestions,
+  type AskUserQuestionPayload,
 } from './askUserQuestionTypes';
 import { getToolType, ToolType } from './toolTypes';
 import { formatParameters } from './formatParameters';
 import { useAIAssistantContext } from '../AIAssistantContext';
 import { ToolExecutionState } from '../messageListLib/types';
+import { useAskQuestionModalStore } from '../../../store/askQuestionModalStore';
+
+/**
+ * Helper component to handle opening the question modal only once.
+ * Uses useEffect to prevent re-opening on every render.
+ */
+function AskUserQuestionHandler({
+  conversationId,
+  askUserPayload,
+  submitMessage,
+  openModal,
+}: {
+  conversationId: number;
+  askUserPayload: AskUserQuestionPayload;
+  submitMessage: (message: string) => Promise<void>;
+  openModal: (conversationId: number, questions: any[], onSubmit: (answer: string) => void) => void;
+}) {
+  const openedRef = useRef(false);
+
+  useEffect(() => {
+    // Only open modal once per question instance
+    if (!openedRef.current) {
+      openedRef.current = true;
+
+      const questions = normalizeToQuestions(askUserPayload);
+      const handleSubmit = (answer: string) => {
+        submitMessage(answer);
+      };
+
+      openModal(conversationId, questions, handleSubmit);
+    }
+  }, [conversationId, askUserPayload, submitMessage, openModal]);
+
+  return null;
+}
 
 export interface ToolRunBlockProps {
   toolName: string;
@@ -26,10 +62,6 @@ export interface ToolRunBlockProps {
   pending?: boolean;
   /** Execution state: streaming arguments, executing, or complete. */
   executionState?: ToolExecutionState;
-  /** LangChain4j tool call id; when set with askUserQuestion, submitToolAnswer is used instead of submitMessage. */
-  toolCallId?: string;
-  /** When true, this block has later segments in the same message (e.g. user already answered and model continued). */
-  hasSegmentsAfter?: boolean;
   /** MCP server name (e.g., "chart-server") for server-specific rendering */
   serverName?: string;
 }
@@ -50,12 +82,10 @@ export function ToolRunBlock({
   responseError = false,
   pending = false,
   executionState,
-  toolCallId,
-  hasSegmentsAfter = false,
   serverName,
 }: ToolRunBlockProps) {
-  const { t } = useTranslation();
-  const { submitMessage, submitToolAnswer, isLoading } = useAIAssistantContext();
+  const { submitMessage, conversationId } = useAIAssistantContext();
+  const openModal = useAskQuestionModalStore((state) => state.open);
 
   const toolType = getToolType(toolName, serverName);
   const { formattedParameters, isParametersJson } = formatParameters(parametersData);
@@ -98,25 +128,25 @@ export function ToolRunBlock({
             ? responseData.trim()
             : undefined;
 
-        if (askUserPayload) {
-          const useToolAnswer = !!toolCallId;
-          const blockDisabled = isLoading || (useToolAnswer && hasSegmentsAfter);
+        // If already answered: don't render anything
+        if (askUserSubmittedAnswer && askUserPayload) {
+          return null;
+        }
+
+        // If question received and not answered: render AskUserQuestionHandler
+        if (askUserPayload && !askUserSubmittedAnswer && conversationId !== null) {
           return (
-            <div className="mb-2">
-              <AskUserQuestionBlock
-                payload={askUserPayload}
-                disabled={blockDisabled}
-                submittedAnswer={askUserSubmittedAnswer}
-                onSubmit={(answer) =>
-                  useToolAnswer
-                    ? submitToolAnswer(toolCallId, answer)
-                    : submitMessage(t('ai.askUserQuestion.answerPrefix') + answer)
-                }
-              />
-            </div>
+            <AskUserQuestionHandler
+              conversationId={conversationId}
+              askUserPayload={askUserPayload}
+              submitMessage={submitMessage}
+              openModal={openModal}
+            />
           );
         }
-        break;
+
+        // Any other case: don't render anything
+        return null;
       }
 
       case ToolType.MCP:

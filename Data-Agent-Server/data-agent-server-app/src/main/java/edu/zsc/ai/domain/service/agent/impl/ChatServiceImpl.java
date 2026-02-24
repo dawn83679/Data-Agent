@@ -1,17 +1,11 @@
 package edu.zsc.ai.domain.service.agent.impl;
 
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
-import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.invocation.InvocationParameters;
-import dev.langchain4j.model.chat.response.CompleteToolCall;
-import dev.langchain4j.model.chat.response.PartialToolCall;
 import dev.langchain4j.service.TokenStream;
-import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import edu.zsc.ai.agent.ReActAgent;
 import edu.zsc.ai.agent.ReActAgentProvider;
 import edu.zsc.ai.common.constant.ChatErrorConstants;
-import edu.zsc.ai.common.constant.HitlConstants;
 import edu.zsc.ai.common.enums.ai.ModelEnum;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.domain.model.dto.response.agent.ChatResponseBlock;
@@ -20,8 +14,6 @@ import edu.zsc.ai.domain.service.agent.ChatService;
 import edu.zsc.ai.domain.service.ai.AiConversationService;
 import edu.zsc.ai.domain.service.ai.AiMessageService;
 import edu.zsc.ai.model.request.ChatRequest;
-import edu.zsc.ai.model.request.SubmitToolAnswerRequest;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -31,9 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -46,19 +36,16 @@ public class ChatServiceImpl implements ChatService {
     private final ReActAgentProvider reActAgentProvider;
     private final AiConversationService aiConversationService;
     private final AiMessageService aiMessageService;
-    private final ChatMemoryStore chatMemoryStore;
     private final Map<String, String> mcpToolNameToServerMap;
 
     public ChatServiceImpl(
             ReActAgentProvider reActAgentProvider,
             AiConversationService aiConversationService,
             AiMessageService aiMessageService,
-            ChatMemoryStore chatMemoryStore,
             @Qualifier("mcpToolNameToServerMap") Map<String, String> mcpToolNameToServerMap) {
         this.reActAgentProvider = reActAgentProvider;
         this.aiConversationService = aiConversationService;
         this.aiMessageService = aiMessageService;
-        this.chatMemoryStore = chatMemoryStore;
         this.mcpToolNameToServerMap = mcpToolNameToServerMap;
     }
 
@@ -80,64 +67,10 @@ public class ChatServiceImpl implements ChatService {
         String memoryId = RequestContext.getUserId() + ":" + request.getConversationId();
         InvocationParameters parameters = InvocationParameters.from(RequestContext.toMap());
         TokenStream tokenStream = agent.chat(memoryId, request.getMessage(), parameters);
-        streamTokenStreamToSink(tokenStream, sink, request.getConversationId());
-        return sink.asFlux();
-    }
 
-    @Override
-    public Flux<ChatResponseBlock> submitToolAnswerAndContinue(SubmitToolAnswerRequest request) {
-        String modelName = validateAndResolveModel(request.getModel());
+        // Stream token callbacks (inlined from streamTokenStreamToSink)
+        Long conversationId = request.getConversationId();
 
-        if (request.getConversationId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ChatErrorConstants.CONVERSATION_ID_REQUIRED);
-        }
-
-        ReActAgent agent = reActAgentProvider.getAgent(modelName);
-
-        Long userId = RequestContext.getUserId();
-        String memoryId = userId + ":" + request.getConversationId();
-
-        List<ChatMessage> messages = chatMemoryStore.getMessages(memoryId);
-        if (messages == null || messages.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ChatErrorConstants.NO_MESSAGES_FOR_CONVERSATION);
-        }
-
-        String toolCallId = request.getToolCallId();
-        String answer = request.getAnswer();
-        boolean replaced = false;
-        List<ChatMessage> newMessages = new ArrayList<>(messages);
-
-        for (int i = messages.size() - 1; i >= 0; i--) {
-            ChatMessage msg = messages.get(i);
-            if (msg instanceof ToolExecutionResultMessage toolMsg) {
-                if (HitlConstants.ASK_USER_QUESTION_TOOL_NAME.equals(toolMsg.toolName())
-                        && toolCallId.equals(toolMsg.id())) {
-                    ToolExecutionResultMessage replacedMsg = ToolExecutionResultMessage.from(
-                            toolMsg.id(), toolMsg.toolName(), answer);
-                    newMessages.set(i, replacedMsg);
-                    replaced = true;
-                    break;
-                }
-            }
-        }
-
-        if (!replaced) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    ChatErrorConstants.NO_MATCHING_ASK_USER_TOOL_RESULT_PREFIX + toolCallId);
-        }
-
-        chatMemoryStore.updateMessages(memoryId, newMessages);
-
-        Sinks.Many<ChatResponseBlock> sink = Sinks.many().unicast().onBackpressureBuffer();
-        InvocationParameters parameters = InvocationParameters.from(RequestContext.toMap());
-        TokenStream tokenStream = agent.chat(memoryId, HitlConstants.HITL_CONTINUE_MESSAGE, parameters);
-        streamTokenStreamToSink(tokenStream, sink, request.getConversationId());
-        return sink.asFlux();
-    }
-
-    private void streamTokenStreamToSink(TokenStream tokenStream,
-                                         Sinks.Many<ChatResponseBlock> sink,
-                                         Long conversationId) {
         tokenStream.onPartialResponse(content -> {
             if (StringUtils.isNotBlank(content)) {
                 sink.tryEmitNext(ChatResponseBlock.text(content));
@@ -244,6 +177,8 @@ public class ChatServiceImpl implements ChatService {
         });
 
         tokenStream.start();
+
+        return sink.asFlux();
     }
 
     /**

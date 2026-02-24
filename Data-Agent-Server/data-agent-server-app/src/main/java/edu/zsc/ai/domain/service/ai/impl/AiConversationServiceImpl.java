@@ -53,10 +53,16 @@ public class AiConversationServiceImpl extends ServiceImpl<AiConversationMapper,
 
     @Override
     public AiConversation createConversation(Long userId, String title) {
+        // TODO: Use AI to summarize the user's first message and generate a concise title instead of truncating
+        // For now, truncate to 100 characters to prevent database varchar(255) overflow
+        String truncatedTitle = title;
+        if (title != null && title.length() > 100) {
+            truncatedTitle = title.substring(0, 100) + "...";
+        }
 
         AiConversation conversation = AiConversation.builder()
                 .userId(userId)
-                .title(title)
+                .title(truncatedTitle)
                 .tokenCount(0)
                 .build();
 

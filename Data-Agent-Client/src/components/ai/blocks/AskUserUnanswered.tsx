@@ -1,86 +1,280 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MessageCircle } from 'lucide-react';
-import type { AskUserQuestionPayload } from './askUserQuestionTypes';
+import { Check } from 'lucide-react';
+import type { SingleQuestion } from './askUserQuestionTypes';
 
 export interface AskUserUnansweredProps {
-  payload: AskUserQuestionPayload;
+  questions: SingleQuestion[];
   onSubmit: (answer: string) => void;
+  onReject?: () => void;
   disabled: boolean;
 }
 
-/**
- * Renders an unanswered AskUserQuestion with interactive inputs.
- */
-export function AskUserUnanswered({ payload, onSubmit, disabled }: AskUserUnansweredProps) {
-  const { t } = useTranslation();
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [freeText, setFreeText] = useState('');
+interface AnswerValue {
+  selectedOptions: string[];  // Selected from options list
+  customText: string;          // User's custom input
+}
 
-  const hasOptions = payload.options != null && payload.options.length > 0;
-  const hasFreeText = payload.freeTextHint != null && payload.freeTextHint !== '';
+/**
+ * Renders unanswered AskUserQuestion(s) with interactive inputs.
+ * Multiple questions are displayed as tabs.
+ */
+export function AskUserUnanswered({ questions, onSubmit, onReject, disabled }: AskUserUnansweredProps) {
+  const { t } = useTranslation();
+
+  // Track answers for all questions: Map<questionIndex, AnswerValue>
+  const [answers, setAnswers] = useState<Map<number, AnswerValue>>(() => {
+    const initial = new Map<number, AnswerValue>();
+    questions.forEach((_, idx) => {
+      initial.set(idx, { selectedOptions: [], customText: '' });
+    });
+    return initial;
+  });
+
+  // Track active tab for multi-question view
+  const [activeTab, setActiveTab] = useState(0);
+
+  // Handle ESC key to reject answering
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !disabled && onReject) {
+        e.preventDefault();
+        onReject();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [disabled, onReject]);
+
+  const handleOptionClick = (questionIdx: number, option: string, allowMultiSelect: boolean) => {
+    if (disabled) return;
+
+    setAnswers((prev) => {
+      const newAnswers = new Map(prev);
+      const current = newAnswers.get(questionIdx) || { selectedOptions: [], customText: '' };
+
+      if (allowMultiSelect) {
+        // Checkbox: toggle selection
+        const isSelected = current.selectedOptions.includes(option);
+        const newSelected = isSelected
+          ? current.selectedOptions.filter((o) => o !== option)
+          : [...current.selectedOptions, option];
+        newAnswers.set(questionIdx, { ...current, selectedOptions: newSelected });
+      } else {
+        // Radio: single selection
+        newAnswers.set(questionIdx, { ...current, selectedOptions: [option] });
+      }
+
+      return newAnswers;
+    });
+  };
+
+  const handleCustomTextChange = (questionIdx: number, text: string) => {
+    setAnswers((prev) => {
+      const newAnswers = new Map(prev);
+      const current = newAnswers.get(questionIdx) || { selectedOptions: [], customText: '' };
+      newAnswers.set(questionIdx, { ...current, customText: text });
+      return newAnswers;
+    });
+  };
 
   const handleSubmit = () => {
     if (disabled) return;
-    const answer = freeText.trim() || selectedOption || '';
-    if (answer) {
-      onSubmit(answer);
+
+    // Format answer based on single or multiple questions
+    if (questions.length === 1) {
+      // Single question: simple answer format (backward compatibility)
+      const answer = answers.get(0);
+      if (!answer) return;
+
+      const selectedParts = answer.selectedOptions;
+      const customPart = answer.customText.trim();
+
+      let answerStr = '';
+      if (selectedParts.length > 0 && customPart) {
+        // Both selected options and custom input
+        answerStr = `${selectedParts.join(', ')} | ${t('ai.askUserQuestion.customLabel')}: ${customPart}`;
+      } else if (selectedParts.length > 0) {
+        // Only selected options
+        answerStr = selectedParts.join(', ');
+      } else if (customPart) {
+        // Only custom input
+        answerStr = `${t('ai.askUserQuestion.customLabel')}: ${customPart}`;
+      }
+
+      if (answerStr) {
+        onSubmit(answerStr);
+      }
+    } else {
+      // Multiple questions: formatted as "question"="answer" pairs
+      const pairs = questions.map((q, idx) => {
+        const answer = answers.get(idx);
+        if (!answer) return `"${q.question}"=""`;
+
+        const selectedParts = answer.selectedOptions;
+        const customPart = answer.customText.trim();
+
+        let answerStr = '';
+        if (selectedParts.length > 0 && customPart) {
+          // Both selected options and custom input
+          answerStr = `${selectedParts.join(', ')} | ${t('ai.askUserQuestion.customLabel')}: ${customPart}`;
+        } else if (selectedParts.length > 0) {
+          // Only selected options
+          answerStr = selectedParts.join(', ');
+        } else if (customPart) {
+          // Only custom input
+          answerStr = `${t('ai.askUserQuestion.customLabel')}: ${customPart}`;
+        }
+
+        return `"${q.question}"="${answerStr}"`;
+      });
+
+      const formattedAnswer =
+        t('ai.askUserQuestion.multiAnswerPrefix') +
+        pairs.join(', ') +
+        '. ' +
+        t('ai.askUserQuestion.continueSuffix');
+
+      onSubmit(formattedAnswer);
     }
   };
 
-  const canSubmit = (selectedOption != null || freeText.trim() !== '') && !disabled;
+  // Check if all questions have at least one answer
+  const canSubmit = !disabled && questions.every((_, idx) => {
+    const answer = answers.get(idx);
+    return answer && (answer.selectedOptions.length > 0 || answer.customText.trim() !== '');
+  });
+
+  const truncateText = (text: string, maxLength: number): string => {
+    if (text.length <= maxLength) return text;
+    return text.slice(0, maxLength) + '...';
+  };
+
+  const renderQuestionContent = (question: SingleQuestion, qIdx: number) => {
+    const answer = answers.get(qIdx) || { selectedOptions: [], customText: '' };
+    const allowMultiSelect = true; // Always allow multi-select (checkbox)
+
+    return (
+      <div>
+        {/* Full question text */}
+        <p className="theme-text-primary text-[13px] mb-3 whitespace-pre-wrap">
+          {question.question}
+        </p>
+
+        {/* Options: radio or checkbox based on allowMultiSelect */}
+        {question.options && question.options.length > 0 && (
+          <div className="flex flex-col gap-2 mb-3">
+            {question.options.map((opt, optIdx) => {
+              const isSelected = answer.selectedOptions.includes(opt);
+
+              return (
+                <button
+                  key={optIdx}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => handleOptionClick(qIdx, opt, allowMultiSelect)}
+                  className={`w-full text-left px-3 py-2 rounded-md text-[12px] transition-colors border theme-text-primary disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 ${
+                    isSelected
+                      ? 'theme-bg-selected theme-border-accent border'
+                      : 'theme-border theme-bg-hover'
+                  }`}
+                >
+                  {/* Checkbox or Radio indicator */}
+                  <div
+                    className={`shrink-0 w-4 h-4 border theme-border flex items-center justify-center ${
+                      allowMultiSelect ? 'rounded' : 'rounded-full'
+                    } ${
+                      isSelected
+                        ? 'bg-[var(--accent-blue)] border-[var(--accent-blue)]'
+                        : 'bg-transparent'
+                    }`}
+                  >
+                    {isSelected && (
+                      allowMultiSelect ? (
+                        <Check className="w-3 h-3 text-white" />
+                      ) : (
+                        <div className="w-2 h-2 rounded-full bg-white" />
+                      )
+                    )}
+                  </div>
+                  <span>{opt}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Free text input - ALWAYS displayed */}
+        <div className="mb-3">
+          <input
+            type="text"
+            value={answer.customText}
+            onChange={(e) => handleCustomTextChange(qIdx, e.target.value)}
+            placeholder={
+              question.freeTextHint || t('ai.askUserQuestion.customInputPlaceholder')
+            }
+            disabled={disabled}
+            className="w-full px-2.5 py-1.5 rounded border theme-border theme-bg-panel theme-text-primary text-[12px] placeholder:theme-text-secondary focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-[var(--accent-blue)] disabled:opacity-60 disabled:cursor-not-allowed"
+            aria-label={t('ai.askUserQuestion.customInputPlaceholder')}
+          />
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="px-3 pt-2.5 pb-3">
-      <div className="flex items-center gap-2 mb-2">
-        <MessageCircle className="w-3.5 h-3.5 theme-text-secondary shrink-0" aria-hidden />
-        <span className="text-[10px] font-semibold tracking-wide theme-text-secondary">
-          {t('ai.askUserQuestion.label')}
-        </span>
-      </div>
-
-      <p className="theme-text-primary text-[13px] mb-3 whitespace-pre-wrap">{payload.question || '—'}</p>
-
-      {hasOptions && (
-        <div className="flex flex-col gap-2 mb-3">
-          {payload.options!.map((opt, i) => (
+      {/* Tab headers for multiple questions */}
+      {questions.length > 1 && (
+        <div className="flex gap-1 mb-3 border-b theme-border">
+          {questions.map((q, idx) => (
             <button
-              key={i}
+              key={idx}
               type="button"
-              disabled={disabled}
-              onClick={() => setSelectedOption(opt)}
-              className={`w-full text-left px-3 py-2 rounded-md text-[12px] transition-colors border theme-text-primary disabled:opacity-60 disabled:cursor-not-allowed ${
-                selectedOption === opt
-                  ? 'theme-bg-selected theme-border-accent border'
-                  : 'theme-border theme-bg-hover'
+              onClick={() => setActiveTab(idx)}
+              className={`px-3 py-1.5 text-[11px] font-medium transition-colors border-b-2 ${
+                activeTab === idx
+                  ? 'border-[var(--accent-blue)] theme-text-primary'
+                  : 'border-transparent theme-text-secondary hover:theme-text-primary'
               }`}
             >
-              {opt}
+              {truncateText(q.question, 30)}
             </button>
           ))}
         </div>
       )}
 
-      <div className="mb-3">
-        <input
-          type="text"
-          value={freeText}
-          onChange={(e) => setFreeText(e.target.value)}
-          placeholder={hasFreeText ? (payload.freeTextHint ?? '') : t('ai.askUserQuestion.inputPlaceholder')}
-          disabled={disabled}
-          className="w-full px-2.5 py-1.5 rounded border theme-border theme-bg-panel theme-text-primary text-[12px] placeholder:theme-text-secondary focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-[var(--accent-blue)] disabled:opacity-60 disabled:cursor-not-allowed"
-          aria-label={t('ai.askUserQuestion.inputPlaceholder')}
-        />
-      </div>
+      {/* Question content */}
+      {questions.length === 1 ? (
+        // Single question: show directly
+        renderQuestionContent(questions[0], 0)
+      ) : (
+        // Multiple questions: show active tab
+        renderQuestionContent(questions[activeTab], activeTab)
+      )}
 
-      <button
-        type="button"
-        onClick={handleSubmit}
-        disabled={!canSubmit}
-        className="px-3 py-1.5 rounded-md text-[12px] font-medium bg-primary text-primary-foreground border border-primary hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-      >
-        {t('ai.askUserQuestion.submitAnswer')}
-      </button>
+      {/* Submit and Reject buttons */}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={!canSubmit}
+          className="flex-1 px-3 py-1.5 rounded-md text-[12px] font-medium bg-primary text-primary-foreground border border-primary hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+        >
+          {t('ai.askUserQuestion.submitAnswer')}
+        </button>
+        {onReject && (
+          <button
+            type="button"
+            onClick={onReject}
+            disabled={disabled}
+            className="px-3 py-1.5 rounded-md text-[12px] font-medium theme-bg-panel theme-text-secondary border theme-border hover:theme-bg-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {t('ai.askUserQuestion.reject')}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

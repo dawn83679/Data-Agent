@@ -6,6 +6,7 @@ import { databaseService } from '../services/database.service';
 import { schemaService } from '../services/schema.service';
 import { tableService } from '../services/table.service';
 import { useWorkspaceStore } from '../store/workspaceStore';
+import { MentionIdPrefix } from '../constants/explorer';
 import type { ChatContext } from '../types/chat';
 import type { DbConnection } from '../types/connection';
 import type { MentionItem, MentionLevel } from '../components/ai/mentionTypes';
@@ -71,7 +72,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
       const names = await databaseService.listDatabases(String(connectionId));
       setMentionItems(
         names.map((name) => ({
-          id: `db-${name}`,
+          id: `${MentionIdPrefix.DB}${name}`,
           label: name,
           payload: { connectionId, databaseName: name },
         }))
@@ -92,7 +93,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
         const names = await schemaService.listSchemas(String(connId), catalog);
         setMentionItems(
           names.map((name) => ({
-            id: `schema-${name}`,
+            id: `${MentionIdPrefix.SCHEMA}${name}`,
             label: name,
             payload: { connectionId: connId, databaseName: catalog, schemaName: name },
           }))
@@ -115,7 +116,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
         const names = await tableService.listTables(String(connId), catalog, schema);
         setMentionItems(
           names.map((name) => ({
-            id: `table-${name}`,
+            id: `${MentionIdPrefix.TABLE}${name}`,
             label: name,
           }))
         );
@@ -134,7 +135,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
     if (mentionLevel === 'connection') {
       setMentionItems(
         connections.map((c) => ({
-          id: `conn-${c.id}`,
+          id: `${MentionIdPrefix.CONNECTION}${c.id}`,
           label: c.name,
           payload: { connectionId: c.id },
         }))
@@ -153,7 +154,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
     setMentionOpen(true);
     setMentionItems(
       connections.map((c) => ({
-        id: `conn-${c.id}`,
+        id: `${MentionIdPrefix.CONNECTION}${c.id}`,
         label: c.name,
         payload: { connectionId: c.id },
       }))
@@ -276,7 +277,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
       setMentionLevel('connection');
       setMentionItems(
         connections.map((c) => ({
-          id: `conn-${c.id}`,
+          id: `${MentionIdPrefix.CONNECTION}${c.id}`,
           label: c.name,
           payload: { connectionId: c.id },
         }))

@@ -3,49 +3,42 @@ package edu.zsc.ai.tool;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.ReturnBehavior;
 import dev.langchain4j.agent.tool.Tool;
-import edu.zsc.ai.util.JsonUtil;
+import edu.zsc.ai.tool.model.UserQuestion;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
- * Tool that lets the model ask the user a question with optional choices and/or free-text input.
- * Marked IMMEDIATE so the stream ends after this tool runs; the frontend shows the question
- * and submits the user's answer as a new message to continue the conversation.
+ * Tool for asking the user one or multiple questions with options and/or free-text input.
+ * Uses ReturnBehavior.IMMEDIATE to pause the conversation until user responds.
+ * Supports both single and multi-question formats.
  */
 @Component
 @Slf4j
 public class AskUserQuestionTool {
 
-    private static final int MAX_OPTIONS = 3;
-
     @Tool(
-            value = "Ask the user a question when you need their input to proceed. "
-                    + "Provide a clear question and optionally up to 3 choices and/or a hint for free-text answer. "
-                    + "Use this when you need confirmation, preference, or any user decision before continuing.",
+            value = "Ask the user one or multiple questions when you need to clarify ambiguous requests or obtain missing information. "
+                    + "Each question must have at least 3 options. Users can select one or more options and/or provide custom input. "
+                    + "WHEN TO USE: "
+                    + "1. User mentions 'the connection' but there are multiple connections available - ask which one they mean. "
+                    + "2. User asks to 'query the database' without specifying which database - list available databases. "
+                    + "3. User requests an action but critical information (table name, connection ID, database name) is missing - prompt for specifics. "
+                    + "4. You need user confirmation before executing destructive operations (DROP, DELETE, TRUNCATE). "
+                    + "EXAMPLES: "
+                    + "'Which connection do you want to use?' → options: [list of available connections from getMyConnections] | "
+                    + "'Which table should I query?' → options: [list of tables in current schema from getTableNames] | "
+                    + "'Confirm deletion of table users?' → options: ['Yes, delete it', 'No, cancel']. "
+                    + "After receiving user's response, interpret their answers and continue with the requested operation.",
             returnBehavior = ReturnBehavior.IMMEDIATE
     )
-    public String askUserQuestion(
-            @P("The question to show to the user. Be clear and concise.") String question,
-            @P(value = "Optional list of up to 3 choices the user can pick from. Omit or pass empty if only free text is needed.", required = false)
-            List<String> options,
-            @P(value = "Optional hint or placeholder for a free-text input (e.g. 'Enter your name'). Omit if only choices are used.", required = false)
-            String freeTextHint) {
-        log.info("[Tool] askUserQuestion, question={}, optionsSize={}", question, options != null ? options.size() : 0);
+    public List<UserQuestion> askUserQuestion(
+            @P("List of questions to ask the user. Each question must have at least 2 options.")
+            List<UserQuestion> questions) {
 
-        List<String> opts = options != null && !options.isEmpty()
-                ? options.stream().limit(MAX_OPTIONS).toList()
-                : List.of();
+        log.info("[Tool] askUserQuestion, {} question(s)", questions == null ? 0 : questions.size());
 
-        Map<String, Object> out = new HashMap<>();
-        out.put("question", question != null ? question : "");
-        out.put("options", opts);
-        out.put("freeTextHint", freeTextHint != null ? freeTextHint : "");
-
-        return JsonUtil.object2json(out);
+        return questions;
     }
 }

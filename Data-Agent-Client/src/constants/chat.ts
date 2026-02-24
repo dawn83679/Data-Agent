@@ -24,9 +24,6 @@ export const THOUGHT_LABEL_THINKING = 'Thinking';
 /** ThoughtBlock label when thought is done. */
 export const THOUGHT_LABEL_THOUGHT = 'Thought';
 
-/** Shown when streaming but no backend data received for a while. */
-export const PLANNING_LABEL = 'planning...';
-
 /** ToolRunBlock: prefix when tool execution failed. */
 export const TOOL_RUN_LABEL_FAILED = 'Failed ';
 

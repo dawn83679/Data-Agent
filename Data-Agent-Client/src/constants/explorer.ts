@@ -72,6 +72,14 @@ export const ExplorerTreeConfig = {
 /** Empty node ID suffix. */
 export const ExplorerEmptySuffix = '-empty';
 
+/** ID prefix for mention system. Used in useMention.ts for @mention suggestions. */
+export const MentionIdPrefix = {
+  CONNECTION: 'conn-',
+  DB: 'db-',
+  SCHEMA: 'schema-',
+  TABLE: 'table-',
+} as const;
+
 /** Display format for trigger with table. */
 export const TRIGGER_ON_TABLE_FORMAT = (triggerName: string, tableName: string) =>
   `${triggerName} (on ${tableName})`;

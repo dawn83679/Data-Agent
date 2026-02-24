@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { parseSSEResponse } from '../lib/sse';
 import { ensureValidAccessToken } from '../lib/authToken';
@@ -36,9 +36,6 @@ async function refreshAccessToken(): Promise<TokenPairResponse | null> {
     return null;
   }
 }
-
-const PLANNING_DELAY_MS = 500;
-const PLANNING_POLL_MS = 50;
 
 interface ConsumeStreamOptions {
   onConversationId?: (id: number) => void;
@@ -143,32 +140,6 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   const lastStreamEventAtRef = useRef(0);
   messagesRef.current = messages;
 
-  const [showPlanning, setShowPlanning] = useState(false);
-
-  useEffect(() => {
-    if (!isLoading) {
-      setShowPlanning(false);
-      lastStreamEventAtRef.current = 0;
-      return;
-    }
-
-    // Show planning immediately when loading starts
-    setShowPlanning(true);
-    lastStreamEventAtRef.current = 0;
-
-    const id = setInterval(() => {
-      const hasReceivedData = lastStreamEventAtRef.current > 0;
-      const timeSinceLastEvent = Date.now() - lastStreamEventAtRef.current;
-
-      if (hasReceivedData && timeSinceLastEvent < PLANNING_DELAY_MS) {
-        setShowPlanning(false);
-      } else if (hasReceivedData && timeSinceLastEvent >= PLANNING_DELAY_MS) {
-        setShowPlanning(true);
-      }
-    }, PLANNING_POLL_MS);
-
-    return () => clearInterval(id);
-  }, [isLoading]);
 
   const appendMessage = useCallback((message: ChatMessage) => {
     setMessages((prev) => [...prev, message]);
@@ -365,7 +336,6 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
     submitMessage,
     submitToolAnswer,
     isLoading,
-    showPlanning,
     stop,
     reload,
     error,

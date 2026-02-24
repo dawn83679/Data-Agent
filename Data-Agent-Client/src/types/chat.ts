@@ -94,8 +94,6 @@ export interface UseChatReturn {
   /** Submit user answer to askUserQuestion tool and continue (streams into last assistant message). */
   submitToolAnswer: (toolCallId: string, answer: string) => Promise<void>;
   isLoading: boolean;
-  /** True when streaming and no backend data received for 100ms (show planning indicator). */
-  showPlanning?: boolean;
   stop: () => void;
   reload: () => Promise<void>;
   error?: Error;

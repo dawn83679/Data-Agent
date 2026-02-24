@@ -10,6 +10,15 @@ import { cn } from '../../lib/utils';
 
 const PAGE_SIZE = 20;
 
+// Keyboard event keys
+const KEYS = {
+  ARROW_DOWN: 'ArrowDown',
+  ARROW_UP: 'ArrowUp',
+  ENTER: 'Enter',
+  ESCAPE: 'Escape',
+  SPACE: ' ',
+} as const;
+
 function formatRelativeTime(iso: string): string {
   const d = new Date(iso);
   const now = new Date();
@@ -65,6 +74,8 @@ export function ConversationHistoryPanel({
   const { t } = useTranslation();
   const toast = useToast();
   const panelRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Map<number, HTMLElement>>(new Map());
   const [loading, setLoading] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [current, setCurrent] = useState(1);
@@ -74,9 +85,13 @@ export function ConversationHistoryPanel({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [pendingHighlightIndex, setPendingHighlightIndex] = useState<number | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const lastScrollTimeRef = useRef(0);
 
   const fetchList = useCallback(
-    async (page: number = 1) => {
+    async (page: number = 1, pendingIndex: number | null = null) => {
       if (!open) return;
       setLoading(true);
       try {
@@ -88,6 +103,10 @@ export function ConversationHistoryPanel({
         setCurrent(res.current);
         setTotal(res.total);
         setPages(res.pages);
+        // If pagination triggered by keyboard, apply the pending highlight after data loads
+        if (pendingIndex !== null) {
+          setPendingHighlightIndex(pendingIndex);
+        }
       } catch (err) {
         toast.error(t('ai.load_failed'));
       } finally {
@@ -97,9 +116,22 @@ export function ConversationHistoryPanel({
     [open, toast, t]
   );
 
+  // When data loads and we have a pending highlight, apply it
+  useEffect(() => {
+    if (pendingHighlightIndex !== null && conversations.length > 0) {
+      setHighlightedIndex(pendingHighlightIndex);
+      setPendingHighlightIndex(null);
+    }
+  }, [pendingHighlightIndex, conversations.length]);
+
   useEffect(() => {
     if (open) {
       fetchList(1);
+      // Focus search input when panel opens
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+        setHighlightedIndex(-1);
+      }, 0);
     }
   }, [open, fetchList]);
 
@@ -112,6 +144,86 @@ export function ConversationHistoryPanel({
       document.removeEventListener('click', onDocClick);
     };
   }, [open, onClose]);
+
+  // Compute grouped and flatList
+  const filtered = searchQuery.trim()
+    ? conversations.filter((c) =>
+        (c.title ?? '').toLowerCase().includes(searchQuery.trim().toLowerCase())
+      )
+    : conversations;
+  const grouped = groupByDate(filtered, t);
+  const flatList = grouped.flatMap(g => g.items);
+  const highlightedConversation = flatList[highlightedIndex];
+
+  // Scroll highlighted item into view smoothly
+  useEffect(() => {
+    if (highlightedIndex < 0 || !highlightedConversation) return;
+    // Small delay to ensure DOM has updated before scrolling
+    const timeoutId = setTimeout(() => {
+      const itemElement = itemRefs.current.get(highlightedConversation.id);
+      if (itemElement && scrollContainerRef.current) {
+        itemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      lastScrollTimeRef.current = Date.now();
+    }, 50);
+    return () => clearTimeout(timeoutId);
+  }, [highlightedIndex, highlightedConversation]);
+
+  useEffect(() => {
+    if (!open || pendingHighlightIndex !== null) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isSearchFocused = document.activeElement === searchInputRef.current;
+      const currentFlatList = grouped.flatMap(g => g.items);
+
+      // Skip if search is focused (it handles its own arrow keys)
+      if (isSearchFocused) return;
+
+      // Arrow key navigation (when search is NOT focused)
+      if (e.key === KEYS.ARROW_DOWN || e.key === KEYS.ARROW_UP) {
+        e.preventDefault();
+        if (e.key === KEYS.ARROW_DOWN) {
+          setHighlightedIndex((prev) => {
+            if (prev < 0) return 0; // First item if not selected
+            const nextIndex = prev + 1;
+            if (nextIndex >= currentFlatList.length && current < pages) {
+              // Load next page if at end and more pages exist
+              fetchList(current + 1, 0);
+              return prev; // Keep current state while loading
+            }
+            return Math.min(nextIndex, currentFlatList.length - 1);
+          });
+        } else {
+          setHighlightedIndex((prev) => {
+            if (prev < 0) return Math.max(0, currentFlatList.length - 1);
+            const nextIndex = prev - 1;
+            if (nextIndex < 0 && current > 1) {
+              // Load previous page if at start and previous page exists
+              fetchList(current - 1, Math.max(0, currentFlatList.length - 1));
+              return prev; // Keep current state while loading
+            }
+            return Math.max(nextIndex, 0);
+          });
+        }
+      } else if (e.key === KEYS.ENTER && highlightedIndex >= 0) {
+        e.preventDefault();
+        const conversation = currentFlatList[highlightedIndex];
+        if (conversation) {
+          handleSelect(conversation);
+        }
+      } else if (e.key === KEYS.SPACE) {
+        e.preventDefault();
+        // If search is not focused, focus it for typing
+        if (!isSearchFocused) {
+          searchInputRef.current?.focus();
+          setHighlightedIndex(-1);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open, grouped, highlightedIndex, pendingHighlightIndex, current, pages, fetchList]);
 
   const handleSelect = (c: Conversation) => {
     onSelectConversation(c.id);
@@ -165,13 +277,6 @@ export function ConversationHistoryPanel({
     }
   };
 
-  const filtered = searchQuery.trim()
-    ? conversations.filter((c) =>
-        (c.title ?? '').toLowerCase().includes(searchQuery.trim().toLowerCase())
-      )
-    : conversations;
-  const grouped = groupByDate(filtered, t);
-
   if (!open) return null;
 
   return (
@@ -188,14 +293,29 @@ export function ConversationHistoryPanel({
       >
         <div className="p-2 border-b theme-border shrink-0">
           <Input
+            ref={searchInputRef}
             type="text"
             placeholder={t('common.search')}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setHighlightedIndex(-1);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === KEYS.ESCAPE) {
+                e.preventDefault();
+                onClose();
+              } else if (e.key === KEYS.SPACE) {
+                e.preventDefault();
+                e.stopPropagation();
+                searchInputRef.current?.blur();
+                setHighlightedIndex(0);
+              }
+            }}
             className="h-8 text-sm"
           />
         </div>
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0">
           {loading ? (
             <p className="text-sm theme-text-secondary py-4 text-center">
               {t('ai.loading_conversations')}
@@ -214,10 +334,15 @@ export function ConversationHistoryPanel({
                   <ul className="space-y-0.5">
                     {items.map((c) => (
                       <li
+                        ref={(el) => {
+                          if (el) itemRefs.current.set(c.id, el);
+                          else itemRefs.current.delete(c.id);
+                        }}
                         key={c.id}
                         className={cn(
-                          'flex items-center gap-2 px-2 py-1.5 rounded-md group',
+                          'flex items-center gap-2 px-2 py-1.5 rounded-md group transition-colors',
                           'hover:theme-bg-main/80',
+                          highlightedConversation?.id === c.id && 'bg-violet-600/40',
                           currentConversationId === c.id && 'theme-bg-main/50'
                         )}
                       >
