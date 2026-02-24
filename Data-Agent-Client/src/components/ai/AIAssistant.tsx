@@ -12,6 +12,7 @@ import { conversationService } from '../../services/conversation.service';
 import { aiService } from '../../services/ai.service';
 import { ChatPaths } from '../../constants/apiPaths';
 import { DEFAULT_MODEL, FALLBACK_MODELS } from '../../constants/models';
+import { SLASH_COMMAND_IDS } from './slashCommands';
 import type { ChatContext } from '../../types/chat';
 import type { ModelOption } from '../../types/ai';
 import { chatMessagesToMessages } from './MessageList';
@@ -104,9 +105,11 @@ export function AIAssistant() {
     agentState: { agent, setAgent },
     chatContextState: { chatContext, setChatContext },
     onCommand: (id: string) => {
-      if (id === 'new') {
+      if (id === SLASH_COMMAND_IDS.NEW) {
         setCurrentConversationId(null);
         setMessages([]);
+      } else if (id === SLASH_COMMAND_IDS.HISTORY) {
+        setIsHistoryOpen(true);
       }
     },
   };
