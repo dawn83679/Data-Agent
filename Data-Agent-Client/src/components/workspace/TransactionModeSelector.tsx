@@ -1,4 +1,4 @@
-import { Settings2 } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,7 +7,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/DropdownMenu';
-import { Button } from '../ui/Button';
 import {
   TransactionMode,
   IsolationLevel,
@@ -31,17 +30,12 @@ export function TransactionModeSelector({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6"
-          title="Transaction settings"
-        >
-          <Settings2 className="w-3.5 h-3.5" />
-        </Button>
+        <button className="h-6 px-2 rounded flex items-center gap-1 text-[11px] hover:bg-accent/30 transition-colors">
+          <span className="theme-text-primary font-medium">Tx: {TRANSACTION_MODE_LABELS[transactionMode]}</span>
+          <ChevronDown className="w-3 h-3 theme-text-secondary" />
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-[180px]">
-        {/* Transaction Mode Section */}
         <DropdownMenuLabel className="text-xs font-semibold">Transaction Mode</DropdownMenuLabel>
         {Object.values(TransactionMode).map((mode) => (
           <DropdownMenuItem
@@ -58,7 +52,6 @@ export function TransactionModeSelector({
 
         <DropdownMenuSeparator className="my-1" />
 
-        {/* Isolation Level Section */}
         <DropdownMenuLabel className="text-xs font-semibold">Isolation Level</DropdownMenuLabel>
         {Object.values(IsolationLevel).map((level) => (
           <DropdownMenuItem
@@ -72,13 +65,6 @@ export function TransactionModeSelector({
             <span className="ml-2">{ISOLATION_LEVEL_LABELS[level]}</span>
           </DropdownMenuItem>
         ))}
-
-        <DropdownMenuSeparator className="my-1" />
-
-        {/* Description */}
-        <div className="px-2 py-1.5 text-[10px] text-gray-500 italic max-w-[160px]">
-          Current transaction detects only committed changes
-        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

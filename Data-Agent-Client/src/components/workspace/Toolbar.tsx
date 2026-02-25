@@ -1,4 +1,4 @@
-import { Play, Square } from 'lucide-react';
+import { Play, Square, CheckCircle, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import {
@@ -9,11 +9,12 @@ import {
 } from '../ui/DropdownMenu';
 import { databaseService } from '../../services/database.service';
 import { Button } from '../ui/Button';
-import { TransactionModeSelector } from './TransactionModeSelector';
 import { TransactionMode, IsolationLevel } from '../../constants/transactionSettings';
+import { TransactionModeSelector } from './TransactionModeSelector';
 
 interface ToolbarProps {
   onRun: () => void;
+  onStop?: () => void;
   isRunning?: boolean;
   connectionId?: number;
   currentDatabase?: string | null;
@@ -22,6 +23,7 @@ interface ToolbarProps {
 
 export function Toolbar({
   onRun,
+  onStop,
   isRunning = false,
   connectionId,
   currentDatabase,
@@ -72,6 +74,9 @@ export function Toolbar({
         )}
       </Button>
 
+      {/* Divider */}
+      <div className="w-px h-4 bg-border mx-0.5" />
+
       {/* Transaction Mode Selector */}
       <TransactionModeSelector
         transactionMode={transactionMode}
@@ -80,8 +85,42 @@ export function Toolbar({
         onIsolationLevelChange={setIsolationLevel}
       />
 
+      {/* Commit and Rollback Buttons (Manual Mode Only) */}
+      {transactionMode === TransactionMode.MANUAL && (
+        <>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            title={t('workspace.commit')}
+          >
+            <CheckCircle className="w-3.5 h-3.5 text-green-500 hover:text-green-600" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            title={t('workspace.rollback')}
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-orange-500 hover:text-orange-600" />
+          </Button>
+        </>
+      )}
+
       {/* Divider */}
       <div className="w-px h-4 bg-border mx-0.5" />
+
+      {/* Stop Button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onStop}
+        disabled={!isRunning}
+        title={t('common.stop')}
+        className="h-6 w-6"
+      >
+        <Square className={`w-3.5 h-3.5 fill-current ${isRunning ? 'text-red-500' : 'text-gray-400'}`} />
+      </Button>
 
       {/* Flex spacer */}
       <div className="flex-1" />

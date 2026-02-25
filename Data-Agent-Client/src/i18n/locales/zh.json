@@ -112,7 +112,12 @@
     "new_console": "新控制台",
     "new_console_tab_title": "新控制台",
     "run_shortcut": "运行查询 (Ctrl+Enter / Cmd+Enter)",
-    "data_grid_placeholder": "数据表格占位"
+    "data_grid_placeholder": "数据表格占位",
+    "tab_close": "关闭",
+    "tab_close_left": "关闭左侧标签页",
+    "tab_close_right": "关闭右侧标签页",
+    "tab_close_others": "关闭其他标签页",
+    "tab_close_all": "关闭所有标签页"
   },
   "ai": {
     "title": "AI 助手",

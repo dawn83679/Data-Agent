@@ -18,10 +18,24 @@ interface TabState {
   // Actions
   openTab: (tab: Omit<Tab, 'active'>) => void;
   closeTab: (id: string) => void;
+  closeTabsToLeft: (id: string) => void;
+  closeTabsToRight: (id: string) => void;
+  closeOtherTabs: (id: string) => void;
+  closeAllTabs: () => void;
   switchTab: (id: string) => void;
   updateTabContent: (id: string, content: string) => void;
   updateTabMetadata: (id: string, metadata: Partial<ConsoleTabMetadata>) => void;
   reorderTabs: (sourceId: string, destinationId: string) => void;
+}
+
+function resolveActiveId(tabs: Tab[], removedId: string, currentActiveId: string | null): string | null {
+  if (currentActiveId !== removedId) return currentActiveId;
+  const idx = tabs.findIndex((t) => t.id === removedId);
+  const remaining = tabs.filter((t) => t.id !== removedId);
+  if (remaining.length === 0) return null;
+  // prefer the tab to the right, fall back to left
+  const next = remaining[idx] ?? remaining[idx - 1];
+  return next.id;
 }
 
 export const useTabStore = create<TabState>((set) => ({
@@ -45,18 +59,51 @@ export const useTabStore = create<TabState>((set) => ({
 
   closeTab: (id) =>
     set((state) => {
+      const newActiveId = resolveActiveId(state.tabs, id, state.activeTabId);
       const newTabs = state.tabs.filter((t) => t.id !== id);
-      let newActiveTabId = state.activeTabId;
-
-      if (state.activeTabId === id) {
-        newActiveTabId = newTabs.length > 0 ? newTabs[newTabs.length - 1].id : null;
-      }
-
       return {
-        tabs: newTabs.map((t) => ({ ...t, active: t.id === newActiveTabId })),
-        activeTabId: newActiveTabId,
+        tabs: newTabs.map((t) => ({ ...t, active: t.id === newActiveId })),
+        activeTabId: newActiveId,
       };
     }),
+
+  closeTabsToLeft: (id) =>
+    set((state) => {
+      const idx = state.tabs.findIndex((t) => t.id === id);
+      if (idx <= 0) return state;
+      const removedIds = new Set(state.tabs.slice(0, idx).map((t) => t.id));
+      const newTabs = state.tabs.filter((t) => !removedIds.has(t.id));
+      const newActiveId = removedIds.has(state.activeTabId ?? '') ? id : state.activeTabId;
+      return {
+        tabs: newTabs.map((t) => ({ ...t, active: t.id === newActiveId })),
+        activeTabId: newActiveId,
+      };
+    }),
+
+  closeTabsToRight: (id) =>
+    set((state) => {
+      const idx = state.tabs.findIndex((t) => t.id === id);
+      if (idx === -1 || idx === state.tabs.length - 1) return state;
+      const removedIds = new Set(state.tabs.slice(idx + 1).map((t) => t.id));
+      const newTabs = state.tabs.filter((t) => !removedIds.has(t.id));
+      const newActiveId = removedIds.has(state.activeTabId ?? '') ? id : state.activeTabId;
+      return {
+        tabs: newTabs.map((t) => ({ ...t, active: t.id === newActiveId })),
+        activeTabId: newActiveId,
+      };
+    }),
+
+  closeOtherTabs: (id) =>
+    set((state) => {
+      const newTabs = state.tabs.filter((t) => t.id === id);
+      return {
+        tabs: newTabs.map((t) => ({ ...t, active: true })),
+        activeTabId: id,
+      };
+    }),
+
+  closeAllTabs: () =>
+    set({ tabs: [], activeTabId: null }),
 
   switchTab: (id) =>
     set((state) => ({
