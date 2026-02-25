@@ -8,7 +8,6 @@ import { EmptyState } from "../components/workspace/EmptyState";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import type { ExecuteSqlResponse } from "../types/sql";
 import { sqlExecutionService } from "../services/sqlExecution.service";
-import { formatSql } from "../utils/sql";
 
 export default function Home() {
     const { t } = useTranslation();
@@ -51,16 +50,6 @@ export default function Home() {
         }
     }, [activeTab, sqlContext]);
 
-    const handleFormatSql = useCallback(() => {
-        if (!activeTab) return;
-        const current = activeTab.content ?? '';
-        const formatted = formatSql(current);
-        if (formatted !== current) {
-            editorRef.current?.setValue(formatted);
-            updateTabContent(activeTab.id, formatted);
-        }
-    }, [activeTab, updateTabContent]);
-
     // SQL Editor Shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -91,7 +80,6 @@ export default function Home() {
                         <div className="h-8 flex items-center px-2 theme-bg-main border-b theme-border text-[10px] theme-text-secondary shrink-0 gap-1">
                             <Toolbar
                                 onRun={handleRunQuery}
-                                onFormat={handleFormatSql}
                                 isRunning={isRunning}
                                 connectionId={sqlContext?.connectionId}
                                 currentDatabase={sqlContext?.databaseName}
