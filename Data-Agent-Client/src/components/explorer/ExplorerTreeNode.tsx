@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ChevronRight, ChevronDown, RefreshCw, MoreVertical, Pencil, Trash2, Plug, FileText, Table } from 'lucide-react';
+import { ChevronRight, ChevronDown, RefreshCw, MoreVertical, Pencil, Trash2, Plug } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { NodeApi } from 'react-arborist';
@@ -11,14 +11,13 @@ import {
 } from '../ui/DropdownMenu';
 import {
   ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
   ContextMenuTrigger,
 } from '../ui/ContextMenu';
 import { Button } from '../ui/Button';
 import { ExplorerNodeIcon } from './ExplorerNodeIcon';
 import { ExplorerNodeType, ExplorerIdPrefix } from '../../constants/explorer';
 import type { ExplorerNode } from '../../types/explorer';
+import { NodeContextMenuContent } from './NodeContextMenuContent';
 
 export interface ExplorerTreeNodeProps {
   node: NodeApi<ExplorerNode>;
@@ -32,6 +31,7 @@ export interface ExplorerTreeNodeProps {
   onViewDdl: (node: ExplorerNode) => void;
   onViewData: (node: ExplorerNode, highlightColumn?: string) => void;
   onDelete: (node: ExplorerNode, type: ExplorerNodeType) => void;
+  onOpenQueryConsole: (node: ExplorerNode) => void;
 }
 
 export function ExplorerTreeNode({
@@ -46,6 +46,7 @@ export function ExplorerTreeNode({
   onViewDdl,
   onViewData,
   onDelete,
+  onOpenQueryConsole,
 }: ExplorerTreeNodeProps) {
   const { t } = useTranslation();
   const isConnected = !!node.data.connectionId;
@@ -121,10 +122,6 @@ export function ExplorerTreeNode({
     node.select();
   };
 
-  const handleDdlClick = () => {
-    onViewDdl(node.data);
-  };
-
   const connId = node.id.replace(ExplorerIdPrefix.CONNECTION, '');
 
   const rowContent = (
@@ -182,8 +179,8 @@ export function ExplorerTreeNode({
     node.isSelected && 'bg-accent/30'
   );
 
-  // 判断是否需要显示右键菜单
-  const showContextMenu = isDdlNode || isDb || isDeletableFolder || isColumnOrIndexOrKey;
+  // Show context menu for all connected nodes and nodes with available actions
+  const showContextMenu = isConnected || isDdlNode || isDb || isDeletableFolder || isColumnOrIndexOrKey;
 
   if (showContextMenu) {
     return (
@@ -200,67 +197,14 @@ export function ExplorerTreeNode({
             {rowContent}
           </div>
         </ContextMenuTrigger>
-        <ContextMenuContent>
-          {isDdlNode && (
-            <ContextMenuItem onSelect={handleDdlClick}>
-              <FileText className="w-3.5 h-3.5 mr-2" />
-              {t('explorer.view_ddl')}
-            </ContextMenuItem>
-          )}
-          {(isTableOrView || isColumnOrIndexOrKey) && (
-            <ContextMenuItem onSelect={() => {
-              const highlightCol = node.data.type === ExplorerNodeType.COLUMN
-                ? node.data.name
-                : extractColumnName(node.data.name);
-              onViewData(node.data, highlightCol);
-            }}>
-              <Table className="w-3.5 h-3.5 mr-2" />
-              {t('explorer.view_data')}
-            </ContextMenuItem>
-          )}
-          {node.data.type === ExplorerNodeType.TABLE && (
-            <ContextMenuItem onSelect={() => onDelete(node.data, ExplorerNodeType.TABLE)} className="text-destructive focus:text-destructive">
-              <Trash2 className="w-3.5 h-3.5 mr-2" />
-              {t('explorer.delete_table')}
-            </ContextMenuItem>
-          )}
-          {node.data.type === ExplorerNodeType.VIEW && (
-            <ContextMenuItem onSelect={() => onDelete(node.data, ExplorerNodeType.VIEW)} className="text-destructive focus:text-destructive">
-              <Trash2 className="w-3.5 h-3.5 mr-2" />
-              {t('explorer.delete_view')}
-            </ContextMenuItem>
-          )}
-          {node.data.type === ExplorerNodeType.FUNCTION && (
-            <ContextMenuItem onSelect={() => onDelete(node.data, ExplorerNodeType.FUNCTION)} className="text-destructive focus:text-destructive">
-              <Trash2 className="w-3.5 h-3.5 mr-2" />
-              {t('explorer.delete_function')}
-            </ContextMenuItem>
-          )}
-          {node.data.type === ExplorerNodeType.PROCEDURE && (
-            <ContextMenuItem onSelect={() => onDelete(node.data, ExplorerNodeType.PROCEDURE)} className="text-destructive focus:text-destructive">
-              <Trash2 className="w-3.5 h-3.5 mr-2" />
-              {t('explorer.delete_procedure')}
-            </ContextMenuItem>
-          )}
-          {node.data.type === ExplorerNodeType.TRIGGER && (
-            <ContextMenuItem onSelect={() => onDelete(node.data, ExplorerNodeType.TRIGGER)} className="text-destructive focus:text-destructive">
-              <Trash2 className="w-3.5 h-3.5 mr-2" />
-              {t('explorer.delete_trigger')}
-            </ContextMenuItem>
-          )}
-          {isDb && (
-            <ContextMenuItem onSelect={() => onDelete(node.data, ExplorerNodeType.DB)} className="text-destructive focus:text-destructive">
-              <Trash2 className="w-3.5 h-3.5 mr-2" />
-              {t('explorer.delete_database')}
-            </ContextMenuItem>
-          )}
-          {isDeletableFolder && folderCount != null && folderCount > 0 && (
-            <ContextMenuItem onSelect={() => onDelete(node.data, ExplorerNodeType.FOLDER)} className="text-destructive focus:text-destructive">
-              <Trash2 className="w-3.5 h-3.5 mr-2" />
-              {t('explorer.delete_all_in_folder')}
-            </ContextMenuItem>
-          )}
-        </ContextMenuContent>
+        <NodeContextMenuContent
+          node={node.data}
+          isConnected={isConnected}
+          onOpenQueryConsole={onOpenQueryConsole}
+          onViewDdl={onViewDdl}
+          onViewData={onViewData}
+          onDelete={onDelete}
+        />
       </ContextMenu>
     );
   }

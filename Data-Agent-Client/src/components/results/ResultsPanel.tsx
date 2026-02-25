@@ -1,23 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Database, Download, Trash2, Maximize2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
-import { 
-  Panel, 
-  Group as PanelGroup, 
-  Separator as PanelResizeHandle 
+import type { ExecuteSqlResponse } from '../../types/sql';
+import {
+  Panel,
+  Group as PanelGroup,
+  Separator as PanelResizeHandle
 } from 'react-resizable-panels';
 
 interface ResultsPanelProps {
   isVisible: boolean;
   onClose: () => void;
-  hasResults?: boolean;
+  executeResult?: ExecuteSqlResponse | null;
+  isRunning?: boolean;
   children: React.ReactNode;
 }
 
-export function ResultsPanel({ isVisible, onClose, hasResults = false, children }: ResultsPanelProps) {
+export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = false, children }: ResultsPanelProps) {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'result' | 'output'>(hasResults ? 'result' : 'output');
+  const [activeTab, setActiveTab] = useState<'result' | 'output'>('output');
+
+  // Determine if Results tab should be shown (SELECT query with data)
+  const hasResultTab = !!(executeResult?.success && executeResult?.query);
+
+  // Auto-switch to Results tab when SELECT completes
+  useEffect(() => {
+    if (executeResult) {
+      setActiveTab(hasResultTab ? 'result' : 'output');
+    }
+  }, [executeResult, hasResultTab]);
+
+  const getStatusIndicatorColor = () => {
+    if (isRunning) return 'bg-amber-500 animate-pulse';
+    if (!executeResult) return 'bg-gray-500';
+    if (executeResult.success) return 'bg-green-500';
+    return 'bg-red-500';
+  };
+
+  const getStatusText = () => {
+    if (isRunning) return 'Running...';
+    if (!executeResult) return 'Ready';
+    if (!executeResult.success) return 'Error';
+    if (executeResult.query && executeResult.rows) {
+      return `${executeResult.rows.length} rows | ${executeResult.executionTimeMs}ms`;
+    }
+    return `${executeResult.affectedRows} affected | ${executeResult.executionTimeMs}ms`;
+  };
 
   if (!isVisible) {
     return (
@@ -41,38 +70,38 @@ export function ResultsPanel({ isVisible, onClose, hasResults = false, children 
         {/* Toolbar */}
         <div className="flex items-center h-9 px-2 border-b theme-border shrink-0">
           <div className="flex space-x-1 h-full">
-            {hasResults && (
-              <button 
+            {hasResultTab && (
+              <button
                 onClick={() => setActiveTab('result')}
                 className={cn(
                   "px-3 py-1 text-[11px] font-medium transition-colors relative h-full flex items-center",
-                  activeTab === 'result' 
-                    ? "theme-text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary" 
+                  activeTab === 'result'
+                    ? "theme-text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary"
                     : "theme-text-secondary hover:theme-text-primary"
                 )}
               >
-                {t('common.result')} 1
+                Results
               </button>
             )}
-            <button 
+            <button
               onClick={() => setActiveTab('output')}
               className={cn(
                 "px-3 py-1 text-[11px] font-medium transition-colors relative h-full flex items-center",
-                (activeTab === 'output' || !hasResults)
-                  ? "theme-text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary" 
+                (activeTab === 'output' || !hasResultTab)
+                  ? "theme-text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary"
                   : "theme-text-secondary hover:theme-text-primary"
               )}
             >
-              {t('common.output')}
+              Output
             </button>
           </div>
 
           <div className="flex-1" />
 
           <div className="flex items-center space-x-2 px-2">
-            <button 
+            <button
               onClick={onClose}
-              className="p-1 hover:bg-accent rounded theme-text-secondary hover:theme-text-primary" 
+              className="p-1 hover:bg-accent rounded theme-text-secondary hover:theme-text-primary"
               title={t('common.close_panel')}
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -88,30 +117,98 @@ export function ResultsPanel({ isVisible, onClose, hasResults = false, children 
 
         {/* Content Area */}
         <div className="flex-1 overflow-auto theme-bg-main relative">
-          {(activeTab === 'result' && hasResults) ? (
-            <div className="h-full w-full flex flex-col items-center justify-center text-xs theme-text-secondary opacity-50 space-y-2">
-              <Database className="w-8 h-8 opacity-20" />
-              <span>{t('common.ready_hint')}</span>
+          {activeTab === 'result' && hasResultTab && executeResult ? (
+            // Results Table
+            <div className="overflow-auto h-full">
+              {executeResult.headers && executeResult.headers.length > 0 ? (
+                <table className="text-[11px] w-full border-collapse">
+                  <thead className="sticky top-0 theme-bg-panel">
+                    <tr>
+                      {executeResult.headers.map((h) => (
+                        <th
+                          key={h}
+                          className="px-3 py-1.5 text-left font-medium theme-text-secondary border-b border-r theme-border whitespace-nowrap"
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {executeResult.rows && executeResult.rows.length > 0 ? (
+                      executeResult.rows.map((row, i) => (
+                        <tr key={i} className="hover:bg-accent/30 border-b theme-border">
+                          {row.map((cell, j) => (
+                            <td
+                              key={j}
+                              className="px-3 py-1 border-r theme-border theme-text-primary truncate max-w-[300px]"
+                              title={cell == null ? 'NULL' : String(cell)}
+                            >
+                              {cell == null ? (
+                                <span className="text-gray-500 italic">NULL</span>
+                              ) : (
+                                String(cell)
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={executeResult.headers.length} className="px-3 py-4 text-center theme-text-secondary opacity-50">
+                          No data
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="h-full w-full flex flex-col items-center justify-center text-xs theme-text-secondary opacity-50 space-y-2">
+                  <Database className="w-8 h-8 opacity-20" />
+                  <span>{t('common.ready_hint')}</span>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="p-3 font-mono text-[11px] theme-text-secondary whitespace-pre-wrap">
-              <div className="text-gray-500 mb-2">-- {t('common.output')} Console --</div>
-              <div className="text-green-500 opacity-70">{t('common.output_console_connected')}</div>
+            // Output Log
+            <div className="p-3 font-mono text-[11px] whitespace-pre-wrap">
+              {isRunning ? (
+                <div className="flex items-center space-x-2 text-amber-500">
+                  <span className="animate-pulse">●</span>
+                  <span>Running...</span>
+                </div>
+              ) : executeResult ? (
+                <>
+                  {executeResult.success ? (
+                    <div className="text-green-500">
+                      {executeResult.query ? (
+                        <>✓ {executeResult.rows?.length || 0} rows retrieved in {executeResult.executionTimeMs}ms</>
+                      ) : (
+                        <>✓ {executeResult.affectedRows} row(s) affected in {executeResult.executionTimeMs}ms</>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-red-400">
+                      ✕ {executeResult.errorMessage || 'Unknown error'}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-gray-500 opacity-50">-- Output Console --</div>
+              )}
             </div>
           )}
         </div>
 
         {/* Status Bar */}
         <div className="h-6 border-t theme-border flex items-center px-2 text-[10px] theme-text-secondary justify-between shrink-0">
-          <div className="flex items-center space-x-4">
-            <span>{/* 0 rows retrieved */}</span>
-            <span>{/* 42ms execution time */}</span>
-          </div>
           <div className="flex items-center space-x-2">
             <span className="flex items-center">
-              <span className={cn("w-2 h-2 rounded-full mr-1.5", "bg-gray-500")} />
-              {t('common.disconnected')}
+              <span className={cn('w-2 h-2 rounded-full mr-1.5', getStatusIndicatorColor())} />
+              {getStatusText()}
             </span>
+          </div>
+          <div className="flex items-center space-x-2">
             <span className="opacity-50">|</span>
             <span>{t('common.readonly')}</span>
           </div>

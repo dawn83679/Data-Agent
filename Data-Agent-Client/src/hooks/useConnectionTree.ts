@@ -105,6 +105,7 @@ export function useConnectionTree() {
           name,
           type: ExplorerNodeType.DB,
           connectionId: String(node.data.dbConnection!.id),
+          dbConnection: node.data.dbConnection,
           children: [],
         }));
         updateNodeChildren(node.id, childrenNodes, String(node.data.dbConnection.id));
@@ -125,6 +126,7 @@ export function useConnectionTree() {
             name: schemaName,
             type: ExplorerNodeType.SCHEMA,
             connectionId: connId,
+            dbConnection: node.data.dbConnection,
             catalog: dbName,
             schema: schemaName,
             children: [],
