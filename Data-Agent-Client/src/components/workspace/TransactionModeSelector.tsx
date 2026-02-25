@@ -47,12 +47,12 @@ export function TransactionModeSelector({
           <DropdownMenuItem
             key={mode}
             onClick={() => onTransactionModeChange(mode)}
-            className="text-xs"
+            className="text-xs px-2 py-1.5"
           >
-            <span className="flex items-center gap-2 w-full">
+            <span className="w-4">
               {transactionMode === mode && <span>✓</span>}
-              {TRANSACTION_MODE_LABELS[mode]}
             </span>
+            <span className="ml-2">{TRANSACTION_MODE_LABELS[mode]}</span>
           </DropdownMenuItem>
         ))}
 
@@ -64,12 +64,12 @@ export function TransactionModeSelector({
           <DropdownMenuItem
             key={level}
             onClick={() => onIsolationLevelChange(level)}
-            className="text-xs"
+            className="text-xs px-2 py-1.5"
           >
-            <span className="flex items-center gap-2 w-full">
+            <span className="w-4">
               {isolationLevel === level && <span>✓</span>}
-              {ISOLATION_LEVEL_LABELS[level]}
             </span>
+            <span className="ml-2">{ISOLATION_LEVEL_LABELS[level]}</span>
           </DropdownMenuItem>
         ))}
 

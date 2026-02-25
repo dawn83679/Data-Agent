@@ -107,18 +107,19 @@ export function Toolbar({
             ) : (
               <>
                 {databases.map((db) => (
-                  <DropdownMenuItem key={db} asChild>
-                    <button
-                      onClick={() => onDatabaseChange?.(db)}
-                      className={`w-full px-3 py-1.5 text-[11px] text-left hover:bg-accent/30 transition-colors ${
-                        currentDatabase === db
-                          ? 'theme-text-primary font-semibold'
-                          : 'theme-text-secondary'
-                      }`}
-                    >
-                      {currentDatabase === db && <span className="mr-2">✓</span>}
-                      {db}
-                    </button>
+                  <DropdownMenuItem
+                    key={db}
+                    onClick={() => onDatabaseChange?.(db)}
+                    className={`text-[11px] px-2 py-1.5 ${
+                      currentDatabase === db
+                        ? 'theme-text-primary font-semibold'
+                        : 'theme-text-secondary'
+                    }`}
+                  >
+                    <span className="w-4">
+                      {currentDatabase === db && <span>✓</span>}
+                    </span>
+                    <span className="ml-2">{db}</span>
                   </DropdownMenuItem>
                 ))}
               </>
