@@ -1,4 +1,4 @@
-import { Play, Square, AlignLeft, RotateCcw } from 'lucide-react';
+import { Play, Square, Settings2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import {
@@ -12,19 +12,20 @@ import { Button } from '../ui/Button';
 
 interface ToolbarProps {
   onRun: () => void;
-  onFormat?: () => void;
   isRunning?: boolean;
-  onRollback?: () => void;
   connectionId?: number;
   currentDatabase?: string | null;
   onDatabaseChange?: (db: string) => void;
 }
 
+const TRANSACTION_MODES = [
+  { value: 'autocommit', label: 'Autocommit' },
+  { value: 'manual', label: 'Manual Commit' },
+] as const;
+
 export function Toolbar({
   onRun,
-  onFormat,
   isRunning = false,
-  onRollback,
   connectionId,
   currentDatabase,
   onDatabaseChange,
@@ -32,6 +33,7 @@ export function Toolbar({
   const { t } = useTranslation();
   const [databases, setDatabases] = useState<string[]>([]);
   const [loadingDatabases, setLoadingDatabases] = useState(false);
+  const [transactionMode, setTransactionMode] = useState<'autocommit' | 'manual'>('autocommit');
 
   useEffect(() => {
     if (!connectionId) {
@@ -72,27 +74,33 @@ export function Toolbar({
         )}
       </Button>
 
-      {onFormat && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onFormat}
-          title={t('common.format_sql')}
-          className="h-6 w-6"
-        >
-          <AlignLeft className="w-3 h-3" />
-        </Button>
-      )}
-
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={onRollback}
-        title={t('common.rollback')}
-        className="h-6 w-6"
-      >
-        <RotateCcw className="w-3 h-3" />
-      </Button>
+      {/* Transaction Mode Selector */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            title="Transaction mode"
+          >
+            <Settings2 className="w-3.5 h-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="min-w-[120px]">
+          {TRANSACTION_MODES.map((mode) => (
+            <DropdownMenuItem
+              key={mode.value}
+              onClick={() => setTransactionMode(mode.value)}
+              className={transactionMode === mode.value ? 'bg-accent' : ''}
+            >
+              <span className="flex items-center gap-2 w-full">
+                {transactionMode === mode.value && <span>✓</span>}
+                {mode.label}
+              </span>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {/* Divider */}
       <div className="w-px h-4 bg-border mx-0.5" />
