@@ -6,6 +6,7 @@ import edu.zsc.ai.plugin.capability.CommandExecutor;
 import edu.zsc.ai.plugin.capability.FunctionProvider;
 import edu.zsc.ai.plugin.capability.IndexProvider;
 import edu.zsc.ai.plugin.capability.ProcedureProvider;
+import edu.zsc.ai.plugin.capability.SqlSplitter;
 import edu.zsc.ai.plugin.capability.TriggerProvider;
 import edu.zsc.ai.plugin.capability.ConnectionProvider;
 import edu.zsc.ai.plugin.capability.DatabaseProvider;
@@ -84,4 +85,10 @@ public interface PluginManager {
     TriggerProvider getTriggerProviderByPluginId(@NotBlank String pluginId);
 
     CommandExecutor<SqlCommandRequest, SqlCommandResult> getSqlCommandExecutorByPluginId(@NotBlank String pluginId);
+
+    /**
+     * Get the SqlSplitter for the given plugin.
+     * Falls back to DefaultSqlSplitter if the plugin does not implement SqlSplitter.
+     */
+    SqlSplitter getSqlSplitterByPluginId(@NotBlank String pluginId);
 }
