@@ -42,7 +42,9 @@ export function useDataViewActions({
   }, [setHighlightColumn, setSelectedTableDataNode, setTableDataDialogOpen]);
 
   const handleOpenQueryConsole = useCallback((node: ExplorerNode) => {
-    if (!node.connectionId) {
+    // For ROOT nodes (connections), get connectionId from dbConnection.id
+    const connId = node.connectionId || (node.type === ExplorerNodeType.ROOT ? node.dbConnection?.id : undefined);
+    if (!connId) {
       return;
     }
 
@@ -52,6 +54,9 @@ export function useDataViewActions({
     let schemaName: string | null = null;
 
     switch (node.type) {
+      case ExplorerNodeType.ROOT:
+        // Connection node - no database/schema selected
+        break;
       case ExplorerNodeType.DB:
         databaseName = node.name;
         break;
@@ -82,7 +87,7 @@ export function useDataViewActions({
       type: 'file',
       content: '',
       metadata: {
-        connectionId: Number(node.connectionId),
+        connectionId: Number(connId),
         connectionName,
         databaseName,
         schemaName,
