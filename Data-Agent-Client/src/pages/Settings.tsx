@@ -2,12 +2,13 @@ import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { User, Shield, Lock, ChevronRight, ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/utils';
+import { I18N_KEYS } from '../constants/i18nKeys';
 import { Button } from '../components/ui/Button';
 
 const navItems = [
-    { path: '/settings/profile', labelKey: 'settingsPage.nav_profile' as const, icon: User },
-    { path: '/settings/password', labelKey: 'settingsPage.nav_security' as const, icon: Lock },
-    { path: '/settings/sessions', labelKey: 'settingsPage.nav_sessions' as const, icon: Shield },
+    { path: '/settings/profile', labelKey: I18N_KEYS.SETTINGS_PAGE.NAV_PROFILE, icon: User },
+    { path: '/settings/password', labelKey: I18N_KEYS.SETTINGS_PAGE.NAV_SECURITY, icon: Lock },
+    { path: '/settings/sessions', labelKey: I18N_KEYS.SETTINGS_PAGE.NAV_SESSIONS, icon: Shield },
 ] as const;
 
 export default function Settings() {
@@ -27,12 +28,12 @@ export default function Settings() {
                             className="h-8 px-2 -ml-2 theme-text-secondary hover:theme-text-primary"
                         >
                             <ArrowLeft className="h-4 w-4 mr-1" />
-                            {t('settingsPage.back_to_workspace')}
+                            {t(I18N_KEYS.SETTINGS_PAGE.BACK_TO_WORKSPACE)}
                         </Button>
                     </div>
-                    <h1 className="text-3xl font-bold">{t('settingsPage.title')}</h1>
+                    <h1 className="text-3xl font-bold">{t(I18N_KEYS.SETTINGS_PAGE.TITLE)}</h1>
                     <p className="text-muted-foreground mt-1">
-                        {t('settingsPage.subtitle')}
+                        {t(I18N_KEYS.SETTINGS_PAGE.SUBTITLE)}
                     </p>
                 </div>
             </div>
@@ -41,7 +42,7 @@ export default function Settings() {
                 <nav className="w-full md:w-64 flex-shrink-0">
                     <div className="bg-card rounded-lg border border-border overflow-hidden">
                         <div className="p-4 border-b border-border bg-muted/30">
-                            <h2 className="font-medium text-sm">{t('settingsPage.account')}</h2>
+                            <h2 className="font-medium text-sm">{t(I18N_KEYS.SETTINGS_PAGE.ACCOUNT)}</h2>
                         </div>
                         <ul className="p-2 space-y-1">
                             {navItems.map((item) => {

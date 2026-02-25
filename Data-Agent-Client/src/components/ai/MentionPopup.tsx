@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Database, Table, LayoutGrid, Server } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { MentionItem, MentionLevel } from './mentionTypes';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 
 const MENTION_LEVEL_COLORS: Record<MentionLevel, string> = {
   connection: 'text-emerald-400',
@@ -79,21 +80,21 @@ export function MentionPopup({
     >
       <div className="px-3 py-1.5 text-[10px] theme-text-secondary font-medium border-b theme-border shrink-0 flex items-center justify-between">
         <span>{levelLabel}</span>
-        <span className="opacity-70 font-normal">{t('ai.mention_nav_hint')}</span>
+        <span className="opacity-70 font-normal">{t(I18N_KEYS.AI.MENTION_NAV_HINT)}</span>
       </div>
       {loading ? (
-        <div className="px-3 py-2 text-xs theme-text-secondary">{t('explorer.loading')}</div>
+        <div className="px-3 py-2 text-xs theme-text-secondary">{t(I18N_KEYS.EXPLORER.LOADING)}</div>
       ) : error ? (
         <div className="px-3 py-2 text-xs text-red-500">{error}</div>
       ) : items.length === 0 ? (
         <div className="px-3 py-2 text-xs theme-text-secondary">
           {level === 'connection'
-            ? t('common.no_connections')
+            ? t(I18N_KEYS.COMMON.NO_CONNECTIONS)
             : level === 'database'
-              ? t('ai.mention_no_databases')
+              ? t(I18N_KEYS.AI.MENTION_NO_DATABASES)
               : level === 'schema'
-                ? t('ai.mention_no_schemas')
-                : t('ai.mention_no_tables')}
+                ? t(I18N_KEYS.AI.MENTION_NO_SCHEMAS)
+                : t(I18N_KEYS.AI.MENTION_NO_TABLES)}
         </div>
       ) : (
         items.map((item, index) => (

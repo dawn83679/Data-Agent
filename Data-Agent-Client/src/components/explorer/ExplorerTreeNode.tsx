@@ -2,6 +2,7 @@ import * as React from 'react';
 import { ChevronRight, ChevronDown, RefreshCw, MoreVertical, Pencil, Trash2, Plug } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 import { NodeApi } from 'react-arborist';
 import {
   DropdownMenu,
@@ -248,7 +249,7 @@ function RootNodeActions({
         <RefreshCw className="w-3.5 h-3.5 animate-spin theme-text-secondary" />
       ) : (
         <>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onRefresh} title={t('common.refresh')}>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onRefresh} title={t(I18N_KEYS.COMMON.REFRESH)}>
             <RefreshCw className="w-3 h-3 theme-text-secondary" />
           </Button>
           <DropdownMenu>
@@ -261,16 +262,16 @@ function RootNodeActions({
               {isConnected && (
                 <DropdownMenuItem onClick={onDisconnect}>
                   <Plug className="w-3.5 h-3.5 mr-2" />
-                  {t('explorer.disconnect')}
+                  {t(I18N_KEYS.EXPLORER.DISCONNECT)}
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onClick={onEdit}>
                 <Pencil className="w-3.5 h-3.5 mr-2" />
-                {t('explorer.edit')}
+                {t(I18N_KEYS.EXPLORER.EDIT)}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
                 <Trash2 className="w-3.5 h-3.5 mr-2" />
-                {t('explorer.delete_connection')}
+                {t(I18N_KEYS.EXPLORER.DELETE_CONNECTION)}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

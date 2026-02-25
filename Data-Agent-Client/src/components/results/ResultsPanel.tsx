@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Database, Download, Trash2, Maximize2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 import type { ExecuteSqlResponse } from '../../types/sql';
 import {
   Panel,
@@ -102,14 +103,14 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
             <button
               onClick={onClose}
               className="p-1 hover:bg-accent rounded theme-text-secondary hover:theme-text-primary"
-              title={t('common.close_panel')}
+              title={t(I18N_KEYS.COMMON.CLOSE_PANEL)}
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
-            <button className="p-1 hover:bg-accent rounded theme-text-secondary hover:theme-text-primary" title={t('common.export')}>
+            <button className="p-1 hover:bg-accent rounded theme-text-secondary hover:theme-text-primary" title={t(I18N_KEYS.COMMON.EXPORT)}>
               <Download className="w-3.5 h-3.5" />
             </button>
-            <button className="p-1 hover:bg-accent rounded theme-text-secondary hover:theme-text-primary" title={t('common.maximize')}>
+            <button className="p-1 hover:bg-accent rounded theme-text-secondary hover:theme-text-primary" title={t(I18N_KEYS.COMMON.MAXIMIZE)}>
               <Maximize2 className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -165,7 +166,7 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
               ) : (
                 <div className="h-full w-full flex flex-col items-center justify-center text-xs theme-text-secondary opacity-50 space-y-2">
                   <Database className="w-8 h-8 opacity-20" />
-                  <span>{t('common.ready_hint')}</span>
+                  <span>{t(I18N_KEYS.COMMON.READY_HINT)}</span>
                 </div>
               )}
             </div>
@@ -210,7 +211,7 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
           </div>
           <div className="flex items-center space-x-2">
             <span className="opacity-50">|</span>
-            <span>{t('common.readonly')}</span>
+            <span>{t(I18N_KEYS.COMMON.READONLY)}</span>
           </div>
         </div>
       </Panel>

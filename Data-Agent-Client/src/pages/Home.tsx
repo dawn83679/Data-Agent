@@ -8,6 +8,7 @@ import { EmptyState } from "../components/workspace/EmptyState";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import type { ExecuteSqlResponse } from "../types/sql";
 import { sqlExecutionService } from "../services/sqlExecution.service";
+import { I18N_KEYS } from "../constants/i18nKeys";
 
 export default function Home() {
     const { t } = useTranslation();
@@ -101,7 +102,7 @@ export default function Home() {
                                 />
                             ) : activeTab?.type === 'table' ? (
                                 <div className="flex-1 h-full flex items-center justify-center theme-text-secondary italic text-xs">
-                                    -- {t('workspace.data_grid_placeholder')} --
+                                    -- {t(I18N_KEYS.WORKSPACE.DATA_GRID_PLACEHOLDER)} --
                                 </div>
                             ) : (
                                 <EmptyState />

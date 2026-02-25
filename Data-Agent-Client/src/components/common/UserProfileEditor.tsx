@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 import { useAuthStore } from '../../store/authStore';
 import { userService } from '../../services/user.service';
 import { Button } from '../ui/Button';
@@ -26,7 +27,7 @@ export function UserProfileEditor() {
             if (avatarUrl !== user?.avatarUrl) updateData.avatarUrl = avatarUrl;
 
             if (Object.keys(updateData).length === 0) {
-                setMessage({ type: 'error', text: t('profile.no_changes') });
+                setMessage({ type: 'error', text: t(I18N_KEYS.PROFILE.NO_CHANGES) });
                 setIsLoading(false);
                 return;
             }
@@ -41,9 +42,9 @@ export function UserProfileEditor() {
                 );
             }
 
-            setMessage({ type: 'success', text: t('profile.update_success') });
+            setMessage({ type: 'success', text: t(I18N_KEYS.PROFILE.UPDATE_SUCCESS) });
         } catch (error: any) {
-            setMessage({ type: 'error', text: resolveErrorMessage(error, t('profile.update_failed')) });
+            setMessage({ type: 'error', text: resolveErrorMessage(error, t(I18N_KEYS.PROFILE.UPDATE_FAILED)) });
         } finally {
             setIsLoading(false);
         }
@@ -53,20 +54,20 @@ export function UserProfileEditor() {
         <div className="space-y-6">
             <div className="flex items-center gap-2">
                 <User className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold">{t('profile.form_title')}</h2>
+                <h2 className="text-xl font-semibold">{t(I18N_KEYS.PROFILE.FORM_TITLE)}</h2>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                     <label htmlFor="username" className="text-sm font-medium">
-                        {t('profile.username')}
+                        {t(I18N_KEYS.PROFILE.USERNAME)}
                     </label>
                     <Input
                         id="username"
                         type="text"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        placeholder={t('profile.username_placeholder')}
+                        placeholder={t(I18N_KEYS.PROFILE.USERNAME_PLACEHOLDER)}
                         minLength={2}
                         maxLength={50}
                     />
@@ -74,7 +75,7 @@ export function UserProfileEditor() {
 
                 <div className="space-y-2">
                     <label htmlFor="email" className="text-sm font-medium text-muted-foreground">
-                        {t('profile.email_readonly')}
+                        {t(I18N_KEYS.PROFILE.EMAIL_READONLY)}
                     </label>
                     <Input
                         id="email"
@@ -87,21 +88,21 @@ export function UserProfileEditor() {
 
                 <div className="space-y-2">
                     <label htmlFor="avatarUrl" className="text-sm font-medium">
-                        {t('profile.avatar_url')}
+                        {t(I18N_KEYS.PROFILE.AVATAR_URL)}
                     </label>
                     <Input
                         id="avatarUrl"
                         type="url"
                         value={avatarUrl}
                         onChange={(e) => setAvatarUrl(e.target.value)}
-                        placeholder={t('profile.avatar_placeholder')}
+                        placeholder={t(I18N_KEYS.PROFILE.AVATAR_PLACEHOLDER)}
                         maxLength={500}
                     />
                     {avatarUrl && (
                         <div className="mt-2">
                             <img
                                 src={avatarUrl}
-                                alt={t('profile.avatar_preview')}
+                                alt={t(I18N_KEYS.PROFILE.AVATAR_PREVIEW)}
                                 className="h-16 w-16 rounded-full object-cover border-2 border-border"
                                 onError={(e) => {
                                     e.currentTarget.style.display = 'none';
@@ -124,7 +125,7 @@ export function UserProfileEditor() {
 
                 <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
                     <Save className="h-4 w-4 mr-2" />
-                    {isLoading ? t('profile.saving') : t('profile.save_changes')}
+                    {isLoading ? t(I18N_KEYS.PROFILE.SAVING) : t(I18N_KEYS.PROFILE.SAVE_CHANGES)}
                 </Button>
             </form>
         </div>

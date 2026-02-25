@@ -1,5 +1,6 @@
 import { Play, Square, CheckCircle, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 import { useEffect, useState } from 'react';
 import {
   DropdownMenu,
@@ -64,7 +65,7 @@ export function Toolbar({
         size="icon"
         onClick={onRun}
         disabled={!connectionId || isRunning}
-        title={isRunning ? t('common.stop') : t('workspace.run_shortcut')}
+        title={isRunning ? t(I18N_KEYS.COMMON.STOP) : t(I18N_KEYS.WORKSPACE.RUN_SHORTCUT)}
         className="h-6 w-6"
       >
         {isRunning ? (
@@ -92,7 +93,7 @@ export function Toolbar({
             variant="ghost"
             size="icon"
             className="h-6 w-6"
-            title={t('workspace.commit')}
+            title={t(I18N_KEYS.WORKSPACE.COMMIT)}
           >
             <CheckCircle className="w-3.5 h-3.5 text-green-500 hover:text-green-600" />
           </Button>
@@ -100,7 +101,7 @@ export function Toolbar({
             variant="ghost"
             size="icon"
             className="h-6 w-6"
-            title={t('workspace.rollback')}
+            title={t(I18N_KEYS.WORKSPACE.ROLLBACK)}
           >
             <RotateCcw className="w-3.5 h-3.5 text-orange-500 hover:text-orange-600" />
           </Button>
@@ -116,7 +117,7 @@ export function Toolbar({
         size="icon"
         onClick={onStop}
         disabled={!isRunning}
-        title={t('common.stop')}
+        title={t(I18N_KEYS.COMMON.STOP)}
         className="h-6 w-6"
       >
         <Square className={`w-3.5 h-3.5 fill-current ${isRunning ? 'text-red-500' : 'text-gray-400'}`} />
@@ -137,11 +138,11 @@ export function Toolbar({
           <DropdownMenuContent align="end" className="min-w-[140px]">
             {loadingDatabases ? (
               <div className="px-3 py-2 text-[10px] theme-text-secondary">
-                {t('common.loading')}...
+                {t(I18N_KEYS.COMMON.LOADING)}...
               </div>
             ) : databases.length === 0 ? (
               <div className="px-3 py-2 text-[10px] theme-text-secondary">
-                {t('common.no_data')}
+                {t(I18N_KEYS.COMMON.NO_DATA)}
               </div>
             ) : (
               <>

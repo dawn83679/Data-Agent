@@ -8,6 +8,7 @@ import { Alert } from "../ui/Alert";
 import { useToast } from "../../hooks/useToast";
 import { resolveErrorMessage } from "../../lib/errorMessage";
 import { useTranslation } from "react-i18next";
+import { I18N_KEYS } from "../../constants/i18nKeys";
 
 interface RegisterModalProps {
     onSwitchToLogin: () => void;
@@ -29,28 +30,28 @@ export function RegisterModal({ onSwitchToLogin }: RegisterModalProps) {
         setError(null);
         // Validation
         if (!username || !email || !password) {
-            setError(t('auth.fill_all'));
+            setError(t(I18N_KEYS.AUTH.FILL_ALL));
             return;
         }
 
         if (password !== confirmPassword) {
-            setError(t('auth.passwords_no_match'));
+            setError(t(I18N_KEYS.AUTH.PASSWORDS_NO_MATCH));
             return;
         }
 
         if (password.length < 6) {
-            setError(t('auth.password_min_length'));
+            setError(t(I18N_KEYS.AUTH.PASSWORD_MIN_LENGTH));
             return;
         }
 
         try {
             setLoading(true);
             await authService.register({ username, email, password });
-            toast.success(t('auth.register_success'));
+            toast.success(t(I18N_KEYS.AUTH.REGISTER_SUCCESS));
             onSwitchToLogin();
         } catch (error) {
             console.error("Registration failed", error);
-            setError(resolveErrorMessage(error, t('auth.register_failed')));
+            setError(resolveErrorMessage(error, t(I18N_KEYS.AUTH.REGISTER_FAILED)));
         } finally {
             setLoading(false);
         }
@@ -59,9 +60,9 @@ export function RegisterModal({ onSwitchToLogin }: RegisterModalProps) {
     return (
         <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-                <DialogTitle className="text-2xl text-center">{t('auth.sign_up_title')}</DialogTitle>
+                <DialogTitle className="text-2xl text-center">{t(I18N_KEYS.AUTH.SIGN_UP_TITLE)}</DialogTitle>
                 <DialogDescription className="text-center">
-                    {t('auth.sign_up_desc')}
+                    {t(I18N_KEYS.AUTH.SIGN_UP_DESC)}
                 </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -71,32 +72,32 @@ export function RegisterModal({ onSwitchToLogin }: RegisterModalProps) {
                     </Alert>
                 )}
                 <div className="grid gap-2">
-                    <label htmlFor="username" className="text-sm font-medium text-foreground">{t('auth.username')}</label>
+                    <label htmlFor="username" className="text-sm font-medium text-foreground">{t(I18N_KEYS.AUTH.USERNAME)}</label>
                     <Input
                         id="username"
                         type="text"
-                        placeholder={t('auth.username_placeholder')}
+                        placeholder={t(I18N_KEYS.AUTH.USERNAME_PLACEHOLDER)}
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                     />
                 </div>
                 <div className="grid gap-2">
-                    <label htmlFor="email" className="text-sm font-medium text-foreground">{t('auth.email')}</label>
+                    <label htmlFor="email" className="text-sm font-medium text-foreground">{t(I18N_KEYS.AUTH.EMAIL)}</label>
                     <Input
                         id="email"
                         type="email"
-                        placeholder={t('auth.email_placeholder')}
+                        placeholder={t(I18N_KEYS.AUTH.EMAIL_PLACEHOLDER)}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                     />
                 </div>
                 <div className="grid gap-2">
-                    <label htmlFor="password" className="text-sm font-medium text-foreground">{t('auth.password')}</label>
+                    <label htmlFor="password" className="text-sm font-medium text-foreground">{t(I18N_KEYS.AUTH.PASSWORD)}</label>
                     <div className="relative">
                         <Input
                             id="password"
                             type={showPassword ? "text" : "password"}
-                            placeholder={t('auth.password_placeholder')}
+                            placeholder={t(I18N_KEYS.AUTH.PASSWORD_PLACEHOLDER)}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             className="pr-10"
@@ -105,7 +106,7 @@ export function RegisterModal({ onSwitchToLogin }: RegisterModalProps) {
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                            aria-label={showPassword ? t('auth.hide_password') : t('auth.show_password')}
+                            aria-label={showPassword ? t(I18N_KEYS.AUTH.HIDE_PASSWORD) : t(I18N_KEYS.AUTH.SHOW_PASSWORD)}
                         >
                             {showPassword ? (
                                 <EyeOff className="h-4 w-4" />
@@ -116,12 +117,12 @@ export function RegisterModal({ onSwitchToLogin }: RegisterModalProps) {
                     </div>
                 </div>
                 <div className="grid gap-2">
-                    <label htmlFor="confirm-password" className="text-sm font-medium text-foreground">{t('auth.confirm_password')}</label>
+                    <label htmlFor="confirm-password" className="text-sm font-medium text-foreground">{t(I18N_KEYS.AUTH.CONFIRM_PASSWORD)}</label>
                     <div className="relative">
                         <Input
                             id="confirm-password"
                             type={showConfirmPassword ? "text" : "password"}
-                            placeholder={t('auth.confirm_password_placeholder')}
+                            placeholder={t(I18N_KEYS.AUTH.CONFIRM_PASSWORD_PLACEHOLDER)}
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             className="pr-10"
@@ -130,7 +131,7 @@ export function RegisterModal({ onSwitchToLogin }: RegisterModalProps) {
                             type="button"
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                            aria-label={showConfirmPassword ? t('auth.hide_password') : t('auth.show_password')}
+                            aria-label={showConfirmPassword ? t(I18N_KEYS.AUTH.HIDE_PASSWORD) : t(I18N_KEYS.AUTH.SHOW_PASSWORD)}
                         >
                             {showConfirmPassword ? (
                                 <EyeOff className="h-4 w-4" />
@@ -141,13 +142,13 @@ export function RegisterModal({ onSwitchToLogin }: RegisterModalProps) {
                     </div>
                 </div>
                 <Button className="w-full" onClick={handleRegister} disabled={loading}>
-                    {loading ? t('auth.creating_account') : t('auth.create_account')}
+                    {loading ? t(I18N_KEYS.AUTH.CREATING_ACCOUNT) : t(I18N_KEYS.AUTH.CREATE_ACCOUNT)}
                 </Button>
             </div>
             <div className="text-sm text-center text-muted-foreground">
-                {t('auth.has_account')}{" "}
+                {t(I18N_KEYS.AUTH.HAS_ACCOUNT)}{" "}
                 <button className="text-primary hover:underline" onClick={onSwitchToLogin}>
-                    {t('auth.sign_in_link')}
+                    {t(I18N_KEYS.AUTH.SIGN_IN_LINK)}
                 </button>
             </div>
         </DialogContent>

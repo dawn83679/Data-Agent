@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Bot } from 'lucide-react';
 import { SegmentList } from './SegmentList';
 import type { Message, Segment, TodoBoxSpec } from './types';
+import { I18N_KEYS } from '../../../constants/i18nKeys';
 
 export interface AssistantBubbleProps {
   message: Message;
@@ -24,7 +25,7 @@ export function AssistantBubble({
       <div className="flex items-center space-x-2 mb-1.5 opacity-60">
         <Bot className="w-3 h-3 shrink-0" />
         <span className="text-[10px] font-medium theme-text-secondary">
-          {t('ai.bot_name')}
+          {t(I18N_KEYS.AI.BOT_NAME)}
         </span>
       </div>
       <div className="text-xs theme-text-primary">

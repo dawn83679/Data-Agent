@@ -13,6 +13,7 @@ import { aiService } from '../../services/ai.service';
 import { ChatPaths } from '../../constants/apiPaths';
 import { DEFAULT_MODEL, FALLBACK_MODELS } from '../../constants/models';
 import { SLASH_COMMAND_IDS } from './slashCommands';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 import type { ChatContext } from '../../types/chat';
 import type { ModelOption } from '../../types/ai';
 import { chatMessagesToMessages } from './MessageList';
@@ -118,8 +119,8 @@ export function AIAssistant() {
     <AIAssistantProvider value={contextValue}>
       <div className="flex flex-col h-full theme-bg-panel overflow-hidden">
         <AIAssistantHeader
-          title={t('ai.title')}
-          historyAriaLabel={t('ai.history')}
+          title={t(I18N_KEYS.AI.TITLE)}
+          historyAriaLabel={t(I18N_KEYS.AI.HISTORY)}
           accessToken={!!accessToken}
           isHistoryOpen={isHistoryOpen}
           setIsHistoryOpen={setIsHistoryOpen}
