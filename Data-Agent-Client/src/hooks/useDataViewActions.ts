@@ -74,7 +74,7 @@ export function useDataViewActions({
     }
 
     const nameParts = [connectionName, databaseName, schemaName].filter(Boolean);
-    const tabName = `${nameParts.join('_')}.sql`;
+    const tabName = nameParts.join('_') || 'console';
 
     openTab({
       id,

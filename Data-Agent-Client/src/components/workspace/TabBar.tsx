@@ -84,9 +84,14 @@ function SortableTab({
       <button
         onClick={(e) => {
           e.stopPropagation();
+          e.preventDefault();
           onClose(tabId);
         }}
-        className="absolute right-1.5 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-accent/80 hover:text-red-400 transition-all"
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
+        className="absolute right-1.5 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-accent/80 hover:text-red-400 transition-all z-10 cursor-pointer"
       >
         <X className="w-2.5 h-2.5" />
       </button>
