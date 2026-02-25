@@ -46,6 +46,15 @@ export const I18N_KEYS = {
     DONE: 'settings.done',
   },
 
+  // Workspace keys
+  WORKSPACE: {
+    TAB_CLOSE: 'workspace.tab_close',
+    TAB_CLOSE_LEFT: 'workspace.tab_close_left',
+    TAB_CLOSE_RIGHT: 'workspace.tab_close_right',
+    TAB_CLOSE_OTHERS: 'workspace.tab_close_others',
+    TAB_CLOSE_ALL: 'workspace.tab_close_all',
+  },
+
   // Settings Page keys
   SETTINGS_PAGE: {
     BACK_TO_WORKSPACE: 'settingsPage.back_to_workspace',

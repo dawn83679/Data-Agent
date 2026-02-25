@@ -112,7 +112,12 @@
     "new_console": "New Console",
     "new_console_tab_title": "New Console",
     "run_shortcut": "Run Query (Ctrl+Enter / Cmd+Enter)",
-    "data_grid_placeholder": "Data Grid View Placeholder"
+    "data_grid_placeholder": "Data Grid View Placeholder",
+    "tab_close": "Close",
+    "tab_close_left": "Close Tabs to the Left",
+    "tab_close_right": "Close Tabs to the Right",
+    "tab_close_others": "Close Other Tabs",
+    "tab_close_all": "Close All Tabs"
   },
   "ai": {
     "title": "AI Assistant",

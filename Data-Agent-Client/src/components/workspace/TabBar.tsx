@@ -1,7 +1,9 @@
-import { FileCode, Table as TableIcon, X, Plus } from 'lucide-react';
+import { FileCode, Table as TableIcon, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
+import { useTabStore } from '../../store/tabStore';
 import { useWorkspaceStore } from '../../store/workspaceStore';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 import {
   DndContext,
   closestCenter,
@@ -16,6 +18,14 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '../ui/ContextMenu';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '../ui/Tooltip';
 
 interface SortableTabProps {
   tabId: string;
@@ -26,6 +36,10 @@ interface SortableTabProps {
   isActive: boolean;
   onSwitch: (id: string) => void;
   onClose: (id: string) => void;
+  onCloseLeft: (id: string) => void;
+  onCloseRight: (id: string) => void;
+  onCloseOthers: (id: string) => void;
+  onCloseAll: () => void;
 }
 
 function SortableTab({
@@ -37,7 +51,12 @@ function SortableTab({
   isActive,
   onSwitch,
   onClose,
+  onCloseLeft,
+  onCloseRight,
+  onCloseOthers,
+  onCloseAll,
 }: SortableTabProps) {
+  const { t } = useTranslation();
   const {
     attributes,
     listeners,
@@ -48,7 +67,7 @@ function SortableTab({
   } = useSortable({ id: tabId });
 
   const tabLabel = connectionName
-    ? `${name} [${connectionName}${databaseName ? ' > ' + databaseName : ''}]`
+    ? `${connectionName}${databaseName ? '_' + databaseName : ''}`
     : name;
 
   const style = {
@@ -57,115 +76,124 @@ function SortableTab({
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      onClick={() => onSwitch(tabId)}
-      className={cn(
-        "flex items-center px-3 py-1.5 text-[11px] rounded-t min-w-[140px] max-w-[240px] group select-none cursor-pointer border-t-2 transition-colors relative",
-        isActive
-          ? "tab-active border-primary bg-tab-active"
-          : "theme-bg-panel theme-text-secondary hover:bg-accent/50 border-transparent",
-        isDragging && "opacity-50 bg-blue-100 dark:bg-blue-900"
-      )}
-      {...attributes}
-      {...listeners}
-    >
-      <span className="mr-2 shrink-0">
-        {type === 'file' ? (
-          <FileCode className="w-3 h-3 text-blue-400" />
-        ) : (
-          <TableIcon className="w-3 h-3 text-green-400" />
-        )}
-      </span>
-      <span className="flex-1 truncate mr-4" title={tabLabel}>
-        {tabLabel}
-      </span>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          onClose(tabId);
-        }}
-        onMouseDown={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-        }}
-        className="absolute right-1.5 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-accent/80 hover:text-red-400 transition-all z-10 cursor-pointer"
-      >
-        <X className="w-2.5 h-2.5" />
-      </button>
-    </div>
+    <ContextMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <ContextMenuTrigger asChild>
+            <div
+              ref={setNodeRef}
+              style={style}
+              onClick={() => onSwitch(tabId)}
+              className={cn(
+                'flex items-center px-3 text-[11px] min-w-[120px] max-w-[220px] group select-none border-b-2 transition-colors relative cursor-pointer shrink-0',
+                isActive
+                  ? 'border-primary bg-tab-active theme-text-primary'
+                  : 'border-transparent theme-bg-panel theme-text-secondary hover:bg-accent/50',
+                isDragging && 'opacity-40'
+              )}
+              {...attributes}
+              {...listeners}
+            >
+              <span className="mr-1.5 shrink-0">
+                {type === 'file' ? (
+                  <FileCode className="w-3 h-3 text-blue-400" />
+                ) : (
+                  <TableIcon className="w-3 h-3 text-green-400" />
+                )}
+              </span>
+              <span className="flex-1 truncate mr-1">
+                {tabLabel}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onClose(tabId);
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:text-red-400 transition-all cursor-pointer flex-shrink-0"
+                type="button"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          </ContextMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="text-xs">{tabLabel}</TooltipContent>
+      </Tooltip>
+      <ContextMenuContent className="min-w-[180px]">
+        <ContextMenuItem className="text-xs" onClick={() => onClose(tabId)}>
+          {t(I18N_KEYS.WORKSPACE.TAB_CLOSE)}
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem className="text-xs" onClick={() => onCloseLeft(tabId)}>
+          {t(I18N_KEYS.WORKSPACE.TAB_CLOSE_LEFT)}
+        </ContextMenuItem>
+        <ContextMenuItem className="text-xs" onClick={() => onCloseRight(tabId)}>
+          {t(I18N_KEYS.WORKSPACE.TAB_CLOSE_RIGHT)}
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem className="text-xs" onClick={() => onCloseOthers(tabId)}>
+          {t(I18N_KEYS.WORKSPACE.TAB_CLOSE_OTHERS)}
+        </ContextMenuItem>
+        <ContextMenuItem className="text-xs" onClick={onCloseAll}>
+          {t(I18N_KEYS.WORKSPACE.TAB_CLOSE_ALL)}
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
 
 export function TabBar() {
-  const { t } = useTranslation();
-  const { tabs, switchTab, closeTab, openTab, reorderTabs } =
+  const { tabs } = useTabStore();
+  const { switchTab, closeTab, closeTabsToLeft, closeTabsToRight, closeOtherTabs, closeAllTabs, reorderTabs } =
     useWorkspaceStore();
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      distance: 8,
-    } as any)
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } } as any)
   );
-
-  const handleAddTab = () => {
-    const id = `console-${Date.now()}`;
-    openTab({
-      id,
-      name: 'new_console.sql',
-      type: 'file',
-      content: '',
-    });
-  };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-
     if (over && active.id !== over.id) {
       reorderTabs(String(active.id), String(over.id));
     }
   };
 
-  if (tabs.length === 0) {
-    return null;
-  }
+  if (tabs.length === 0) return null;
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="h-9 theme-bg-panel flex items-end space-x-1 overflow-x-auto no-scrollbar border-b theme-border shrink-0">
-        <SortableContext
-          items={tabs.map(t => t.id)}
-          strategy={horizontalListSortingStrategy}
-        >
-          {tabs.map((tab) => (
-            <SortableTab
-              key={tab.id}
-              tabId={tab.id}
-              name={tab.name}
-              type={tab.type}
-              connectionName={tab.metadata?.connectionName}
-              databaseName={tab.metadata?.databaseName}
-              isActive={tab.active}
-              onSwitch={switchTab}
-              onClose={closeTab}
-            />
-          ))}
-        </SortableContext>
-
-        <button
-          onClick={handleAddTab}
-          className="flex items-center justify-center w-8 h-8 mb-0.5 theme-text-secondary hover:text-blue-500 transition-colors shrink-0"
-          title={t('workspace.new_console_tab_title')}
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
-      </div>
-    </DndContext>
+    <TooltipProvider>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="h-9 theme-bg-panel flex items-stretch overflow-x-auto no-scrollbar border-b theme-border shrink-0">
+          <SortableContext
+            items={tabs.map((tab) => tab.id)}
+            strategy={horizontalListSortingStrategy}
+          >
+            {tabs.map((tab) => (
+              <SortableTab
+                key={tab.id}
+                tabId={tab.id}
+                name={tab.name}
+                type={tab.type}
+                connectionName={tab.metadata?.connectionName}
+                databaseName={tab.metadata?.databaseName}
+                isActive={tab.active}
+                onSwitch={switchTab}
+                onClose={closeTab}
+                onCloseLeft={closeTabsToLeft}
+                onCloseRight={closeTabsToRight}
+                onCloseOthers={closeOtherTabs}
+                onCloseAll={closeAllTabs}
+              />
+            ))}
+          </SortableContext>
+        </div>
+      </DndContext>
+    </TooltipProvider>
   );
 }

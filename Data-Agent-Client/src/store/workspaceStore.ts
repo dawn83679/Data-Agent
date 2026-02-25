@@ -37,6 +37,10 @@ export interface WorkspaceState extends PreferenceState {
   // Tab actions
   openTab: (tab: Omit<Tab, 'active'>) => void;
   closeTab: (id: string) => void;
+  closeTabsToLeft: (id: string) => void;
+  closeTabsToRight: (id: string) => void;
+  closeOtherTabs: (id: string) => void;
+  closeAllTabs: () => void;
   switchTab: (id: string) => void;
   updateTabContent: (id: string, content: string) => void;
   updateTabMetadata: (id: string, metadata: Partial<ConsoleTabMetadata>) => void;
@@ -87,6 +91,10 @@ const getAggregatedState = (): WorkspaceState => {
     // Placeholder actions (will be overridden)
     openTab: () => {},
     closeTab: () => {},
+    closeTabsToLeft: () => {},
+    closeTabsToRight: () => {},
+    closeOtherTabs: () => {},
+    closeAllTabs: () => {},
     switchTab: () => {},
     updateTabContent: () => {},
     updateTabMetadata: () => {},
@@ -119,10 +127,30 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => {
     closeTab: (id) => {
       useTabStore.getState().closeTab(id);
       const tabState = useTabStore.getState();
-      set({
-        tabs: tabState.tabs,
-        activeTabId: tabState.activeTabId,
-      });
+      set({ tabs: tabState.tabs, activeTabId: tabState.activeTabId });
+    },
+
+    closeTabsToLeft: (id) => {
+      useTabStore.getState().closeTabsToLeft(id);
+      const tabState = useTabStore.getState();
+      set({ tabs: tabState.tabs, activeTabId: tabState.activeTabId });
+    },
+
+    closeTabsToRight: (id) => {
+      useTabStore.getState().closeTabsToRight(id);
+      const tabState = useTabStore.getState();
+      set({ tabs: tabState.tabs, activeTabId: tabState.activeTabId });
+    },
+
+    closeOtherTabs: (id) => {
+      useTabStore.getState().closeOtherTabs(id);
+      const tabState = useTabStore.getState();
+      set({ tabs: tabState.tabs, activeTabId: tabState.activeTabId });
+    },
+
+    closeAllTabs: () => {
+      useTabStore.getState().closeAllTabs();
+      set({ tabs: [], activeTabId: null });
     },
 
     switchTab: (id) => {
@@ -220,6 +248,10 @@ useWorkspaceStore.getState = () => {
     ...aggregated,
     openTab: current.openTab,
     closeTab: current.closeTab,
+    closeTabsToLeft: current.closeTabsToLeft,
+    closeTabsToRight: current.closeTabsToRight,
+    closeOtherTabs: current.closeOtherTabs,
+    closeAllTabs: current.closeAllTabs,
     switchTab: current.switchTab,
     updateTabContent: current.updateTabContent,
     updateTabMetadata: current.updateTabMetadata,

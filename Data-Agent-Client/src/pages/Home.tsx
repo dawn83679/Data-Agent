@@ -80,6 +80,7 @@ export default function Home() {
                         <div className="h-8 flex items-center px-2 theme-bg-main border-b theme-border text-[10px] theme-text-secondary shrink-0 gap-1">
                             <Toolbar
                                 onRun={handleRunQuery}
+                                onStop={() => setIsRunning(false)}
                                 isRunning={isRunning}
                                 connectionId={sqlContext?.connectionId}
                                 currentDatabase={sqlContext?.databaseName}
