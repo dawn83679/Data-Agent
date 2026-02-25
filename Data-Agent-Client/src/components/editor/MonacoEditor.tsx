@@ -1,5 +1,6 @@
 import Editor, { loader } from '@monaco-editor/react';
 import { forwardRef, useImperativeHandle, useRef } from 'react';
+import { useTheme } from '../../hooks/useTheme';
 
 // Configure Monaco CDN
 loader.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs' } });
@@ -22,7 +23,6 @@ interface MonacoEditorProps {
   language?: string;
   readOnly?: boolean;
   height?: string | number;
-  theme?: 'jetbrains-dark' | 'vs-dark' | 'light';
 }
 
 export const MonacoEditor = forwardRef<MonacoEditorHandle, MonacoEditorProps>(
@@ -32,13 +32,13 @@ export const MonacoEditor = forwardRef<MonacoEditorHandle, MonacoEditorProps>(
     language = 'sql',
     readOnly = false,
     height = '100%',
-    theme = 'jetbrains-dark'
   }, ref) => {
 
+    const { theme: appTheme } = useTheme();
     const editorRef = useRef<any>(null);
 
     const handleEditorWillMount = (monaco: any) => {
-      // Define JetBrains-like theme
+      // Define JetBrains-like dark theme
       monaco.editor.defineTheme('jetbrains-dark', {
         base: 'vs-dark',
         inherit: true,
@@ -63,6 +63,36 @@ export const MonacoEditor = forwardRef<MonacoEditorHandle, MonacoEditorProps>(
           'editor.border': '#4e5155',
         }
       });
+
+      // Define JetBrains-like light theme
+      monaco.editor.defineTheme('jetbrains-light', {
+        base: 'vs',
+        inherit: true,
+        rules: [
+          { token: 'keyword', foreground: 'd81e1e', fontStyle: 'bold' },
+          { token: 'string', foreground: '067d17' },
+          { token: 'function', foreground: 'be860b' },
+          { token: 'number', foreground: '0b5394' },
+          { token: 'comment', foreground: '8c8c8c', fontStyle: 'italic' },
+          { token: 'operator', foreground: '001080' },
+          { token: 'delimiter', foreground: '001080' },
+        ],
+        colors: {
+          'editor.background': '#ffffff',
+          'editor.foreground': '#000000',
+          'editor.lineHighlightBackground': '#f5f5f5',
+          'editor.selectionBackground': '#add6ff',
+          'editorCursor.foreground': '#000000',
+          'editorLineNumber.foreground': '#999999',
+          'editorLineNumber.activeForeground': '#000000',
+          'editorIndentGuide.background': '#e0e0e0',
+          'editor.border': '#d0d0d0',
+        }
+      });
+    };
+
+    const getCurrentTheme = () => {
+      return appTheme === 'light' ? 'jetbrains-light' : 'jetbrains-dark';
     };
 
     useImperativeHandle(ref, () => ({
@@ -87,7 +117,7 @@ export const MonacoEditor = forwardRef<MonacoEditorHandle, MonacoEditorProps>(
         height={height}
         language={language}
         value={value}
-        theme={theme}
+        theme={getCurrentTheme()}
         onChange={onChange}
         beforeMount={handleEditorWillMount}
         onMount={(editor) => {
