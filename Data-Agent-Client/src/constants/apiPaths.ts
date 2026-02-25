@@ -40,3 +40,8 @@ export const ConnectionPaths = {
   DELETE: '/connections/:id',
   TEST: '/connections/test',
 } as const;
+
+/** SQL execution endpoints */
+export const SqlPaths = {
+  EXECUTE: '/db/sql/execute',
+} as const;

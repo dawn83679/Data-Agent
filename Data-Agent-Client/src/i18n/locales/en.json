@@ -186,6 +186,7 @@
     "data_source_from_url": "Data Source from URL",
     "data_source_from_path": "Data Source from Path",
     "driver": "Driver",
+    "open_query_console": "Open Query Console",
     "view_ddl": "View DDL",
     "view_ddl_title": "View DDL",
     "view_data": "View Data",

@@ -186,6 +186,7 @@
     "data_source_from_url": "来自 URL 的数据源",
     "data_source_from_path": "来自路径的数据源",
     "driver": "驱动",
+    "open_query_console": "打开查询控制台",
     "view_ddl": "查看 DDL",
     "view_ddl_title": "视图 DDL",
     "view_data": "查看数据",
