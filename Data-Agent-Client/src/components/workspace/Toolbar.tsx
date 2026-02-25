@@ -1,4 +1,4 @@
-import { Play, Square, Settings2 } from 'lucide-react';
+import { Play, Square } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import {
@@ -9,6 +9,8 @@ import {
 } from '../ui/DropdownMenu';
 import { databaseService } from '../../services/database.service';
 import { Button } from '../ui/Button';
+import { TransactionModeSelector } from './TransactionModeSelector';
+import { TransactionMode, IsolationLevel } from '../../constants/transactionSettings';
 
 interface ToolbarProps {
   onRun: () => void;
@@ -17,11 +19,6 @@ interface ToolbarProps {
   currentDatabase?: string | null;
   onDatabaseChange?: (db: string) => void;
 }
-
-const TRANSACTION_MODES = [
-  { value: 'autocommit', label: 'Autocommit' },
-  { value: 'manual', label: 'Manual Commit' },
-] as const;
 
 export function Toolbar({
   onRun,
@@ -33,7 +30,8 @@ export function Toolbar({
   const { t } = useTranslation();
   const [databases, setDatabases] = useState<string[]>([]);
   const [loadingDatabases, setLoadingDatabases] = useState(false);
-  const [transactionMode, setTransactionMode] = useState<'autocommit' | 'manual'>('autocommit');
+  const [transactionMode, setTransactionMode] = useState<TransactionMode>(TransactionMode.AUTO);
+  const [isolationLevel, setIsolationLevel] = useState<IsolationLevel>(IsolationLevel.DEFAULT);
 
   useEffect(() => {
     if (!connectionId) {
@@ -75,32 +73,12 @@ export function Toolbar({
       </Button>
 
       {/* Transaction Mode Selector */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            title="Transaction mode"
-          >
-            <Settings2 className="w-3.5 h-3.5" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="min-w-[120px]">
-          {TRANSACTION_MODES.map((mode) => (
-            <DropdownMenuItem
-              key={mode.value}
-              onClick={() => setTransactionMode(mode.value)}
-              className={transactionMode === mode.value ? 'bg-accent' : ''}
-            >
-              <span className="flex items-center gap-2 w-full">
-                {transactionMode === mode.value && <span>✓</span>}
-                {mode.label}
-              </span>
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <TransactionModeSelector
+        transactionMode={transactionMode}
+        isolationLevel={isolationLevel}
+        onTransactionModeChange={setTransactionMode}
+        onIsolationLevelChange={setIsolationLevel}
+      />
 
       {/* Divider */}
       <div className="w-px h-4 bg-border mx-0.5" />
