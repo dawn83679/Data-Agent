@@ -6,6 +6,7 @@ import { DeleteEntityDialog } from './DeleteEntityDialog';
 import { DdlViewerDialog } from './DdlViewerDialog';
 import { TableDataDialog } from './TableDataDialog';
 import { ExplorerNodeType } from '../../constants/explorer';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 import type { ExplorerNode } from '../../types/explorer';
 
 interface ExplorerDialogsProps {
@@ -133,7 +134,7 @@ export function ExplorerDialogs({
               onDeleteStateChange({ ...deleteState, selectedTableDataNode: null, highlightColumn: undefined });
             }
           }}
-          title={selectedTableDataNode.type === ExplorerNodeType.TABLE ? t('explorer.table_data') : t('explorer.view_data_title')}
+          title={selectedTableDataNode.type === ExplorerNodeType.TABLE ? t(I18N_KEYS.EXPLORER.TABLE_DATA) : t(I18N_KEYS.EXPLORER.VIEW_DATA_TITLE)}
           displayName={[selectedTableDataNode.catalog, selectedTableDataNode.schema, selectedTableDataNode.tableName || selectedTableDataNode.name].filter(Boolean).join('.')}
           connectionId={Number(selectedTableDataNode.connectionId!)}
           objectName={selectedTableDataNode.tableName || selectedTableDataNode.objectName || selectedTableDataNode.name}

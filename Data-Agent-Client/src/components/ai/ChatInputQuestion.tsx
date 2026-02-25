@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAskQuestionModalStore } from '../../store/askQuestionModalStore';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 import { AskUserUnanswered } from './blocks/AskUserUnanswered';
 
 interface ChatInputQuestionProps {
@@ -26,7 +27,7 @@ export function ChatInputQuestion({ conversationId }: ChatInputQuestionProps) {
 
   const handleQuestionReject = useCallback(() => {
     if (onSubmit) {
-      onSubmit(t('ai.askUserQuestion.rejectMessage'));
+      onSubmit(t(I18N_KEYS.AI.ASK_USER_QUESTION.REJECT_MESSAGE));
     }
     close();
   }, [onSubmit, close, t]);

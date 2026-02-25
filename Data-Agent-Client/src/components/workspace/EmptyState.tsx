@@ -1,14 +1,15 @@
 import { useTranslation } from 'react-i18next';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 
 export function EmptyState() {
     const { t } = useTranslation();
     
     const shortcuts = [
-        { label: t('common.execute_query'), keys: 'Ctrl+Enter / Cmd+Enter' },
-        { label: t('common.insert_indent'), keys: 'Tab' },
-        { label: t('common.open_settings'), keys: 'Ctrl+Shift+, / Cmd+Shift+,' },
-        { label: t('common.close_explorer'), keys: 'Esc' },
-        { label: t('common.toggle_ai'), keys: 'Ctrl+B / Cmd+B' },
+        { label: t(I18N_KEYS.COMMON.EXECUTE_QUERY), keys: 'Ctrl+Enter / Cmd+Enter' },
+        { label: t(I18N_KEYS.COMMON.INSERT_INDENT), keys: 'Tab' },
+        { label: t(I18N_KEYS.COMMON.OPEN_SETTINGS), keys: 'Ctrl+Shift+, / Cmd+Shift+,' },
+        { label: t(I18N_KEYS.COMMON.CLOSE_EXPLORER), keys: 'Esc' },
+        { label: t(I18N_KEYS.COMMON.TOGGLE_AI), keys: 'Ctrl+B / Cmd+B' },
     ];
 
     return (
@@ -23,7 +24,7 @@ export function EmptyState() {
                     ))}
                 </div>
                 <div className="mt-4 text-sm">
-                    {t('common.drag_hint')}
+                    {t(I18N_KEYS.COMMON.DRAG_HINT)}
                 </div>
             </div>
         </div>

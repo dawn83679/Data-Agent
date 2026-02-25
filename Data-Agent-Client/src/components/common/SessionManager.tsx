@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 import { sessionService } from '../../services/session.service';
 import { SessionInfo } from '../../types/auth';
 import { Button } from '../ui/Button';
@@ -23,7 +24,7 @@ export function SessionManager() {
             const data = await sessionService.listActiveSessions();
             setSessions(data);
         } catch (err: any) {
-            setError(resolveErrorMessage(err, t('sessions.load_failed')));
+            setError(resolveErrorMessage(err, t(I18N_KEYS.SESSIONS.LOAD_FAILED)));
         } finally {
             setIsLoading(false);
         }
@@ -43,9 +44,9 @@ export function SessionManager() {
         try {
             await sessionService.revokeSession(sessionToRevoke);
             setSessions(sessions.filter((s) => s.id !== sessionToRevoke));
-            toast.success(t('sessions.revoke_success'));
+            toast.success(t(I18N_KEYS.SESSIONS.REVOKE_SUCCESS));
         } catch (err: any) {
-            toast.error(resolveErrorMessage(err, t('sessions.revoke_failed')));
+            toast.error(resolveErrorMessage(err, t(I18N_KEYS.SESSIONS.REVOKE_FAILED)));
         } finally {
             setSessionToRevoke(null);
         }
@@ -65,7 +66,7 @@ export function SessionManager() {
     };
 
     const getDeviceName = (userAgent?: string): string => {
-        if (!userAgent) return t('sessions.unknown_device');
+        if (!userAgent) return t(I18N_KEYS.SESSIONS.UNKNOWN_DEVICE);
         const ua = userAgent.toLowerCase();
 
         // Browser detection
@@ -90,10 +91,10 @@ export function SessionManager() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">{t('sessions.list_title')}</h2>
+                <h2 className="text-xl font-semibold">{t(I18N_KEYS.SESSIONS.LIST_TITLE)}</h2>
                 <Button variant="outline" size="sm" onClick={loadSessions} disabled={isLoading}>
                     <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                    {t('sessions.refresh')}
+                    {t(I18N_KEYS.SESSIONS.REFRESH)}
                 </Button>
             </div>
 
@@ -104,9 +105,9 @@ export function SessionManager() {
             )}
 
             {isLoading && sessions.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">{t('sessions.loading')}</div>
+                <div className="text-center py-8 text-muted-foreground">{t(I18N_KEYS.SESSIONS.LOADING)}</div>
             ) : sessions.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">{t('sessions.no_sessions')}</div>
+                <div className="text-center py-8 text-muted-foreground">{t(I18N_KEYS.SESSIONS.NO_SESSIONS)}</div>
             ) : (
                 <div className="space-y-3">
                     {sessions.map((session) => (
@@ -129,18 +130,18 @@ export function SessionManager() {
                                             </p>
                                             {session.isCurrent && (
                                                 <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-primary text-primary-foreground">
-                                                    {t('sessions.current')}
+                                                    {t(I18N_KEYS.SESSIONS.CURRENT)}
                                                 </span>
                                             )}
                                         </div>
                                         <p className="text-xs text-muted-foreground mt-1">
-                                            {t('sessions.ip')}: {session.ipAddress || t('sessions.unknown')}
+                                            {t(I18N_KEYS.SESSIONS.IP)}: {session.ipAddress || t(I18N_KEYS.SESSIONS.UNKNOWN)}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            {t('sessions.last_active')}: {formatDate(session.lastRefreshAt)}
+                                            {t(I18N_KEYS.SESSIONS.LAST_ACTIVE)}: {formatDate(session.lastRefreshAt)}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            {t('sessions.logged_in')}: {formatDate(session.createdAt)}
+                                            {t(I18N_KEYS.SESSIONS.LOGGED_IN)}: {formatDate(session.createdAt)}
                                         </p>
                                     </div>
                                 </div>
@@ -164,17 +165,17 @@ export function SessionManager() {
             <Dialog open={!!sessionToRevoke} onOpenChange={() => setSessionToRevoke(null)}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{t('sessions.dialog_title')}</DialogTitle>
+                        <DialogTitle>{t(I18N_KEYS.SESSIONS.DIALOG_TITLE)}</DialogTitle>
                         <DialogDescription>
-                            {t('sessions.dialog_desc')}
+                            {t(I18N_KEYS.SESSIONS.DIALOG_DESC)}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setSessionToRevoke(null)}>
-                            {t('sessions.cancel')}
+                            {t(I18N_KEYS.SESSIONS.CANCEL)}
                         </Button>
                         <Button variant="destructive" onClick={confirmRevoke}>
-                            {t('sessions.logout')}
+                            {t(I18N_KEYS.SESSIONS.LOGOUT)}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

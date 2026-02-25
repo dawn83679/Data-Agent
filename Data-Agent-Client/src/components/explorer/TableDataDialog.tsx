@@ -11,6 +11,7 @@ import {
 } from '../ui/Dialog';
 import { Button } from '../ui/Button';
 import { tableDataService, type TableDataResponse } from '../../services/tableData.service';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 
 export interface TableDataDialogProps {
   open: boolean;
@@ -83,7 +84,7 @@ export function TableDataDialog({
       setCurrentPage(page);
     } catch (err: unknown) {
       console.error('Failed to load table data:', err);
-      setError((err as Error).message || t('explorer.load_table_data_failed'));
+      setError((err as Error).message || t(I18N_KEYS.EXPLORER.LOAD_TABLE_DATA_FAILED));
     } finally {
       setLoading(false);
     }
@@ -139,11 +140,11 @@ export function TableDataDialog({
               {/* Pagination info */}
               <div className="flex items-center justify-between text-xs theme-text-secondary">
                 <span>
-                  {t('explorer.total_records', { count: data.totalCount })}
-                  {data.totalPages > 0 && ` (${data.totalPages} ${t('explorer.pages')})`}
+                  {t(I18N_KEYS.EXPLORER.TOTAL_RECORDS, { count: data.totalCount })}
+                  {data.totalPages > 0 && ` (${data.totalPages} ${t(I18N_KEYS.EXPLORER.PAGES)})`}
                 </span>
                 <span>
-                  {t('explorer.page_info', {
+                  {t(I18N_KEYS.EXPLORER.PAGE_INFO, {
                     current: data.currentPage,
                     total: data.totalPages
                   })}
@@ -194,7 +195,7 @@ export function TableDataDialog({
                           colSpan={data.headers.length}
                           className="border theme-border px-2 py-4 text-center theme-text-secondary"
                         >
-                          {t('explorer.no_data')}
+                          {t(I18N_KEYS.EXPLORER.NO_DATA)}
                         </td>
                       </tr>
                     )}
@@ -212,7 +213,7 @@ export function TableDataDialog({
                     disabled={currentPage <= 1}
                   >
                     <ChevronLeft className="w-4 h-4" />
-                    {t('explorer.previous')}
+                    {t(I18N_KEYS.EXPLORER.PREVIOUS)}
                   </Button>
                   <span className="text-xs theme-text-secondary px-2">
                     {currentPage} / {data.totalPages}
@@ -223,7 +224,7 @@ export function TableDataDialog({
                     onClick={handleNextPage}
                     disabled={currentPage >= data.totalPages}
                   >
-                    {t('explorer.next')}
+                    {t(I18N_KEYS.EXPLORER.NEXT)}
                     <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>

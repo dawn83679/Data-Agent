@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Tree as ArboristTree, NodeApi } from 'react-arborist';
 import { ExplorerTreeConfig, ExplorerNodeType } from '../../constants/explorer';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 import { ExplorerTreeNode } from './ExplorerTreeNode';
 import type { ExplorerNode } from '../../types/explorer';
 
@@ -57,7 +58,7 @@ export function ExplorerTree({
   return (
     <div className="flex-1 overflow-hidden py-1">
       {data.length === 0 && !isLoading ? (
-        <div className="p-4 text-center text-xs theme-text-secondary opacity-50">{t('common.no_connections')}</div>
+        <div className="p-4 text-center text-xs theme-text-secondary opacity-50">{t(I18N_KEYS.COMMON.NO_CONNECTIONS)}</div>
       ) : (
         <ArboristTree
           data={data}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
 import type { SingleQuestion } from './askUserQuestionTypes';
+import { I18N_KEYS } from '../../../constants/i18nKeys';
 
 export interface AskUserUnansweredProps {
   questions: SingleQuestion[];
@@ -94,13 +95,13 @@ export function AskUserUnanswered({ questions, onSubmit, onReject, disabled }: A
       let answerStr = '';
       if (selectedParts.length > 0 && customPart) {
         // Both selected options and custom input
-        answerStr = `${selectedParts.join(', ')} | ${t('ai.askUserQuestion.customLabel')}: ${customPart}`;
+        answerStr = `${selectedParts.join(', ')} | ${t(I18N_KEYS.AI.ASK_USER_QUESTION.CUSTOM_LABEL)}: ${customPart}`;
       } else if (selectedParts.length > 0) {
         // Only selected options
         answerStr = selectedParts.join(', ');
       } else if (customPart) {
         // Only custom input
-        answerStr = `${t('ai.askUserQuestion.customLabel')}: ${customPart}`;
+        answerStr = `${t(I18N_KEYS.AI.ASK_USER_QUESTION.CUSTOM_LABEL)}: ${customPart}`;
       }
 
       if (answerStr) {
@@ -118,23 +119,23 @@ export function AskUserUnanswered({ questions, onSubmit, onReject, disabled }: A
         let answerStr = '';
         if (selectedParts.length > 0 && customPart) {
           // Both selected options and custom input
-          answerStr = `${selectedParts.join(', ')} | ${t('ai.askUserQuestion.customLabel')}: ${customPart}`;
+          answerStr = `${selectedParts.join(', ')} | ${t(I18N_KEYS.AI.ASK_USER_QUESTION.CUSTOM_LABEL)}: ${customPart}`;
         } else if (selectedParts.length > 0) {
           // Only selected options
           answerStr = selectedParts.join(', ');
         } else if (customPart) {
           // Only custom input
-          answerStr = `${t('ai.askUserQuestion.customLabel')}: ${customPart}`;
+          answerStr = `${t(I18N_KEYS.AI.ASK_USER_QUESTION.CUSTOM_LABEL)}: ${customPart}`;
         }
 
         return `"${q.question}"="${answerStr}"`;
       });
 
       const formattedAnswer =
-        t('ai.askUserQuestion.multiAnswerPrefix') +
+        t(I18N_KEYS.AI.ASK_USER_QUESTION.MULTI_ANSWER_PREFIX) +
         pairs.join(', ') +
         '. ' +
-        t('ai.askUserQuestion.continueSuffix');
+        t(I18N_KEYS.AI.ASK_USER_QUESTION.CONTINUE_SUFFIX);
 
       onSubmit(formattedAnswer);
     }
@@ -212,11 +213,11 @@ export function AskUserUnanswered({ questions, onSubmit, onReject, disabled }: A
             value={answer.customText}
             onChange={(e) => handleCustomTextChange(qIdx, e.target.value)}
             placeholder={
-              question.freeTextHint || t('ai.askUserQuestion.customInputPlaceholder')
+              question.freeTextHint || t(I18N_KEYS.AI.ASK_USER_QUESTION.CUSTOM_INPUT_PLACEHOLDER)
             }
             disabled={disabled}
             className="w-full px-2.5 py-1.5 rounded border theme-border theme-bg-panel theme-text-primary text-[12px] placeholder:theme-text-secondary focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-[var(--accent-blue)] disabled:opacity-60 disabled:cursor-not-allowed"
-            aria-label={t('ai.askUserQuestion.customInputPlaceholder')}
+            aria-label={t(I18N_KEYS.AI.ASK_USER_QUESTION.CUSTOM_INPUT_PLACEHOLDER)}
           />
         </div>
       </div>
@@ -262,7 +263,7 @@ export function AskUserUnanswered({ questions, onSubmit, onReject, disabled }: A
           disabled={!canSubmit}
           className="flex-1 px-3 py-1.5 rounded-md text-[12px] font-medium bg-primary text-primary-foreground border border-primary hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
         >
-          {t('ai.askUserQuestion.submitAnswer')}
+          {t(I18N_KEYS.AI.ASK_USER_QUESTION.SUBMIT_ANSWER)}
         </button>
         {onReject && (
           <button
@@ -271,7 +272,7 @@ export function AskUserUnanswered({ questions, onSubmit, onReject, disabled }: A
             disabled={disabled}
             className="px-3 py-1.5 rounded-md text-[12px] font-medium theme-bg-panel theme-text-secondary border theme-border hover:theme-bg-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {t('ai.askUserQuestion.reject')}
+            {t(I18N_KEYS.AI.ASK_USER_QUESTION.REJECT)}
           </button>
         )}
       </div>

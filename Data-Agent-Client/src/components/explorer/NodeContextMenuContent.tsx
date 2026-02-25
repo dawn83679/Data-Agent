@@ -7,6 +7,7 @@ import {
 } from '../ui/ContextMenu';
 import { ExplorerNodeType } from '../../constants/explorer';
 import type { ExplorerNode } from '../../types/explorer';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 
 interface NodeContextMenuContentProps {
   node: ExplorerNode;
@@ -69,7 +70,7 @@ export function NodeContextMenuContent({
         <>
           <ContextMenuItem onSelect={() => onOpenQueryConsole(node)}>
             <FileText className="w-3.5 h-3.5 mr-2" />
-            {t('explorer.open_query_console')}
+            {t(I18N_KEYS.EXPLORER.OPEN_QUERY_CONSOLE)}
           </ContextMenuItem>
           <ContextMenuSeparator />
         </>
@@ -80,7 +81,7 @@ export function NodeContextMenuContent({
         <>
           <ContextMenuItem onSelect={() => onViewDdl(node)}>
             <FileText className="w-3.5 h-3.5 mr-2" />
-            {t('explorer.view_ddl')}
+            {t(I18N_KEYS.EXPLORER.VIEW_DDL)}
           </ContextMenuItem>
           {hasDataOperations && <ContextMenuSeparator />}
         </>
@@ -99,7 +100,7 @@ export function NodeContextMenuContent({
             }}
           >
             <Table className="w-3.5 h-3.5 mr-2" />
-            {t('explorer.view_data')}
+            {t(I18N_KEYS.EXPLORER.VIEW_DATA)}
           </ContextMenuItem>
           {hasDeleteOperation && <ContextMenuSeparator />}
         </>
@@ -113,7 +114,7 @@ export function NodeContextMenuContent({
           className="text-destructive focus:text-destructive"
         >
           <Trash2 className="w-3.5 h-3.5 mr-2" />
-          {t('explorer.delete_table')}
+          {t(I18N_KEYS.EXPLORER.DELETE_TABLE)}
         </ContextMenuItem>
       )}
 
@@ -123,7 +124,7 @@ export function NodeContextMenuContent({
           className="text-destructive focus:text-destructive"
         >
           <Trash2 className="w-3.5 h-3.5 mr-2" />
-          {t('explorer.delete_view')}
+          {t(I18N_KEYS.EXPLORER.DELETE_VIEW)}
         </ContextMenuItem>
       )}
 
@@ -133,7 +134,7 @@ export function NodeContextMenuContent({
           className="text-destructive focus:text-destructive"
         >
           <Trash2 className="w-3.5 h-3.5 mr-2" />
-          {t('explorer.delete_function')}
+          {t(I18N_KEYS.EXPLORER.DELETE_FUNCTION)}
         </ContextMenuItem>
       )}
 
@@ -143,7 +144,7 @@ export function NodeContextMenuContent({
           className="text-destructive focus:text-destructive"
         >
           <Trash2 className="w-3.5 h-3.5 mr-2" />
-          {t('explorer.delete_procedure')}
+          {t(I18N_KEYS.EXPLORER.DELETE_PROCEDURE)}
         </ContextMenuItem>
       )}
 
@@ -153,7 +154,7 @@ export function NodeContextMenuContent({
           className="text-destructive focus:text-destructive"
         >
           <Trash2 className="w-3.5 h-3.5 mr-2" />
-          {t('explorer.delete_trigger')}
+          {t(I18N_KEYS.EXPLORER.DELETE_TRIGGER)}
         </ContextMenuItem>
       )}
 
@@ -163,7 +164,7 @@ export function NodeContextMenuContent({
           className="text-destructive focus:text-destructive"
         >
           <Trash2 className="w-3.5 h-3.5 mr-2" />
-          {t('explorer.delete_database')}
+          {t(I18N_KEYS.EXPLORER.DELETE_DATABASE)}
         </ContextMenuItem>
       )}
 
@@ -173,7 +174,7 @@ export function NodeContextMenuContent({
           className="text-destructive focus:text-destructive"
         >
           <Trash2 className="w-3.5 h-3.5 mr-2" />
-          {t('explorer.delete_all_in_folder')}
+          {t(I18N_KEYS.EXPLORER.DELETE_ALL_IN_FOLDER)}
         </ContextMenuItem>
       )}
     </ContextMenuContent>

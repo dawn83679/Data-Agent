@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 import {
   Dialog,
   DialogContent,
@@ -51,7 +52,7 @@ export function DriverManageModal({
       })
       .catch((err) => {
         if (isMounted) {
-          toast.error(resolveErrorMessage(err, t('drivers.download_failed')));
+          toast.error(resolveErrorMessage(err, t(I18N_KEYS.DRIVERS.DOWNLOAD_FAILED)));
         }
       })
       .finally(() => {
@@ -69,7 +70,7 @@ export function DriverManageModal({
     setDownloadingVersion(version);
     try {
       const res = await driverService.downloadDriver(databaseType, version);
-      toast.success(t('drivers.download_success'));
+      toast.success(t(I18N_KEYS.DRIVERS.DOWNLOAD_SUCCESS));
       setInstalled((prev) => [
         ...prev,
         {
@@ -85,7 +86,7 @@ export function DriverManageModal({
         prev.map((a) => (a.version === version ? { ...a, installed: true } : a))
       );
     } catch (err) {
-      toast.error(resolveErrorMessage(err, t('drivers.download_failed')));
+      toast.error(resolveErrorMessage(err, t(I18N_KEYS.DRIVERS.DOWNLOAD_FAILED)));
     } finally {
       setDownloadingVersion(null);
     }
@@ -94,13 +95,13 @@ export function DriverManageModal({
   const handleDelete = async (version: string) => {
     try {
       await driverService.deleteDriver(databaseType, version);
-      toast.success(t('drivers.delete_success'));
+      toast.success(t(I18N_KEYS.DRIVERS.DELETE_SUCCESS));
       setInstalled((prev) => prev.filter((d) => d.version !== version));
       setAvailable((prev) =>
         prev.map((a) => (a.version === version ? { ...a, installed: false } : a))
       );
     } catch (err) {
-      toast.error(resolveErrorMessage(err, t('drivers.delete_failed')));
+      toast.error(resolveErrorMessage(err, t(I18N_KEYS.DRIVERS.DELETE_FAILED)));
     }
   };
 
@@ -113,22 +114,22 @@ export function DriverManageModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[560px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{t('drivers.title')}</DialogTitle>
+          <DialogTitle>{t(I18N_KEYS.DRIVERS.TITLE)}</DialogTitle>
           <DialogDescription>
-            {t('drivers.database_type')}: {databaseType || '-'}
+            {t(I18N_KEYS.DRIVERS.DATABASE_TYPE)}: {databaseType || '-'}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-6 py-4">
           {loading ? (
-            <p className="text-sm text-muted-foreground">{t('explorer.loading')}</p>
+            <p className="text-sm text-muted-foreground">{t(I18N_KEYS.EXPLORER.LOADING)}</p>
           ) : (
             <>
               <section>
                 <h4 className="text-sm font-medium text-foreground mb-2">
-                  {t('drivers.installed')}
+                  {t(I18N_KEYS.DRIVERS.INSTALLED)}
                 </h4>
                 {installed.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{t('drivers.no_installed')}</p>
+                  <p className="text-sm text-muted-foreground">{t(I18N_KEYS.DRIVERS.NO_INSTALLED)}</p>
                 ) : (
                   <ul className="border border-border rounded-md divide-y divide-border max-h-40 overflow-y-auto">
                     {installed.map((d) => (
@@ -146,7 +147,7 @@ export function DriverManageModal({
                             size="sm"
                             onClick={() => handleSelect(d.filePath)}
                           >
-                            {t('drivers.select_driver')}
+                            {t(I18N_KEYS.DRIVERS.SELECT_DRIVER)}
                           </Button>
                           <Button
                             type="button"
@@ -154,7 +155,7 @@ export function DriverManageModal({
                             size="sm"
                             onClick={() => handleDelete(d.version)}
                           >
-                            {t('drivers.delete')}
+                            {t(I18N_KEYS.DRIVERS.DELETE)}
                           </Button>
                         </div>
                       </li>
@@ -164,10 +165,10 @@ export function DriverManageModal({
               </section>
               <section>
                 <h4 className="text-sm font-medium text-foreground mb-2">
-                  {t('drivers.available')}
+                  {t(I18N_KEYS.DRIVERS.AVAILABLE)}
                 </h4>
                 {available.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{t('drivers.no_available')}</p>
+                  <p className="text-sm text-muted-foreground">{t(I18N_KEYS.DRIVERS.NO_AVAILABLE)}</p>
                 ) : (
                   <ul className="border border-border rounded-md divide-y divide-border max-h-40 overflow-y-auto">
                     {available.map((d) => (
@@ -184,10 +185,10 @@ export function DriverManageModal({
                           onClick={() => handleDownload(d.version)}
                         >
                           {downloadingVersion === d.version
-                            ? t('drivers.downloading')
+                            ? t(I18N_KEYS.DRIVERS.DOWNLOADING)
                             : d.installed
-                              ? t('drivers.installed')
-                              : t('drivers.download')}
+                              ? t(I18N_KEYS.DRIVERS.INSTALLED)
+                              : t(I18N_KEYS.DRIVERS.DOWNLOAD)}
                         </Button>
                       </li>
                     ))}

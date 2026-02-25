@@ -2,6 +2,7 @@ import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useWorkspaceStore } from '../../store/workspaceStore';
 import { cn } from '../../lib/utils';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 
 interface AISettingsProps {
   onClose: () => void;
@@ -21,13 +22,13 @@ export function AISettings({ onClose }: AISettingsProps) {
     <div className="absolute right-0 top-6 w-64 theme-bg-panel rounded-lg shadow-xl border theme-border z-50 animate-in fade-in slide-in-from-top-1 duration-200">
       <div className="p-3 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] uppercase font-bold theme-text-secondary tracking-wider">{t('ai.settings')}</span>
+          <span className="text-[11px] uppercase font-bold theme-text-secondary tracking-wider">{t(I18N_KEYS.AI.SETTINGS)}</span>
           <X className="w-3 h-3 cursor-pointer theme-text-secondary hover:theme-text-primary" onClick={onClose} />
         </div>
         
         <div className="space-y-2.5 pt-1">
           <label className="flex items-center justify-between cursor-pointer group">
-            <span className="text-[11px] theme-text-secondary group-hover:theme-text-primary transition-colors">{t('ai.auto_select')}</span>
+            <span className="text-[11px] theme-text-secondary group-hover:theme-text-primary transition-colors">{t(I18N_KEYS.AI.AUTO_SELECT)}</span>
             <input 
               type="checkbox" 
               checked={aiAutoSelect}
@@ -37,7 +38,7 @@ export function AISettings({ onClose }: AISettingsProps) {
           </label>
           
           <label className="flex items-center justify-between cursor-pointer group">
-            <span className="text-[11px] theme-text-secondary group-hover:theme-text-primary transition-colors">{t('ai.auto_write')}</span>
+            <span className="text-[11px] theme-text-secondary group-hover:theme-text-primary transition-colors">{t(I18N_KEYS.AI.AUTO_WRITE)}</span>
             <input 
               type="checkbox" 
               checked={aiAutoWrite}
@@ -48,7 +49,7 @@ export function AISettings({ onClose }: AISettingsProps) {
 
           <div className={cn("ml-3 space-y-2 transition-opacity", !aiAutoWrite && "opacity-50 pointer-events-none")}>
             <label className="flex items-center justify-between cursor-pointer group">
-              <span className="text-[10px] theme-text-secondary group-hover:theme-text-primary transition-colors">{t('ai.transaction')}</span>
+              <span className="text-[10px] theme-text-secondary group-hover:theme-text-primary transition-colors">{t(I18N_KEYS.AI.TRANSACTION)}</span>
               <input 
                 type="checkbox" 
                 checked={aiWriteTransaction}
@@ -60,7 +61,7 @@ export function AISettings({ onClose }: AISettingsProps) {
 
           <div className="pt-1 flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] theme-text-secondary">{t('ai.max_retries')}</span>
+              <span className="text-[11px] theme-text-secondary">{t(I18N_KEYS.AI.MAX_RETRIES)}</span>
               <input 
                 type="number" 
                 min={1} 
@@ -70,7 +71,7 @@ export function AISettings({ onClose }: AISettingsProps) {
                 className="w-12 h-6 px-1.5 theme-bg-main border theme-border rounded text-[11px] theme-text-primary focus:border-blue-500 outline-none"
               />
             </div>
-            <p className="text-[9px] theme-text-secondary opacity-60 italic">{t('ai.retries_hint')}</p>
+            <p className="text-[9px] theme-text-secondary opacity-60 italic">{t(I18N_KEYS.AI.RETRIES_HINT)}</p>
           </div>
         </div>
       </div>

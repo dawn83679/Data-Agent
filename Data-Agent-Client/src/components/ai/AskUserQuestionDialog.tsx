@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from '../ui/Dialog';
 import { useAskQuestionModalStore } from '../../store/askQuestionModalStore';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 import { AskUserUnanswered } from './blocks/AskUserUnanswered';
 
 interface AskUserQuestionDialogProps {
@@ -43,7 +44,7 @@ export function AskUserQuestionDialog({ currentConversationId }: AskUserQuestion
     <Dialog open={shouldShow} onOpenChange={(open) => !open && close()}>
       <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{t('ai.askUserQuestion.label')}</DialogTitle>
+          <DialogTitle>{t(I18N_KEYS.AI.ASK_USER_QUESTION.LABEL)}</DialogTitle>
         </DialogHeader>
         <div className="mt-2">
           <AskUserUnanswered
