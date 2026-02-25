@@ -5,7 +5,7 @@ import { COPY_FEEDBACK_SHORT_MS } from '../../../constants/timing';
 import { parseMentionSegments } from '../mentionTypes';
 import type { Message } from './types';
 
-const MENTION_COLOR_CLASS = 'text-cyan-400 font-medium';
+const MENTION_COLOR_CLASS = 'text-violet-400 font-medium';
 
 function renderContentWithMentions(content: string): React.ReactNode[] {
   const segments = parseMentionSegments(content);
