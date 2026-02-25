@@ -4,6 +4,7 @@ import { User, Copy, Check } from 'lucide-react';
 import { COPY_FEEDBACK_SHORT_MS } from '../../../constants/timing';
 import { parseMentionSegments } from '../mentionTypes';
 import type { Message } from './types';
+import { I18N_KEYS } from '../../../constants/i18nKeys';
 
 const MENTION_COLOR_CLASS = 'text-violet-400 font-medium';
 
@@ -44,7 +45,7 @@ export function UserBubble({ message }: UserBubbleProps) {
     <div className="flex flex-col w-full group/bubble">
       <div className="flex items-center space-x-2 mb-1.5 opacity-60">
         <span className="text-[10px] font-medium theme-text-secondary">
-          {t('ai.you')}
+          {t(I18N_KEYS.AI.YOU)}
         </span>
         <User className="w-3 h-3 shrink-0" />
       </div>
@@ -62,7 +63,7 @@ export function UserBubble({ message }: UserBubbleProps) {
         <button
           type="button"
           onClick={handleCopy}
-          aria-label={t('ai.copy')}
+          aria-label={t(I18N_KEYS.AI.COPY)}
           className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover/bubble:opacity-100 hover:opacity-100 transition-opacity theme-text-secondary hover:theme-text-primary hover:bg-black/10 dark:hover:bg-white/10"
         >
           {copied ? (

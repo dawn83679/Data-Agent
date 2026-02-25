@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { I18N_KEYS } from '../../../constants/i18nKeys';
 
 export interface ToolRunStreamingProps {
   toolName: string;
@@ -15,7 +16,7 @@ export function ToolRunStreaming({ toolName, partialArguments }: ToolRunStreamin
     <div className="mb-2 text-xs theme-text-secondary">
       <div className="w-full py-1.5 flex items-start gap-2 text-left rounded">
         <span className="font-medium animate-pulse">{toolName}</span>
-        <span className="text-xs opacity-70">{t('ai.toolRun.streamingArguments')}</span>
+        <span className="text-xs opacity-70">{t(I18N_KEYS.AI.TOOL_RUN.STREAMING_ARGUMENTS)}</span>
       </div>
       {partialArguments && (
         <div className="mt-1 p-2 rounded theme-bg-tertiary">

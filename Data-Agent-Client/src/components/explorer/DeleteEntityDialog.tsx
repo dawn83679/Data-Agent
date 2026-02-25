@@ -9,6 +9,7 @@ import {
 } from '../ui/Dialog';
 import { Button } from '../ui/Button';
 import { DELETE_DIALOG_CONFIG } from '../../constants/deleteConfig';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 import type { ExplorerNodeType } from '../../constants/explorer';
 
 interface DeleteEntityDialogProps {
@@ -54,14 +55,14 @@ export function DeleteEntityDialog({
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t('connections.cancel')}
+            {t(I18N_KEYS.CONNECTIONS.CANCEL)}
           </Button>
           <Button
             variant="destructive"
             disabled={isPending}
             onClick={handleConfirm}
           >
-            {isPending ? t('connections.deleting') : t('connections.delete')}
+            {isPending ? t(I18N_KEYS.CONNECTIONS.DELETING) : t(I18N_KEYS.CONNECTIONS.DELETE)}
           </Button>
         </DialogFooter>
       </DialogContent>

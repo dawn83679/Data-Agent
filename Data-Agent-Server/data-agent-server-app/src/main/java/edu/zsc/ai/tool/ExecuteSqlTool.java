@@ -5,7 +5,7 @@ import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.common.constant.RequestContextConstant;
 import edu.zsc.ai.common.constant.ToolMessageConstants;
-import edu.zsc.ai.domain.model.dto.request.db.ExecuteSqlRequest;
+import edu.zsc.ai.domain.model.dto.request.db.AgentExecuteSqlRequest;
 import edu.zsc.ai.domain.model.dto.response.db.ExecuteSqlResponse;
 import edu.zsc.ai.domain.service.db.SqlExecutionService;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +40,7 @@ public class ExecuteSqlTool {
                         .errorMessage(ToolMessageConstants.USER_CONTEXT_MISSING)
                         .build();
             }
-            ExecuteSqlRequest request = ExecuteSqlRequest.builder()
+            AgentExecuteSqlRequest request = AgentExecuteSqlRequest.builder()
                     .connectionId(connectionId)
                     .databaseName(databaseName)
                     .schemaName(schemaName)

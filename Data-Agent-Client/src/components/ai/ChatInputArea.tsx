@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { parseMentionSegments } from './mentionTypes';
 import { AGENT_COLORS, type AgentType } from './agentTypes';
 import type { UseMentionReturn } from '../../hooks/useMention';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 
 interface ChatInputAreaProps {
     input: string;
@@ -274,3 +275,19 @@ export const ChatInputArea = forwardRef<ChatInputAreaRef, ChatInputAreaProps>(
             </>
         );
     });
+          ) : (
+            <span key={i}>{seg.text}</span>
+          )
+        )}
+      </div>
+      <textarea
+        data-ai-input
+        value={input}
+        onChange={onChange}
+        onKeyDown={onKeyDown}
+        placeholder={t(I18N_KEYS.AI.PLACEHOLDER_MENTION)}
+        className={`relative z-10 w-full h-24 bg-transparent text-xs p-3 focus:outline-none resize-none placeholder:text-muted-foreground/50 text-transparent min-h-0 ${agent === 'Agent' ? 'caret-violet-400' : 'caret-amber-400'}`}
+      />
+    </div>
+  );
+}

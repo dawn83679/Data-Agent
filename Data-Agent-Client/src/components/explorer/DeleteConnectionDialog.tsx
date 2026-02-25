@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '../ui/Dialog';
 import { Button } from '../ui/Button';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 
 interface DeleteConnectionDialogProps {
   open: boolean;
@@ -37,19 +38,19 @@ export function DeleteConnectionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
-          <DialogTitle>{t('connections.delete_confirm_title')}</DialogTitle>
-          <DialogDescription>{t('connections.delete_confirm_desc')}</DialogDescription>
+          <DialogTitle>{t(I18N_KEYS.CONNECTIONS.DELETE_CONFIRM_TITLE)}</DialogTitle>
+          <DialogDescription>{t(I18N_KEYS.CONNECTIONS.DELETE_CONFIRM_DESC)}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t('connections.cancel')}
+            {t(I18N_KEYS.CONNECTIONS.CANCEL)}
           </Button>
           <Button
             variant="destructive"
             disabled={isPending}
             onClick={handleConfirm}
           >
-            {isPending ? t('connections.saving') : t('connections.delete')}
+            {isPending ? t(I18N_KEYS.CONNECTIONS.SAVING) : t(I18N_KEYS.CONNECTIONS.DELETE)}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageCircle, ChevronDown, ChevronRight, Tag, Check } from 'lucide-react';
 import type { SingleQuestion } from './askUserQuestionTypes';
+import { I18N_KEYS } from '../../../constants/i18nKeys';
 
 export interface AskUserAnsweredProps {
   questions: SingleQuestion[];
@@ -50,7 +51,7 @@ export function AskUserAnswered({ questions, answer }: AskUserAnsweredProps) {
 
   // Create summary for collapsed view
   const summary = isMultiQuestion
-    ? `${parsedAnswers.length} ${t('ai.askUserQuestion.label')}${parsedAnswers.length > 1 ? 's' : ''} answered`
+    ? `${parsedAnswers.length} ${t(I18N_KEYS.AI.ASK_USER_QUESTION.LABEL)}${parsedAnswers.length > 1 ? 's' : ''} answered`
     : `${truncateText(questions[0]?.question || '', 40)} — ${answer}`;
 
   // Match answers to questions
@@ -78,7 +79,7 @@ export function AskUserAnswered({ questions, answer }: AskUserAnsweredProps) {
       >
         <MessageCircle className="w-3.5 h-3.5 theme-text-secondary shrink-0" aria-hidden />
         <span className="text-[10px] font-semibold tracking-wide theme-text-secondary shrink-0">
-          {t('ai.askUserQuestion.label')}
+          {t(I18N_KEYS.AI.ASK_USER_QUESTION.LABEL)}
         </span>
         <span className="min-w-0 flex-1 truncate text-[12px] theme-text-secondary">
           {summary}

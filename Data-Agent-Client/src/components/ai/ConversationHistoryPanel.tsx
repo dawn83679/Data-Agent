@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useToast } from '../../hooks/useToast';
@@ -39,8 +40,8 @@ function getGroupLabel(iso: string, t: (k: string) => string): string {
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const startOfYesterday = startOfToday - 86400000;
   const tMs = d.getTime();
-  if (tMs >= startOfToday) return t('ai.today');
-  if (tMs >= startOfYesterday) return t('ai.yesterday');
+  if (tMs >= startOfToday) return t(I18N_KEYS.AI.TODAY);
+  if (tMs >= startOfYesterday) return t(I18N_KEYS.AI.YESTERDAY);
   const diffDays = Math.floor((startOfToday - tMs) / 86400000);
   if (diffDays < 7) return `${diffDays}d ago`;
   return d.toLocaleDateString();
@@ -108,7 +109,7 @@ export function ConversationHistoryPanel({
           setPendingHighlightIndex(pendingIndex);
         }
       } catch (err) {
-        toast.error(t('ai.load_failed'));
+        toast.error(t(I18N_KEYS.AI.LOAD_FAILED));
       } finally {
         setLoading(false);
       }
@@ -248,9 +249,9 @@ export function ConversationHistoryPanel({
         )
       );
       setEditingId(null);
-      toast.success(t('ai.rename_success'));
+      toast.success(t(I18N_KEYS.AI.RENAME_SUCCESS));
     } catch {
-      toast.error(t('ai.load_failed'));
+      toast.error(t(I18N_KEYS.AI.LOAD_FAILED));
     }
   };
 
@@ -269,9 +270,9 @@ export function ConversationHistoryPanel({
       if (currentConversationId === id) {
         onNewChat();
       }
-      toast.success(t('ai.delete_success'));
+      toast.success(t(I18N_KEYS.AI.DELETE_SUCCESS));
     } catch {
-      toast.error(t('ai.load_failed'));
+      toast.error(t(I18N_KEYS.AI.LOAD_FAILED));
     } finally {
       setDeletingId(null);
     }
@@ -283,7 +284,7 @@ export function ConversationHistoryPanel({
     <div
         ref={panelRef}
         role="dialog"
-        aria-label={t('ai.history_title')}
+        aria-label={t(I18N_KEYS.AI.HISTORY_TITLE)}
         className={cn(
           'absolute right-0 top-full mt-1 w-80 max-h-[70vh] flex flex-col',
           'theme-bg-panel theme-border border rounded-lg shadow-xl z-50',
@@ -295,7 +296,7 @@ export function ConversationHistoryPanel({
           <Input
             ref={searchInputRef}
             type="text"
-            placeholder={t('common.search')}
+            placeholder={t(I18N_KEYS.COMMON.SEARCH)}
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -318,11 +319,11 @@ export function ConversationHistoryPanel({
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0">
           {loading ? (
             <p className="text-sm theme-text-secondary py-4 text-center">
-              {t('ai.loading_conversations')}
+              {t(I18N_KEYS.AI.LOADING_CONVERSATIONS)}
             </p>
           ) : filtered.length === 0 ? (
             <p className="text-sm theme-text-secondary py-4 text-center">
-              {t('ai.no_conversations')}
+              {t(I18N_KEYS.AI.NO_CONVERSATIONS)}
             </p>
           ) : (
             <div className="py-1">
@@ -351,7 +352,7 @@ export function ConversationHistoryPanel({
                             <Input
                               value={editTitle}
                               onChange={(e) => setEditTitle(e.target.value)}
-                              placeholder={t('ai.rename_placeholder')}
+                              placeholder={t(I18N_KEYS.AI.RENAME_PLACEHOLDER)}
                               className="h-7 text-xs flex-1 min-w-0"
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') saveRename();
@@ -360,10 +361,10 @@ export function ConversationHistoryPanel({
                               autoFocus
                             />
                             <Button size="sm" variant="ghost" className="h-7 px-1.5" onClick={saveRename}>
-                              {t('connections.save')}
+                              {t(I18N_KEYS.CONNECTIONS.SAVE)}
                             </Button>
                             <Button size="sm" variant="ghost" className="h-7 px-1.5" onClick={cancelRename}>
-                              {t('connections.cancel')}
+                              {t(I18N_KEYS.CONNECTIONS.CANCEL)}
                             </Button>
                           </div>
                         ) : (
@@ -389,7 +390,7 @@ export function ConversationHistoryPanel({
                                   e.stopPropagation();
                                   startRename(c);
                                 }}
-                                title={t('ai.rename')}
+                                title={t(I18N_KEYS.AI.RENAME)}
                               >
                                 <Pencil className="w-3 h-3" />
                               </button>
@@ -401,7 +402,7 @@ export function ConversationHistoryPanel({
                                   handleDelete(c.id);
                                 }}
                                 disabled={deletingId === c.id}
-                                title={t('ai.delete')}
+                                title={t(I18N_KEYS.AI.DELETE)}
                               >
                                 <Trash2 className="w-3 h-3" />
                               </button>
