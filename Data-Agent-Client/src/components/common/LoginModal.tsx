@@ -127,6 +127,7 @@ export function LoginModal({ onSwitchToRegister, onClose }: LoginModalProps) {
                         </a>
                     </Button>
                     <Button
+                        type="button"
                         variant="outline"
                         onClick={() => {
                             window.location.href = `/api/oauth/google?fromUrl=${encodeURIComponent(window.location.href)}`;
