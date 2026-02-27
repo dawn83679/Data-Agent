@@ -23,15 +23,13 @@ import { useAskQuestionModalStore } from '../../../store/askQuestionModalStore';
  * Uses useEffect to prevent re-opening on every render.
  */
 function AskUserQuestionHandler({
-  conversationId,
   askUserPayload,
   submitMessage,
   openModal,
 }: {
-  conversationId: number;
   askUserPayload: AskUserQuestionPayload;
   submitMessage: (message: string) => Promise<void>;
-  openModal: (conversationId: number, questions: any[], onSubmit: (answer: string) => void) => void;
+  openModal: (questions: any[], onSubmit: (answer: string) => void) => void;
 }) {
   const openedRef = useRef(false);
 
@@ -45,9 +43,9 @@ function AskUserQuestionHandler({
         submitMessage(answer);
       };
 
-      openModal(conversationId, questions, handleSubmit);
+      openModal(questions, handleSubmit);
     }
-  }, [conversationId, askUserPayload, submitMessage, openModal]);
+  }, [askUserPayload, submitMessage, openModal]);
 
   return null;
 }
@@ -84,7 +82,7 @@ export function ToolRunBlock({
   executionState,
   serverName,
 }: ToolRunBlockProps) {
-  const { submitMessage, conversationId } = useAIAssistantContext();
+  const { submitMessage, isLoading } = useAIAssistantContext();
   const openModal = useAskQuestionModalStore((state) => state.open);
 
   const toolType = getToolType(toolName, serverName);
@@ -120,6 +118,13 @@ export function ToolRunBlock({
       }
 
       case ToolType.ASK_USER: {
+        // Defense-in-depth: only open the question modal during active streaming.
+        // Historical conversations are already filtered at the blocksToSegments level,
+        // but this guard handles edge cases like slot-switch races.
+        if (!isLoading) {
+          return null;
+        }
+
         const askUserPayloadFromResponse = parseAskUserQuestionResponse(responseData);
         const askUserPayloadFromParams = parseAskUserQuestionParameters(parametersData);
         const askUserPayload = askUserPayloadFromResponse ?? askUserPayloadFromParams ?? null;
@@ -134,10 +139,9 @@ export function ToolRunBlock({
         }
 
         // If question received and not answered: render AskUserQuestionHandler
-        if (askUserPayload && !askUserSubmittedAnswer && conversationId !== null) {
+        if (askUserPayload && !askUserSubmittedAnswer) {
           return (
             <AskUserQuestionHandler
-              conversationId={conversationId}
               askUserPayload={askUserPayload}
               submitMessage={submitMessage}
               openModal={openModal}

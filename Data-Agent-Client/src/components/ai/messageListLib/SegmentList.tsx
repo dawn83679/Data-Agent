@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { useMarkdownComponents, markdownRemarkPlugins, TodoListBlock, PlanningIndicator } from '../blocks';
+import { useMarkdownComponents, markdownRemarkPlugins, TodoListBlock, PlanningIndicator, getToolType, ToolType } from '../blocks';
 import { renderSegment } from './segmentRenderer';
 import { findLastTodoSegmentIndex, isTodoSegment } from './segmentTodoUtils';
 import type { TodoBoxSpec } from './types';
@@ -76,8 +76,13 @@ export function SegmentList({
           seg === lastSeg;
         return renderSegment(seg, i, isStreamingThought);
       })}
-      {/* Phase C: has content but gap in stream — show Planning at end */}
-      {isLastAssistantStreaming && isWaiting && <PlanningIndicator />}
+      {/* Phase C: has content but gap in stream — show Planning at end.
+          Suppress when the last segment is an ASK_USER tool: the AI isn't
+          planning, it's waiting for the user to answer. */}
+      {isLastAssistantStreaming && isWaiting && !(
+        lastSeg?.kind === SegmentKind.TOOL_RUN &&
+        getToolType(lastSeg.toolName) === ToolType.ASK_USER
+      ) && <PlanningIndicator />}
     </div>
   );
 }
