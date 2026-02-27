@@ -117,7 +117,12 @@
     "new_console": "New Console",
     "new_console_tab_title": "New Console",
     "run_shortcut": "Run Query (Ctrl+Enter / Cmd+Enter)",
-    "data_grid_placeholder": "Data Grid View Placeholder"
+    "data_grid_placeholder": "Data Grid View Placeholder",
+    "tab_close": "Close",
+    "tab_close_left": "Close Tabs to the Left",
+    "tab_close_right": "Close Tabs to the Right",
+    "tab_close_others": "Close Other Tabs",
+    "tab_close_all": "Close All Tabs"
   },
   "ai": {
     "title": "AI Assistant",
@@ -191,6 +196,7 @@
     "data_source_from_url": "Data Source from URL",
     "data_source_from_path": "Data Source from Path",
     "driver": "Driver",
+    "open_query_console": "Open Query Console",
     "view_ddl": "View DDL",
     "view_ddl_title": "View DDL",
     "view_data": "View Data",

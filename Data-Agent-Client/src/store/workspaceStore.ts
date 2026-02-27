@@ -1,162 +1,264 @@
+/**
+ * WorkspaceStore Facade
+ *
+ * Combines multiple focused stores into a single unified API for backward compatibility.
+ * Internally delegates to: tabStore, preferenceStore, dbTypeStore, uiStore
+ *
+ * This facade pattern allows us to:
+ * - Keep existing code unchanged (no breaking changes)
+ * - Internally use smaller, focused stores
+ * - Maintain a single point of access for workspace state
+ */
+
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { DbTypeOption } from '../types/dbType';
-import { dbTypeService } from '../services/dbType.service';
+import type { ConsoleTabMetadata } from '../types/tab';
+import type { PreferenceState } from '../constants/workspacePreferences';
+import { useTabStore, type Tab } from './tabStore';
+import { usePreferenceStore } from './preferenceStore';
+import { useDbTypeStore } from './dbTypeStore';
+import { useUiStore } from './uiStore';
 
-export type TabType = 'file' | 'table';
-// ... (rest of imports/types)
+/**
+ * WorkspaceState is the unified interface combining all sub-stores
+ */
+export interface WorkspaceState extends PreferenceState {
+  // Tab state
+  tabs: Tab[];
+  activeTabId: string | null;
 
-export interface Tab {
-    id: string;
-    name: string;
-    type: TabType;
-    icon?: string;
-    content?: string;
-    active: boolean;
-    metadata?: any;
+  // UI state
+  isSettingsModalOpen: boolean;
+
+  // Database types state
+  supportedDbTypes: DbTypeOption[];
+  supportedDbTypesLoading: boolean;
+
+  // Tab actions
+  openTab: (tab: Omit<Tab, 'active'>) => void;
+  closeTab: (id: string) => void;
+  closeTabsToLeft: (id: string) => void;
+  closeTabsToRight: (id: string) => void;
+  closeOtherTabs: (id: string) => void;
+  closeAllTabs: () => void;
+  switchTab: (id: string) => void;
+  updateTabContent: (id: string, content: string) => void;
+  updateTabMetadata: (id: string, metadata: Partial<ConsoleTabMetadata>) => void;
+  reorderTabs: (sourceId: string, destinationId: string) => void;
+
+  // UI actions
+  setSettingsModalOpen: (open: boolean) => void;
+
+  // Preference actions
+  updatePreferences: (prefs: Partial<PreferenceState>) => void;
+  resetPreferences: () => void;
+
+  // DbType actions
+  fetchSupportedDbTypes: () => Promise<void>;
 }
 
-export type ResultBehavior = 'multi' | 'overwrite';
-export type TableDblClickMode = 'table' | 'console';
-export type TableDblClickConsoleTarget = 'reuse' | 'new';
+/**
+ * Helper to get current state from all sub-stores
+ */
+const getAggregatedState = (): WorkspaceState => {
+  const tabState = useTabStore.getState();
+  const prefState = usePreferenceStore.getState();
+  const dbState = useDbTypeStore.getState();
+  const uiState = useUiStore.getState();
 
-/** Current connection/database/schema for SQL execution in the middle editor. */
-export interface SqlContext {
-    connectionId: number | null;
-    databaseName: string | null;
-    schemaName: string | null;
-}
+  // Will be overridden with actual actions below
+  return {
+    // Tab state
+    tabs: tabState.tabs,
+    activeTabId: tabState.activeTabId,
 
-interface PreferenceState {
-    resultBehavior: ResultBehavior;
-    tableDblClickMode: TableDblClickMode;
-    tableDblClickConsoleTarget: TableDblClickConsoleTarget;
-    aiAutoSelect: boolean;
-    aiAutoWrite: boolean;
-    aiWriteTransaction: boolean;
-    aiMaxRetries: number;
-}
+    // Preference state
+    resultBehavior: prefState.resultBehavior,
+    tableDblClickMode: prefState.tableDblClickMode,
+    tableDblClickConsoleTarget: prefState.tableDblClickConsoleTarget,
+    aiAutoSelect: prefState.aiAutoSelect,
+    aiAutoWrite: prefState.aiAutoWrite,
+    aiWriteTransaction: prefState.aiWriteTransaction,
+    aiMaxRetries: prefState.aiMaxRetries,
 
-interface WorkspaceState extends PreferenceState {
-    tabs: Tab[];
-    activeTabId: string | null;
-    isSettingsModalOpen: boolean;
-    supportedDbTypes: DbTypeOption[];
-    supportedDbTypesLoading: boolean;
-    /** Current connection/database/schema for SQL execution. */
-    sqlContext: SqlContext;
+    // DbType state
+    supportedDbTypes: dbState.supportedDbTypes,
+    supportedDbTypesLoading: dbState.isLoading,
 
-    // Actions
-    openTab: (tab: Omit<Tab, 'active'>) => void;
-    closeTab: (id: string) => void;
-    switchTab: (id: string) => void;
-    updateTabContent: (id: string, content: string) => void;
-    setSettingsModalOpen: (open: boolean) => void;
-    updatePreferences: (prefs: Partial<PreferenceState>) => void;
-    resetPreferences: () => void;
-    fetchSupportedDbTypes: () => Promise<void>;
-    setSqlContext: (ctx: Partial<SqlContext>) => void;
-}
+    // UI state
+    isSettingsModalOpen: uiState.isSettingsModalOpen,
 
-const DEFAULT_PREFERENCES: PreferenceState = {
-    resultBehavior: 'multi',
-    tableDblClickMode: 'table',
-    tableDblClickConsoleTarget: 'reuse',
-    aiAutoSelect: true,
-    aiAutoWrite: false,
-    aiWriteTransaction: true,
-    aiMaxRetries: 3,
+    // Placeholder actions (will be overridden)
+    openTab: () => {},
+    closeTab: () => {},
+    closeTabsToLeft: () => {},
+    closeTabsToRight: () => {},
+    closeOtherTabs: () => {},
+    closeAllTabs: () => {},
+    switchTab: () => {},
+    updateTabContent: () => {},
+    updateTabMetadata: () => {},
+    reorderTabs: () => {},
+    setSettingsModalOpen: () => {},
+    updatePreferences: () => {},
+    resetPreferences: () => {},
+    fetchSupportedDbTypes: async () => {},
+  };
 };
 
-export const useWorkspaceStore = create<WorkspaceState>()(
-    persist(
-        (set, get) => ({
-            ...DEFAULT_PREFERENCES,
-            tabs: [],
-            activeTabId: null,
-            isSettingsModalOpen: false,
-            supportedDbTypes: [],
-            supportedDbTypesLoading: false,
-            sqlContext: { connectionId: null, databaseName: null, schemaName: null },
+/**
+ * Create a facade store that aggregates and delegates to sub-stores.
+ * Actions delegate to sub-stores AND update the facade store state.
+ */
+export const useWorkspaceStore = create<WorkspaceState>((set) => {
+  return {
+    ...getAggregatedState(),
 
-            openTab: (newTab) => set((state) => {
-                const existingTab = state.tabs.find(t => t.id === newTab.id);
-                if (existingTab) {
-                    return {
-                        tabs: state.tabs.map(t => ({ ...t, active: t.id === newTab.id })),
-                        activeTabId: newTab.id
-                    };
-                }
-                return {
-                    tabs: [...state.tabs.map(t => ({ ...t, active: false })), { ...newTab, active: true }],
-                    activeTabId: newTab.id
-                };
-            }),
+    // Tab actions - delegate to tabStore AND update facade state
+    openTab: (tab) => {
+      useTabStore.getState().openTab(tab);
+      const tabState = useTabStore.getState();
+      set({
+        tabs: tabState.tabs,
+        activeTabId: tabState.activeTabId,
+      });
+    },
 
-            closeTab: (id) => set((state) => {
-                const newTabs = state.tabs.filter(t => t.id !== id);
-                let newActiveTabId = state.activeTabId;
+    closeTab: (id) => {
+      useTabStore.getState().closeTab(id);
+      const tabState = useTabStore.getState();
+      set({ tabs: tabState.tabs, activeTabId: tabState.activeTabId });
+    },
 
-                if (state.activeTabId === id) {
-                    newActiveTabId = newTabs.length > 0 ? newTabs[newTabs.length - 1].id : null;
-                }
+    closeTabsToLeft: (id) => {
+      useTabStore.getState().closeTabsToLeft(id);
+      const tabState = useTabStore.getState();
+      set({ tabs: tabState.tabs, activeTabId: tabState.activeTabId });
+    },
 
-                return {
-                    tabs: newTabs.map(t => ({ ...t, active: t.id === newActiveTabId })),
-                    activeTabId: newActiveTabId
-                };
-            }),
+    closeTabsToRight: (id) => {
+      useTabStore.getState().closeTabsToRight(id);
+      const tabState = useTabStore.getState();
+      set({ tabs: tabState.tabs, activeTabId: tabState.activeTabId });
+    },
 
-            switchTab: (id) => set((state) => ({
-                tabs: state.tabs.map(t => ({ ...t, active: t.id === id })),
-                activeTabId: id
-            })),
+    closeOtherTabs: (id) => {
+      useTabStore.getState().closeOtherTabs(id);
+      const tabState = useTabStore.getState();
+      set({ tabs: tabState.tabs, activeTabId: tabState.activeTabId });
+    },
 
-            updateTabContent: (id, content) => set((state) => ({
-                tabs: state.tabs.map(t => t.id === id ? { ...t, content } : t)
-            })),
+    closeAllTabs: () => {
+      useTabStore.getState().closeAllTabs();
+      set({ tabs: [], activeTabId: null });
+    },
 
-            setSettingsModalOpen: (open) => set({ isSettingsModalOpen: open }),
+    switchTab: (id) => {
+      useTabStore.getState().switchTab(id);
+      const tabState = useTabStore.getState();
+      set({
+        tabs: tabState.tabs,
+        activeTabId: tabState.activeTabId,
+      });
+    },
 
-            updatePreferences: (prefs) => set((state) => ({ ...state, ...prefs })),
+    updateTabContent: (id, content) => {
+      useTabStore.getState().updateTabContent(id, content);
+      const tabState = useTabStore.getState();
+      set({
+        tabs: tabState.tabs,
+      });
+    },
 
-            resetPreferences: () => set((state) => ({ ...state, ...DEFAULT_PREFERENCES })),
+    updateTabMetadata: (id, metadata) => {
+      useTabStore.getState().updateTabMetadata(id, metadata);
+      const tabState = useTabStore.getState();
+      set({
+        tabs: tabState.tabs,
+      });
+    },
 
-            setSqlContext: (ctx) => set((state) => ({
-                sqlContext: {
-                    connectionId: ctx.connectionId !== undefined ? ctx.connectionId : state.sqlContext.connectionId,
-                    databaseName: ctx.databaseName !== undefined ? ctx.databaseName : state.sqlContext.databaseName,
-                    schemaName: ctx.schemaName !== undefined ? ctx.schemaName : state.sqlContext.schemaName,
-                },
-            })),
+    reorderTabs: (sourceId, destinationId) => {
+      useTabStore.getState().reorderTabs(sourceId, destinationId);
+      const tabState = useTabStore.getState();
+      set({
+        tabs: tabState.tabs,
+      });
+    },
 
-            fetchSupportedDbTypes: async () => {
-                const state = get();
-                if (state.supportedDbTypesLoading || state.supportedDbTypes.length > 0) return;
-                set({ supportedDbTypesLoading: true });
-                try {
-                    const data = await dbTypeService.getSupportedDbTypes();
-                    set({ supportedDbTypes: data || [] });
-                } catch (error) {
-                    console.error('Failed to fetch supported db types:', error);
-                } finally {
-                    set({ supportedDbTypesLoading: false });
-                }
-            },
-        }),
-        {
-            name: 'data-agent-workspace-storage',
-            partialize: (state) => ({
-                resultBehavior: state.resultBehavior,
-                tableDblClickMode: state.tableDblClickMode,
-                tableDblClickConsoleTarget: state.tableDblClickConsoleTarget,
-                aiAutoSelect: state.aiAutoSelect,
-                aiAutoWrite: state.aiAutoWrite,
-                aiWriteTransaction: state.aiWriteTransaction,
-                aiMaxRetries: state.aiMaxRetries,
-                // tabs: state.tabs, // Optional: persist tabs
-                // activeTabId: state.activeTabId,
-            }),
-        }
-    )
-);
+    // UI actions - delegate to uiStore AND update facade state
+    setSettingsModalOpen: (open) => {
+      useUiStore.getState().setSettingsModalOpen(open);
+      set({
+        isSettingsModalOpen: open,
+      });
+    },
+
+    // Preference actions - delegate to preferenceStore AND update facade state
+    updatePreferences: (prefs) => {
+      usePreferenceStore.getState().updatePreferences(prefs);
+      const prefState = usePreferenceStore.getState();
+      set({
+        resultBehavior: prefState.resultBehavior,
+        tableDblClickMode: prefState.tableDblClickMode,
+        tableDblClickConsoleTarget: prefState.tableDblClickConsoleTarget,
+        aiAutoSelect: prefState.aiAutoSelect,
+        aiAutoWrite: prefState.aiAutoWrite,
+        aiWriteTransaction: prefState.aiWriteTransaction,
+        aiMaxRetries: prefState.aiMaxRetries,
+      });
+    },
+
+    resetPreferences: () => {
+      usePreferenceStore.getState().resetPreferences();
+      const prefState = usePreferenceStore.getState();
+      set({
+        resultBehavior: prefState.resultBehavior,
+        tableDblClickMode: prefState.tableDblClickMode,
+        tableDblClickConsoleTarget: prefState.tableDblClickConsoleTarget,
+        aiAutoSelect: prefState.aiAutoSelect,
+        aiAutoWrite: prefState.aiAutoWrite,
+        aiWriteTransaction: prefState.aiWriteTransaction,
+        aiMaxRetries: prefState.aiMaxRetries,
+      });
+    },
+
+    // DbType actions - delegate to dbTypeStore AND update facade state
+    fetchSupportedDbTypes: async () => {
+      await useDbTypeStore.getState().fetchSupportedDbTypes();
+      const dbState = useDbTypeStore.getState();
+      set({
+        supportedDbTypes: dbState.supportedDbTypes,
+        supportedDbTypesLoading: dbState.isLoading,
+      });
+    },
+  };
+});
+
+/**
+ * Override getState to always return the latest aggregated state from all sub-stores.
+ * This ensures consistency even if sub-stores are updated directly.
+ */
+const originalGetState = useWorkspaceStore.getState;
+useWorkspaceStore.getState = () => {
+  const aggregated = getAggregatedState();
+  // Get the action functions from the current store state
+  const current = originalGetState();
+  return {
+    ...aggregated,
+    openTab: current.openTab,
+    closeTab: current.closeTab,
+    closeTabsToLeft: current.closeTabsToLeft,
+    closeTabsToRight: current.closeTabsToRight,
+    closeOtherTabs: current.closeOtherTabs,
+    closeAllTabs: current.closeAllTabs,
+    switchTab: current.switchTab,
+    updateTabContent: current.updateTabContent,
+    updateTabMetadata: current.updateTabMetadata,
+    reorderTabs: current.reorderTabs,
+    setSettingsModalOpen: current.setSettingsModalOpen,
+    updatePreferences: current.updatePreferences,
+    resetPreferences: current.resetPreferences,
+    fetchSupportedDbTypes: current.fetchSupportedDbTypes,
+  } as WorkspaceState;
+};

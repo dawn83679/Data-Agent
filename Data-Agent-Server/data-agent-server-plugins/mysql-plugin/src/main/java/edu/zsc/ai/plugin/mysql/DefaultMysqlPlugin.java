@@ -2,6 +2,7 @@ package edu.zsc.ai.plugin.mysql;
 
 import edu.zsc.ai.plugin.base.AbstractDatabasePlugin;
 import edu.zsc.ai.plugin.capability.*;
+import edu.zsc.ai.plugin.sql.DefaultSqlSplitter;
 import edu.zsc.ai.plugin.connection.ConnectionConfig;
 import edu.zsc.ai.plugin.connection.JdbcConnectionBuilder;
 import edu.zsc.ai.plugin.constant.DatabaseObjectTypeEnum;
@@ -25,7 +26,7 @@ import java.util.logging.Logger;
 public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
         implements ConnectionProvider, CommandExecutor<SqlCommandRequest, SqlCommandResult>, DatabaseProvider,
         SchemaProvider, TableProvider, ViewProvider, ColumnProvider, IndexProvider,
-        FunctionProvider, ProcedureProvider, TriggerProvider {
+        FunctionProvider, ProcedureProvider, TriggerProvider, SqlSplitter {
 
     private static final Logger logger = Logger.getLogger(DefaultMysqlPlugin.class.getName());
 
@@ -115,6 +116,11 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
     @Override
     public SqlCommandResult executeCommand(SqlCommandRequest command) {
         return sqlExecutor.executeCommand(command);
+    }
+
+    @Override
+    public java.util.List<String> split(String sql) {
+        return DefaultSqlSplitter.INSTANCE.split(sql);
     }
 
     @Override

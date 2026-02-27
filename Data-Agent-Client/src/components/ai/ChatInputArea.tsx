@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { parseMentionSegments } from './mentionTypes';
 import { AGENT_COLORS, type AgentType } from './agentTypes';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 
 interface ChatInputAreaProps {
   input: string;
@@ -37,7 +38,7 @@ export function ChatInputArea({ input, agent, onChange, onKeyDown }: ChatInputAr
         value={input}
         onChange={onChange}
         onKeyDown={onKeyDown}
-        placeholder={t('ai.placeholder_mention')}
+        placeholder={t(I18N_KEYS.AI.PLACEHOLDER_MENTION)}
         className={`relative z-10 w-full h-24 bg-transparent text-xs p-3 focus:outline-none resize-none placeholder:text-muted-foreground/50 text-transparent min-h-0 ${agent === 'Agent' ? 'caret-violet-400' : 'caret-amber-400'}`}
       />
     </div>

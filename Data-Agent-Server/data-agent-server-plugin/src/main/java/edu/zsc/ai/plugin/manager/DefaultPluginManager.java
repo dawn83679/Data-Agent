@@ -9,11 +9,13 @@ import edu.zsc.ai.plugin.capability.FunctionProvider;
 import edu.zsc.ai.plugin.capability.IndexProvider;
 import edu.zsc.ai.plugin.capability.ProcedureProvider;
 import edu.zsc.ai.plugin.capability.SchemaProvider;
+import edu.zsc.ai.plugin.capability.SqlSplitter;
 import edu.zsc.ai.plugin.capability.TableProvider;
 import edu.zsc.ai.plugin.capability.TriggerProvider;
 import edu.zsc.ai.plugin.capability.ViewProvider;
 import edu.zsc.ai.plugin.model.command.sql.SqlCommandRequest;
 import edu.zsc.ai.plugin.model.command.sql.SqlCommandResult;
+import edu.zsc.ai.plugin.sql.DefaultSqlSplitter;
 import edu.zsc.ai.plugin.enums.DbType;
 import edu.zsc.ai.plugin.driver.MavenCoordinates;
 import jakarta.validation.constraints.NotBlank;
@@ -246,5 +248,11 @@ public class DefaultPluginManager implements PluginManager {
     @Override
     public CommandExecutor<SqlCommandRequest, SqlCommandResult> getSqlCommandExecutorByPluginId(@NotBlank String pluginId) {
         return (CommandExecutor<SqlCommandRequest, SqlCommandResult>) PluginCapabilityResolver.getProviderByPluginId(pluginMap, pluginId, CommandExecutor.class);
+    }
+
+    @Override
+    public SqlSplitter getSqlSplitterByPluginId(@NotBlank String pluginId) {
+        Plugin plugin = pluginMap.get(pluginId);
+        return (plugin instanceof SqlSplitter splitter) ? splitter : DefaultSqlSplitter.INSTANCE;
     }
 }

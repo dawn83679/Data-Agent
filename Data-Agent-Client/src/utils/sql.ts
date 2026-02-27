@@ -1,13 +1,15 @@
 import { format } from 'sql-formatter';
-
-export type SqlDialect = 'mysql' | 'postgresql' | 'plsql' | 'n1ql' | 'db2' | 'redshift' | 'spark';
+import { SqlDialectEnum, type SqlDialect } from '../constants/sqlDialect';
 
 /**
- * Format SQL string. Uses sql-formatter with mysql dialect by default.
+ * Format SQL string using sql-formatter
+ * @param sql - The SQL string to format
+ * @param dialect - The SQL dialect (default: mysql)
+ * @returns Formatted SQL string, or original if formatting fails
  */
 export function formatSql(
   sql: string,
-  dialect: SqlDialect = 'mysql'
+  dialect: SqlDialect = SqlDialectEnum.MYSQL
 ): string {
   if (!sql || !sql.trim()) return sql;
   try {

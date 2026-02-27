@@ -12,6 +12,7 @@ import {
   DialogDescription,
 } from '../ui/Dialog';
 import { DdlViewerConfig } from '../../constants/explorer';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 import { Button } from '../ui/Button';
 
 export interface DdlViewerDialogProps {
@@ -57,7 +58,7 @@ export function DdlViewerDialog({
       setDdl(result);
     } catch (err: unknown) {
       console.error('Failed to load DDL:', err);
-      setError((err as Error).message || t('explorer.load_ddl_failed'));
+      setError((err as Error).message || t(I18N_KEYS.EXPLORER.LOAD_DDL_FAILED));
     } finally {
       setLoading(false);
     }
@@ -111,12 +112,12 @@ export function DdlViewerDialog({
                   {copied ? (
                     <>
                       <Check className="w-3 h-3 mr-1" />
-                      {t('explorer.ddl_copied')}
+                      {t(I18N_KEYS.EXPLORER.DDL_COPIED)}
                     </>
                   ) : (
                     <>
                       <Copy className="w-3 h-3 mr-1" />
-                      {t('explorer.copy_ddl')}
+                      {t(I18N_KEYS.EXPLORER.COPY_DDL)}
                     </>
                   )}
                 </Button>

@@ -4,6 +4,7 @@ import { AskUserAnswered } from './AskUserAnswered';
 import { AskUserUnanswered } from './AskUserUnanswered';
 import type { AskUserQuestionPayload } from './askUserQuestionTypes';
 import { normalizeToQuestions } from './askUserQuestionTypes';
+import { I18N_KEYS } from '../../../constants/i18nKeys';
 
 export interface AskUserQuestionBlockProps {
   payload: AskUserQuestionPayload;
@@ -42,7 +43,7 @@ export function AskUserQuestionBlock({
   return (
     <div
       className="mt-1 rounded-lg border theme-border overflow-hidden theme-bg-panel"
-      aria-label={t('ai.askUserQuestion.label')}
+      aria-label={t(I18N_KEYS.AI.ASK_USER_QUESTION.LABEL)}
     >
       {isAnswered ? (
         <AskUserAnswered questions={questions} answer={displayAnswer} />
