@@ -91,9 +91,9 @@ export interface UseChatReturn {
   handleSubmit: (e: React.FormEvent) => Promise<void>;
   /** Send a specific message (e.g. from queue) without using input state. */
   submitMessage: (message: string) => Promise<void>;
-  /** Submit user answer to askUserQuestion tool and continue (streams into last assistant message). */
-  submitToolAnswer: (toolCallId: string, answer: string) => Promise<void>;
   isLoading: boolean;
+  /** True when loading and no block received recently — used to show Planning indicator. */
+  isWaiting: boolean;
   stop: () => void;
   reload: () => Promise<void>;
   error?: Error;

@@ -38,11 +38,11 @@ export function AIAssistant() {
     input,
     setInput,
     isLoading,
+    isWaiting,
     stop,
     error,
     handleSubmit,
     submitMessage,
-    submitToolAnswer,
   } = useChat({
     api: ChatPaths.STREAM,
     body: {
@@ -99,7 +99,6 @@ export function AIAssistant() {
     onSend: handleSend,
     onStop: stop,
     submitMessage,
-    submitToolAnswer,
     isLoading,
     conversationId: currentConversationId,
     modelState: { model, setModel, modelOptions },
@@ -147,6 +146,7 @@ export function AIAssistant() {
           messages={chatMessages}
           messagesEndRef={messagesEndRef}
           isLoading={isLoading}
+          isWaiting={isWaiting}
           queue={messageQueue.queue}
           onRemoveFromQueue={messageQueue.removeFromQueue}
         />

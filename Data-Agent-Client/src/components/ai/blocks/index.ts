@@ -1,4 +1,5 @@
 export { useMarkdownComponents, markdownRemarkPlugins } from './markdownComponents';
+export { PlanningIndicator } from './PlanningIndicator';
 export { TextBlock } from './TextBlock';
 export { ThoughtBlock } from './ThoughtBlock';
 export { TodoListBlock } from './TodoListBlock';

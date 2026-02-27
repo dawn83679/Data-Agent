@@ -7,10 +7,8 @@ import { isContentBlockType, MessageRole } from '../types/chat';
 import type { TokenPairResponse } from '../types/auth';
 import {
   CHAT_STREAM_API,
-  SUBMIT_TOOL_ANSWER_API,
   NOT_AUTHENTICATED,
   SESSION_EXPIRED_MESSAGE,
-  CONVERSATION_ID_REQUIRED_FOR_TOOL_ANSWER,
 } from '../constants/chat';
 
 async function refreshAccessToken(): Promise<TokenPairResponse | null> {
@@ -127,18 +125,34 @@ async function fetchWithAuthRetry(
   return response;
 }
 
+/** After this many ms with no block received, show the Planning indicator again. */
+const GAP_THRESHOLD_MS = 800;
+
 export function useChat(options: UseChatOptions = {}): UseChatReturn {
   const { api = CHAT_STREAM_API } = options;
   const [messages, setMessages] = useState<ChatMessage[]>(options.initialMessages || []);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isWaiting, setIsWaiting] = useState(false);
   const [error, setError] = useState<Error>();
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const submittingRef = useRef(false);
   const messagesRef = useRef(messages);
   const lastStreamEventAtRef = useRef(0);
+  const waitingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   messagesRef.current = messages;
+
+  function scheduleWaiting() {
+    if (waitingTimerRef.current) clearTimeout(waitingTimerRef.current);
+    waitingTimerRef.current = setTimeout(() => setIsWaiting(true), GAP_THRESHOLD_MS);
+  }
+
+  function cancelWaiting() {
+    if (waitingTimerRef.current) clearTimeout(waitingTimerRef.current);
+    waitingTimerRef.current = null;
+    setIsWaiting(false);
+  }
 
 
   const appendMessage = useCallback((message: ChatMessage) => {
@@ -149,6 +163,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
     async (request: ChatRequest) => {
       abortControllerRef.current = new AbortController();
       setIsLoading(true);
+      setIsWaiting(true);
       setError(undefined);
 
       try {
@@ -181,6 +196,8 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
           onConversationId: options.onConversationId,
           onFinish: options.onFinish,
           onBlockReceived: () => {
+            setIsWaiting(false);
+            scheduleWaiting();
             lastStreamEventAtRef.current = Date.now();
           },
         });
@@ -192,6 +209,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
       } finally {
         submittingRef.current = false;
         setIsLoading(false);
+        cancelWaiting();
       }
     },
     [api, appendMessage, options]
@@ -241,74 +259,11 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
     [submitCore]
   );
 
-  /** Submit user answer to askUserQuestion tool and continue (no user message appended; streams into last assistant message). */
-  const submitToolAnswer = useCallback(
-    async (toolCallId: string, answer: string) => {
-      const trimmed = (answer ?? '').trim();
-      if (submittingRef.current || !trimmed) return;
-
-      const body: Record<string, unknown> = {
-        ...(options.body as Record<string, unknown>),
-        toolCallId,
-        answer: trimmed,
-      };
-      const conversationId = body.conversationId as number | undefined;
-      if (conversationId == null) {
-        setError(new Error(CONVERSATION_ID_REQUIRED_FOR_TOOL_ANSWER));
-        return;
-      }
-
-      submittingRef.current = true;
-      setIsLoading(true);
-      setError(undefined);
-      abortControllerRef.current = new AbortController();
-
-      try {
-        const response = await fetchWithAuthRetry(
-          SUBMIT_TOOL_ANSWER_API,
-          body,
-          abortControllerRef.current.signal
-        );
-
-        if (!response.ok) {
-          const err = new Error(`Submit tool answer failed: ${response.status} ${response.statusText}`);
-          setError(err);
-          options.onError?.(err);
-          return;
-        }
-
-        const lastMessage = messagesRef.current[messagesRef.current.length - 1];
-        if (lastMessage?.role !== MessageRole.ASSISTANT) {
-          setIsLoading(false);
-          submittingRef.current = false;
-          return;
-        }
-        lastStreamEventAtRef.current = Date.now();
-
-        await consumeStreamIntoLastAssistantMessage(response, messagesRef, setMessages, {
-          onConversationId: options.onConversationId,
-          onFinish: options.onFinish,
-          onBlockReceived: () => {
-            lastStreamEventAtRef.current = Date.now();
-          },
-        }, lastMessage.content ?? '', lastMessage.blocks);
-      } catch (err) {
-        if (err instanceof Error && err.name !== 'AbortError') {
-          setError(err);
-          options.onError?.(err);
-        }
-      } finally {
-        submittingRef.current = false;
-        setIsLoading(false);
-      }
-    },
-    [options.body, options.onConversationId, options.onFinish, options.onError]
-  );
-
   const stop = useCallback(() => {
     abortControllerRef.current?.abort();
     submittingRef.current = false;
     setIsLoading(false);
+    cancelWaiting();
   }, []);
 
   const reload = useCallback(async () => {
@@ -334,8 +289,8 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
     handleInputChange,
     handleSubmit,
     submitMessage,
-    submitToolAnswer,
     isLoading,
+    isWaiting,
     stop,
     reload,
     error,

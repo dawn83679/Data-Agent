@@ -8,6 +8,7 @@ export interface MessageBubbleProps {
   message: Message;
   segments: Segment[];
   isLastAssistantStreaming: boolean;
+  isWaiting: boolean;
   /** When true, do not render raw todo segments (we show boxes from overrideTodoBoxes where applicable). */
   hideTodoInThisMessage?: boolean;
   /** Todo boxes to show in this message (one per todoId that first appeared here). */
@@ -18,6 +19,7 @@ export function MessageBubble({
   message,
   segments,
   isLastAssistantStreaming,
+  isWaiting,
   hideTodoInThisMessage = false,
   overrideTodoBoxes = [],
 }: MessageBubbleProps) {
@@ -31,6 +33,7 @@ export function MessageBubble({
       hideTodoSegments={hideTodoInThisMessage}
       overrideTodoBoxes={overrideTodoBoxes}
       isLastAssistantStreaming={isLastAssistantStreaming}
+      isWaiting={isWaiting}
     />
   );
 }
