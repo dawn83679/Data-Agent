@@ -5,18 +5,11 @@
 /** Default chat stream API path. */
 export const CHAT_STREAM_API = '/api/chat/stream';
 
-/** Submit tool answer (e.g. askUserQuestion) API path. */
-export const SUBMIT_TOOL_ANSWER_API = '/api/chat/submit-tool-answer';
-
 /** Thrown when no valid access token. */
 export const NOT_AUTHENTICATED = 'Not authenticated';
 
 /** Shown when session expired and user must login again. */
 export const SESSION_EXPIRED_MESSAGE = 'Session expired, please login again';
-
-/** Shown when submitToolAnswer is called without conversationId. */
-export const CONVERSATION_ID_REQUIRED_FOR_TOOL_ANSWER =
-  'conversationId is required for submit-tool-answer';
 
 /** ThoughtBlock label while streaming (thinking). */
 export const THOUGHT_LABEL_THINKING = 'Thinking';
@@ -38,3 +31,6 @@ export const TOOL_RUN_SECTION_RESPONSE = 'RESPONSE';
 
 /** Placeholder when parameters or response is empty. */
 export const TOOL_RUN_EMPTY_PLACEHOLDER = '—';
+
+/** PlanningIndicator: label shown while waiting for AI response or between blocks. */
+export const PLANNING_LABEL = 'Planning...';
