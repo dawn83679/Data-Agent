@@ -4,9 +4,9 @@ import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.common.constant.RequestContextConstant;
-import edu.zsc.ai.common.constant.ToolMessageConstants;
 import edu.zsc.ai.domain.model.dto.response.db.ConnectionResponse;
 import edu.zsc.ai.domain.service.db.DbConnectionService;
+import edu.zsc.ai.tool.model.AgentToolResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -24,24 +24,23 @@ public class ConnectionTool {
         "[WHAT] List all database connections owned by the current user.",
         "[WHEN] Use when connectionId is not known, the user asks about their connections, or wants to switch to a different connection."
     })
-    public String getMyConnections(InvocationParameters parameters) {
-        log.info("{} getMyConnections", ToolMessageConstants.TOOL_LOG_PREFIX_BEFORE);
+    public AgentToolResult getMyConnections(InvocationParameters parameters) {
+        log.info("{} getMyConnections", "[Tool]");
         try {
             Long userId = parameters.get(RequestContextConstant.USER_ID);
             if (userId == null) {
-                return ToolMessageConstants.USER_CONTEXT_MISSING;
+                return AgentToolResult.noContext();
             }
             List<ConnectionResponse> connections = dbConnectionService.getAllConnections(userId);
             if (connections == null || connections.isEmpty()) {
-                log.info("{} getMyConnections -> {}", ToolMessageConstants.TOOL_LOG_PREFIX_DONE,
-                        ToolMessageConstants.EMPTY_NO_CONNECTIONS);
-                return ToolMessageConstants.EMPTY_NO_CONNECTIONS;
+                log.info("{} getMyConnections -> empty", "[Tool done]");
+                return AgentToolResult.empty();
             }
-            log.info("{} getMyConnections, result size={}", ToolMessageConstants.TOOL_LOG_PREFIX_DONE, connections.size());
-            return edu.zsc.ai.util.JsonUtil.object2json(connections);
+            log.info("{} getMyConnections, result size={}", "[Tool done]", connections.size());
+            return AgentToolResult.success(connections);
         } catch (Exception e) {
-            log.error("{} getMyConnections", ToolMessageConstants.TOOL_LOG_PREFIX_ERROR, e);
-            return e.getMessage();
+            log.error("{} getMyConnections", "[Tool error]", e);
+            return AgentToolResult.fail(e);
         }
     }
 
@@ -49,21 +48,21 @@ public class ConnectionTool {
         "[WHAT] Get full details of a specific database connection by its ID.",
         "[WHEN] Use when you need host, port, or database name for a given connectionId from session context or getMyConnections."
     })
-    public String getConnectionById(
+    public AgentToolResult getConnectionById(
             @P("The connection id (from session context or getMyConnections result)") Long connectionId,
             InvocationParameters parameters) {
-        log.info("{} getConnectionById, connectionId={}", ToolMessageConstants.TOOL_LOG_PREFIX_BEFORE, connectionId);
+        log.info("[Tool] getConnectionById, connectionId={}", connectionId);
         try {
             Long userId = parameters.get(RequestContextConstant.USER_ID);
             if (userId == null) {
-                return ToolMessageConstants.USER_CONTEXT_MISSING;
+                return AgentToolResult.noContext();
             }
             ConnectionResponse connection = dbConnectionService.getConnectionById(connectionId, userId);
-            log.info("{} getConnectionById, connectionId={}", ToolMessageConstants.TOOL_LOG_PREFIX_DONE, connectionId);
-            return edu.zsc.ai.util.JsonUtil.object2json(connection);
+            log.info("[Tool done] getConnectionById, connectionId={}", connectionId);
+            return AgentToolResult.success(connection);
         } catch (Exception e) {
-            log.error("{} getConnectionById, connectionId={}", ToolMessageConstants.TOOL_LOG_PREFIX_ERROR, connectionId, e);
-            return e.getMessage();
+            log.error("[Tool error] getConnectionById, connectionId={}", connectionId, e);
+            return AgentToolResult.fail(e);
         }
     }
 }
