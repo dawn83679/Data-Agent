@@ -86,7 +86,7 @@ export function ToolRunBlock({
   const openModal = useAskQuestionModalStore((state) => state.open);
 
   const toolType = getToolType(toolName, serverName);
-  const { formattedParameters, isParametersJson } = formatParameters(parametersData);
+  const formattedParameters = formatParameters(parametersData);
 
   // Handle execution state (new approach)
   if (executionState === ToolExecutionState.STREAMING_ARGUMENTS) {
@@ -170,7 +170,6 @@ export function ToolRunBlock({
     <GenericToolRun
       toolName={toolName}
       formattedParameters={formattedParameters}
-      isParametersJson={isParametersJson}
       responseData={responseData}
       responseError={responseError}
     />

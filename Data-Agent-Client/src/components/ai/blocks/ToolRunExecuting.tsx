@@ -13,7 +13,7 @@ export interface ToolRunExecutingProps {
  */
 export function ToolRunExecuting({ toolName, parametersData }: ToolRunExecutingProps) {
   const { t } = useTranslation();
-  const { formattedParameters, isParametersJson } = formatParameters(parametersData);
+  const formattedParameters = formatParameters(parametersData);
 
   return (
     <div className="mb-2 text-xs theme-text-secondary">
@@ -22,7 +22,7 @@ export function ToolRunExecuting({ toolName, parametersData }: ToolRunExecutingP
         <span className="font-medium">{toolName}</span>
         <span className="text-xs opacity-70">{t(I18N_KEYS.AI.TOOL_RUN.EXECUTING)}</span>
       </div>
-      {isParametersJson && (
+      {formattedParameters && (
         <details className="mt-1 p-2 rounded theme-bg-tertiary cursor-pointer">
           <summary className="text-xs font-medium opacity-70">
             {t(I18N_KEYS.AI.TOOL_RUN.PARAMETERS)}

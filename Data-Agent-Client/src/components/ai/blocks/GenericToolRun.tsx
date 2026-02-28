@@ -7,7 +7,6 @@ import { ToolRunDetail } from './ToolRunDetail';
 export interface GenericToolRunProps {
   toolName: string;
   formattedParameters: string;
-  isParametersJson: boolean;
   responseData: string;
   responseError: boolean;
 }
@@ -19,7 +18,6 @@ export interface GenericToolRunProps {
 export function GenericToolRun({
   toolName,
   formattedParameters,
-  isParametersJson,
   responseData,
   responseError,
 }: GenericToolRunProps) {
@@ -54,9 +52,7 @@ export function GenericToolRun({
       {!collapsed && (
         <ToolRunDetail
           formattedParameters={formattedParameters}
-          isParametersJson={isParametersJson}
           responseData={responseData}
-          toolName={toolName}
         />
       )}
     </div>
