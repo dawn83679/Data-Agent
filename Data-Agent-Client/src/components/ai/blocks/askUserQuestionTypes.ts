@@ -5,6 +5,7 @@ export interface SingleQuestion {
   question: string;
   options?: string[];
   freeTextHint?: string | null;
+  allowMultiSelect?: boolean; // Controls whether multiple options can be selected (default: false)
 }
 
 /**
@@ -35,8 +36,9 @@ function parseSingleQuestion(obj: Record<string, unknown>): SingleQuestion | nul
     ? (obj.options as unknown[]).filter((o): o is string => typeof o === 'string')
     : undefined;
   const freeTextHint = obj.freeTextHint != null ? String(obj.freeTextHint) : undefined;
+  const allowMultiSelect = typeof obj.allowMultiSelect === 'boolean' ? obj.allowMultiSelect : undefined;
 
-  return { question, options, freeTextHint };
+  return { question, options, freeTextHint, allowMultiSelect };
 }
 
 function payloadFromObject(obj: Record<string, unknown>): AskUserQuestionPayload | null {
@@ -135,6 +137,7 @@ export function normalizeToQuestions(payload: AskUserQuestionPayload | null): Si
       question: payload.question,
       options: payload.options,
       freeTextHint: payload.freeTextHint,
+      allowMultiSelect: (payload as any).allowMultiSelect,
     }];
   }
 

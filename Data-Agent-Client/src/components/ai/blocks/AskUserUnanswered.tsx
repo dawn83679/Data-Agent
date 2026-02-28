@@ -154,7 +154,8 @@ export function AskUserUnanswered({ questions, onSubmit, onReject, disabled }: A
 
   const renderQuestionContent = (question: SingleQuestion, qIdx: number) => {
     const answer = answers.get(qIdx) || { selectedOptions: [], customText: '' };
-    const allowMultiSelect = true; // Always allow multi-select (checkbox)
+    // Use question's allowMultiSelect setting, default to false (single select/radio)
+    const allowMultiSelect = question.allowMultiSelect ?? false;
 
     return (
       <div>
