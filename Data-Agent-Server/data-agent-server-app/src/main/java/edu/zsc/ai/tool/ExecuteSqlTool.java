@@ -4,7 +4,6 @@ import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.common.constant.RequestContextConstant;
-import edu.zsc.ai.common.constant.ToolMessageConstants;
 import edu.zsc.ai.domain.model.dto.request.db.AgentExecuteSqlRequest;
 import edu.zsc.ai.domain.model.dto.response.db.ExecuteSqlResponse;
 import edu.zsc.ai.domain.service.db.SqlExecutionService;
@@ -31,14 +30,14 @@ public class ExecuteSqlTool {
             @P("The SELECT statement to execute") String sql,
             InvocationParameters parameters) {
         log.info("{} executeSelectSql, connectionId={}, database={}, schema={}, sqlLength={}",
-                ToolMessageConstants.TOOL_LOG_PREFIX_BEFORE, connectionId, databaseName, schemaName,
+                "[Tool]", connectionId, databaseName, schemaName,
                 sql != null ? sql.length() : 0);
         try {
             Long userId = parameters.get(RequestContextConstant.USER_ID);
             if (userId == null) {
                 return ExecuteSqlResponse.builder()
                         .success(false)
-                        .errorMessage(ToolMessageConstants.USER_CONTEXT_MISSING)
+                        .errorMessage("User context is missing.")
                         .build();
             }
             AgentExecuteSqlRequest request = AgentExecuteSqlRequest.builder()
@@ -49,10 +48,10 @@ public class ExecuteSqlTool {
                     .userId(userId)
                     .build();
             ExecuteSqlResponse response = sqlExecutionService.executeSql(request);
-            log.info("{} executeSelectSql", ToolMessageConstants.TOOL_LOG_PREFIX_DONE);
+            log.info("{} executeSelectSql", "[Tool done]");
             return response;
         } catch (Exception e) {
-            log.error("{} executeSelectSql", ToolMessageConstants.TOOL_LOG_PREFIX_ERROR, e);
+            log.error("{} executeSelectSql", "[Tool error]", e);
             return ExecuteSqlResponse.builder()
                     .success(false)
                     .errorMessage(e.getMessage())
@@ -72,14 +71,14 @@ public class ExecuteSqlTool {
             @P("The non-SELECT statement to execute (INSERT, UPDATE, DELETE, DDL, etc.)") String sql,
             InvocationParameters parameters) {
         log.info("{} executeNonSelectSql, connectionId={}, database={}, schema={}, sqlLength={}",
-                ToolMessageConstants.TOOL_LOG_PREFIX_BEFORE, connectionId, databaseName, schemaName,
+                "[Tool]", connectionId, databaseName, schemaName,
                 sql != null ? sql.length() : 0);
         try {
             Long userId = parameters.get(RequestContextConstant.USER_ID);
             if (userId == null) {
                 return ExecuteSqlResponse.builder()
                         .success(false)
-                        .errorMessage(ToolMessageConstants.USER_CONTEXT_MISSING)
+                        .errorMessage("User context is missing.")
                         .build();
             }
             AgentExecuteSqlRequest request = AgentExecuteSqlRequest.builder()
@@ -90,10 +89,10 @@ public class ExecuteSqlTool {
                     .userId(userId)
                     .build();
             ExecuteSqlResponse response = sqlExecutionService.executeSql(request);
-            log.info("{} executeNonSelectSql", ToolMessageConstants.TOOL_LOG_PREFIX_DONE);
+            log.info("{} executeNonSelectSql", "[Tool done]");
             return response;
         } catch (Exception e) {
-            log.error("{} executeNonSelectSql", ToolMessageConstants.TOOL_LOG_PREFIX_ERROR, e);
+            log.error("{} executeNonSelectSql", "[Tool error]", e);
             return ExecuteSqlResponse.builder()
                     .success(false)
                     .errorMessage(e.getMessage())
