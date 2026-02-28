@@ -6,7 +6,7 @@ import { parseMentionSegments } from '../mentionTypes';
 import type { Message } from './types';
 import { I18N_KEYS } from '../../../constants/i18nKeys';
 
-const MENTION_COLOR_CLASS = 'text-cyan-400 font-medium';
+const MENTION_COLOR_CLASS = 'text-violet-400 font-medium';
 
 function renderContentWithMentions(content: string): React.ReactNode[] {
   const segments = parseMentionSegments(content);

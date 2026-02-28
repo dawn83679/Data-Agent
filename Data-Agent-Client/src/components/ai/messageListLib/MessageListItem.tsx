@@ -8,6 +8,7 @@ export interface MessageListItemProps {
   msgIndex: number;
   totalCount: number;
   isLoading: boolean;
+  isWaiting: boolean;
   segments: Segment[];
   overrideTodoBoxes: TodoBoxSpec[];
   hideTodoInThisMessage: boolean;
@@ -21,6 +22,7 @@ export function MessageListItem({
   msgIndex: _msgIndex,
   totalCount: _totalCount,
   isLoading: _isLoading,
+  isWaiting,
   segments,
   overrideTodoBoxes,
   hideTodoInThisMessage,
@@ -35,6 +37,7 @@ export function MessageListItem({
           message={msg}
           segments={segments}
           isLastAssistantStreaming={isLastAssistantStreaming}
+          isWaiting={isWaiting}
           hideTodoInThisMessage={hideTodoInThisMessage}
           overrideTodoBoxes={overrideTodoBoxes}
         />
