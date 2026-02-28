@@ -16,9 +16,10 @@ import java.util.Map;
 public class TodoTool {
 
     @Tool({
-        "Update the entire todo list (full overwrite).",
-        "Pass todoId to identify the list (e.g. use a new id when starting a new list after the previous one is done or cleared).",
-        "Pass a list of tasks; each task has title and optional description, priority, status. Pass an empty list to clear. Data is not persisted."
+        "[WHAT] Update the task progress list displayed to the user in real time (full overwrite on each call).",
+        "[WHEN] Use for any operation involving 3 or more steps to keep the user informed of the plan and progress.",
+        "IMPORTANT — MUST call at the START of any multi-step operation to outline the full plan before taking any action. Update after each step completes.",
+        "[HOW] Pass the same todoId for incremental updates; use a new id only after the current list is fully complete or cleared. Pass an empty list to clear."
     })
     public String updateTodoList(
             @P("Id of the todo list (e.g. 'list-1'). Use the same id for updates; use a new id only when creating a new list after the current one is all completed or cleared.")
