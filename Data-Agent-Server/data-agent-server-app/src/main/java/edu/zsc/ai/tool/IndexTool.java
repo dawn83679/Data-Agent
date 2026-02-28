@@ -28,8 +28,8 @@ public class IndexTool {
 
 
     @Tool({
-        "Get the list of all indexes for a specific table.",
-        "Use when the user asks what indexes exist on a table or wants to understand query performance optimization. Pass connectionId, databaseName, schemaName, tableName from current session context."
+        "[WHAT] List all indexes defined on a specific table.",
+        "[WHEN] Use when the user asks about indexes, or when diagnosing query performance issues. Pass connectionId, databaseName, schemaName from current session context."
     })
     public String getIndexes(
             @P("The exact name of the table") String tableName,

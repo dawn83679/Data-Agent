@@ -28,8 +28,8 @@ public class ProcedureTool {
 
 
     @Tool({
-        "Get the list of all stored procedures in the current database/schema.",
-        "Use when the user asks what stored procedures exist or wants to explore procedural logic. Pass connectionId, databaseName, schemaName from current session context."
+        "[WHAT] List all stored procedures in the current database/schema.",
+        "[WHEN] Use when the user asks about procedures or wants to call one. Pass connectionId, databaseName, schemaName from current session context."
     })
     public String getProcedureNames(
             @P("Connection id from current session context") Long connectionId,
@@ -65,8 +65,8 @@ public class ProcedureTool {
     }
 
     @Tool({
-        "Get the DDL (Data Definition Language) statement for a specific stored procedure.",
-        "Use when the user needs the procedure definition or CREATE PROCEDURE statement. Pass connectionId, databaseName, schemaName from current session context."
+        "[WHAT] Get the CREATE PROCEDURE DDL for a specific stored procedure.",
+        "[WHEN] Use when you need to understand a procedure's logic, parameters, or behavior. Pass connectionId, databaseName, schemaName from current session context."
     })
     public String getProcedureDdl(
             @P("The exact name of the procedure in the current schema") String procedureName,

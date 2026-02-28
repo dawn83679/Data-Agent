@@ -28,8 +28,8 @@ public class FunctionTool {
 
 
     @Tool({
-        "Get the list of all functions in the current database/schema.",
-        "Use when the user asks what functions exist or wants to explore user-defined functions. Pass connectionId, databaseName, schemaName from current session context."
+        "[WHAT] List all user-defined functions in the current database/schema.",
+        "[WHEN] Use when the user asks about functions or wants to use one in a query. Pass connectionId, databaseName, schemaName from current session context."
     })
     public String getFunctionNames(
             @P("Connection id from current session context") Long connectionId,
@@ -65,8 +65,8 @@ public class FunctionTool {
     }
 
     @Tool({
-        "Get the DDL (Data Definition Language) statement for a specific function.",
-        "Use when the user needs the function definition or CREATE FUNCTION statement. Pass connectionId, databaseName, schemaName from current session context."
+        "[WHAT] Get the CREATE FUNCTION DDL for a specific user-defined function.",
+        "[WHEN] Use when you need to understand a function's logic, parameters, or return type. Pass connectionId, databaseName, schemaName from current session context."
     })
     public String getFunctionDdl(
             @P("The exact name of the function in the current schema") String functionName,

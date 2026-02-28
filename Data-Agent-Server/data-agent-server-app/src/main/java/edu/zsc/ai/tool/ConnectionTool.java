@@ -21,8 +21,8 @@ public class ConnectionTool {
     private final DbConnectionService dbConnectionService;
 
     @Tool({
-        "List all database connections owned by the current user.",
-        "Use when the user asks for their connections, wants to switch connection, or needs to see available connections."
+        "[WHAT] List all database connections owned by the current user.",
+        "[WHEN] Use when connectionId is not known, the user asks about their connections, or wants to switch to a different connection."
     })
     public String getMyConnections(InvocationParameters parameters) {
         log.info("{} getMyConnections", ToolMessageConstants.TOOL_LOG_PREFIX_BEFORE);
@@ -46,8 +46,8 @@ public class ConnectionTool {
     }
 
     @Tool({
-        "Get details of a specific database connection by its connectionId.",
-        "Use when you need full connection info (host, port, database name, etc.) for a given connection id."
+        "[WHAT] Get full details of a specific database connection by its ID.",
+        "[WHEN] Use when you need host, port, or database name for a given connectionId from session context or getMyConnections."
     })
     public String getConnectionById(
             @P("The connection id (from session context or getMyConnections result)") Long connectionId,

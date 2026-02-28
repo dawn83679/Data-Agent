@@ -20,8 +20,8 @@ public class DatabaseTool {
     private final DatabaseService databaseService;
 
     @Tool({
-        "List all database names (catalogs) for a given connection.",
-        "Use when exploring which databases exist on a connection, or when the user asks for database list. Pass connectionId from session context or getMyConnections."
+        "[WHAT] List all database names (catalogs) available on a given connection.",
+        "[WHEN] Use when the user has not specified a database, or when exploring what databases exist on a connection. Pass connectionId from session context or getMyConnections."
     })
     public String listDatabases(
             @P("The connection id (from session context or getMyConnections result)") Long connectionId,

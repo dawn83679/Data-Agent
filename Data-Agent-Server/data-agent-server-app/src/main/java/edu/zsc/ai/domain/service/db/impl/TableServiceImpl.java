@@ -30,6 +30,16 @@ public class TableServiceImpl implements TableService {
     }
 
     @Override
+    public List<String> searchTables(Long connectionId, String catalog, String schema, String tableNamePattern, Long userId) {
+        connectionService.openConnection(connectionId, catalog, schema, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+
+        TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
+        return provider.searchTables(active.connection(), catalog, schema, tableNamePattern);
+    }
+
+    @Override
     public String getTableDdl(Long connectionId, String catalog, String schema, String tableName, Long userId) {
         connectionService.openConnection(connectionId, catalog, schema, userId);
 
@@ -37,6 +47,16 @@ public class TableServiceImpl implements TableService {
 
         TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
         return provider.getTableDdl(active.connection(), catalog, schema, tableName);
+    }
+
+    @Override
+    public long countTableRows(Long connectionId, String catalog, String schema, String tableName, Long userId) {
+        connectionService.openConnection(connectionId, catalog, schema, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+
+        TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
+        return provider.getTableDataCount(active.connection(), catalog, schema, tableName);
     }
 
     @Override

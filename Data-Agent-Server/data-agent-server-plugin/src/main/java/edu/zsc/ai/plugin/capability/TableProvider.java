@@ -12,10 +12,15 @@ import java.util.List;
 public interface TableProvider {
 
     default List<String> getTableNames(Connection connection, String catalog, String schema) {
+        return searchTables(connection, catalog, schema, null);
+    }
+
+    default List<String> searchTables(Connection connection, String catalog, String schema, String tableNamePattern) {
         try {
             List<String> list = new ArrayList<>();
+            String pattern = StringUtils.isBlank(tableNamePattern) ? null : tableNamePattern;
             try (ResultSet rs = connection.getMetaData().getTables(
-                    catalog, schema, null, new String[] {JdbcMetaDataConstants.TABLE_TYPE_TABLE})) {
+                    catalog, schema, pattern, new String[] {JdbcMetaDataConstants.TABLE_TYPE_TABLE})) {
                 while (rs.next()) {
                     String name = rs.getString(JdbcMetaDataConstants.TABLE_NAME);
                     if (StringUtils.isNotBlank(name)) {
@@ -25,7 +30,7 @@ public interface TableProvider {
             }
             return list;
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to list tables: " + e.getMessage(), e);
+            throw new RuntimeException("Failed to search tables: " + e.getMessage(), e);
         }
     }
 

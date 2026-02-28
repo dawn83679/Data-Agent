@@ -20,8 +20,9 @@ public class ExecuteSqlTool {
     private final SqlExecutionService sqlExecutionService;
 
     @Tool({
-        "Execute a SELECT SQL statement on the current connection and database.",
-        "Use this tool to query data. Pass connectionId, databaseName, schemaName from current session context and the SELECT SQL to run."
+        "[WHAT] Execute a SELECT SQL statement on the current connection and database.",
+        "[WHEN] Use for all read-only queries. Pass connectionId, databaseName, schemaName from current session context.",
+        "IMPORTANT — ALWAYS call countTableRows before executing. If the row count exceeds 10000, MUST add a WHERE clause or LIMIT to avoid fetching excessive data."
     })
     public ExecuteSqlResponse executeSelectSql(
             @P("Connection id from current session context") Long connectionId,
@@ -60,8 +61,9 @@ public class ExecuteSqlTool {
     }
 
     @Tool({
-        "Execute a non-SELECT SQL statement (INSERT, UPDATE, DELETE, DDL, etc.) on the current connection and database.",
-        "Use this tool to modify data or schema. Pass connectionId, databaseName, schemaName from current session context and the SQL to run."
+        "[WHAT] Execute a write SQL statement (INSERT, UPDATE, DELETE, DDL) on the current connection and database.",
+        "[WHEN] Use for all data-modifying or schema-changing operations. Pass connectionId, databaseName, schemaName from current session context.",
+        "IMPORTANT — NEVER call this tool without first calling askUserQuestion to confirm the exact operation and scope with the user."
     })
     public ExecuteSqlResponse executeNonSelectSql(
             @P("Connection id from current session context") Long connectionId,

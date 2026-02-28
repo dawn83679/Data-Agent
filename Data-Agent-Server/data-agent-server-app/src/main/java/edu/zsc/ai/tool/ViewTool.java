@@ -26,8 +26,8 @@ public class ViewTool {
 
 
     @Tool({
-        "Get the list of all view names in the current database/schema.",
-        "Use when the user asks what views exist or wants to explore database views. Pass connectionId, databaseName, schemaName from current session context."
+        "[WHAT] List all view names in the current database/schema.",
+        "[WHEN] Use when the user asks what views exist or wants to query a view. Pass connectionId, databaseName, schemaName from current session context."
     })
     public String getViewNames(
             @P("Connection id from current session context") Long connectionId,
@@ -63,8 +63,8 @@ public class ViewTool {
     }
 
     @Tool({
-        "Get the DDL (Data Definition Language) statement for a specific view.",
-        "Use when the user needs the view definition or CREATE VIEW statement. Pass connectionId, databaseName, schemaName from current session context."
+        "[WHAT] Get the CREATE VIEW DDL for a specific view.",
+        "[WHEN] Use when you need to understand what a view selects or its column structure. Pass connectionId, databaseName, schemaName from current session context."
     })
     public String getViewDdl(
             @P("The exact name of the view in the current schema") String viewName,
