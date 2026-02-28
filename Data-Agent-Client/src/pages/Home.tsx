@@ -37,12 +37,18 @@ export default function Home() {
                 schemaName: sqlContext.schemaName ?? undefined,
                 sql,
             });
-            setExecuteResult(result);
+            setExecuteResult({
+                ...result,
+                originalSql: result.originalSql || sql,
+                executedSql: result.executedSql || sql,
+            });
         } catch (err: unknown) {
             setExecuteResult({
                 success: false,
                 errorMessage: String(err),
                 executionTimeMs: 0,
+                originalSql: sql,
+                executedSql: sql,
                 query: false,
                 affectedRows: 0,
             });

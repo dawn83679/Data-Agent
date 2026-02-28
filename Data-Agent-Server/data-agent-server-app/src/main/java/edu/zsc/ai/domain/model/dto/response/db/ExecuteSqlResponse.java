@@ -22,6 +22,14 @@ public class ExecuteSqlResponse {
 
     private long executionTimeMs;
 
+    private String originalSql;
+
+    private String executedSql;
+
+    private String databaseName;
+
+    private String schemaName;
+
     private boolean query;
 
     private List<String> headers;
@@ -29,4 +37,18 @@ public class ExecuteSqlResponse {
     private List<List<Object>> rows;
 
     private int affectedRows;
+
+    /**
+     * Structured response aligned with DataGrip-style output.
+     * Keep legacy fields above for backward compatibility.
+     */
+    private ExecuteSqlResponseType type;
+
+    private ExecuteSqlResultSet resultSet;
+
+    private ExecuteSqlExecutionInfo executionInfo;
+
+    private List<ExecuteSqlMessage> messages;
+
+    private List<ExecuteSqlSubResult> results;
 }
