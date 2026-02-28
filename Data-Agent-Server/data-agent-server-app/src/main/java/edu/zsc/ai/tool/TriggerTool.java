@@ -28,8 +28,8 @@ public class TriggerTool {
 
 
     @Tool({
-        "Get the list of all triggers for a specific table.",
-        "Use when the user asks what triggers are attached to a table or wants to explore trigger logic. Pass connectionId, databaseName, schemaName, tableName from current session context."
+        "[WHAT] List all triggers attached to a specific table.",
+        "[WHEN] Use when the user asks about triggers on a table, or when understanding the side effects of a write operation. Pass connectionId, databaseName, schemaName from current session context."
     })
     public String getTriggerNames(
             @P("The exact name of the table") String tableName,
@@ -67,8 +67,8 @@ public class TriggerTool {
     }
 
     @Tool({
-        "Get the DDL (Data Definition Language) statement for a specific trigger.",
-        "Use when the user needs the trigger definition or CREATE TRIGGER statement. Pass connectionId, databaseName, schemaName from current session context."
+        "[WHAT] Get the CREATE TRIGGER DDL for a specific trigger.",
+        "[WHEN] Use when you need to understand what a trigger does or when it fires. Pass connectionId, databaseName, schemaName from current session context."
     })
     public String getTriggerDdl(
             @P("The exact name of the trigger in the current schema") String triggerName,

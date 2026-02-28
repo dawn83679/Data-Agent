@@ -16,6 +16,8 @@ export const I18N_KEYS = {
     NO_CONNECTIONS: 'common.no_connections',
     STOP: 'common.stop',
     EXPORT: 'common.export',
+    EXPORT_NO_DATA: 'common.export_no_data',
+    EXPORT_SUCCESS: 'common.export_success',
     MAXIMIZE: 'common.maximize',
     CLOSE_PANEL: 'common.close_panel',
     READY_HINT: 'common.ready_hint',

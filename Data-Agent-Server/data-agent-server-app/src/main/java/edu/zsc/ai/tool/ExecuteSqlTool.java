@@ -20,16 +20,17 @@ public class ExecuteSqlTool {
     private final SqlExecutionService sqlExecutionService;
 
     @Tool({
-        "Execute a single SQL statement (SELECT, INSERT, UPDATE, DELETE, etc.) on the current connection and database.",
-        "Use after generating SQL from natural language. Pass connectionId, databaseName, schemaName from current session context and the SQL to run."
+        "[WHAT] Execute a SELECT SQL statement on the current connection and database.",
+        "[WHEN] Use for all read-only queries. Pass connectionId, databaseName, schemaName from current session context.",
+        "IMPORTANT — ALWAYS call countTableRows before executing. If the row count exceeds 10000, MUST add a WHERE clause or LIMIT to avoid fetching excessive data."
     })
-    public ExecuteSqlResponse executeSql(
+    public ExecuteSqlResponse executeSelectSql(
             @P("Connection id from current session context") Long connectionId,
             @P("Database (catalog) name from current session context") String databaseName,
             @P(value = "Schema name from current session context; omit if not used", required = false) String schemaName,
-            @P("The SQL statement to execute") String sql,
+            @P("The SELECT statement to execute") String sql,
             InvocationParameters parameters) {
-        log.info("{} executeSql, connectionId={}, database={}, schema={}, sqlLength={}",
+        log.info("{} executeSelectSql, connectionId={}, database={}, schema={}, sqlLength={}",
                 ToolMessageConstants.TOOL_LOG_PREFIX_BEFORE, connectionId, databaseName, schemaName,
                 sql != null ? sql.length() : 0);
         try {
@@ -48,10 +49,51 @@ public class ExecuteSqlTool {
                     .userId(userId)
                     .build();
             ExecuteSqlResponse response = sqlExecutionService.executeSql(request);
-            log.info("{} executeSql", ToolMessageConstants.TOOL_LOG_PREFIX_DONE);
+            log.info("{} executeSelectSql", ToolMessageConstants.TOOL_LOG_PREFIX_DONE);
             return response;
         } catch (Exception e) {
-            log.error("{} executeSql", ToolMessageConstants.TOOL_LOG_PREFIX_ERROR, e);
+            log.error("{} executeSelectSql", ToolMessageConstants.TOOL_LOG_PREFIX_ERROR, e);
+            return ExecuteSqlResponse.builder()
+                    .success(false)
+                    .errorMessage(e.getMessage())
+                    .build();
+        }
+    }
+
+    @Tool({
+        "[WHAT] Execute a write SQL statement (INSERT, UPDATE, DELETE, DDL) on the current connection and database.",
+        "[WHEN] Use for all data-modifying or schema-changing operations. Pass connectionId, databaseName, schemaName from current session context.",
+        "IMPORTANT — NEVER call this tool without first calling askUserQuestion to confirm the exact operation and scope with the user."
+    })
+    public ExecuteSqlResponse executeNonSelectSql(
+            @P("Connection id from current session context") Long connectionId,
+            @P("Database (catalog) name from current session context") String databaseName,
+            @P(value = "Schema name from current session context; omit if not used", required = false) String schemaName,
+            @P("The non-SELECT statement to execute (INSERT, UPDATE, DELETE, DDL, etc.)") String sql,
+            InvocationParameters parameters) {
+        log.info("{} executeNonSelectSql, connectionId={}, database={}, schema={}, sqlLength={}",
+                ToolMessageConstants.TOOL_LOG_PREFIX_BEFORE, connectionId, databaseName, schemaName,
+                sql != null ? sql.length() : 0);
+        try {
+            Long userId = parameters.get(RequestContextConstant.USER_ID);
+            if (userId == null) {
+                return ExecuteSqlResponse.builder()
+                        .success(false)
+                        .errorMessage(ToolMessageConstants.USER_CONTEXT_MISSING)
+                        .build();
+            }
+            AgentExecuteSqlRequest request = AgentExecuteSqlRequest.builder()
+                    .connectionId(connectionId)
+                    .databaseName(databaseName)
+                    .schemaName(schemaName)
+                    .sql(sql)
+                    .userId(userId)
+                    .build();
+            ExecuteSqlResponse response = sqlExecutionService.executeSql(request);
+            log.info("{} executeNonSelectSql", ToolMessageConstants.TOOL_LOG_PREFIX_DONE);
+            return response;
+        } catch (Exception e) {
+            log.error("{} executeNonSelectSql", ToolMessageConstants.TOOL_LOG_PREFIX_ERROR, e);
             return ExecuteSqlResponse.builder()
                     .success(false)
                     .errorMessage(e.getMessage())

@@ -20,6 +20,8 @@
     "result": "Result",
     "close_panel": "Close Panel",
     "export": "Export",
+    "export_no_data": "No data to export. Run a SELECT query first.",
+    "export_success": "Exported as CSV",
     "maximize": "Maximize",
     "ready_hint": "Run a query to see results",
     "output_console_connected": "[info] Connected to database. Ready for queries.",
@@ -30,7 +32,12 @@
     "data_sources": "Data Sources",
     "default": "Default",
     "logout_failed": "Logout failed",
-    "run": "Run"
+    "run": "Run",
+    "select_connection_first": "Please select a connection first",
+    "rows_retrieved": "{{count}} row(s) retrieved",
+    "execution_time_ms": "{{ms}} ms",
+    "affected_rows": "{{count}} row(s) affected",
+    "format_sql": "Format SQL"
   },
   "settingsPage": {
     "title": "Settings",

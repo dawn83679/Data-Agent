@@ -8,6 +8,10 @@ public interface TableService {
 
     List<String> getTables(Long connectionId, String catalog, String schema, Long userId);
 
+    List<String> searchTables(Long connectionId, String catalog, String schema, String tableNamePattern, Long userId);
+
+    long countTableRows(Long connectionId, String catalog, String schema, String tableName, Long userId);
+
     String getTableDdl(Long connectionId, String catalog, String schema, String tableName, Long userId);
 
     void deleteTable(Long connectionId, String catalog, String schema, String tableName, Long userId);

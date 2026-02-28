@@ -20,19 +20,16 @@ import lombok.extern.slf4j.Slf4j;
 public class AskUserQuestionTool {
 
     @Tool(
-            value = "Ask the user one or multiple questions when you need to clarify ambiguous requests or obtain missing information. "
-                    + "Each question should have 2-3 options (maximum 3). Users can select options and/or provide custom input. "
+            value = "[WHAT] Ask the user one or more questions with structured choices and optional free-text input. "
+                    + "[WHEN] Use when: (1) user intent is ambiguous or critical information is missing; "
+                    + "(2) a write operation requires confirmation; "
+                    + "(3) a decision must be made before proceeding. "
+                    + "IMPORTANT — YOU MUST call this tool before ANY write operation (INSERT, UPDATE, DELETE, DDL). "
+                    + "NEVER skip confirmation even if the intent seems obvious. "
+                    + "[HOW] Each question should have 2-3 options (maximum 3). "
+                    + "Users can select options and/or provide custom input. "
                     + "Use allowMultiSelect=true for multi-select (checkboxes), false for single-select (radio buttons, default). "
-                    + "WHEN TO USE: "
-                    + "1. User mentions 'the connection' but there are multiple connections available - ask which one they mean. "
-                    + "2. User asks to 'query the database' without specifying which database - list available databases. "
-                    + "3. User requests an action but critical information (table name, connection ID, database name) is missing - prompt for specifics. "
-                    + "4. You need user confirmation before executing destructive operations (DROP, DELETE, TRUNCATE). "
-                    + "EXAMPLES: "
-                    + "'Which connection do you want to use?' → options: [list of available connections from getMyConnections] | "
-                    + "'Which table should I query?' → options: [list of tables in current schema from getTableNames] | "
-                    + "'Confirm deletion of table users?' → options: ['Yes, delete it', 'No, cancel']. "
-                    + "After receiving user's response, interpret their answers and continue with the requested operation.",
+                    + "After receiving the response, interpret the answers and continue the operation.",
             returnBehavior = ReturnBehavior.IMMEDIATE
     )
     public List<UserQuestion> askUserQuestion(

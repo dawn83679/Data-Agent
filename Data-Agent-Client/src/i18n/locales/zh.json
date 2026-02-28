@@ -20,6 +20,8 @@
     "result": "结果",
     "close_panel": "关闭面板",
     "export": "导出",
+    "export_no_data": "无结果可导出，请先执行 SELECT 查询",
+    "export_success": "已导出为 CSV",
     "maximize": "最大化",
     "ready_hint": "执行查询以查看结果",
     "output_console_connected": "[info] 已连接数据库，可以执行查询。",
@@ -30,7 +32,12 @@
     "data_sources": "数据源",
     "default": "默认",
     "logout_failed": "退出登录失败",
-    "run": "运行"
+    "run": "运行",
+    "select_connection_first": "请先选择连接",
+    "rows_retrieved": "共 {{count}} 行",
+    "execution_time_ms": "{{ms}} ms",
+    "affected_rows": "影响 {{count}} 行",
+    "format_sql": "格式化 SQL"
   },
   "settingsPage": {
     "title": "设置",
