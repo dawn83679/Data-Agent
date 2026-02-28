@@ -1,13 +1,14 @@
 package edu.zsc.ai.tool;
 
+import java.util.List;
+
+import org.springframework.stereotype.Component;
+
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.ReturnBehavior;
 import dev.langchain4j.agent.tool.Tool;
 import edu.zsc.ai.tool.model.UserQuestion;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * Tool for asking the user one or multiple questions with options and/or free-text input.
@@ -20,7 +21,8 @@ public class AskUserQuestionTool {
 
     @Tool(
             value = "Ask the user one or multiple questions when you need to clarify ambiguous requests or obtain missing information. "
-                    + "Each question must have at least 3 options. Users can select one or more options and/or provide custom input. "
+                    + "Each question should have 2-3 options (maximum 3). Users can select options and/or provide custom input. "
+                    + "Use allowMultiSelect=true for multi-select (checkboxes), false for single-select (radio buttons, default). "
                     + "WHEN TO USE: "
                     + "1. User mentions 'the connection' but there are multiple connections available - ask which one they mean. "
                     + "2. User asks to 'query the database' without specifying which database - list available databases. "
@@ -34,7 +36,7 @@ public class AskUserQuestionTool {
             returnBehavior = ReturnBehavior.IMMEDIATE
     )
     public List<UserQuestion> askUserQuestion(
-            @P("List of questions to ask the user. Each question must have at least 2 options.")
+            @P("List of questions to ask the user. Each question should have 2-3 options (maximum 3).")
             List<UserQuestion> questions) {
 
         log.info("[Tool] askUserQuestion, {} question(s)", questions == null ? 0 : questions.size());

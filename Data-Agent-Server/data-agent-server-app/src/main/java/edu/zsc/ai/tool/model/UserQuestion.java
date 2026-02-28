@@ -23,11 +23,11 @@ public class UserQuestion {
     private String question;
 
     /**
-     * List of options for user to choose from (minimum 3 options required).
+     * List of options for user to choose from (2-3 options recommended, maximum 3).
      * Example: ["Database A", "Database B", "Database C"]
      * Provide concrete options based on available data (connections, databases, tables, etc.).
      */
-    @Description("List of options for user to choose from (minimum 3 options required). Provide concrete options based on available data.")
+    @Description("List of options for user to choose from (2-3 options recommended, maximum 3). Provide concrete options based on available data.")
     private List<String> options;
 
     /**
@@ -36,4 +36,11 @@ public class UserQuestion {
      */
     @Description("Optional hint for free-text input field. If provided, this text will be shown as placeholder in the custom input field to guide users.")
     private String freeTextHint;
+
+    /**
+     * Whether to allow multiple option selection (default: false for single selection).
+     * Set to true for checkbox-style multi-select, false for radio-style single selection.
+     */
+    @Description("Whether to allow multiple option selection (default: false). Set to true for multi-select, false for single selection.")
+    private Boolean allowMultiSelect;
 }
