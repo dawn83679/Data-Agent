@@ -20,6 +20,8 @@
     "result": "Result",
     "close_panel": "Close Panel",
     "export": "Export",
+    "export_no_data": "No data to export. Run a SELECT query first.",
+    "export_success": "Exported as CSV",
     "maximize": "Maximize",
     "ready_hint": "Run a query to see results",
     "output_console_connected": "[info] Connected to database. Ready for queries.",

@@ -20,6 +20,8 @@
     "result": "结果",
     "close_panel": "关闭面板",
     "export": "导出",
+    "export_no_data": "无结果可导出，请先执行 SELECT 查询",
+    "export_success": "已导出为 CSV",
     "maximize": "最大化",
     "ready_hint": "执行查询以查看结果",
     "output_console_connected": "[info] 已连接数据库，可以执行查询。",

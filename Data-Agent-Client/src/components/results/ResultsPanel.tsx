@@ -4,6 +4,8 @@ import { cn } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { I18N_KEYS } from '../../constants/i18nKeys';
 import type { ExecuteSqlResponse } from '../../types/sql';
+import { buildCsvFromResult, downloadCsv } from '../../utils/exportResult';
+import { useToast } from '../../hooks/useToast';
 import {
   Panel,
   Group as PanelGroup,
@@ -20,10 +22,27 @@ interface ResultsPanelProps {
 
 export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = false, children }: ResultsPanelProps) {
   const { t } = useTranslation();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<'result' | 'output'>('output');
 
   // Determine if Results tab should be shown (SELECT query with data)
   const hasResultTab = !!(executeResult?.success && executeResult?.query);
+
+  // Can export when we have a result set (headers; rows may be empty)
+  const canExport = hasResultTab && !!executeResult?.headers?.length;
+
+  const handleExport = () => {
+    if (!canExport || !executeResult?.headers) {
+      toast.warning(t(I18N_KEYS.COMMON.EXPORT_NO_DATA));
+      return;
+    }
+    const csv = buildCsvFromResult(
+      executeResult.headers,
+      executeResult.rows ?? []
+    );
+    downloadCsv(csv);
+    toast.success(t(I18N_KEYS.COMMON.EXPORT_SUCCESS));
+  };
 
   // Auto-switch to Results tab when SELECT completes
   useEffect(() => {
@@ -107,7 +126,17 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
-            <button className="p-1 hover:bg-accent rounded theme-text-secondary hover:theme-text-primary" title={t(I18N_KEYS.COMMON.EXPORT)}>
+            <button
+              onClick={handleExport}
+              disabled={!canExport}
+              className={cn(
+                "p-1 rounded theme-text-secondary",
+                canExport
+                  ? "hover:bg-accent hover:theme-text-primary"
+                  : "opacity-50 cursor-not-allowed"
+              )}
+              title={canExport ? t(I18N_KEYS.COMMON.EXPORT) : t(I18N_KEYS.COMMON.EXPORT_NO_DATA)}
+            >
               <Download className="w-3.5 h-3.5" />
             </button>
             <button className="p-1 hover:bg-accent rounded theme-text-secondary hover:theme-text-primary" title={t(I18N_KEYS.COMMON.MAXIMIZE)}>
