@@ -46,6 +46,11 @@ public class SqlExecutionServiceImpl implements SqlExecutionService {
 
         SqlCommandResult result = executor.executeCommand(pluginRequest);
 
-        return SqlExecutionConverter.toResponse(result);
+        ExecuteSqlResponse response = SqlExecutionConverter.toResponse(result);
+        if (response != null) {
+            response.setDatabaseName(databaseName);
+            response.setSchemaName(schemaName);
+        }
+        return response;
     }
 }

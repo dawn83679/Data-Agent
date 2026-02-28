@@ -3,7 +3,10 @@ import { Database, Download, Trash2, Maximize2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { I18N_KEYS } from '../../constants/i18nKeys';
-import type { ExecuteSqlResponse } from '../../types/sql';
+import type { ExecuteSqlMessage, ExecuteSqlResponse, ExecuteSqlResultSet } from '../../types/sql';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { useTheme } from '../../hooks/useTheme';
 import { buildCsvFromResult, downloadCsv } from '../../utils/exportResult';
 import { useToast } from '../../hooks/useToast';
 import {
@@ -22,23 +25,38 @@ interface ResultsPanelProps {
 
 export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = false, children }: ResultsPanelProps) {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const toast = useToast();
   const [activeTab, setActiveTab] = useState<'result' | 'output'>('output');
 
+  const primaryResultSet: ExecuteSqlResultSet | null | undefined =
+    executeResult?.resultSet ??
+    executeResult?.results?.find(r => r.type === 'QUERY')?.resultSet;
+
+  const resultHeaders =
+    primaryResultSet?.columns?.map(c => c.label || c.name || '').filter(Boolean) ??
+    executeResult?.headers ??
+    [];
+
+  const resultRows = primaryResultSet?.rows ?? executeResult?.rows ?? [];
+
   // Determine if Results tab should be shown (SELECT query with data)
-  const hasResultTab = !!(executeResult?.success && executeResult?.query);
+  const hasResultTab = !!(
+    executeResult?.success &&
+    (executeResult?.query || executeResult?.type === 'QUERY' || !!primaryResultSet?.columns?.length)
+  );
 
   // Can export when we have a result set (headers; rows may be empty)
-  const canExport = hasResultTab && !!executeResult?.headers?.length;
+  const canExport = hasResultTab && !!resultHeaders.length;
 
   const handleExport = () => {
-    if (!canExport || !executeResult?.headers) {
+    if (!canExport || !resultHeaders.length) {
       toast.warning(t(I18N_KEYS.COMMON.EXPORT_NO_DATA));
       return;
     }
     const csv = buildCsvFromResult(
-      executeResult.headers,
-      executeResult.rows ?? []
+      resultHeaders,
+      resultRows ?? []
     );
     downloadCsv(csv);
     toast.success(t(I18N_KEYS.COMMON.EXPORT_SUCCESS));
@@ -62,11 +80,50 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
     if (isRunning) return 'Running...';
     if (!executeResult) return 'Ready';
     if (!executeResult.success) return 'Error';
-    if (executeResult.query && executeResult.rows) {
-      return `${executeResult.rows.length} rows | ${executeResult.executionTimeMs}ms`;
+    const duration = executeResult.executionInfo?.durationMs ?? executeResult.executionTimeMs;
+    const fetched = executeResult.executionInfo?.fetchRows ?? resultRows.length;
+    const affected = executeResult.executionInfo?.affectedRows ?? executeResult.affectedRows;
+    if (executeResult.query || executeResult.type === 'QUERY') {
+      return `${fetched} rows | ${duration}ms`;
     }
-    return `${executeResult.affectedRows} affected | ${executeResult.executionTimeMs}ms`;
+    return `${affected} affected | ${duration}ms`;
   };
+
+  const outputMessages: ExecuteSqlMessage[] =
+    executeResult?.messages?.filter(m => m?.message) ??
+    (executeResult?.errorMessage ? [{ level: 'ERROR', message: executeResult.errorMessage }] : []);
+
+  const getMessageColor = (level?: string | null) => {
+    if (level === 'ERROR') return 'text-red-400';
+    if (level === 'WARN') return 'text-amber-400';
+    return 'theme-text-secondary';
+  };
+  const syntaxTheme = theme === 'dark' ? oneDark : oneLight;
+
+  const formatTimestamp = (ts?: number | null) => {
+    if (!ts) return '--';
+    const d = new Date(ts);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  };
+
+  const executionStartTime = executeResult?.executionInfo?.startTime ?? null;
+  const durationMs = executeResult?.executionInfo?.durationMs ?? executeResult?.executionTimeMs ?? 0;
+  const executionMs = executeResult?.executionInfo?.executionMs ?? null;
+  const fetchingMs = executeResult?.executionInfo?.fetchingMs ?? null;
+  const dbPrefix = executeResult?.databaseName
+    ? `${executeResult.databaseName}${executeResult.schemaName ? `.${executeResult.schemaName}` : ''}`
+    : '';
+  const sqlText = executeResult?.originalSql || executeResult?.executedSql || '';
+  const timestampPrefix = `[${formatTimestamp(executionStartTime)}] `;
+  const sqlContextPrefix = dbPrefix ? `${dbPrefix}> ` : '';
+  const sqlPrefixText = `${timestampPrefix}${sqlContextPrefix}`;
+  const sqlLines = sqlText
+    ? sqlText
+        .split('\n')
+        .map((line, index) => (index === 0 ? line.trimEnd() : line.trimStart()))
+    : [];
+  const fetchRows = executeResult?.executionInfo?.fetchRows ?? resultRows.length;
 
   if (!isVisible) {
     return (
@@ -150,11 +207,11 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
           {activeTab === 'result' && hasResultTab && executeResult ? (
             // Results Table
             <div className="overflow-auto h-full">
-              {executeResult.headers && executeResult.headers.length > 0 ? (
+              {resultHeaders.length > 0 ? (
                 <table className="text-[11px] w-full border-collapse">
                   <thead className="sticky top-0 theme-bg-panel">
                     <tr>
-                      {executeResult.headers.map((h) => (
+                      {resultHeaders.map((h) => (
                         <th
                           key={h}
                           className="px-3 py-1.5 text-left font-medium theme-text-secondary border-b border-r theme-border whitespace-nowrap"
@@ -165,8 +222,8 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
                     </tr>
                   </thead>
                   <tbody>
-                    {executeResult.rows && executeResult.rows.length > 0 ? (
-                      executeResult.rows.map((row, i) => (
+                    {resultRows && resultRows.length > 0 ? (
+                      resultRows.map((row, i) => (
                         <tr key={i} className="hover:bg-accent/30 border-b theme-border">
                           {row.map((cell, j) => (
                             <td
@@ -185,7 +242,7 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={executeResult.headers.length} className="px-3 py-4 text-center theme-text-secondary opacity-50">
+                        <td colSpan={resultHeaders.length} className="px-3 py-4 text-center theme-text-secondary opacity-50">
                           No data
                         </td>
                       </tr>
@@ -201,7 +258,7 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
             </div>
           ) : (
             // Output Log
-            <div className="p-3 font-mono text-[11px] whitespace-pre-wrap">
+            <div className="p-3 font-sans text-[12px] leading-5 whitespace-pre-wrap space-y-1">
               {isRunning ? (
                 <div className="flex items-center space-x-2 text-amber-500">
                   <span className="animate-pulse">●</span>
@@ -209,18 +266,63 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
                 </div>
               ) : executeResult ? (
                 <>
-                  {executeResult.success ? (
-                    <div className="text-green-500">
-                      {executeResult.query ? (
-                        <>✓ {executeResult.rows?.length || 0} rows retrieved in {executeResult.executionTimeMs}ms</>
-                      ) : (
-                        <>✓ {executeResult.affectedRows} row(s) affected in {executeResult.executionTimeMs}ms</>
-                      )}
+                  {executeResult.success && (
+                    <div className="theme-text-secondary">
+                      [{formatTimestamp(executionStartTime)}] 已连接
                     </div>
-                  ) : (
-                    <div className="text-red-400">
-                      ✕ {executeResult.errorMessage || 'Unknown error'}
+                  )}
+                  {sqlLines.length > 0 && (
+                    <div className="space-y-0.5">
+                      {sqlLines.map((line, index) => (
+                        <div key={index} className="theme-text-secondary flex">
+                          <span className={index === 0 ? 'theme-text-secondary' : 'theme-text-secondary opacity-0'} aria-hidden={index !== 0}>
+                            {sqlPrefixText}
+                          </span>
+                          <SyntaxHighlighter
+                            language="sql"
+                            style={syntaxTheme}
+                            PreTag="span"
+                            CodeTag="span"
+                            customStyle={{
+                              background: 'transparent',
+                              padding: 0,
+                              margin: 0,
+                              fontFamily: 'inherit',
+                              fontSize: 'inherit',
+                              lineHeight: 'inherit',
+                            }}
+                            codeTagProps={{
+                              style: {
+                                fontFamily: 'inherit',
+                                fontSize: 'inherit',
+                                lineHeight: 'inherit',
+                                color: 'inherit',
+                              }
+                            }}
+                          >
+                            {line}
+                          </SyntaxHighlighter>
+                        </div>
+                      ))}
                     </div>
+                  )}
+                  {executeResult.success && (
+                    <div className="theme-text-secondary">
+                      [{formatTimestamp(executionStartTime)}] 在 {durationMs} ms (execution: {executionMs ?? Math.max(0, durationMs - (fetchingMs ?? 0))} ms, fetching: {fetchingMs ?? 0} ms) 内检索到从 1 开始的 {fetchRows} 行
+                    </div>
+                  )}
+                  {!executeResult.success && (
+                    outputMessages.length > 0 ? (
+                      outputMessages.map((m, i) => (
+                        <div key={i} className={getMessageColor(m.level)}>
+                          [{formatTimestamp(executionStartTime)}] {m.message}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-red-400">
+                        [{formatTimestamp(executionStartTime)}] {executeResult.errorMessage || 'Unknown error'}
+                      </div>
+                    )
                   )}
                 </>
               ) : (
