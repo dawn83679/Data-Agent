@@ -26,7 +26,7 @@ import edu.zsc.ai.domain.service.sys.SysUsersService;
 import edu.zsc.ai.util.ConditionalUtil;
 import edu.zsc.ai.util.CryptoUtil;
 import edu.zsc.ai.util.HttpRequestUtil;
-import edu.zsc.ai.util.exception.BusinessException;
+import edu.zsc.ai.domain.exception.BusinessException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

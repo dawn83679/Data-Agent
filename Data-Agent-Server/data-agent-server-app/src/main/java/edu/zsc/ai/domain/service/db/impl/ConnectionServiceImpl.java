@@ -14,7 +14,7 @@ import edu.zsc.ai.plugin.capability.ConnectionProvider;
 import edu.zsc.ai.plugin.connection.ConnectionConfig;
 import edu.zsc.ai.plugin.manager.DefaultPluginManager;
 import edu.zsc.ai.plugin.manager.TryFirstSuccess;
-import edu.zsc.ai.util.exception.BusinessException;
+import edu.zsc.ai.domain.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

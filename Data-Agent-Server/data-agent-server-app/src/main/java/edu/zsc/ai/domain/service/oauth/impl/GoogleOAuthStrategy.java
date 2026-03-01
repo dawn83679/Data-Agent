@@ -6,7 +6,7 @@ import edu.zsc.ai.domain.model.dto.oauth.OAuthUserInfo;
 import edu.zsc.ai.domain.model.enums.AuthProviderEnum;
 import edu.zsc.ai.domain.service.oauth.OAuthStrategy;
 import edu.zsc.ai.util.JwtUtil;
-import edu.zsc.ai.util.exception.BusinessException;
+import edu.zsc.ai.domain.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;

@@ -1,6 +1,6 @@
 package edu.zsc.ai.domain.service.oauth;
 
-import edu.zsc.ai.util.exception.BusinessException;
+import edu.zsc.ai.domain.exception.BusinessException;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

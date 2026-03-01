@@ -14,7 +14,7 @@ import edu.zsc.ai.domain.model.entity.sys.SysSessions;
 import edu.zsc.ai.domain.service.sys.SysRefreshTokensService;
 import edu.zsc.ai.domain.service.sys.SysSessionsService;
 import edu.zsc.ai.util.CryptoUtil;
-import edu.zsc.ai.util.exception.BusinessException;
+import edu.zsc.ai.domain.exception.BusinessException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

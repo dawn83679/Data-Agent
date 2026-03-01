@@ -1,10 +1,10 @@
 package edu.zsc.ai.aspect;
 
 import cn.dev33.satoken.stp.StpUtil;
-import edu.zsc.ai.annotation.EnableRequestContext;
+import edu.zsc.ai.aspect.annotation.EnableRequestContext;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.context.RequestContextInfo;
-import edu.zsc.ai.model.request.BaseRequest;
+import edu.zsc.ai.api.model.request.BaseRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;

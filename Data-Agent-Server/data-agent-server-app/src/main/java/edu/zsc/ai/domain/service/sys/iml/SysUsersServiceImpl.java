@@ -9,7 +9,7 @@ import edu.zsc.ai.domain.mapper.sys.SysUsersMapper;
 import edu.zsc.ai.domain.model.dto.request.sys.UpdateUserRequest;
 import edu.zsc.ai.domain.model.entity.sys.SysUsers;
 import edu.zsc.ai.domain.service.sys.SysUsersService;
-import edu.zsc.ai.util.exception.BusinessException;
+import edu.zsc.ai.domain.exception.BusinessException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

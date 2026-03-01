@@ -14,7 +14,7 @@ import edu.zsc.ai.domain.service.sys.SysSessionsService;
 import edu.zsc.ai.domain.service.sys.SysUsersService;
 import edu.zsc.ai.util.CryptoUtil;
 import edu.zsc.ai.util.HttpRequestUtil;
-import edu.zsc.ai.util.exception.BusinessException;
+import edu.zsc.ai.domain.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
