@@ -1,6 +1,6 @@
 package edu.zsc.ai.domain.service.db.impl;
 
-import edu.zsc.ai.util.exception.BusinessException;
+import edu.zsc.ai.domain.exception.BusinessException;
 import edu.zsc.ai.domain.model.dto.response.db.AvailableDriverResponse;
 import edu.zsc.ai.domain.model.dto.response.db.InstalledDriverResponse;
 import edu.zsc.ai.plugin.Plugin;

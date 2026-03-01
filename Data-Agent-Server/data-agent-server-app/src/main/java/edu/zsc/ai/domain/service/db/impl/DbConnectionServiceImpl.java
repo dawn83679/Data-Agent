@@ -13,7 +13,7 @@ import edu.zsc.ai.domain.model.dto.response.db.ConnectionResponse;
 import edu.zsc.ai.domain.model.entity.db.DbConnection;
 import edu.zsc.ai.domain.service.db.DbConnectionService;
 import edu.zsc.ai.util.JsonUtil;
-import edu.zsc.ai.util.exception.BusinessException;
+import edu.zsc.ai.domain.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;

@@ -1,6 +1,6 @@
 package edu.zsc.ai.domain.model.dto.request.db;
 
-import edu.zsc.ai.model.request.BaseRequest;
+import edu.zsc.ai.api.model.request.BaseRequest;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;

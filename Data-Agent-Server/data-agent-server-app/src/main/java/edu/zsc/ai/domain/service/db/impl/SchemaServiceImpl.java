@@ -4,7 +4,7 @@ import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.SchemaService;
 import edu.zsc.ai.plugin.capability.SchemaProvider;
 import edu.zsc.ai.plugin.manager.DefaultPluginManager;
-import edu.zsc.ai.util.exception.BusinessException;
+import edu.zsc.ai.domain.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

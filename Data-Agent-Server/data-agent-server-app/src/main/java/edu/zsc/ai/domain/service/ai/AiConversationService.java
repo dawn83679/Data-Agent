@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import edu.zsc.ai.domain.model.dto.request.base.PageRequest;
 import edu.zsc.ai.domain.model.dto.response.ai.ConversationMessageResponse;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
-import edu.zsc.ai.util.exception.BusinessException;
+import edu.zsc.ai.domain.exception.BusinessException;
 
 import java.util.List;
 
