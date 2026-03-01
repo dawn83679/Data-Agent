@@ -1,0 +1,13 @@
+refactor(ai-chat): decouple interactive tool rendering and enhance MLLM prompts
+
+Frontend:
+- Removed global modal states (askQuestionModalStore, writeConfirmModalStore) and legacy popup components (AskUserQuestionDialog, ChatInputQuestion, etc.).
+- Refactored ToolRunBlock to render interactive tools (AskUserQuestionCard, WriteConfirmCard) directly inline inside the chat message flow.
+- Filtered out completed/cancelled interactive cards from rendering in historical chat streams to keep the UI clean.
+- Updated i18n locales (zh.json, en.json) to submit highly structured Markdown payloads (including contextual original questions and SQL previews) when responding to the agent, vastly improving prompt accuracy.
+
+Backend:
+- Simplified WriteConfirmationStore.java implementation by safely removing convoluted synchronized mechanisms and flattening logical validation checks.
+- Enforced strict constraints inside system prompts (system_zh.xml, system_en.xml) requiring the LLM to exclusively use the askUserQuestion tool for inquiries instead of plain text.
+
+This significantly improves the developer experience, perceived UI performance, and long-term LLM prompt retention context.

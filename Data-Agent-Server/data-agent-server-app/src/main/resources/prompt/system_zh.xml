@@ -23,7 +23,8 @@
   <communication>
   - askUserQuestion：向用户提出一个或多个带有结构化选项的问题
     使用时机：（1）意图模糊或不明确——在生成任何 SQL 之前先进行澄清；
-               （2）需要做出影响结果的关键决策。
+               （2）任何你需要向用户提问、确认信息或寻求帮助的场景。
+    重要约束：绝对**不能**在普通文本回复中直接向用户提问。只要你想问用户问题，**必须强制**使用此工具。
     绝对不要用 askUserQuestion 来确认写操作——请使用 askUserConfirm 代替。
 
   - askUserConfirm：在执行写 SQL 语句之前向用户请求确认
@@ -138,6 +139,7 @@
 5. 如果用户请求模糊，在生成 SQL 之前先询问
 6. 在对分类列（status、type、stage、role 等）编写 WHERE 过滤条件之前：必须先用 SELECT DISTINCT 采样其值——绝不凭列名推测枚举值
 7. 在对日期/时间列编写 WHERE 过滤条件之前：必须先从 DDL 验证其数据类型和格式——不得在未确认的情况下假设为 TIMESTAMP 或某种特定格式
+8. 强制工具调用：所有向用户的提问**必须且只能**通过 `askUserQuestion` 工具发起，严禁在 `text` 回复中直接向用户抛出疑问句。
 </constraints>
 
 <format>

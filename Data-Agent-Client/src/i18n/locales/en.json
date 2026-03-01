@@ -173,10 +173,10 @@
       "reject": "Reject",
       "rejectMessage": "User declined to answer your question. Please review the current context to see if there is sufficient information to answer the question or reconsider the user's needs.",
       "customLabel": "User Additional Input",
-      "answerPrefix": "User answered: ",
+      "answerPrefix": "Regarding your questions, the user's answers are as follows:",
       "submittedAnswer": "Your answer",
-      "multiAnswerPrefix": "User has answered your questions: ",
-      "continueSuffix": "You can now continue with the user's answers in mind"
+      "continueSuffix": "Please review the user's feedback above and proceed with the remaining tasks.",
+      "originalQuestionPrefix": "To retain context, the original question(s) you asked the user are below:"
     },
     "toolRun": {
       "streamingArguments": "Streaming arguments...",
@@ -185,11 +185,22 @@
     },
     "writeConfirm": {
       "label": "Write Confirmation Required",
+      "labelAction": "The following SQL will be executed",
       "sqlPreviewLabel": "SQL to be executed",
       "targetLabel": "Target",
       "warning": "This operation may be irreversible. Review carefully before confirming.",
       "confirmBtn": "Confirm & Execute",
-      "cancelBtn": "Cancel"
+      "cancelBtn": "Cancel",
+      "yesBtn": "Yes",
+      "noBtn": "No",
+      "inputPlaceholder": "Input (Optional supplementary information)",
+      "confirmMessage": "**Write Operation Confirmed**\n\n- **Status:** Approved\n\nPlease proceed to execute the requested SQL.",
+      "confirmWithInputMessage": "**Write Operation Confirmed**\n\n- **Status:** Approved\n- **User Feedback:** {{info}}\n\nPlease account for the user's input and proceed to execute the requested SQL.",
+      "cancelMessage": "**Write Operation Cancelled**\n\n- **Status:** Rejected\n\nPlease reconsider your approach, check the context, or ask the user for clarification before attempting another write operation.",
+      "cancelWithInputMessage": "**Write Operation Cancelled**\n\n- **Status:** Rejected\n- **User Feedback:** {{info}}\n\nPlease reconsider your plan or adjust the SQL based on the user's feedback.",
+      "executeSqlPrefix": "Please continue to call the tool to execute the following SQL:",
+      "cancelSqlPrefix": "The originally planned SQL is as follows. Do NOT execute this statement:",
+      "confirmFailed": "Confirmation request failed. Please try again."
     }
   },
   "explorer": {
