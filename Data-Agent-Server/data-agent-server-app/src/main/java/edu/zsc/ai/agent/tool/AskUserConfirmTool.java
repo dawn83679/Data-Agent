@@ -39,9 +39,9 @@ public class AskUserConfirmTool {
                 "[WHEN] YOU MUST call this tool BEFORE every write operation. "
                     + "Use askUserQuestion ONLY for intent clarification when the request is ambiguous — "
                     + "NEVER use askUserQuestion for write operation confirmation.",
-                "[HOW] Pass the exact SQL, target database, and a clear explanation of the operation's effect. "
-                    + "The tool generates a secure confirmation token. "
-                    + "The user will review the SQL preview in the UI and click 'Confirm & Execute'.",
+                "[HOW] Pass the exact SQL, connection id, and a clear explanation of the operation's effect. "
+                    + "Include database and schema only when the operation is bound to a specific database/schema; "
+                    + "for example, omit them for CREATE DATABASE statements.",
                 "[AFTER] After the user confirms, you will receive a message like "
                     + "'Confirmed. confirmationToken: <token>'. "
                     + "Then call executeNonSelectSql with the sql AND the confirmationToken. "
@@ -54,9 +54,9 @@ public class AskUserConfirmTool {
             String sql,
             @P("Connection id from current session context")
             Long connectionId,
-            @P("Database (catalog) name from current session context")
+            @P(value = "Database (catalog) name from current session context; omit or null for operations not bound to a specific database (e.g. CREATE DATABASE)", required = false)
             String databaseName,
-            @P(value = "Schema name from current session context; omit if not applicable", required = false)
+            @P(value = "Schema name from current session context; omit or null if not applicable", required = false)
             String schemaName,
             @P("Brief explanation of what this operation does and its potential impact")
             String explanation,

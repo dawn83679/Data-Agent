@@ -71,15 +71,33 @@ export function WriteConfirmCard({ payload, submittedAnswer }: WriteConfirmCardP
         return null;
     }
 
-    const target = payload.schemaName
-        ? `${payload.databaseName}.${payload.schemaName}`
-        : payload.databaseName;
+    const hasDatabase = !!payload.databaseName;
+    const hasSchema = !!payload.schemaName;
+    const target = hasDatabase || hasSchema
+        ? [payload.databaseName, payload.schemaName].filter(Boolean).join('.')
+        : undefined;
 
     return (
         <div className="mb-2 p-4 rounded-lg border theme-border theme-bg-main shadow-sm flex flex-col gap-3">
             <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500 font-medium">
                 <AlertCircle className="w-4 h-4" />
                 <span className="text-[11px] uppercase tracking-wide">{t(I18N_KEYS.AI.WRITE_CONFIRM.LABEL_ACTION)}</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-[11px] theme-text-secondary">
+                <span className="px-1.5 py-0.5 rounded-full border theme-border/70 bg-amber-50/60 dark:bg-amber-500/10">
+                    Conn <code className="font-mono theme-text-primary ml-0.5">#{payload.connectionId}</code>
+                </span>
+                {hasDatabase && (
+                    <span className="px-1.5 py-0.5 rounded-full border theme-border/60">
+                        DB <code className="font-mono theme-text-primary ml-0.5">{payload.databaseName}</code>
+                    </span>
+                )}
+                {hasSchema && (
+                    <span className="px-1.5 py-0.5 rounded-full border theme-border/60">
+                        Schema <code className="font-mono theme-text-primary ml-0.5">{payload.schemaName}</code>
+                    </span>
+                )}
             </div>
 
             {payload.explanation && (
@@ -92,7 +110,7 @@ export function WriteConfirmCard({ payload, submittedAnswer }: WriteConfirmCardP
                 <div className="rounded border theme-border theme-bg-main overflow-hidden">
                     <div className="theme-bg-panel px-2 py-1 text-xs font-medium border-b theme-border flex justify-between">
                         <span>{t(I18N_KEYS.AI.WRITE_CONFIRM.SQL_PREVIEW_LABEL)}</span>
-                        <span className="opacity-60">{target}</span>
+                        {target && <span className="opacity-60">{target}</span>}
                     </div>
                     <div className="p-0 overflow-x-auto text-[12px]">
                         <SyntaxHighlighter
@@ -114,10 +132,12 @@ export function WriteConfirmCard({ payload, submittedAnswer }: WriteConfirmCardP
                 </div>
             )}
 
-            <p className="text-[12px] theme-text-secondary mb-2">
-                {t(I18N_KEYS.AI.WRITE_CONFIRM.TARGET_LABEL)}:{' '}
-                <code className="font-mono theme-text-primary">{target}</code>
-            </p>
+            {target && (
+                <p className="text-[12px] theme-text-secondary mb-2">
+                    {t(I18N_KEYS.AI.WRITE_CONFIRM.TARGET_LABEL)}:{' '}
+                    <code className="font-mono theme-text-primary">{target}</code>
+                </p>
+            )}
 
             <div className="flex flex-col gap-2 mt-2">
                 <button

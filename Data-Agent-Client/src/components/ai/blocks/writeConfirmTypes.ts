@@ -4,8 +4,8 @@ export interface WriteConfirmPayload {
   sqlPreview: string;
   explanation: string;
   connectionId: number;
-  databaseName: string;
-  schemaName?: string;
+  databaseName?: string | null;
+  schemaName?: string | null;
   expiresInSeconds: number;
   error?: boolean;
   errorMessage?: string;
@@ -26,17 +26,26 @@ export function parseWriteConfirmPayload(
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
     const obj = parsed as Record<string, unknown>;
     if (typeof obj.confirmationToken !== 'string' || !obj.confirmationToken) return null;
-    return {
+    const payload: WriteConfirmPayload = {
       confirmationToken: obj.confirmationToken,
       sqlPreview: typeof obj.sqlPreview === 'string' ? obj.sqlPreview : '',
       explanation: typeof obj.explanation === 'string' ? obj.explanation : '',
       connectionId: typeof obj.connectionId === 'number' ? obj.connectionId : 0,
-      databaseName: typeof obj.databaseName === 'string' ? obj.databaseName : '',
-      schemaName: typeof obj.schemaName === 'string' ? obj.schemaName : undefined,
       expiresInSeconds: typeof obj.expiresInSeconds === 'number' ? obj.expiresInSeconds : 300,
       error: typeof obj.error === 'boolean' ? obj.error : undefined,
       errorMessage: typeof obj.errorMessage === 'string' ? obj.errorMessage : undefined,
     };
+    if (typeof obj.databaseName === 'string') {
+      payload.databaseName = obj.databaseName;
+    } else if (obj.databaseName === null) {
+      payload.databaseName = null;
+    }
+    if (typeof obj.schemaName === 'string') {
+      payload.schemaName = obj.schemaName;
+    } else if (obj.schemaName === null) {
+      payload.schemaName = null;
+    }
+    return payload;
   } catch {
     return null;
   }
