@@ -271,6 +271,14 @@ export const I18N_KEYS = {
       MULTI_ANSWER_PREFIX: 'ai.askUserQuestion.multiAnswerPrefix',
       CONTINUE_SUFFIX: 'ai.askUserQuestion.continueSuffix',
     },
+    WRITE_CONFIRM: {
+      LABEL: 'ai.writeConfirm.label',
+      SQL_PREVIEW_LABEL: 'ai.writeConfirm.sqlPreviewLabel',
+      TARGET_LABEL: 'ai.writeConfirm.targetLabel',
+      WARNING: 'ai.writeConfirm.warning',
+      CONFIRM_BTN: 'ai.writeConfirm.confirmBtn',
+      CANCEL_BTN: 'ai.writeConfirm.cancelBtn',
+    },
     TOOL_RUN: {
       EXECUTING: 'ai.toolRun.executing',
       PARAMETERS: 'ai.toolRun.parameters',

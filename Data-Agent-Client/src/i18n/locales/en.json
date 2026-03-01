@@ -182,6 +182,14 @@
       "streamingArguments": "Streaming arguments...",
       "executing": "Executing...",
       "parameters": "Parameters"
+    },
+    "writeConfirm": {
+      "label": "Write Confirmation Required",
+      "sqlPreviewLabel": "SQL to be executed",
+      "targetLabel": "Target",
+      "warning": "This operation may be irreversible. Review carefully before confirming.",
+      "confirmBtn": "Confirm & Execute",
+      "cancelBtn": "Cancel"
     }
   },
   "explorer": {

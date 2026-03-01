@@ -12,11 +12,14 @@ import {
   normalizeToQuestions,
   type AskUserQuestionPayload,
 } from './askUserQuestionTypes';
+import { parseWriteConfirmPayload, type WriteConfirmPayload } from './writeConfirmTypes';
 import { getToolType, ToolType } from './toolTypes';
 import { formatParameters } from './formatParameters';
 import { useAIAssistantContext } from '../AIAssistantContext';
 import { ToolExecutionState } from '../messageListLib/types';
 import { useAskQuestionModalStore } from '../../../store/askQuestionModalStore';
+import { useWriteConfirmModalStore } from '../../../store/writeConfirmModalStore';
+import { confirmWriteOperation, cancelWriteOperation } from '../../../services/writeConfirmationApi';
 
 /**
  * Helper component to handle opening the question modal only once.
@@ -48,6 +51,43 @@ function AskUserQuestionHandler({
       openModal(conversationId, questions, handleSubmit);
     }
   }, [askUserPayload, submitMessage, openModal, conversationId]);
+
+  return null;
+}
+
+/**
+ * Helper component to handle opening the write confirmation panel only once.
+ */
+function WriteConfirmHandler({
+  payload,
+  conversationId,
+  submitMessage,
+}: {
+  payload: WriteConfirmPayload;
+  conversationId: number;
+  submitMessage: (message: string) => Promise<void>;
+}) {
+  const openWriteConfirmModal = useWriteConfirmModalStore((s) => s.open);
+  const openedRef = useRef(false);
+
+  useEffect(() => {
+    if (!openedRef.current) {
+      openedRef.current = true;
+
+      const onConfirm = () => {
+        confirmWriteOperation(payload.confirmationToken)
+          .then(() => submitMessage('User confirmed, please proceed.'))
+          .catch(() => submitMessage('Confirmation request failed. Please try again.'));
+      };
+
+      const onCancel = () => {
+        cancelWriteOperation(payload.confirmationToken).catch(() => {/* token may be expired, ignore */});
+        submitMessage('User cancelled the write operation.');
+      };
+
+      openWriteConfirmModal(conversationId, payload, onConfirm, onCancel);
+    }
+  }, [payload, conversationId, submitMessage, openWriteConfirmModal]);
 
   return null;
 }
@@ -154,6 +194,20 @@ export function ToolRunBlock({
 
         // Any other case: don't render anything
         return null;
+      }
+
+      case ToolType.WRITE_CONFIRM: {
+        if (!isLoading) return null;
+        if (conversationId === null) return null;
+        const writeConfirmPayload = parseWriteConfirmPayload(responseData);
+        if (!writeConfirmPayload) return null;
+        return (
+          <WriteConfirmHandler
+            payload={writeConfirmPayload}
+            conversationId={conversationId}
+            submitMessage={submitMessage}
+          />
+        );
       }
 
       case ToolType.MCP:

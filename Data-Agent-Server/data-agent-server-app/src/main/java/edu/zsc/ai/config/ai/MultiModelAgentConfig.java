@@ -19,6 +19,7 @@ import dev.langchain4j.service.AiServices;
 import edu.zsc.ai.agent.ReActAgent;
 import edu.zsc.ai.agent.ReActAgentProvider;
 import edu.zsc.ai.common.enums.ai.ModelEnum;
+import edu.zsc.ai.agent.tool.AskUserConfirmTool;
 import edu.zsc.ai.agent.tool.AskUserQuestionTool;
 import edu.zsc.ai.agent.tool.ConnectionTool;
 import edu.zsc.ai.agent.tool.DatabaseTool;
@@ -92,6 +93,7 @@ public class MultiModelAgentConfig {
             TodoTool todoTool,
             TableTool tableTool,
             AskUserQuestionTool askUserQuestionTool,
+            AskUserConfirmTool askUserConfirmTool,
             ConnectionTool connectionTool,
             DatabaseTool databaseTool,
             ExecuteSqlTool executeSqlTool,
@@ -104,10 +106,10 @@ public class MultiModelAgentConfig {
         return AiServices.builder(ReActAgent.class)
                 .streamingChatModel(streamingChatModel)
                 .chatMemoryProvider(chatMemoryProvider)
-                .tools(todoTool, tableTool, askUserQuestionTool,
+                .tools(todoTool, tableTool, askUserQuestionTool, askUserConfirmTool,
                        connectionTool, databaseTool, executeSqlTool,
                        viewTool, functionTool, procedureTool, triggerTool, indexTool)
-                .toolProvider(mcpToolProvider)  // Use LangChain4j's McpToolProvider
+                .toolProvider(mcpToolProvider)
                 .build();
     }
 
@@ -118,6 +120,7 @@ public class MultiModelAgentConfig {
             TodoTool todoTool,
             TableTool tableTool,
             AskUserQuestionTool askUserQuestionTool,
+            AskUserConfirmTool askUserConfirmTool,
             ConnectionTool connectionTool,
             DatabaseTool databaseTool,
             ExecuteSqlTool executeSqlTool,
@@ -130,10 +133,10 @@ public class MultiModelAgentConfig {
         return AiServices.builder(ReActAgent.class)
                 .streamingChatModel(streamingChatModel)
                 .chatMemoryProvider(chatMemoryProvider)
-                .tools(todoTool, tableTool, askUserQuestionTool,
+                .tools(todoTool, tableTool, askUserQuestionTool, askUserConfirmTool,
                        connectionTool, databaseTool, executeSqlTool,
                        viewTool, functionTool, procedureTool, triggerTool, indexTool)
-                .toolProvider(mcpToolProvider)  // Use LangChain4j's McpToolProvider
+                .toolProvider(mcpToolProvider)
                 .build();
     }
 
@@ -144,6 +147,7 @@ public class MultiModelAgentConfig {
             TodoTool todoTool,
             TableTool tableTool,
             AskUserQuestionTool askUserQuestionTool,
+            AskUserConfirmTool askUserConfirmTool,
             ConnectionTool connectionTool,
             DatabaseTool databaseTool,
             ExecuteSqlTool executeSqlTool,
@@ -156,10 +160,10 @@ public class MultiModelAgentConfig {
         return AiServices.builder(ReActAgent.class)
                 .streamingChatModel(streamingChatModel)
                 .chatMemoryProvider(chatMemoryProvider)
-                .tools(todoTool, tableTool, askUserQuestionTool,
+                .tools(todoTool, tableTool, askUserQuestionTool, askUserConfirmTool,
                        connectionTool, databaseTool, executeSqlTool,
                        viewTool, functionTool, procedureTool, triggerTool, indexTool)
-                .toolProvider(mcpToolProvider)  // Use LangChain4j's McpToolProvider
+                .toolProvider(mcpToolProvider)
                 .build();
     }
 

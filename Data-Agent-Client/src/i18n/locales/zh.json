@@ -182,6 +182,14 @@
       "streamingArguments": "正在流式传输参数...",
       "executing": "正在执行...",
       "parameters": "参数"
+    },
+    "writeConfirm": {
+      "label": "需要确认写操作",
+      "sqlPreviewLabel": "即将执行的 SQL",
+      "targetLabel": "目标数据库",
+      "warning": "此操作可能不可撤销，请仔细确认后再执行。",
+      "confirmBtn": "确认执行",
+      "cancelBtn": "取消"
     }
   },
   "explorer": {

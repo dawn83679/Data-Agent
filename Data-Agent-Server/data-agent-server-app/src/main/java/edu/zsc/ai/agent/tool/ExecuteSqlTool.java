@@ -3,6 +3,7 @@ package edu.zsc.ai.agent.tool;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.invocation.InvocationParameters;
+import edu.zsc.ai.agent.confirm.WriteConfirmationStore;
 import edu.zsc.ai.common.constant.RequestContextConstant;
 import edu.zsc.ai.domain.model.dto.request.db.AgentExecuteSqlRequest;
 import edu.zsc.ai.domain.model.dto.response.db.ExecuteSqlResponse;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 public class ExecuteSqlTool {
 
     private final SqlExecutionService sqlExecutionService;
+    private final WriteConfirmationStore writeConfirmationStore;
 
     @Tool({
         "[WHAT] Execute a SELECT SQL statement on the current connection and database.",
@@ -67,8 +69,10 @@ public class ExecuteSqlTool {
 
     @Tool({
         "[WHAT] Execute a write SQL statement (INSERT, UPDATE, DELETE, DDL) on the current connection and database.",
-        "[WHEN] Use for all data-modifying or schema-changing operations. Pass connectionId, databaseName, schemaName from current session context.",
-        "IMPORTANT — NEVER call this tool without first calling askUserQuestion to confirm the exact operation and scope with the user."
+        "[WHEN] Use ONLY after askUserConfirm has been called and the user has confirmed the operation.",
+        "IMPORTANT — NEVER call this tool without first calling askUserConfirm. "
+            + "The server automatically validates that the user has confirmed this exact SQL. "
+            + "If confirmation is missing or expired, the call will be rejected."
     })
     public ExecuteSqlResponse executeNonSelectSql(
             @P("Connection id from current session context") Long connectionId,
@@ -81,12 +85,27 @@ public class ExecuteSqlTool {
                 sql != null ? sql.length() : 0);
         try {
             Long userId = parameters.get(RequestContextConstant.USER_ID);
-            if (userId == null) {
+            Long conversationId = parameters.get(RequestContextConstant.CONVERSATION_ID);
+            if (userId == null || conversationId == null) {
                 return ExecuteSqlResponse.builder()
                         .success(false)
-                        .errorMessage("User context is missing.")
+                        .errorMessage("User or conversation context is missing.")
                         .build();
             }
+
+            // Server-side gate: find and consume a CONFIRMED token for this user + conversation + sql.
+            // The agent does not need to know or pass the token.
+            boolean consumed = writeConfirmationStore.consumeConfirmedBySql(userId, conversationId, sql);
+            if (!consumed) {
+                log.warn("[Tool] executeNonSelectSql rejected: no CONFIRMED token for userId={} conversationId={}",
+                        userId, conversationId);
+                return ExecuteSqlResponse.builder()
+                        .success(false)
+                        .errorMessage("Write operation rejected: no valid user confirmation found. "
+                                + "You must call askUserConfirm first and wait for the user to confirm.")
+                        .build();
+            }
+
             AgentExecuteSqlRequest request = AgentExecuteSqlRequest.builder()
                     .connectionId(connectionId)
                     .databaseName(databaseName)

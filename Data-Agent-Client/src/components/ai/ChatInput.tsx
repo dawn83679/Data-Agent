@@ -7,6 +7,7 @@ import { useAIAssistantContext } from './AIAssistantContext';
 import { ChatInputArea } from './ChatInputArea';
 import { ChatInputPopups } from './ChatInputPopups';
 import { ChatInputQuestion } from './ChatInputQuestion';
+import { ChatInputWriteConfirm } from './ChatInputWriteConfirm';
 import { TodoListBlock } from './blocks/TodoListBlock';
 import { useTodoInMessages } from './messageListLib/useTodoInMessages';
 import { chatMessagesToMessages } from './MessageList';
@@ -103,6 +104,9 @@ export function ChatInput() {
 
         {/* Question form above input */}
         <ChatInputQuestion conversationId={conversationId} />
+
+        {/* Write confirmation panel above input */}
+        <ChatInputWriteConfirm conversationId={conversationId} />
 
         {/* Main input area */}
         <div className="p-2 theme-bg-panel border-t theme-border shrink-0">
