@@ -6,8 +6,6 @@ import { AGENT_CONFIG } from './agentConfig';
 import { useAIAssistantContext } from './AIAssistantContext';
 import { ChatInputArea } from './ChatInputArea';
 import { ChatInputPopups } from './ChatInputPopups';
-import { ChatInputQuestion } from './ChatInputQuestion';
-import { ChatInputWriteConfirm } from './ChatInputWriteConfirm';
 import { TodoListBlock } from './blocks/TodoListBlock';
 import { useTodoInMessages } from './messageListLib/useTodoInMessages';
 import { chatMessagesToMessages } from './MessageList';
@@ -29,7 +27,6 @@ export function ChatInput() {
     agentState,
     chatContextState,
     onCommand,
-    conversationId,
     messages,
   } = useAIAssistantContext();
   const { model, setModel, modelOptions } = modelState;
@@ -83,68 +80,62 @@ export function ChatInput() {
 
   // Build agent options
   const agents = useMemo(
-      () =>
-          AGENT_TYPES.map((type) => ({
-            type,
-            icon: AGENT_CONFIG[type].icon,
-            label: t(AGENT_CONFIG[type].i18nKey),
-          })),
-      [t]
+    () =>
+      AGENT_TYPES.map((type) => ({
+        type,
+        icon: AGENT_CONFIG[type].icon,
+        label: t(AGENT_CONFIG[type].i18nKey),
+      })),
+    [t]
   );
   const CurrentAgentIcon = AGENT_CONFIG[agent].icon;
 
   return (
-      <>
-        {/* Todo list above input */}
-        {showTodos && (
-            <div className="px-2 pt-1.5 pb-1 theme-bg-panel border-t theme-border shrink-0">
-              <TodoListBlock items={latestTodoItems} />
-            </div>
-        )}
-
-        {/* Question form above input */}
-        <ChatInputQuestion conversationId={conversationId} />
-
-        {/* Write confirmation panel above input */}
-        <ChatInputWriteConfirm conversationId={conversationId} />
-
-        {/* Main input area */}
-        <div className="p-2 theme-bg-panel border-t theme-border shrink-0">
-          <div
-              className={`rounded-lg border theme-border theme-bg-main relative transition-colors flex flex-col ${AGENT_COLORS[agent].focusBorder}`}
-          >
-            <ChatInputPopups
-                agent={agent}
-                mention={mentionLogic.mention}
-                slashOpen={slashCmd.slashOpen}
-                slashQuery={slashCmd.slashQuery}
-                slashHighlightedIndex={slashCmd.slashHighlightedIndex}
-                filteredSlashCommands={slashCmd.filteredSlashCommands}
-                onSlashSelect={slashCmd.runSlashCommand}
-                onSlashHighlight={slashCmd.setSlashHighlightedIndex}
-            />
-
-            <ChatInputArea
-                input={input}
-                agent={agent}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-            />
-
-            <ChatInputToolbar
-                agent={agent}
-                setAgent={setAgent}
-                model={model}
-                setModel={setModel}
-                modelOptions={modelOptions}
-                onSend={onSend}
-                onStop={onStop}
-                isLoading={isLoading}
-                agents={agents}
-                CurrentAgentIcon={CurrentAgentIcon}
-            />
-          </div>
+    <>
+      {/* Todo list above input */}
+      {showTodos && (
+        <div className="px-2 pt-1.5 pb-1 theme-bg-panel border-t theme-border shrink-0">
+          <TodoListBlock items={latestTodoItems} />
         </div>
-      </>
+      )}
+
+      {/* Todo list above input */}
+      <div className="p-2 theme-bg-panel border-t theme-border shrink-0">
+        <div
+          className={`rounded-lg border theme-border theme-bg-main relative transition-colors flex flex-col ${AGENT_COLORS[agent].focusBorder}`}
+        >
+          <ChatInputPopups
+            agent={agent}
+            mention={mentionLogic.mention}
+            slashOpen={slashCmd.slashOpen}
+            slashQuery={slashCmd.slashQuery}
+            slashHighlightedIndex={slashCmd.slashHighlightedIndex}
+            filteredSlashCommands={slashCmd.filteredSlashCommands}
+            onSlashSelect={slashCmd.runSlashCommand}
+            onSlashHighlight={slashCmd.setSlashHighlightedIndex}
+          />
+
+          <ChatInputArea
+            input={input}
+            agent={agent}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+          />
+
+          <ChatInputToolbar
+            agent={agent}
+            setAgent={setAgent}
+            model={model}
+            setModel={setModel}
+            modelOptions={modelOptions}
+            onSend={onSend}
+            onStop={onStop}
+            isLoading={isLoading}
+            agents={agents}
+            CurrentAgentIcon={CurrentAgentIcon}
+          />
+        </div>
+      </div>
+    </>
   );
 }

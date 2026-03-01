@@ -58,24 +58,13 @@ public class WriteConfirmationStore {
      */
     public boolean confirm(String token, Long userId) {
         WriteConfirmationEntry entry = cache.getIfPresent(token);
-        if (entry == null) {
-            log.warn("[WriteConfirm] confirm: token not found or expired token={}", token);
+        if (entry == null || !entry.getUserId().equals(userId) || entry.getStatus() != WriteConfirmationStatus.PENDING) {
+            log.warn("[WriteConfirm] confirm failed: invalid token, ownership mismatch, or not PENDING. token={}", token);
             return false;
         }
-        synchronized (entry) {
-            if (!entry.getUserId().equals(userId)) {
-                log.warn("[WriteConfirm] confirm: ownership mismatch token={} expectedUser={} actualUser={}",
-                        token, entry.getUserId(), userId);
-                return false;
-            }
-            if (entry.getStatus() != WriteConfirmationStatus.PENDING) {
-                log.warn("[WriteConfirm] confirm: not PENDING token={} status={}", token, entry.getStatus());
-                return false;
-            }
-            entry.setStatus(WriteConfirmationStatus.CONFIRMED);
-            log.info("[WriteConfirm] Confirmed token={}", token);
-            return true;
-        }
+        entry.setStatus(WriteConfirmationStatus.CONFIRMED);
+        log.info("[WriteConfirm] Confirmed token={}", token);
+        return true;
     }
 
     /**
@@ -86,13 +75,8 @@ public class WriteConfirmationStore {
      */
     public boolean cancel(String token, Long userId) {
         WriteConfirmationEntry entry = cache.getIfPresent(token);
-        if (entry == null) {
-            log.warn("[WriteConfirm] cancel: token not found or expired token={}", token);
-            return false;
-        }
-        if (!entry.getUserId().equals(userId)) {
-            log.warn("[WriteConfirm] cancel: ownership mismatch token={} expectedUser={} actualUser={}",
-                    token, entry.getUserId(), userId);
+        if (entry == null || !entry.getUserId().equals(userId)) {
+            log.warn("[WriteConfirm] cancel failed: token not found or ownership mismatch. token={}", token);
             return false;
         }
         cache.invalidate(token);
@@ -114,21 +98,12 @@ public class WriteConfirmationStore {
                         && e.getSql().equals(sql))
                 .findFirst()
                 .map(entry -> {
-                    synchronized (entry) {
-                        // Double-check after acquiring lock to handle concurrent calls
-                        if (entry.getStatus() != WriteConfirmationStatus.CONFIRMED
-                                || !entry.getSql().equals(sql)) {
-                            return false;
-                        }
-                        entry.setStatus(WriteConfirmationStatus.CONSUMED);
-                        log.info("[WriteConfirm] Consumed by sql match: userId={} conversationId={}",
-                                userId, conversationId);
-                        return true;
-                    }
+                    entry.setStatus(WriteConfirmationStatus.CONSUMED);
+                    log.info("[WriteConfirm] Consumed by sql match: userId={} conversationId={}", userId, conversationId);
+                    return true;
                 })
                 .orElseGet(() -> {
-                    log.warn("[WriteConfirm] consumeConfirmedBySql: no CONFIRMED token found for userId={} conversationId={}",
-                            userId, conversationId);
+                    log.warn("[WriteConfirm] consumeConfirmedBySql: no CONFIRMED token found for userId={} conversationId={}", userId, conversationId);
                     return false;
                 });
     }

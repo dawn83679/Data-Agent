@@ -4,7 +4,6 @@ import type { ToolCallData } from '../../../types/chat';
 import { parseToolCall, parseToolResult, idStr, matchById } from './blockParsing';
 import type { Segment } from './types';
 import { SegmentKind, ToolExecutionState } from './types';
-import { ASK_USER_QUESTION_TOOL_NAME } from '../blocks/askUserQuestionTypes';
 
 /**
  * Merge consecutive TOOL_CALL blocks with the same id (streaming chunks) by concatenating arguments.
@@ -59,9 +58,8 @@ function findResultById(
 /**
  * Convert raw blocks into display segments: merge TEXT, merge THOUGHT, pair TOOL_CALL+TOOL_RESULT by id.
  * @param blocks - Raw blocks to convert
- * @param filterAskUserQuestion - When true, skip askUserQuestion tool calls (for history rendering)
  */
-export function blocksToSegments(blocks: ChatResponseBlock[], filterAskUserQuestion: boolean = false): Segment[] {
+export function blocksToSegments(blocks: ChatResponseBlock[]): Segment[] {
   const segments: Segment[] = [];
   let textBuffer = '';
   const processedIndices = new Set<number>(); // Track processed blocks to avoid duplicates
@@ -75,7 +73,7 @@ export function blocksToSegments(blocks: ChatResponseBlock[], filterAskUserQuest
 
   for (let i = 0; i < blocks.length; i++) {
     if (processedIndices.has(i)) continue; // Skip already processed blocks
-    
+
     const block = blocks[i]!;
     switch (block.type) {
       case MessageBlockType.TEXT:
@@ -98,12 +96,6 @@ export function blocksToSegments(blocks: ChatResponseBlock[], filterAskUserQuest
         flushText();
         const firstCall = parseToolCall(block);
         if (!firstCall) {
-          break;
-        }
-        // Skip askUserQuestion tool when filtering for history rendering
-        if (filterAskUserQuestion && firstCall.toolName === ASK_USER_QUESTION_TOOL_NAME) {
-          // Mark this block as processed and skip it
-          processedIndices.add(i);
           break;
         }
         const { endIndex: j, lastCall, parametersData, isStreaming } = mergeConsecutiveToolCalls(blocks, i, firstCall);

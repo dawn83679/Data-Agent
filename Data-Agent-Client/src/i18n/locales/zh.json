@@ -173,10 +173,10 @@
       "reject": "拒绝回答",
       "rejectMessage": "用户拒绝回答你的问题 请你重新梳理当前上下文是否已有足够的信息回答问题或者重新审视用户需求。",
       "customLabel": "用户补充输入",
-      "answerPrefix": "用户回答：",
+      "answerPrefix": "针对你的提问，用户的答复如下：",
       "submittedAnswer": "您的答案",
-      "multiAnswerPrefix": "用户已回答您的问题：",
-      "continueSuffix": "您现在可以继续处理用户的答案"
+      "continueSuffix": "请仔细阅读上述反馈，并结合上下文继续生成对应的 SQL 语句或完成后续任务。",
+      "originalQuestionPrefix": "为了防遗忘，下面是你原本向用户提出的问题："
     },
     "toolRun": {
       "streamingArguments": "正在流式传输参数...",
@@ -185,11 +185,22 @@
     },
     "writeConfirm": {
       "label": "需要确认写操作",
+      "labelAction": "即将执行以下 SQL",
       "sqlPreviewLabel": "即将执行的 SQL",
       "targetLabel": "目标数据库",
       "warning": "此操作可能不可撤销，请仔细确认后再执行。",
       "confirmBtn": "确认执行",
-      "cancelBtn": "取消"
+      "cancelBtn": "取消",
+      "yesBtn": "Yes",
+      "noBtn": "No",
+      "inputPlaceholder": "Input (可选补充信息)",
+      "confirmMessage": "**写操作已确认**\n\n- **状态:** 已允许\n\n请你继续执行请求的 SQL 语句。",
+      "confirmWithInputMessage": "**写操作已确认**\n\n- **状态:** 已允许\n- **用户反馈:** {{info}}\n\n请结合用户的反馈信息，继续执行请求的 SQL 语句。",
+      "cancelMessage": "**写操作已取消**\n\n- **状态:** 已拒绝\n\n请重新考虑您的方案，结合上下文或向用户提问以获取更多信息，然后再尝试其他操作。",
+      "cancelWithInputMessage": "**写操作已取消**\n\n- **状态:** 已拒绝\n- **用户反馈:** {{info}}\n\n请根据用户的反馈修改您的执行计划或 SQL 语句。",
+      "executeSqlPrefix": "请继续调用工具执行如下 SQL：",
+      "cancelSqlPrefix": "原计划执行的 SQL 如下，请勿执行该语句：",
+      "confirmFailed": "确认操作失败，请重试。"
     }
   },
   "explorer": {

@@ -9,6 +9,7 @@ import { MessageListItem } from './MessageListItem';
 import { segmentsHaveTodo } from './segmentTodoUtils';
 import { useTodoInMessages } from './useTodoInMessages';
 import { PlanningIndicator } from '../blocks';
+import { getToolType, ToolType } from '../blocks/toolTypes';
 import type { Message, TodoBoxSpec } from './types';
 import { SegmentKind } from './types';
 
@@ -33,7 +34,6 @@ export function MessageList({
     lastAssistantMessageIndexWithTodo,
     latestTodoItems,
     allTodoCompleted,
-    todoBoxesByMessageIndex,
   } = useTodoInMessages(displayMessages);
 
   const lastMsg = displayMessages[displayMessages.length - 1];
@@ -46,13 +46,26 @@ export function MessageList({
         const isLastMessage = msgIndex === displayMessages.length - 1;
         const isLastAssistantStreaming =
           isLastMessage && msg.role === MessageRole.ASSISTANT && isLoading;
-        // Filter out askUserQuestion when not streaming (history messages)
-        const segments =
+        let segments =
           msg.blocks && msg.blocks.length > 0
-            ? blocksToSegments(msg.blocks, !isLastAssistantStreaming)
+            ? blocksToSegments(msg.blocks)
             : msg.role === MessageRole.ASSISTANT && (msg.content ?? '').trim() !== ''
               ? [{ kind: SegmentKind.TEXT as const, data: msg.content ?? '' }]
               : [];
+
+        // Hide interactive tool cards completely in historical messages
+        if (!isLastMessage) {
+          segments = segments.filter((seg) => {
+            if (seg.kind === SegmentKind.TOOL_RUN) {
+              const toolType = getToolType(seg.toolName);
+              if (toolType === ToolType.ASK_USER || toolType === ToolType.WRITE_CONFIRM) {
+                return false;
+              }
+            }
+            return true;
+          });
+        }
+
         const hasTodoSegments =
           msg.role === MessageRole.ASSISTANT && segmentsHaveTodo(segments);
         // Don't use overrideTodoBoxes since todos are shown above input
@@ -61,10 +74,15 @@ export function MessageList({
           msgIndex === lastAssistantMessageIndexWithTodo &&
           allTodoCompleted &&
           latestTodoItems != null;
-        
+
         // Always hide todos in messages since they're shown above input
         const hideTodoInMessage = hasTodoSegments;
-        
+
+        // Skip rendering entirely if the message ended up completely empty after filtering
+        if (!isLastMessage && segments.length === 0 && (msg.content ?? '').trim() === '') {
+          return null;
+        }
+
         return (
           <MessageListItem
             key={msg.id}

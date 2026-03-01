@@ -4,7 +4,6 @@ export { TextBlock } from './TextBlock';
 export { ThoughtBlock } from './ThoughtBlock';
 export { TodoListBlock } from './TodoListBlock';
 export { ToolRunBlock } from './ToolRunBlock';
-export { AskUserQuestionBlock } from './AskUserQuestionBlock';
 export { McpToolBlock } from './McpToolBlock';
 export { ChartDisplay } from './ChartDisplay';
 export { getRenderConfig } from './McpToolConfig';

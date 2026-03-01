@@ -1,7 +1,5 @@
-import { useEffect, useRef } from 'react';
 import { TodoListBlock } from './TodoListBlock';
 import { McpToolBlock } from './McpToolBlock';
-import { ToolRunPending } from './ToolRunPending';
 import { ToolRunStreaming } from './ToolRunStreaming';
 import { ToolRunExecuting } from './ToolRunExecuting';
 import { GenericToolRun } from './GenericToolRun';
@@ -9,88 +7,13 @@ import { parseTodoListResponse } from './todoTypes';
 import {
   parseAskUserQuestionParameters,
   parseAskUserQuestionResponse,
-  normalizeToQuestions,
-  type AskUserQuestionPayload,
 } from './askUserQuestionTypes';
-import { parseWriteConfirmPayload, type WriteConfirmPayload } from './writeConfirmTypes';
+import { parseWriteConfirmPayload } from './writeConfirmTypes';
 import { getToolType, ToolType } from './toolTypes';
 import { formatParameters } from './formatParameters';
-import { useAIAssistantContext } from '../AIAssistantContext';
 import { ToolExecutionState } from '../messageListLib/types';
-import { useAskQuestionModalStore } from '../../../store/askQuestionModalStore';
-import { useWriteConfirmModalStore } from '../../../store/writeConfirmModalStore';
-import { confirmWriteOperation, cancelWriteOperation } from '../../../services/writeConfirmationApi';
-
-/**
- * Helper component to handle opening the question modal only once.
- * Uses useEffect to prevent re-opening on every render.
- */
-function AskUserQuestionHandler({
-  askUserPayload,
-  submitMessage,
-  openModal,
-  conversationId,
-}: {
-  askUserPayload: AskUserQuestionPayload;
-  submitMessage: (message: string) => Promise<void>;
-  openModal: (conversationId: number, questions: any[], onSubmit: (answer: string) => void) => void;
-  conversationId: number | null;
-}) {
-  const openedRef = useRef(false);
-
-  useEffect(() => {
-    // Only open modal once per question instance
-    if (!openedRef.current && conversationId !== null) {
-      openedRef.current = true;
-
-      const questions = normalizeToQuestions(askUserPayload);
-      const handleSubmit = (answer: string) => {
-        submitMessage(answer);
-      };
-
-      openModal(conversationId, questions, handleSubmit);
-    }
-  }, [askUserPayload, submitMessage, openModal, conversationId]);
-
-  return null;
-}
-
-/**
- * Helper component to handle opening the write confirmation panel only once.
- */
-function WriteConfirmHandler({
-  payload,
-  conversationId,
-  submitMessage,
-}: {
-  payload: WriteConfirmPayload;
-  conversationId: number;
-  submitMessage: (message: string) => Promise<void>;
-}) {
-  const openWriteConfirmModal = useWriteConfirmModalStore((s) => s.open);
-  const openedRef = useRef(false);
-
-  useEffect(() => {
-    if (!openedRef.current) {
-      openedRef.current = true;
-
-      const onConfirm = () => {
-        confirmWriteOperation(payload.confirmationToken)
-          .then(() => submitMessage('User confirmed, please proceed.'))
-          .catch(() => submitMessage('Confirmation request failed. Please try again.'));
-      };
-
-      const onCancel = () => {
-        cancelWriteOperation(payload.confirmationToken).catch(() => {/* token may be expired, ignore */});
-        submitMessage('User cancelled the write operation.');
-      };
-
-      openWriteConfirmModal(conversationId, payload, onConfirm, onCancel);
-    }
-  }, [payload, conversationId, submitMessage, openWriteConfirmModal]);
-
-  return null;
-}
+import { AskUserQuestionCard } from './AskUserQuestionCard';
+import { WriteConfirmCard } from './WriteConfirmCard';
 
 export interface ToolRunBlockProps {
   toolName: string;
@@ -111,7 +34,8 @@ export interface ToolRunBlockProps {
  *
  * Tool types:
  * - TODO: TodoWrite → TodoListBlock
- * - ASK_USER: AskUserQuestion → AskUserQuestionBlock
+ * - ASK_USER: AskUserQuestion → AskUserQuestionCard (Inline)
+ * - WRITE_CONFIRM: AskUserConfirm → WriteConfirmCard (Inline)
  * - MCP: External tools (charts, etc.) → McpToolBlock
  * - GENERIC: All other tools (database, etc.) → ToolRunDetail
  */
@@ -124,111 +48,108 @@ export function ToolRunBlock({
   executionState,
   serverName,
 }: ToolRunBlockProps) {
-  const { submitMessage, isLoading, conversationId } = useAIAssistantContext();
-  const openModal = useAskQuestionModalStore((state) => state.open);
-
   const toolType = getToolType(toolName, serverName);
   const formattedParameters = formatParameters(parametersData);
+  const isInteractive = toolType === ToolType.ASK_USER || toolType === ToolType.WRITE_CONFIRM;
 
-  // Handle execution state (new approach)
+  // 1. Handle Execution Lifecycle States
   if (executionState === ToolExecutionState.STREAMING_ARGUMENTS) {
+    if (isInteractive) return <ToolRunExecuting toolName={toolName} parametersData={parametersData} />;
     return <ToolRunStreaming toolName={toolName} partialArguments={parametersData} />;
   }
 
-  if (executionState === ToolExecutionState.EXECUTING) {
+  if (executionState === ToolExecutionState.EXECUTING || (pending && !executionState)) {
+    // Both interactive and non-interactive tools should just pulse while executing/pending
     return <ToolRunExecuting toolName={toolName} parametersData={parametersData} />;
   }
 
-  // Backward compatibility: if no executionState but pending=true
-  if (pending && !executionState) {
-    return <ToolRunPending toolName={toolName} />;
+  // 2. Error Fallback (Always generic)
+  if (responseError) {
+    return (
+      <GenericToolRun
+        toolName={toolName}
+        formattedParameters={formattedParameters}
+        responseData={responseData}
+        responseError={responseError}
+      />
+    );
   }
 
-  // Dispatch by tool type
-  if (!responseError) {
-    switch (toolType) {
-      case ToolType.TODO: {
-        const todoItems = parseTodoListResponse(responseData)?.items ?? null;
-        if (todoItems) {
-          return (
-            <div className="mb-2">
-              <TodoListBlock items={todoItems} />
-            </div>
-          );
-        }
-        break;
-      }
+  // 3. Dispatch Completed Tool Rendering by Category
+  switch (toolType) {
+    // CATEGORY A: Interactive Tools (Inline Cards)
+    case ToolType.ASK_USER: {
+      const askUserPayloadFromResponse = parseAskUserQuestionResponse(responseData);
+      const askUserPayloadFromParams = parseAskUserQuestionParameters(parametersData);
+      const askUserPayload = askUserPayloadFromResponse ?? askUserPayloadFromParams ?? null;
 
-      case ToolType.ASK_USER: {
-        // Defense-in-depth: only open the question modal during active streaming.
-        // Historical conversations are already filtered at the blocksToSegments level,
-        // but this guard handles edge cases like slot-switch races.
-        if (!isLoading) {
-          return null;
-        }
+      const askUserSubmittedAnswer =
+        askUserPayloadFromResponse == null && askUserPayloadFromParams != null && (responseData ?? '').trim() !== ''
+          ? responseData.trim()
+          : undefined;
 
-        const askUserPayloadFromResponse = parseAskUserQuestionResponse(responseData);
-        const askUserPayloadFromParams = parseAskUserQuestionParameters(parametersData);
-        const askUserPayload = askUserPayloadFromResponse ?? askUserPayloadFromParams ?? null;
-        const askUserSubmittedAnswer =
-          askUserPayloadFromResponse == null && askUserPayloadFromParams != null && (responseData ?? '').trim() !== ''
-            ? responseData.trim()
-            : undefined;
+      if (!askUserPayload) return null;
 
-        // If already answered: don't render anything
-        if (askUserSubmittedAnswer && askUserPayload) {
-          return null;
-        }
-
-        // If question received and not answered: render AskUserQuestionHandler
-        if (askUserPayload && !askUserSubmittedAnswer) {
-          return (
-            <AskUserQuestionHandler
-              askUserPayload={askUserPayload}
-              submitMessage={submitMessage}
-              openModal={openModal}
-              conversationId={conversationId}
-            />
-          );
-        }
-
-        // Any other case: don't render anything
-        return null;
-      }
-
-      case ToolType.WRITE_CONFIRM: {
-        if (!isLoading) return null;
-        if (conversationId === null) return null;
-        const writeConfirmPayload = parseWriteConfirmPayload(responseData);
-        if (!writeConfirmPayload) return null;
-        return (
-          <WriteConfirmHandler
-            payload={writeConfirmPayload}
-            conversationId={conversationId}
-            submitMessage={submitMessage}
-          />
-        );
-      }
-
-      case ToolType.MCP:
-        return (
-          <McpToolBlock
-            toolName={toolName}
-            parametersData={parametersData}
-            responseData={responseData}
-            responseError={responseError}
-            serverName={serverName}
-          />
-        );
+      // If already answered but not loading, or if we need to show the form
+      // We always render the card (interactive if questions to answer, static if answered)
+      return (
+        <AskUserQuestionCard
+          askUserPayload={askUserPayload}
+          submittedAnswer={askUserSubmittedAnswer}
+        />
+      );
     }
-  }
 
-  return (
-    <GenericToolRun
-      toolName={toolName}
-      formattedParameters={formattedParameters}
-      responseData={responseData}
-      responseError={responseError}
-    />
-  );
+    case ToolType.WRITE_CONFIRM: {
+      const writeConfirmPayload = parseWriteConfirmPayload(parametersData) ?? parseWriteConfirmPayload(responseData);
+      if (!writeConfirmPayload) return null;
+
+      // Determine if it was already answered checking responseData text if parameters held the token
+      let submittedAnswer: string | undefined = undefined;
+      if (responseData && (responseData.includes('confirmed') || responseData.includes('cancelled'))) {
+        submittedAnswer = responseData;
+      }
+
+      return (
+        <WriteConfirmCard
+          payload={writeConfirmPayload}
+          submittedAnswer={submittedAnswer}
+        />
+      );
+    }
+
+    // CATEGORY B: Specialized Content Presentation
+    case ToolType.TODO: {
+      const todoItems = parseTodoListResponse(responseData)?.items ?? null;
+      if (!todoItems) return null;
+      return (
+        <div className="mb-2">
+          <TodoListBlock items={todoItems} />
+        </div>
+      );
+    }
+
+    case ToolType.MCP:
+      return (
+        <McpToolBlock
+          toolName={toolName}
+          parametersData={parametersData}
+          responseData={responseData}
+          responseError={responseError}
+          serverName={serverName}
+        />
+      );
+
+    // CATEGORY C: Generic Data Fetching / DB Tools
+    case ToolType.GENERIC:
+    default:
+      return (
+        <GenericToolRun
+          toolName={toolName}
+          formattedParameters={formattedParameters}
+          responseData={responseData}
+          responseError={responseError}
+        />
+      );
+  }
 }
