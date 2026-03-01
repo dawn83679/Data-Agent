@@ -26,16 +26,18 @@ function AskUserQuestionHandler({
   askUserPayload,
   submitMessage,
   openModal,
+  conversationId,
 }: {
   askUserPayload: AskUserQuestionPayload;
   submitMessage: (message: string) => Promise<void>;
-  openModal: (questions: any[], onSubmit: (answer: string) => void) => void;
+  openModal: (conversationId: number, questions: any[], onSubmit: (answer: string) => void) => void;
+  conversationId: number | null;
 }) {
   const openedRef = useRef(false);
 
   useEffect(() => {
     // Only open modal once per question instance
-    if (!openedRef.current) {
+    if (!openedRef.current && conversationId !== null) {
       openedRef.current = true;
 
       const questions = normalizeToQuestions(askUserPayload);
@@ -43,9 +45,9 @@ function AskUserQuestionHandler({
         submitMessage(answer);
       };
 
-      openModal(questions, handleSubmit);
+      openModal(conversationId, questions, handleSubmit);
     }
-  }, [askUserPayload, submitMessage, openModal]);
+  }, [askUserPayload, submitMessage, openModal, conversationId]);
 
   return null;
 }
@@ -82,7 +84,7 @@ export function ToolRunBlock({
   executionState,
   serverName,
 }: ToolRunBlockProps) {
-  const { submitMessage, isLoading } = useAIAssistantContext();
+  const { submitMessage, isLoading, conversationId } = useAIAssistantContext();
   const openModal = useAskQuestionModalStore((state) => state.open);
 
   const toolType = getToolType(toolName, serverName);
@@ -145,6 +147,7 @@ export function ToolRunBlock({
               askUserPayload={askUserPayload}
               submitMessage={submitMessage}
               openModal={openModal}
+              conversationId={conversationId}
             />
           );
         }
