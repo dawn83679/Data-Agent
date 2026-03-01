@@ -60,14 +60,36 @@ export function parseTodoListResponse(responseData: string): TodoListResponse | 
   if (trimmed === '') return null;
   try {
     const parsed = JSON.parse(trimmed) as unknown;
+    
+    // Handle AgentToolResult wrapper: { success, message, result: "stringified JSON" }
+    if (parsed && typeof parsed === 'object' && 'result' in parsed) {
+      const wrapper = parsed as { result?: unknown };
+      if (typeof wrapper.result === 'string') {
+        try {
+          const innerParsed = JSON.parse(wrapper.result) as unknown;
+          if (innerParsed && typeof innerParsed === 'object' && Array.isArray((innerParsed as { items?: unknown }).items)) {
+            const obj = innerParsed as { todoId?: string; items: TodoItem[] };
+            const todoId = obj.todoId != null ? String(obj.todoId) : '';
+            return { todoId, items: obj.items };
+          }
+        } catch {
+          // Inner parse failed, continue to other formats
+        }
+      }
+    }
+    
+    // Handle direct array format
     if (Array.isArray(parsed)) {
       return { todoId: '', items: parsed as TodoItem[] };
     }
+    
+    // Handle direct object format: { todoId, items }
     if (parsed && typeof parsed === 'object' && Array.isArray((parsed as { items?: unknown }).items)) {
       const obj = parsed as { todoId?: string; items: TodoItem[] };
       const todoId = obj.todoId != null ? String(obj.todoId) : '';
       return { todoId, items: obj.items };
     }
+    
     return null;
   } catch {
     return null;
