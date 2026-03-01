@@ -104,6 +104,7 @@ export function AIAssistant() {
     modelState: { model, setModel, modelOptions },
     agentState: { agent, setAgent },
     chatContextState: { chatContext, setChatContext },
+    messages,
     onCommand: (id: string) => {
       if (id === SLASH_COMMAND_IDS.NEW) {
         setCurrentConversationId(null);

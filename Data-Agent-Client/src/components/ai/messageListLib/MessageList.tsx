@@ -9,7 +9,7 @@ import { MessageListItem } from './MessageListItem';
 import { segmentsHaveTodo } from './segmentTodoUtils';
 import { useTodoInMessages } from './useTodoInMessages';
 import { PlanningIndicator } from '../blocks';
-import type { Message } from './types';
+import type { Message, TodoBoxSpec } from './types';
 import { SegmentKind } from './types';
 
 export type { Message } from './types';
@@ -55,11 +55,16 @@ export function MessageList({
               : [];
         const hasTodoSegments =
           msg.role === MessageRole.ASSISTANT && segmentsHaveTodo(segments);
-        const overrideTodoBoxes = todoBoxesByMessageIndex[msgIndex] ?? [];
+        // Don't use overrideTodoBoxes since todos are shown above input
+        const overrideTodoBoxes: TodoBoxSpec[] = [];
         const showAllCompletedPrompt =
           msgIndex === lastAssistantMessageIndexWithTodo &&
           allTodoCompleted &&
           latestTodoItems != null;
+        
+        // Always hide todos in messages since they're shown above input
+        const hideTodoInMessage = hasTodoSegments;
+        
         return (
           <MessageListItem
             key={msg.id}
@@ -70,7 +75,7 @@ export function MessageList({
             isWaiting={isLastAssistantStreaming ? isWaiting : false}
             segments={segments}
             overrideTodoBoxes={overrideTodoBoxes}
-            hideTodoInThisMessage={hasTodoSegments}
+            hideTodoInThisMessage={hideTodoInMessage}
             showAllCompletedPrompt={showAllCompletedPrompt}
             latestTodoItemsForPrompt={latestTodoItems}
             isLastAssistantStreaming={isLastAssistantStreaming}

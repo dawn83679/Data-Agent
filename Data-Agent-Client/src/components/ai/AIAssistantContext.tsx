@@ -33,6 +33,8 @@ export interface AIAssistantContextValue {
   agentState: AgentState;
   chatContextState: ChatContextState;
   onCommand?: (commandId: string) => void;
+  /** Raw messages for todo tracking */
+  messages?: any[];
 }
 
 const AIAssistantContext = createContext<AIAssistantContextValue | null>(null);
