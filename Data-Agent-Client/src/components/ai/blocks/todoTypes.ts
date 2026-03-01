@@ -74,7 +74,7 @@ export function parseTodoListResponse(responseData: string): TodoListResponse | 
   }
 }
 
-export const TODO_TOOL_NAMES = ['updateTodoList'] as const;
+export const TODO_TOOL_NAMES = ['todo_create', 'todo_update', 'todo_delete'] as const;
 
 export function isTodoTool(toolName: string): boolean {
   return TODO_TOOL_NAMES.includes(toolName as (typeof TODO_TOOL_NAMES)[number]);
