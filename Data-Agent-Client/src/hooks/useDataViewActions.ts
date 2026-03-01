@@ -11,9 +11,6 @@ import type { ExplorerNode } from '../types/explorer';
 interface DataViewActionsProps {
   setSelectedDdlNode: (node: ExplorerNode | null) => void;
   setDdlDialogOpen: (open: boolean) => void;
-  setTableDataDialogOpen: (open: boolean) => void;
-  setSelectedTableDataNode: (node: ExplorerNode | null) => void;
-  setHighlightColumn: (col: string | undefined) => void;
   openTab: (tab: any) => void;
   selectedDdlNode: ExplorerNode | null;
 }
@@ -21,9 +18,6 @@ interface DataViewActionsProps {
 export function useDataViewActions({
   setSelectedDdlNode,
   setDdlDialogOpen,
-  setTableDataDialogOpen,
-  setSelectedTableDataNode,
-  setHighlightColumn,
   openTab,
   selectedDdlNode,
 }: DataViewActionsProps) {
@@ -36,10 +30,34 @@ export function useDataViewActions({
 
   const handleViewData = useCallback((node: ExplorerNode, highlightCol?: string) => {
     if (!node.connectionId) return;
-    setHighlightColumn(highlightCol);
-    setSelectedTableDataNode(node);
-    setTableDataDialogOpen(true);
-  }, [setHighlightColumn, setSelectedTableDataNode, setTableDataDialogOpen]);
+    const connectionId = Number(node.connectionId);
+    const connectionName = node.dbConnection?.name || 'Unknown';
+    const databaseName = node.catalog || null;
+    const schemaName = node.schema || null;
+    const objectName = node.tableName || node.objectName || node.name;
+    const objectType = node.type === ExplorerNodeType.VIEW ? 'view' : 'table';
+    const tabId = `table-data-${connectionId}-${databaseName ?? 'db'}-${schemaName ?? 'schema'}-${objectName}`;
+
+    openTab({
+      id: tabId,
+      name: objectName,
+      type: 'tableData',
+      metadata: {
+        connectionId,
+        connectionName,
+        databaseName,
+        schemaName,
+        objectName,
+        objectType,
+        catalog: node.catalog,
+        highlightColumn: highlightCol,
+        currentPage: 1,
+        pageSize: 100,
+        whereClause: '',
+        orderBy: '',
+      },
+    });
+  }, [openTab]);
 
   const handleOpenQueryConsole = useCallback((node: ExplorerNode) => {
     // For ROOT nodes (connections), get connectionId from dbConnection.id

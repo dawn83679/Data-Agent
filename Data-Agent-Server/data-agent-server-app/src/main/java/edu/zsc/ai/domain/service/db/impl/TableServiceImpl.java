@@ -73,7 +73,8 @@ public class TableServiceImpl implements TableService {
     }
 
     @Override
-    public TableDataResponse getTableData(Long connectionId, String catalog, String schema, String tableName, Long userId, Integer currentPage, Integer pageSize) {
+    public TableDataResponse getTableData(Long connectionId, String catalog, String schema, String tableName, Long userId,
+                                          Integer currentPage, Integer pageSize, String whereClause, String orderBy) {
         connectionService.openConnection(connectionId, catalog, schema, userId);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
@@ -82,9 +83,10 @@ public class TableServiceImpl implements TableService {
 
         int offset = (currentPage - 1) * pageSize;
 
-        long totalCount = provider.getTableDataCount(active.connection(), catalog, schema, tableName);
+        long totalCount = provider.getTableDataCount(active.connection(), catalog, schema, tableName, whereClause);
 
-        SqlCommandResult result = provider.getTableData(active.connection(), catalog, schema, tableName, offset, pageSize);
+        SqlCommandResult result = provider.getTableData(active.connection(), catalog, schema, tableName, offset, pageSize,
+                whereClause, orderBy);
 
         long totalPages = (totalCount + pageSize - 1) / pageSize;
 
