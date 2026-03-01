@@ -33,6 +33,12 @@ public class ExecuteSqlTool {
                 "[Tool]", connectionId, databaseName, schemaName,
                 sql != null ? sql.length() : 0);
         try {
+            if (!isReadOnlySql(sql)) {
+                return ExecuteSqlResponse.builder()
+                        .success(false)
+                        .errorMessage("Only read-only statements (SELECT, WITH, SHOW, EXPLAIN) are allowed.")
+                        .build();
+            }
             Long userId = parameters.get(RequestContextConstant.USER_ID);
             if (userId == null) {
                 return ExecuteSqlResponse.builder()
@@ -98,5 +104,15 @@ public class ExecuteSqlTool {
                     .errorMessage(e.getMessage())
                     .build();
         }
+    }
+
+    private boolean isReadOnlySql(String sql) {
+        if (sql == null || sql.isBlank()) return false;
+        String stripped = sql.stripLeading().replaceAll("(?s)/\\*.*?\\*/", "").stripLeading();
+        String firstWord = stripped.split("\\s+")[0].toUpperCase();
+        return switch (firstWord) {
+            case "SELECT", "WITH", "SHOW", "EXPLAIN" -> true;
+            default -> false;
+        };
     }
 }
