@@ -56,6 +56,8 @@ public class MultiModelAgentConfig {
                 .defaultRequestParameters(
                         QwenChatRequestParameters.builder()
                                 .enableThinking(false)
+                                // Disable QwenHelper message sanitization to preserve full ReAct + tool context
+                                .enableSanitizeMessages(false)
                                 .build())
                 .build();
     }
@@ -70,6 +72,7 @@ public class MultiModelAgentConfig {
                         QwenChatRequestParameters.builder()
                                 .enableThinking(true)
                                 .thinkingBudget(THINKING_BUDGET)
+                                .enableSanitizeMessages(false)
                                 .build())
                 .build();
     }
@@ -82,6 +85,7 @@ public class MultiModelAgentConfig {
                 .defaultRequestParameters(
                         QwenChatRequestParameters.builder()
                                 .enableThinking(false)
+                                .enableSanitizeMessages(false)
                                 .build())
                 .build();
     }

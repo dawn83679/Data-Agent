@@ -19,6 +19,7 @@ public class WriteConfirmationEntry {
     private String token;
     private Long userId;
     private Long conversationId;
+    private Long connectionId;
     private String sql;
     private String databaseName;
     private String schemaName;

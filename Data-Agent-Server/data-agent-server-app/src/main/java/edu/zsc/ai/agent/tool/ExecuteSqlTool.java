@@ -93,9 +93,10 @@ public class ExecuteSqlTool {
                         .build();
             }
 
-            // Server-side gate: find and consume a CONFIRMED token for this user + conversation + sql.
+            // Server-side gate: find and consume a CONFIRMED token for this user + conversation + connection + database + schema + sql.
             // The agent does not need to know or pass the token.
-            boolean consumed = writeConfirmationStore.consumeConfirmedBySql(userId, conversationId, sql);
+            boolean consumed = writeConfirmationStore.consumeConfirmedBySql(
+                    userId, conversationId, connectionId, databaseName, schemaName, sql);
             if (!consumed) {
                 log.warn("[Tool] executeNonSelectSql rejected: no CONFIRMED token for userId={} conversationId={}",
                         userId, conversationId);

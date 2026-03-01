@@ -1,6 +1,7 @@
 package edu.zsc.ai.agent.confirm;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
@@ -31,15 +32,16 @@ public class WriteConfirmationStore {
             .build();
 
     /**
-     * Create a new PENDING confirmation token bound to the given user and conversation.
+     * Create a new PENDING confirmation token bound to the given user, conversation and connection context.
      */
-    public WriteConfirmationEntry create(Long userId, Long conversationId,
+    public WriteConfirmationEntry create(Long userId, Long conversationId, Long connectionId,
                                          String sql, String databaseName, String schemaName) {
         String token = UUID.randomUUID().toString();
         WriteConfirmationEntry entry = WriteConfirmationEntry.builder()
                 .token(token)
                 .userId(userId)
                 .conversationId(conversationId)
+                .connectionId(connectionId)
                 .sql(sql)
                 .databaseName(databaseName)
                 .schemaName(schemaName)
@@ -85,16 +87,20 @@ public class WriteConfirmationStore {
     }
 
     /**
-     * Find a CONFIRMED token matching userId + conversationId + sql, then consume it.
+     * Find a CONFIRMED token matching userId + conversationId + connection + database + schema + sql, then consume it.
      * The agent never needs to know or pass the token — the server matches it automatically.
      *
      * @return true if a matching CONFIRMED token was found and consumed, false otherwise
      */
-    public boolean consumeConfirmedBySql(Long userId, Long conversationId, String sql) {
+    public boolean consumeConfirmedBySql(Long userId, Long conversationId, Long connectionId,
+                                         String databaseName, String schemaName, String sql) {
         return cache.asMap().values().stream()
                 .filter(e -> e.getUserId().equals(userId)
                         && e.getConversationId().equals(conversationId)
                         && e.getStatus() == WriteConfirmationStatus.CONFIRMED
+                        && Objects.equals(e.getConnectionId(), connectionId)
+                        && Objects.equals(e.getDatabaseName(), databaseName)
+                        && Objects.equals(e.getSchemaName(), schemaName)
                         && e.getSql().equals(sql))
                 .findFirst()
                 .map(entry -> {
@@ -103,7 +109,8 @@ public class WriteConfirmationStore {
                     return true;
                 })
                 .orElseGet(() -> {
-                    log.warn("[WriteConfirm] consumeConfirmedBySql: no CONFIRMED token found for userId={} conversationId={}", userId, conversationId);
+                    log.warn("[WriteConfirm] consumeConfirmedBySql: no CONFIRMED token found for userId={} conversationId={} connectionId={} database={} schema={}",
+                            userId, conversationId, connectionId, databaseName, schemaName);
                     return false;
                 });
     }

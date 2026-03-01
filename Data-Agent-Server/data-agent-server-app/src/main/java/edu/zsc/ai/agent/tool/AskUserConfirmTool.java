@@ -73,7 +73,7 @@ public class AskUserConfirmTool {
             return WriteConfirmationResult.error("User or conversation context is missing.");
         }
 
-        WriteConfirmationEntry entry = confirmationStore.create(userId, conversationId, sql, databaseName, schemaName);
+        WriteConfirmationEntry entry = confirmationStore.create(userId, conversationId, connectionId,sql, databaseName, schemaName);
 
         log.info("[Tool done] askUserConfirm, token={}", entry.getToken());
         return WriteConfirmationResult.builder()

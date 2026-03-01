@@ -44,18 +44,7 @@ public class CustomChatMemoryStore implements ChatMemoryStore {
             return List.of();
         }
 
-        List<ChatMessage> messages = new ArrayList<>(stored.size());
-        for (StoredChatMessage s : stored) {
-            try {
-                ChatMessage msg = ChatMessageDeserializer.messageFromJson(s.getData());
-                if (msg.type() != ChatMessageType.SYSTEM) {
-                    messages.add(msg);
-                }
-            } catch (Exception e) {
-                log.warn("Failed to deserialize message id={}, skipping", s.getId(), e);
-            }
-        }
-        return messages;
+        return stored.stream().map(item -> ChatMessageDeserializer.messageFromJson(item.getData())).toList();
     }
 
     @Override
