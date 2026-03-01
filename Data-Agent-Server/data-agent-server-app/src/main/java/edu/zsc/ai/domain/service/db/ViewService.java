@@ -12,5 +12,6 @@ public interface ViewService {
 
     void deleteView(Long connectionId, String catalog, String schema, String viewName, Long userId);
 
-    TableDataResponse getViewData(Long connectionId, String catalog, String schema, String viewName, Long userId, Integer currentPage, Integer pageSize);
+    TableDataResponse getViewData(Long connectionId, String catalog, String schema, String viewName, Long userId,
+                                  Integer currentPage, Integer pageSize, String whereClause, String orderBy);
 }

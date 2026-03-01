@@ -1,5 +1,6 @@
 import { Play, Square, CheckCircle, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import type { ReactNode } from 'react';
 import { I18N_KEYS } from '../../constants/i18nKeys';
 import { useEffect, useState } from 'react';
 import {
@@ -20,6 +21,7 @@ interface ToolbarProps {
   connectionId?: number;
   currentDatabase?: string | null;
   onDatabaseChange?: (db: string) => void;
+  extraActions?: ReactNode;
 }
 
 export function Toolbar({
@@ -29,6 +31,7 @@ export function Toolbar({
   connectionId,
   currentDatabase,
   onDatabaseChange,
+  extraActions,
 }: ToolbarProps) {
   const { t } = useTranslation();
   const [databases, setDatabases] = useState<string[]>([]);
@@ -85,6 +88,16 @@ export function Toolbar({
         onTransactionModeChange={setTransactionMode}
         onIsolationLevelChange={setIsolationLevel}
       />
+
+      {extraActions && (
+        <>
+          {/* Divider */}
+          <div className="w-px h-4 bg-border mx-0.5" />
+          <div className="flex items-center gap-1">
+            {extraActions}
+          </div>
+        </>
+      )}
 
       {/* Commit and Rollback Buttons (Manual Mode Only) */}
       {transactionMode === TransactionMode.MANUAL && (

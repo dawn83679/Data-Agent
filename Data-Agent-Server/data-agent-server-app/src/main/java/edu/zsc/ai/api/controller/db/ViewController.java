@@ -68,12 +68,15 @@ public class ViewController {
             @RequestParam @NotNull(message = "viewName is required") String viewName,
             @RequestParam(required = false) String catalog,
             @RequestParam(required = false) String schema,
+            @RequestParam(required = false) String where,
+            @RequestParam(required = false) String orderBy,
             @RequestParam(defaultValue = "1") Integer currentPage,
             @RequestParam(defaultValue = "100") Integer pageSize) {
-        log.info("Getting view data: connectionId={}, viewName={}, catalog={}, schema={}, currentPage={}, pageSize={}",
-                connectionId, viewName, catalog, schema, currentPage, pageSize);
+        log.info("Getting view data: connectionId={}, viewName={}, catalog={}, schema={}, where={}, orderBy={}, currentPage={}, pageSize={}",
+                connectionId, viewName, catalog, schema, where, orderBy, currentPage, pageSize);
         long userId = StpUtil.getLoginIdAsLong();
-        TableDataResponse response = viewService.getViewData(connectionId, catalog, schema, viewName, userId, currentPage, pageSize);
+        TableDataResponse response = viewService.getViewData(connectionId, catalog, schema, viewName, userId,
+                currentPage, pageSize, where, orderBy);
         return ApiResponse.success(response);
     }
 }

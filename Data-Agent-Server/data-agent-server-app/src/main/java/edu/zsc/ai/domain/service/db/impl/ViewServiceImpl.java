@@ -53,7 +53,8 @@ public class ViewServiceImpl implements ViewService {
     }
 
     @Override
-    public TableDataResponse getViewData(Long connectionId, String catalog, String schema, String viewName, Long userId, Integer currentPage, Integer pageSize) {
+    public TableDataResponse getViewData(Long connectionId, String catalog, String schema, String viewName, Long userId,
+                                         Integer currentPage, Integer pageSize, String whereClause, String orderBy) {
         connectionService.openConnection(connectionId, catalog, schema, userId);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
@@ -62,9 +63,10 @@ public class ViewServiceImpl implements ViewService {
 
         int offset = (currentPage - 1) * pageSize;
 
-        long totalCount = provider.getViewDataCount(active.connection(), catalog, schema, viewName);
+        long totalCount = provider.getViewDataCount(active.connection(), catalog, schema, viewName, whereClause);
 
-        SqlCommandResult result = provider.getViewData(active.connection(), catalog, schema, viewName, offset, pageSize);
+        SqlCommandResult result = provider.getViewData(active.connection(), catalog, schema, viewName, offset, pageSize,
+                whereClause, orderBy);
 
         long totalPages = (totalCount + pageSize - 1) / pageSize;
 
