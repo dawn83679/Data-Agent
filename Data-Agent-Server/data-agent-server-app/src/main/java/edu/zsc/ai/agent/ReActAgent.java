@@ -9,6 +9,6 @@ import dev.langchain4j.service.UserMessage;
 
 public interface ReActAgent {
 
-    @SystemMessage(fromResource = "prompt/system.xml")
+    @SystemMessage(fromResource = "prompt/system_zh.xml")
     TokenStream chat(@MemoryId String memoryId, @UserMessage String message, InvocationParameters parameters);
 }
