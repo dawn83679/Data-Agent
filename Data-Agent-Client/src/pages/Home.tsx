@@ -3,12 +3,16 @@ import { useTranslation } from "react-i18next";
 import { TabBar } from "../components/workspace/TabBar";
 import { MonacoEditor, type MonacoEditorHandle } from "../components/editor/MonacoEditor";
 import { ResultsPanel } from "../components/results/ResultsPanel";
+import { TableDataTab } from "../components/results/TableDataTab";
 import { Toolbar } from "../components/workspace/Toolbar";
 import { EmptyState } from "../components/workspace/EmptyState";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import type { ExecuteSqlResponse } from "../types/sql";
+import type { TableDataTabMetadata } from "../types/tab";
 import { sqlExecutionService } from "../services/sqlExecution.service";
 import { I18N_KEYS } from "../constants/i18nKeys";
+import { FileText, Minus, Plus } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../components/ui/Tooltip";
 
 export default function Home() {
     const { t } = useTranslation();
@@ -20,6 +24,9 @@ export default function Home() {
 
     const activeTab = tabs.find(t => t.id === activeTabId);
     const sqlContext = activeTab?.metadata;
+    const tableDataMetadata = activeTab?.type === 'tableData'
+        ? activeTab.metadata as TableDataTabMetadata
+        : null;
 
     const handleRunQuery = useCallback(async () => {
         const sql = editorRef.current?.getSelectionOrAllContent().trim()
@@ -84,7 +91,7 @@ export default function Home() {
             >
                 <div className="flex-1 flex flex-col min-h-0 relative">
                     {activeTab && (
-                        <div className="h-8 flex items-center px-2 theme-bg-main border-b theme-border text-[10px] theme-text-secondary shrink-0 gap-1">
+                        <div className="h-8 flex items-center px-2 theme-bg-main border-b theme-border text-[10px] theme-text-secondary shrink-0 gap-1 overflow-visible">
                             <Toolbar
                                 onRun={handleRunQuery}
                                 onStop={() => setIsRunning(false)}
@@ -94,17 +101,68 @@ export default function Home() {
                                 onDatabaseChange={(db) =>
                                     updateTabMetadata(activeTab.id, { databaseName: db })
                                 }
+                                extraActions={
+                                    activeTab.type === 'tableData' ? (
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <button
+                                                        type="button"
+                                                        className="h-6 px-2 rounded flex items-center gap-1 text-[11px] hover:bg-accent/30 transition-colors"
+                                                    >
+                                                        <Plus className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="text-[10px] theme-bg-panel theme-text-secondary border theme-border px-1.5 py-0.5">
+                                                    新增行
+                                                </TooltipContent>
+                                            </Tooltip>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <button
+                                                        type="button"
+                                                        className="h-6 px-2 rounded flex items-center gap-1 text-[11px] hover:bg-accent/30 transition-colors"
+                                                    >
+                                                        <Minus className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="text-[10px] theme-bg-panel theme-text-secondary border theme-border px-1.5 py-0.5">
+                                                    删除行
+                                                </TooltipContent>
+                                            </Tooltip>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <button
+                                                        type="button"
+                                                        className="h-6 px-2 rounded flex items-center gap-1 text-[11px] hover:bg-accent/30 transition-colors"
+                                                    >
+                                                        <FileText className="w-3.5 h-3.5" />
+                                                        DDL
+                                                    </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="text-[10px] theme-bg-panel theme-text-secondary border theme-border px-1.5 py-0.5">
+                                                    DDL
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    ) : null
+                                }
                             />
                         </div>
                     )}
 
-                    <div className="flex-1 relative overflow-hidden flex flex-col">
-                        <div className="flex-1 relative overflow-hidden">
+                    <div className="flex-1 min-h-0 relative overflow-hidden flex flex-col">
+                        <div className="flex-1 min-h-0 relative overflow-hidden">
                             {activeTab?.type === 'file' ? (
                                 <MonacoEditor
                                     ref={editorRef}
                                     value={activeTab.content || ''}
                                     onChange={(val) => updateTabContent(activeTab.id, val || '')}
+                                />
+                            ) : activeTab?.type === 'tableData' && tableDataMetadata ? (
+                                <TableDataTab
+                                    metadata={tableDataMetadata}
+                                    onMetadataChange={(metadata) => updateTabMetadata(activeTab.id, metadata)}
                                 />
                             ) : activeTab?.type === 'table' ? (
                                 <div className="flex-1 h-full flex items-center justify-center theme-text-secondary italic text-xs">

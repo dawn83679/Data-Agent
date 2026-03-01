@@ -1,14 +1,14 @@
 import { create } from 'zustand';
-import type { ConsoleTabMetadata } from '../types/tab';
+import type { TabMetadata } from '../types/tab';
 
 export interface Tab {
   id: string;
   name: string;
-  type: 'file' | 'table';
+  type: 'file' | 'table' | 'tableData';
   icon?: string;
   content?: string;
   active: boolean;
-  metadata?: ConsoleTabMetadata;
+  metadata?: TabMetadata;
 }
 
 interface TabState {
@@ -24,7 +24,7 @@ interface TabState {
   closeAllTabs: () => void;
   switchTab: (id: string) => void;
   updateTabContent: (id: string, content: string) => void;
-  updateTabMetadata: (id: string, metadata: Partial<ConsoleTabMetadata>) => void;
+  updateTabMetadata: (id: string, metadata: Partial<TabMetadata>) => void;
   reorderTabs: (sourceId: string, destinationId: string) => void;
 }
 

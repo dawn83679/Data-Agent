@@ -16,5 +16,6 @@ public interface TableService {
 
     void deleteTable(Long connectionId, String catalog, String schema, String tableName, Long userId);
 
-    TableDataResponse getTableData(Long connectionId, String catalog, String schema, String tableName, Long userId, Integer currentPage, Integer pageSize);
+    TableDataResponse getTableData(Long connectionId, String catalog, String schema, String tableName, Long userId,
+                                   Integer currentPage, Integer pageSize, String whereClause, String orderBy);
 }

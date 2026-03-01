@@ -45,4 +45,14 @@ public interface ViewProvider {
     default long getViewDataCount(Connection connection, String catalog, String schema, String viewName) {
         throw new UnsupportedOperationException("Plugin does not support getting view data count");
     }
+
+    default SqlCommandResult getViewData(Connection connection, String catalog, String schema, String viewName,
+                                         int offset, int pageSize, String whereClause, String orderBy) {
+        return getViewData(connection, catalog, schema, viewName, offset, pageSize);
+    }
+
+    default long getViewDataCount(Connection connection, String catalog, String schema, String viewName,
+                                  String whereClause) {
+        return getViewDataCount(connection, catalog, schema, viewName);
+    }
 }

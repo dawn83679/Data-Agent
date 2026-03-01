@@ -203,7 +203,7 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-auto theme-bg-main relative">
+        <div className="flex-1 overflow-hidden theme-bg-main relative">
           {activeTab === 'result' && hasResultTab && executeResult ? (
             // Results Table
             <div className="overflow-auto h-full">

@@ -268,12 +268,18 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
 
     @Override
     public SqlCommandResult getTableData(Connection connection, String catalog, String schema, String tableName, int offset, int pageSize) {
+        return getTableData(connection, catalog, schema, tableName, offset, pageSize, null, null);
+    }
+
+    @Override
+    public SqlCommandResult getTableData(Connection connection, String catalog, String schema, String tableName,
+                                         int offset, int pageSize, String whereClause, String orderBy) {
         if (connection == null || StringUtils.isBlank(tableName)) {
             throw new IllegalArgumentException("Connection and table name must not be null or empty");
         }
 
         String fullTableName = MysqlIdentifierBuilder.buildFullIdentifier(catalog, tableName);
-        String sql = String.format(MysqlSqlConstants.SQL_SELECT_TABLE_DATA, fullTableName, pageSize, offset);
+        String sql = buildSelectSql(fullTableName, whereClause, orderBy, pageSize, offset);
 
         SqlCommandResult result = sqlExecutor.executeCommand(
                 SqlCommandRequest.ofWithoutTransaction(connection, sql, sql, catalog, null));
@@ -289,12 +295,18 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
 
     @Override
     public long getTableDataCount(Connection connection, String catalog, String schema, String tableName) {
+        return getTableDataCount(connection, catalog, schema, tableName, null);
+    }
+
+    @Override
+    public long getTableDataCount(Connection connection, String catalog, String schema, String tableName,
+                                  String whereClause) {
         if (connection == null || StringUtils.isBlank(tableName)) {
             throw new IllegalArgumentException("Connection and table name must not be null or empty");
         }
 
         String fullTableName = MysqlIdentifierBuilder.buildFullIdentifier(catalog, tableName);
-        String sql = String.format(MysqlSqlConstants.SQL_COUNT_TABLE_DATA, fullTableName);
+        String sql = buildCountSql(fullTableName, whereClause);
 
         try (PreparedStatement stmt = connection.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -313,8 +325,42 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
     }
 
     @Override
+    public SqlCommandResult getViewData(Connection connection, String catalog, String schema, String viewName,
+                                        int offset, int pageSize, String whereClause, String orderBy) {
+        return getTableData(connection, catalog, schema, viewName, offset, pageSize, whereClause, orderBy);
+    }
+
+    @Override
     public long getViewDataCount(Connection connection, String catalog, String schema, String viewName) {
         return getTableDataCount(connection, catalog, schema, viewName);
+    }
+
+    @Override
+    public long getViewDataCount(Connection connection, String catalog, String schema, String viewName,
+                                 String whereClause) {
+        return getTableDataCount(connection, catalog, schema, viewName, whereClause);
+    }
+
+    private String buildSelectSql(String fullTableName, String whereClause, String orderBy, int pageSize, int offset) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("SELECT * FROM ").append(fullTableName);
+        if (StringUtils.isNotBlank(whereClause)) {
+            sb.append(" WHERE ").append(whereClause);
+        }
+        if (StringUtils.isNotBlank(orderBy)) {
+            sb.append(" ORDER BY ").append(orderBy);
+        }
+        sb.append(" LIMIT ").append(pageSize).append(" OFFSET ").append(offset);
+        return sb.toString();
+    }
+
+    private String buildCountSql(String fullTableName, String whereClause) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("SELECT COUNT(*) AS total FROM ").append(fullTableName);
+        if (StringUtils.isNotBlank(whereClause)) {
+            sb.append(" WHERE ").append(whereClause);
+        }
+        return sb.toString();
     }
 
     @Override

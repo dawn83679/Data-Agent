@@ -45,12 +45,6 @@ export function DatabaseExplorer() {
     setDdlDialogOpen,
     selectedDdlNode,
     setSelectedDdlNode,
-    tableDataDialogOpen,
-    setTableDataDialogOpen,
-    selectedTableDataNode,
-    setSelectedTableDataNode,
-    highlightColumn,
-    setHighlightColumn,
     deleteState,
     setDeleteState,
   } = dialogState;
@@ -67,9 +61,6 @@ export function DatabaseExplorer() {
   const { handleViewDdl, handleViewData, handleOpenQueryConsole, getDdlConfig } = useDataViewActions({
     setSelectedDdlNode,
     setDdlDialogOpen,
-    setTableDataDialogOpen,
-    setSelectedTableDataNode,
-    setHighlightColumn,
     openTab,
     selectedDdlNode,
   });
@@ -139,10 +130,6 @@ export function DatabaseExplorer() {
         ddlDialogOpen={ddlDialogOpen}
         onDdlDialogOpenChange={setDdlDialogOpen}
         ddlConfig={ddlConfig}
-        tableDataDialogOpen={tableDataDialogOpen}
-        onTableDataDialogOpenChange={setTableDataDialogOpen}
-        selectedTableDataNode={selectedTableDataNode}
-        highlightColumn={highlightColumn}
         deleteState={deleteState}
         onDeleteStateChange={setDeleteState}
         onConfirmDelete={confirmDelete}

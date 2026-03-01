@@ -49,4 +49,14 @@ public interface TableProvider {
     default long getTableDataCount(Connection connection, String catalog, String schema, String tableName) {
         throw new UnsupportedOperationException("Plugin does not support getting table data count");
     }
+
+    default SqlCommandResult getTableData(Connection connection, String catalog, String schema, String tableName,
+                                          int offset, int pageSize, String whereClause, String orderBy) {
+        return getTableData(connection, catalog, schema, tableName, offset, pageSize);
+    }
+
+    default long getTableDataCount(Connection connection, String catalog, String schema, String tableName,
+                                   String whereClause) {
+        return getTableDataCount(connection, catalog, schema, tableName);
+    }
 }

@@ -28,11 +28,6 @@ export function useDialogState() {
   const [ddlDialogOpen, setDdlDialogOpen] = useState(false);
   const [selectedDdlNode, setSelectedDdlNode] = useState<ExplorerNode | null>(null);
 
-  // Table data viewer state
-  const [tableDataDialogOpen, setTableDataDialogOpen] = useState(false);
-  const [selectedTableDataNode, setSelectedTableDataNode] = useState<ExplorerNode | null>(null);
-  const [highlightColumn, setHighlightColumn] = useState<string | undefined>(undefined);
-
   // Entity delete dialog
   const [deleteState, setDeleteState] = useState<DeleteState>({
     type: null,
@@ -67,14 +62,6 @@ export function useDialogState() {
     setDdlDialogOpen,
     selectedDdlNode,
     setSelectedDdlNode,
-
-    // Table data viewer
-    tableDataDialogOpen,
-    setTableDataDialogOpen,
-    selectedTableDataNode,
-    setSelectedTableDataNode,
-    highlightColumn,
-    setHighlightColumn,
 
     // Entity delete
     deleteState,

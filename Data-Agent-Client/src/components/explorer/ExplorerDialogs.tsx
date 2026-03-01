@@ -1,13 +1,9 @@
-import { useTranslation } from 'react-i18next';
 import { ConnectionFormModal, type ConnectionFormMode } from '../common/ConnectionFormModal';
 import { DriverManageModal } from '../common/DriverManageModal';
 import { DeleteConnectionDialog } from './DeleteConnectionDialog';
 import { DeleteEntityDialog } from './DeleteEntityDialog';
 import { DdlViewerDialog } from './DdlViewerDialog';
-import { TableDataDialog } from './TableDataDialog';
 import { ExplorerNodeType } from '../../constants/explorer';
-import { I18N_KEYS } from '../../constants/i18nKeys';
-import type { ExplorerNode } from '../../types/explorer';
 
 interface ExplorerDialogsProps {
   // Connection modal
@@ -32,12 +28,6 @@ interface ExplorerDialogsProps {
   ddlDialogOpen: boolean;
   onDdlDialogOpenChange: (open: boolean) => void;
   ddlConfig: any;
-
-  // Table data viewer
-  tableDataDialogOpen: boolean;
-  onTableDataDialogOpenChange: (open: boolean) => void;
-  selectedTableDataNode: ExplorerNode | null;
-  highlightColumn: string | undefined;
 
   // Entity delete dialog
   deleteState: any;
@@ -68,19 +58,12 @@ export function ExplorerDialogs({
   onDdlDialogOpenChange,
   ddlConfig,
 
-  tableDataDialogOpen,
-  onTableDataDialogOpenChange,
-  selectedTableDataNode,
-  highlightColumn,
-
   deleteState,
   onDeleteStateChange,
   onConfirmDelete,
 
   onConnectionSuccess,
 }: ExplorerDialogsProps) {
-  const { t } = useTranslation();
-
   return (
     <>
       <ConnectionFormModal
@@ -122,26 +105,6 @@ export function ExplorerDialogs({
           title={ddlConfig.title}
           displayName={ddlConfig.displayName}
           loadDdl={ddlConfig.loadDdl}
-        />
-      )}
-
-      {selectedTableDataNode && (
-        <TableDataDialog
-          open={tableDataDialogOpen}
-          onOpenChange={(open) => {
-            onTableDataDialogOpenChange(open);
-            if (!open) {
-              onDeleteStateChange({ ...deleteState, selectedTableDataNode: null, highlightColumn: undefined });
-            }
-          }}
-          title={selectedTableDataNode.type === ExplorerNodeType.TABLE ? t(I18N_KEYS.EXPLORER.TABLE_DATA) : t(I18N_KEYS.EXPLORER.VIEW_DATA_TITLE)}
-          displayName={[selectedTableDataNode.catalog, selectedTableDataNode.schema, selectedTableDataNode.tableName || selectedTableDataNode.name].filter(Boolean).join('.')}
-          connectionId={Number(selectedTableDataNode.connectionId!)}
-          objectName={selectedTableDataNode.tableName || selectedTableDataNode.objectName || selectedTableDataNode.name}
-          objectType={selectedTableDataNode.type === ExplorerNodeType.TABLE ? 'table' : selectedTableDataNode.type === ExplorerNodeType.VIEW ? 'view' : 'table'}
-          catalog={selectedTableDataNode.catalog}
-          schema={selectedTableDataNode.schema}
-          highlightColumn={highlightColumn}
         />
       )}
 
