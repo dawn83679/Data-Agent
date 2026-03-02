@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import ReactMarkdown from 'react-markdown';
 import { I18N_KEYS } from '../../../constants/i18nKeys';
 import { AskUserQuestionPayload, normalizeToQuestions, SingleQuestion } from './askUserQuestionTypes';
 import { HelpCircle, Check } from 'lucide-react';
 import { useAIAssistantContext } from '../AIAssistantContext';
+import { markdownRemarkPlugins, useMarkdownComponents } from './markdownComponents';
 
 export interface AskUserQuestionCardProps {
     askUserPayload: AskUserQuestionPayload;
@@ -13,11 +15,19 @@ export interface AskUserQuestionCardProps {
 export function AskUserQuestionCard({ askUserPayload, submittedAnswer }: AskUserQuestionCardProps) {
     const { t } = useTranslation();
     const { submitMessage, isLoading } = useAIAssistantContext();
+    const markdownComponents = useMarkdownComponents();
+    const inlineMarkdownComponents = useMemo(
+        () => ({
+            ...markdownComponents,
+            p: ({ children }: any) => <span>{children}</span>,
+        }),
+        [markdownComponents]
+    );
+
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
     const questions = useMemo(() => normalizeToQuestions(askUserPayload), [askUserPayload]);
 
-    // Form state tracker similar to AskUserUnanswered
     interface AnswerValue {
         selectedOptions: string[];
         customText: string;
@@ -58,7 +68,6 @@ export function AskUserQuestionCard({ askUserPayload, submittedAnswer }: AskUser
         });
     };
 
-    // Check if all questions have at least one answer
     const isSubmitDisabled = isLoading || !questions.every((_, idx) => {
         const answer = answers.get(idx);
         return answer && (answer.selectedOptions.length > 0 || answer.customText.trim() !== '');
@@ -86,15 +95,12 @@ export function AskUserQuestionCard({ askUserPayload, submittedAnswer }: AskUser
             }
 
             if (answerStr) {
-                // If there's only one question, we don't strictly need the question title,
-                // but adding it makes the markdown structure consistent and clear.
                 formattedAnswer += `- **${q.question}**\n  👉 ${answerStr}\n\n`;
             }
         });
 
         formattedAnswer += t(I18N_KEYS.AI.ASK_USER_QUESTION.CONTINUE_SUFFIX);
 
-        // Append original questions context to remind the AI what it asked
         if (questions.length === 1) {
             formattedAnswer += `\n\n${t(I18N_KEYS.AI.ASK_USER_QUESTION.ORIGINAL_QUESTION_PREFIX)}\n> ${questions[0].question}`;
         } else {
@@ -111,7 +117,6 @@ export function AskUserQuestionCard({ askUserPayload, submittedAnswer }: AskUser
     const handleReject = () => {
         let msg = t(I18N_KEYS.AI.ASK_USER_QUESTION.REJECT_MESSAGE);
 
-        // Append original questions context to remind the AI what it asked
         if (questions.length === 1) {
             msg += `\n\n${t(I18N_KEYS.AI.ASK_USER_QUESTION.ORIGINAL_QUESTION_PREFIX)}\n> ${questions[0].question}`;
         } else {
@@ -135,9 +140,11 @@ export function AskUserQuestionCard({ askUserPayload, submittedAnswer }: AskUser
 
         return (
             <div key={qIdx} className="mb-4 last:mb-0">
-                <p className="theme-text-primary text-[13px] mb-3 whitespace-pre-wrap font-medium">
-                    {question.question}
-                </p>
+                <div className="theme-text-primary text-[13px] mb-3 whitespace-pre-wrap font-medium [&_p]:m-0">
+                    <ReactMarkdown components={markdownComponents} remarkPlugins={markdownRemarkPlugins}>
+                        {question.question}
+                    </ReactMarkdown>
+                </div>
 
                 {question.options && question.options.length > 0 && (
                     <div className="flex flex-col gap-2 mb-3">
@@ -170,7 +177,11 @@ export function AskUserQuestionCard({ askUserPayload, submittedAnswer }: AskUser
                                             )
                                         )}
                                     </div>
-                                    <span>{opt}</span>
+                                    <span className="[&_p]:m-0">
+                                        <ReactMarkdown components={inlineMarkdownComponents} remarkPlugins={markdownRemarkPlugins}>
+                                            {opt}
+                                        </ReactMarkdown>
+                                    </span>
                                 </button>
                             );
                         })}
@@ -203,7 +214,9 @@ export function AskUserQuestionCard({ askUserPayload, submittedAnswer }: AskUser
         <div className="mb-2 overflow-hidden rounded-lg border theme-border theme-bg-main shadow-sm flex flex-col">
             <div className="flex items-center gap-2 px-4 py-3 bg-[var(--accent-blue)]/5 border-b theme-border text-[var(--accent-blue)] font-medium">
                 <HelpCircle className="w-4 h-4" />
-                <span className="text-[11px] uppercase tracking-wide">{t(I18N_KEYS.AI.ASK_USER_QUESTION.LABEL)}</span>
+                <span className="text-[11px] uppercase tracking-wide">
+                    {t(I18N_KEYS.AI.ASK_USER_QUESTION.LABEL)}
+                </span>
             </div>
 
             {questions.length > 1 && (

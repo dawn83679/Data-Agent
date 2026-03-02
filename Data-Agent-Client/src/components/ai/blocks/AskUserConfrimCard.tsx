@@ -1,21 +1,24 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertCircle } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { WriteConfirmPayload } from './writeConfirmTypes';
 import { I18N_KEYS } from '../../../constants/i18nKeys';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { confirmWriteOperation, cancelWriteOperation } from '../../../services/writeConfirmationApi';
 import { useAIAssistantContext } from '../AIAssistantContext';
+import { markdownRemarkPlugins, useMarkdownComponents } from './markdownComponents';
 
-export interface WriteConfirmCardProps {
+export interface AskUserConfrimCardProps {
     payload: WriteConfirmPayload;
     submittedAnswer?: string; // If 'User confirmed' or 'User cancelled' exists in the message flow
 }
 
-export function WriteConfirmCard({ payload, submittedAnswer }: WriteConfirmCardProps) {
+export function AskUserConfrimCard({ payload, submittedAnswer }: AskUserConfrimCardProps) {
     const { t } = useTranslation();
     const { submitMessage, isLoading } = useAIAssistantContext();
+    const markdownComponents = useMarkdownComponents();
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [supplementaryInput, setSupplementaryInput] = useState('');
@@ -76,6 +79,9 @@ export function WriteConfirmCard({ payload, submittedAnswer }: WriteConfirmCardP
     const target = hasDatabase || hasSchema
         ? [payload.databaseName, payload.schemaName].filter(Boolean).join('.')
         : undefined;
+    const contextPath = target
+        ? [`Conn #${payload.connectionId}`, payload.databaseName, payload.schemaName].filter(Boolean).join(' > ')
+        : undefined;
 
     return (
         <div className="mb-2 p-4 rounded-lg border theme-border theme-bg-main shadow-sm flex flex-col gap-3">
@@ -101,16 +107,18 @@ export function WriteConfirmCard({ payload, submittedAnswer }: WriteConfirmCardP
             </div>
 
             {payload.explanation && (
-                <p className="theme-text-primary text-[13px] whitespace-pre-wrap">
-                    {payload.explanation}
-                </p>
+                <div className="theme-text-primary text-[13px]">
+                    <ReactMarkdown components={markdownComponents} remarkPlugins={markdownRemarkPlugins}>
+                        {payload.explanation}
+                    </ReactMarkdown>
+                </div>
             )}
 
             {payload.sqlPreview && (
                 <div className="rounded border theme-border theme-bg-main overflow-hidden">
                     <div className="theme-bg-panel px-2 py-1 text-xs font-medium border-b theme-border flex justify-between">
                         <span>{t(I18N_KEYS.AI.WRITE_CONFIRM.SQL_PREVIEW_LABEL)}</span>
-                        {target && <span className="opacity-60">{target}</span>}
+                        {contextPath && <span className="opacity-60">{contextPath}</span>}
                     </div>
                     <div className="p-0 overflow-x-auto text-[12px]">
                         <SyntaxHighlighter

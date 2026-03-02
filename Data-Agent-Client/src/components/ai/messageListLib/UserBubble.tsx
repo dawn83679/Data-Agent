@@ -28,9 +28,10 @@ export interface UserBubbleProps {
 export function UserBubble({ message }: UserBubbleProps) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
+  const content = message.content ?? '';
 
   const handleCopy = useCallback(async () => {
-    const text = message.content ?? '';
+    const text = content;
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
@@ -39,7 +40,7 @@ export function UserBubble({ message }: UserBubbleProps) {
     } catch {
       // ignore
     }
-  }, [message.content]);
+  }, [content]);
 
   return (
     <div className="flex flex-col w-full group/bubble">
@@ -58,7 +59,7 @@ export function UserBubble({ message }: UserBubbleProps) {
         }}
       >
         <p className="mb-0 leading-relaxed whitespace-pre-wrap">
-          {renderContentWithMentions(message.content)}
+          {renderContentWithMentions(content)}
         </p>
         <button
           type="button"

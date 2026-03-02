@@ -13,7 +13,7 @@ import { getToolType, ToolType } from './toolTypes';
 import { formatParameters } from './formatParameters';
 import { ToolExecutionState } from '../messageListLib/types';
 import { AskUserQuestionCard } from './AskUserQuestionCard';
-import { WriteConfirmCard } from './WriteConfirmCard';
+import { AskUserConfrimCard } from './AskUserConfrimCard';
 
 export interface ToolRunBlockProps {
   toolName: string;
@@ -35,7 +35,7 @@ export interface ToolRunBlockProps {
  * Tool types:
  * - TODO: TodoWrite → TodoListBlock
  * - ASK_USER: AskUserQuestion → AskUserQuestionCard (Inline)
- * - WRITE_CONFIRM: AskUserConfirm → WriteConfirmCard (Inline)
+ * - WRITE_CONFIRM: AskUserConfirm → AskUserConfrimCard (Inline)
  * - MCP: External tools (charts, etc.) → McpToolBlock
  * - GENERIC: All other tools (database, etc.) → ToolRunDetail
  */
@@ -111,7 +111,7 @@ export function ToolRunBlock({
       }
 
       return (
-        <WriteConfirmCard
+        <AskUserConfrimCard
           payload={writeConfirmPayload}
           submittedAnswer={submittedAnswer}
         />
