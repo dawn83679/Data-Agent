@@ -4,22 +4,19 @@ import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.invocation.InvocationParameters;
 import dev.langchain4j.service.TokenStream;
 import edu.zsc.ai.agent.ReActAgent;
-import edu.zsc.ai.agent.ReActAgentProvider;
-import edu.zsc.ai.common.constant.ChatErrorConstants;
-import edu.zsc.ai.common.enums.ai.ModelEnum;
 import edu.zsc.ai.context.RequestContext;
+import edu.zsc.ai.api.model.request.ChatRequest;
 import edu.zsc.ai.domain.model.dto.response.agent.ChatResponseBlock;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
 import edu.zsc.ai.domain.service.agent.ChatService;
+import edu.zsc.ai.domain.service.agent.helper.ReActAgentHelper;
+import edu.zsc.ai.domain.service.agent.model.AgentChatCommand;
 import edu.zsc.ai.domain.service.ai.AiConversationService;
 import edu.zsc.ai.domain.service.ai.AiMessageService;
-import edu.zsc.ai.api.model.request.ChatRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
@@ -31,29 +28,26 @@ import java.util.Set;
 @Service
 public class ChatServiceImpl implements ChatService {
 
-    private static final String DEFAULT_MODEL = ModelEnum.QWEN3_MAX.getModelName();
-
-    private final ReActAgentProvider reActAgentProvider;
     private final AiConversationService aiConversationService;
     private final AiMessageService aiMessageService;
+    private final ReActAgentHelper reActAgentHelper;
     private final Map<String, String> mcpToolNameToServerMap;
 
     public ChatServiceImpl(
-            ReActAgentProvider reActAgentProvider,
             AiConversationService aiConversationService,
             AiMessageService aiMessageService,
+            ReActAgentHelper reActAgentHelper,
             @Qualifier("mcpToolNameToServerMap") Map<String, String> mcpToolNameToServerMap) {
-        this.reActAgentProvider = reActAgentProvider;
         this.aiConversationService = aiConversationService;
         this.aiMessageService = aiMessageService;
+        this.reActAgentHelper = reActAgentHelper;
         this.mcpToolNameToServerMap = mcpToolNameToServerMap;
     }
 
     @Override
-    public Flux<ChatResponseBlock> chat(ChatRequest request) {
-        String modelName = validateAndResolveModel(request.getModel());
-
-        ReActAgent agent = reActAgentProvider.getAgent(modelName);
+    public Flux<ChatResponseBlock> chat(ChatRequest request, String acceptLanguage) {
+        String modelName = reActAgentHelper.validateAndResolveModel(request.getModel());
+        ReActAgent agent = reActAgentHelper.buildAgent(modelName, acceptLanguage);
 
         if (request.getConversationId() == null) {
             Long userId = RequestContext.getUserId();
@@ -66,7 +60,12 @@ public class ChatServiceImpl implements ChatService {
         Sinks.Many<ChatResponseBlock> sink = Sinks.many().unicast().onBackpressureBuffer();
         String memoryId = RequestContext.getUserId() + ":" + request.getConversationId();
         InvocationParameters parameters = InvocationParameters.from(RequestContext.toMap());
-        TokenStream tokenStream = agent.chat(memoryId, request.getMessage(), parameters);
+        AgentChatCommand chatCommand = AgentChatCommand.builder()
+                .memoryId(memoryId)
+                .text(request.getMessage())
+                .parameters(parameters)
+                .build();
+        TokenStream tokenStream = reActAgentHelper.startChat(agent, chatCommand);
 
         // Stream token callbacks (inlined from streamTokenStreamToSink)
         Long conversationId = request.getConversationId();
@@ -179,20 +178,5 @@ public class ChatServiceImpl implements ChatService {
         tokenStream.start();
 
         return sink.asFlux();
-    }
-
-    /**
-     * Resolves request model to a valid model name, or DEFAULT_MODEL if blank.
-     * Throws ResponseStatusException if the model is not supported.
-     */
-    private String validateAndResolveModel(String requestModel) {
-        String modelName = StringUtils.isNotBlank(requestModel) ? requestModel.trim() : DEFAULT_MODEL;
-        try {
-            ModelEnum.fromModelName(modelName);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    ChatErrorConstants.UNKNOWN_MODEL_PREFIX + modelName, e);
-        }
-        return modelName;
     }
 }

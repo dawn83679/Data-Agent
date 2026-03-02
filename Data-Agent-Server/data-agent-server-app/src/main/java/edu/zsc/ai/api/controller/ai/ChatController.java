@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestHeader;
 import reactor.core.publisher.Flux;
 
 /**
@@ -28,9 +29,11 @@ public class ChatController {
     private final ChatService chatService;
 
     @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ChatResponseBlock> chat(@Valid @RequestBody ChatRequest request) {
+    public Flux<ChatResponseBlock> chat(
+            @Valid @RequestBody ChatRequest request,
+            @RequestHeader(value = "Accept-Language", required = false) String acceptLanguage) {
         log.info("Chat request received: model={}, message={}, conversationId={}, connectionId={}",
                 request.getModel(), request.getMessage(), request.getConversationId(), request.getConnectionId());
-        return chatService.chat(request);
+        return chatService.chat(request, acceptLanguage);
     }
 }

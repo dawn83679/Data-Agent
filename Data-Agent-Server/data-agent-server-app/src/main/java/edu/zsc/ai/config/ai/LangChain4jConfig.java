@@ -10,8 +10,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Shared LangChain4j config (memory, etc.). ReActAgent beans are defined in
- * {@link MultiModelAgentConfig} so that we can select by request model.
+ * Shared LangChain4j config (memory, etc.).
+ * ReActAgent instances are built per request in ChatServiceImpl.
  */
 @Configuration
 @Slf4j

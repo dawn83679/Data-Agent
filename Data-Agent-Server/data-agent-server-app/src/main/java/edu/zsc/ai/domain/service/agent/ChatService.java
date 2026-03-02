@@ -5,5 +5,5 @@ import edu.zsc.ai.api.model.request.ChatRequest;
 import reactor.core.publisher.Flux;
 
 public interface ChatService {
-    Flux<ChatResponseBlock> chat(ChatRequest request);
+    Flux<ChatResponseBlock> chat(ChatRequest request, String acceptLanguage);
 }
