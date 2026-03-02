@@ -7,7 +7,7 @@ import edu.zsc.ai.common.constant.RequestContextConstant;
 import edu.zsc.ai.domain.service.db.TableService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import edu.zsc.ai.agent.tool.annotation.AgentTool;
 
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import org.apache.commons.collections4.CollectionUtils;
@@ -17,7 +17,7 @@ import java.util.Objects;
 import java.util.List;
 
 
-@Component
+@AgentTool
 @Slf4j
 @RequiredArgsConstructor
 public class TableTool {

@@ -6,13 +6,13 @@ import edu.zsc.ai.agent.tool.model.Todo;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import edu.zsc.ai.agent.tool.annotation.AgentTool;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Component
+@AgentTool
 @Slf4j
 public class TodoTool {
 

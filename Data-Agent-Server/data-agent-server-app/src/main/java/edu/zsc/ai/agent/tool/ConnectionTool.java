@@ -9,11 +9,11 @@ import edu.zsc.ai.domain.service.db.DbConnectionService;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import edu.zsc.ai.agent.tool.annotation.AgentTool;
 
 import java.util.List;
 
-@Component
+@AgentTool
 @Slf4j
 @RequiredArgsConstructor
 public class ConnectionTool {

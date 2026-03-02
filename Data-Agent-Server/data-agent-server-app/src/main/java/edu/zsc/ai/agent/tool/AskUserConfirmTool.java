@@ -1,6 +1,6 @@
 package edu.zsc.ai.agent.tool;
 
-import org.springframework.stereotype.Component;
+import edu.zsc.ai.agent.tool.annotation.AgentTool;
 
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.ReturnBehavior;
@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
  * 5. Agent resumes in Run 2 → calls executeNonSelectSql(sql, confirmationToken).
  * 6. Server validates token is CONFIRMED, consumes it, executes SQL.
  */
-@Component
+@AgentTool
 @Slf4j
 @RequiredArgsConstructor
 public class AskUserConfirmTool {

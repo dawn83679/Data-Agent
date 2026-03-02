@@ -9,13 +9,13 @@ import edu.zsc.ai.plugin.model.metadata.TriggerMetadata;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import edu.zsc.ai.agent.tool.annotation.AgentTool;
 
 import org.apache.commons.lang3.StringUtils;
 import java.util.List;
 import java.util.Objects;
 
-@Component
+@AgentTool
 @Slf4j
 @RequiredArgsConstructor
 public class TriggerTool {

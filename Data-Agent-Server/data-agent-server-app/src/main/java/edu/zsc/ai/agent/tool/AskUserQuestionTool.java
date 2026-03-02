@@ -2,7 +2,7 @@ package edu.zsc.ai.agent.tool;
 
 import java.util.List;
 
-import org.springframework.stereotype.Component;
+import edu.zsc.ai.agent.tool.annotation.AgentTool;
 
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.ReturnBehavior;
@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
  * Uses ReturnBehavior.IMMEDIATE to pause the conversation until user responds.
  * Supports both single and multi-question formats.
  */
-@Component
+@AgentTool
 @Slf4j
 public class AskUserQuestionTool {
 
