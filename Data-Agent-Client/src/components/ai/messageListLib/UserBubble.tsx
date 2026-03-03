@@ -1,10 +1,12 @@
 import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { User, Copy, Check } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { COPY_FEEDBACK_SHORT_MS } from '../../../constants/timing';
 import { parseMentionSegments } from '../mentionTypes';
 import type { Message } from './types';
 import { I18N_KEYS } from '../../../constants/i18nKeys';
+import { useMarkdownComponents, markdownRemarkPlugins } from '../blocks/markdownComponents';
 
 const MENTION_COLOR_CLASS = 'text-violet-400 font-medium';
 
@@ -28,6 +30,7 @@ export interface UserBubbleProps {
 export function UserBubble({ message }: UserBubbleProps) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
+  const markdownComponents = useMarkdownComponents();
 
   const handleCopy = useCallback(async () => {
     const text = message.content ?? '';
@@ -40,6 +43,9 @@ export function UserBubble({ message }: UserBubbleProps) {
       // ignore
     }
   }, [message.content]);
+
+  // Check if content contains markdown syntax
+  const hasMarkdown = /[*_`#\[\]>-]/.test(message.content);
 
   return (
     <div className="flex flex-col w-full group/bubble">
@@ -57,9 +63,17 @@ export function UserBubble({ message }: UserBubbleProps) {
           borderColor: 'hsl(var(--user-bubble-border))',
         }}
       >
-        <p className="mb-0 leading-relaxed whitespace-pre-wrap">
-          {renderContentWithMentions(message.content)}
-        </p>
+        {hasMarkdown ? (
+          <div className="prose prose-sm max-w-none dark:prose-invert">
+            <ReactMarkdown components={markdownComponents} remarkPlugins={markdownRemarkPlugins}>
+              {message.content}
+            </ReactMarkdown>
+          </div>
+        ) : (
+          <p className="mb-0 leading-relaxed whitespace-pre-wrap">
+            {renderContentWithMentions(message.content)}
+          </p>
+        )}
         <button
           type="button"
           onClick={handleCopy}

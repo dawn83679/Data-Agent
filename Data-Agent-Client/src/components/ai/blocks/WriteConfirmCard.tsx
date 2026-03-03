@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
 import { WriteConfirmPayload } from './writeConfirmTypes';
 import { I18N_KEYS } from '../../../constants/i18nKeys';
@@ -7,6 +8,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { confirmWriteOperation, cancelWriteOperation } from '../../../services/writeConfirmationApi';
 import { useAIAssistantContext } from '../AIAssistantContext';
+import { connectionService } from '../../../services/connection.service';
 
 export interface WriteConfirmCardProps {
     payload: WriteConfirmPayload;
@@ -19,6 +21,14 @@ export function WriteConfirmCard({ payload, submittedAnswer }: WriteConfirmCardP
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [supplementaryInput, setSupplementaryInput] = useState('');
+
+    // Fetch connection info to get the connection name
+    const { data: connection } = useQuery({
+        queryKey: ['connection', payload.connectionId],
+        queryFn: () => connectionService.getConnectionById(payload.connectionId),
+        enabled: !!payload.connectionId,
+        staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    });
 
     const handleConfirm = async () => {
         if (isProcessing || isLoading) return;
@@ -73,6 +83,14 @@ export function WriteConfirmCard({ payload, submittedAnswer }: WriteConfirmCardP
 
     const hasDatabase = !!payload.databaseName;
     const hasSchema = !!payload.schemaName;
+    
+    // Build path: connectionName->databaseName->schemaName
+    const connectionName = connection?.name || `#${payload.connectionId}`;
+    const pathParts = [connectionName];
+    if (payload.databaseName) pathParts.push(payload.databaseName);
+    if (payload.schemaName) pathParts.push(payload.schemaName);
+    const connectionPath = pathParts.join('->');
+    
     const target = hasDatabase || hasSchema
         ? [payload.databaseName, payload.schemaName].filter(Boolean).join('.')
         : undefined;
@@ -82,22 +100,6 @@ export function WriteConfirmCard({ payload, submittedAnswer }: WriteConfirmCardP
             <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500 font-medium">
                 <AlertCircle className="w-4 h-4" />
                 <span className="text-[11px] uppercase tracking-wide">{t(I18N_KEYS.AI.WRITE_CONFIRM.LABEL_ACTION)}</span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 text-[11px] theme-text-secondary">
-                <span className="px-1.5 py-0.5 rounded-full border theme-border/70 bg-amber-50/60 dark:bg-amber-500/10">
-                    Conn <code className="font-mono theme-text-primary ml-0.5">#{payload.connectionId}</code>
-                </span>
-                {hasDatabase && (
-                    <span className="px-1.5 py-0.5 rounded-full border theme-border/60">
-                        DB <code className="font-mono theme-text-primary ml-0.5">{payload.databaseName}</code>
-                    </span>
-                )}
-                {hasSchema && (
-                    <span className="px-1.5 py-0.5 rounded-full border theme-border/60">
-                        Schema <code className="font-mono theme-text-primary ml-0.5">{payload.schemaName}</code>
-                    </span>
-                )}
             </div>
 
             {payload.explanation && (
@@ -110,7 +112,7 @@ export function WriteConfirmCard({ payload, submittedAnswer }: WriteConfirmCardP
                 <div className="rounded border theme-border theme-bg-main overflow-hidden">
                     <div className="theme-bg-panel px-2 py-1 text-xs font-medium border-b theme-border flex justify-between">
                         <span>{t(I18N_KEYS.AI.WRITE_CONFIRM.SQL_PREVIEW_LABEL)}</span>
-                        {target && <span className="opacity-60">{target}</span>}
+                        <span className="opacity-60 font-mono">{connectionPath}</span>
                     </div>
                     <div className="p-0 overflow-x-auto text-[12px]">
                         <SyntaxHighlighter
@@ -144,7 +146,7 @@ export function WriteConfirmCard({ payload, submittedAnswer }: WriteConfirmCardP
                     type="button"
                     onClick={handleConfirm}
                     disabled={isProcessing || isLoading || payload.error}
-                    className="w-full px-3 py-1.5 rounded-md text-[12px] font-medium bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-3 py-1.5 rounded-md text-[12px] font-medium bg-green-600 hover:bg-green-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {t(I18N_KEYS.AI.WRITE_CONFIRM.YES_BTN)}
                 </button>
@@ -152,7 +154,7 @@ export function WriteConfirmCard({ payload, submittedAnswer }: WriteConfirmCardP
                     type="button"
                     onClick={handleCancel}
                     disabled={isProcessing || isLoading}
-                    className="w-full px-3 py-1.5 rounded-md text-[12px] font-medium theme-bg-panel theme-text-secondary border theme-border hover:theme-bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-3 py-1.5 rounded-md text-[12px] font-medium bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {t(I18N_KEYS.AI.WRITE_CONFIRM.NO_BTN)}
                 </button>
