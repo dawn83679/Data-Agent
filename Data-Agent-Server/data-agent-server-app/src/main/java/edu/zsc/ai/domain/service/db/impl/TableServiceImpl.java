@@ -97,4 +97,32 @@ public class TableServiceImpl implements TableService {
                 .totalPages(totalPages)
                 .build();
     }
+
+    @Override
+    public TableDataResponse getTableData(Long connectionId, String catalog, String schema, String tableName, Long userId,
+            Integer currentPage, Integer pageSize, String whereClause, String orderByColumn, String orderByDirection) {
+        connectionService.openConnection(connectionId, catalog, schema, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+
+        TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
+
+        int offset = (currentPage - 1) * pageSize;
+
+        long totalCount = provider.getTableDataCount(active.connection(), catalog, schema, tableName, whereClause);
+
+        SqlCommandResult result = provider.getTableData(active.connection(), catalog, schema, tableName, offset, pageSize,
+                whereClause, orderByColumn, orderByDirection);
+
+        long totalPages = (totalCount + pageSize - 1) / pageSize;
+
+        return TableDataResponse.builder()
+                .headers(result.getHeaders())
+                .rows(result.getRows())
+                .totalCount(totalCount)
+                .currentPage(currentPage)
+                .pageSize(pageSize)
+                .totalPages(totalPages)
+                .build();
+    }
 }

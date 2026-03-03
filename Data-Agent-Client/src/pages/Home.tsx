@@ -4,8 +4,10 @@ import { TabBar } from "../components/workspace/TabBar";
 import { MonacoEditor, type MonacoEditorHandle } from "../components/editor/MonacoEditor";
 import { ResultsPanel } from "../components/results/ResultsPanel";
 import { Toolbar } from "../components/workspace/Toolbar";
+import { TableDataTab } from "../components/workspace/TableDataTab";
 import { EmptyState } from "../components/workspace/EmptyState";
 import { useWorkspaceStore } from "../store/workspaceStore";
+import type { TableTabMetadata } from "../types/tab";
 import type { ExecuteSqlResponse } from "../types/sql";
 import { sqlExecutionService } from "../services/sqlExecution.service";
 import { I18N_KEYS } from "../constants/i18nKeys";
@@ -83,7 +85,7 @@ export default function Home() {
                 isRunning={isRunning}
             >
                 <div className="flex-1 flex flex-col min-h-0 relative">
-                    {activeTab && (
+                    {activeTab?.type === 'file' && (
                         <div className="h-8 flex items-center px-2 theme-bg-main border-b theme-border text-[10px] theme-text-secondary shrink-0 gap-1">
                             <Toolbar
                                 onRun={handleRunQuery}
@@ -106,6 +108,8 @@ export default function Home() {
                                     value={activeTab.content || ''}
                                     onChange={(val) => updateTabContent(activeTab.id, val || '')}
                                 />
+                            ) : activeTab?.type === 'table' && activeTab.metadata ? (
+                                <TableDataTab tabId={activeTab.id} metadata={activeTab.metadata as TableTabMetadata} />
                             ) : activeTab?.type === 'table' ? (
                                 <div className="flex-1 h-full flex items-center justify-center theme-text-secondary italic text-xs">
                                     -- {t(I18N_KEYS.WORKSPACE.DATA_GRID_PLACEHOLDER)} --

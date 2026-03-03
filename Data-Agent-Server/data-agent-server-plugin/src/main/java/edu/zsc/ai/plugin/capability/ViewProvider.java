@@ -45,4 +45,22 @@ public interface ViewProvider {
     default long getViewDataCount(Connection connection, String catalog, String schema, String viewName) {
         throw new UnsupportedOperationException("Plugin does not support getting view data count");
     }
+
+    /**
+     * Get view data with optional WHERE clause and single-column ORDER BY.
+     */
+    default SqlCommandResult getViewData(Connection connection, String catalog, String schema, String viewName,
+            int offset, int pageSize, String whereClause, String orderByColumn, String orderByDirection) {
+        if (StringUtils.isBlank(whereClause) && StringUtils.isBlank(orderByColumn)) {
+            return getViewData(connection, catalog, schema, viewName, offset, pageSize);
+        }
+        throw new UnsupportedOperationException("Plugin does not support filtered view data");
+    }
+
+    default long getViewDataCount(Connection connection, String catalog, String schema, String viewName, String whereClause) {
+        if (StringUtils.isBlank(whereClause)) {
+            return getViewDataCount(connection, catalog, schema, viewName);
+        }
+        throw new UnsupportedOperationException("Plugin does not support filtered view count");
+    }
 }

@@ -318,6 +318,70 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
     }
 
     @Override
+    public SqlCommandResult getTableData(Connection connection, String catalog, String schema, String tableName,
+            int offset, int pageSize, String whereClause, String orderByColumn, String orderByDirection) {
+        if (connection == null || StringUtils.isBlank(tableName)) {
+            throw new IllegalArgumentException("Connection and table name must not be null or empty");
+        }
+
+        String fullTableName = MysqlIdentifierBuilder.buildFullIdentifier(catalog, tableName);
+        StringBuilder sql = new StringBuilder("SELECT * FROM ").append(fullTableName);
+
+        if (StringUtils.isNotBlank(whereClause)) {
+            sql.append(" WHERE ").append(whereClause);
+        }
+        if (StringUtils.isNotBlank(orderByColumn)) {
+            String dir = "desc".equalsIgnoreCase(orderByDirection) ? "DESC" : "ASC";
+            String quotedCol = MysqlIdentifierEscaper.getInstance().quoteIdentifier(orderByColumn.trim());
+            sql.append(" ORDER BY ").append(quotedCol).append(" ").append(dir);
+        }
+        sql.append(" LIMIT ").append(pageSize).append(" OFFSET ").append(offset);
+
+        String sqlStr = sql.toString();
+        SqlCommandResult result = sqlExecutor.executeCommand(
+                SqlCommandRequest.ofWithoutTransaction(connection, sqlStr, sqlStr, catalog, null));
+
+        if (!result.isSuccess()) {
+            logger.severe(String.format("Failed to get table data for %s: %s", fullTableName, result.getErrorMessage()));
+            throw new RuntimeException("Failed to get table data: " + result.getErrorMessage());
+        }
+        return result;
+    }
+
+    @Override
+    public long getTableDataCount(Connection connection, String catalog, String schema, String tableName, String whereClause) {
+        if (connection == null || StringUtils.isBlank(tableName)) {
+            throw new IllegalArgumentException("Connection and table name must not be null or empty");
+        }
+
+        String fullTableName = MysqlIdentifierBuilder.buildFullIdentifier(catalog, tableName);
+        String sql = StringUtils.isNotBlank(whereClause)
+                ? "SELECT COUNT(*) AS total FROM " + fullTableName + " WHERE " + whereClause
+                : String.format(MysqlSqlConstants.SQL_COUNT_TABLE_DATA, fullTableName);
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getLong("total");
+            }
+            return 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to get table data count: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public SqlCommandResult getViewData(Connection connection, String catalog, String schema, String viewName,
+            int offset, int pageSize, String whereClause, String orderByColumn, String orderByDirection) {
+        return getTableData(connection, catalog, schema, viewName, offset, pageSize, whereClause, orderByColumn, orderByDirection);
+    }
+
+    @Override
+    public long getViewDataCount(Connection connection, String catalog, String schema, String viewName, String whereClause) {
+        return getTableDataCount(connection, catalog, schema, viewName, whereClause);
+    }
+
+    @Override
     public List<TriggerMetadata> getTriggers(Connection connection, String catalog, String schema, String tableName) {
         if (connection == null) {
             return List.of();

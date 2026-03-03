@@ -6,6 +6,7 @@ import { databaseService } from '../services/database.service';
 import { schemaService } from '../services/schema.service';
 import { tableService } from '../services/table.service';
 import { useWorkspaceStore } from '../store/workspaceStore';
+import { useAuthStore } from '../store/authStore';
 import { MentionIdPrefix } from '../constants/explorer';
 import type { ChatContext } from '../types/chat';
 import type { DbConnection } from '../types/connection';
@@ -55,10 +56,11 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
   const [mentionError, setMentionError] = useState<string | null>(null);
   const [mentionHighlightedIndex, setMentionHighlightedIndex] = useState(0);
 
+  const accessToken = useAuthStore((s) => s.accessToken);
   const { data: connections = [] } = useQuery({
     queryKey: ['connections'],
     queryFn: () => connectionService.getConnections(),
-    enabled: mentionOpen,
+    enabled: mentionOpen && !!accessToken,
   });
 
   const supportSchema = mentionConnection

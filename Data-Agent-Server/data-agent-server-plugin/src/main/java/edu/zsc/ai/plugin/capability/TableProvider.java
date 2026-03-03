@@ -3,6 +3,7 @@ package edu.zsc.ai.plugin.capability;
 import edu.zsc.ai.plugin.constant.JdbcMetaDataConstants;
 import edu.zsc.ai.plugin.model.command.sql.SqlCommandResult;
 import org.apache.commons.lang3.StringUtils;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -48,5 +49,29 @@ public interface TableProvider {
 
     default long getTableDataCount(Connection connection, String catalog, String schema, String tableName) {
         throw new UnsupportedOperationException("Plugin does not support getting table data count");
+    }
+
+    /**
+     * Get table data with optional WHERE clause and single-column ORDER BY.
+     * @param whereClause optional WHERE condition (without "WHERE"), e.g. "status = 1"
+     * @param orderByColumn optional column name for ordering
+     * @param orderByDirection "asc" or "desc"
+     */
+    default SqlCommandResult getTableData(Connection connection, String catalog, String schema, String tableName,
+            int offset, int pageSize, String whereClause, String orderByColumn, String orderByDirection) {
+        if (StringUtils.isBlank(whereClause) && StringUtils.isBlank(orderByColumn)) {
+            return getTableData(connection, catalog, schema, tableName, offset, pageSize);
+        }
+        throw new UnsupportedOperationException("Plugin does not support filtered table data");
+    }
+
+    /**
+     * Get table row count with optional WHERE clause.
+     */
+    default long getTableDataCount(Connection connection, String catalog, String schema, String tableName, String whereClause) {
+        if (StringUtils.isBlank(whereClause)) {
+            return getTableDataCount(connection, catalog, schema, tableName);
+        }
+        throw new UnsupportedOperationException("Plugin does not support filtered table count");
     }
 }

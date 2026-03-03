@@ -66,9 +66,12 @@ function SortableTab({
     isDragging,
   } = useSortable({ id: tabId });
 
-  const tabLabel = connectionName
-    ? `${connectionName}${databaseName ? '_' + databaseName : ''}`
-    : name;
+  const tabLabel =
+    type === 'table'
+      ? name
+      : connectionName
+        ? `${connectionName}${databaseName ? '_' + databaseName : ''}`
+        : name;
 
   const style = {
     transform: CSS.Transform.toString(transform),

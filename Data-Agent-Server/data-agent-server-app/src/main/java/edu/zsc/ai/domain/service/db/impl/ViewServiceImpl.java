@@ -77,4 +77,32 @@ public class ViewServiceImpl implements ViewService {
                 .totalPages(totalPages)
                 .build();
     }
+
+    @Override
+    public TableDataResponse getViewData(Long connectionId, String catalog, String schema, String viewName, Long userId,
+            Integer currentPage, Integer pageSize, String whereClause, String orderByColumn, String orderByDirection) {
+        connectionService.openConnection(connectionId, catalog, schema, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+
+        ViewProvider provider = DefaultPluginManager.getInstance().getViewProviderByPluginId(active.pluginId());
+
+        int offset = (currentPage - 1) * pageSize;
+
+        long totalCount = provider.getViewDataCount(active.connection(), catalog, schema, viewName, whereClause);
+
+        SqlCommandResult result = provider.getViewData(active.connection(), catalog, schema, viewName, offset, pageSize,
+                whereClause, orderByColumn, orderByDirection);
+
+        long totalPages = (totalCount + pageSize - 1) / pageSize;
+
+        return TableDataResponse.builder()
+                .headers(result.getHeaders())
+                .rows(result.getRows())
+                .totalCount(totalCount)
+                .currentPage(currentPage)
+                .pageSize(pageSize)
+                .totalPages(totalPages)
+                .build();
+    }
 }

@@ -69,11 +69,19 @@ public class ViewController {
             @RequestParam(required = false) String catalog,
             @RequestParam(required = false) String schema,
             @RequestParam(defaultValue = "1") Integer currentPage,
-            @RequestParam(defaultValue = "100") Integer pageSize) {
+            @RequestParam(defaultValue = "100") Integer pageSize,
+            @RequestParam(required = false) String whereClause,
+            @RequestParam(required = false) String orderByColumn,
+            @RequestParam(required = false) String orderByDirection) {
         log.info("Getting view data: connectionId={}, viewName={}, catalog={}, schema={}, currentPage={}, pageSize={}",
                 connectionId, viewName, catalog, schema, currentPage, pageSize);
         long userId = StpUtil.getLoginIdAsLong();
-        TableDataResponse response = viewService.getViewData(connectionId, catalog, schema, viewName, userId, currentPage, pageSize);
+        boolean hasFilter = (whereClause != null && !whereClause.isBlank())
+                || (orderByColumn != null && !orderByColumn.isBlank());
+        TableDataResponse response = hasFilter
+                ? viewService.getViewData(connectionId, catalog, schema, viewName, userId, currentPage, pageSize,
+                        whereClause, orderByColumn, orderByDirection)
+                : viewService.getViewData(connectionId, catalog, schema, viewName, userId, currentPage, pageSize);
         return ApiResponse.success(response);
     }
 }

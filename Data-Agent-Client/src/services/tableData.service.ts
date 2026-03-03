@@ -17,7 +17,10 @@ export const tableDataService = {
     catalog?: string,
     schema?: string,
     currentPage: number = 1,
-    pageSize: number = 100
+    pageSize: number = 100,
+    whereClause?: string,
+    orderByColumn?: string,
+    orderByDirection?: 'asc' | 'desc'
   ): Promise<TableDataResponse> => {
     const params: Record<string, string | number> = {
       connectionId,
@@ -27,6 +30,11 @@ export const tableDataService = {
     };
     if (catalog != null && catalog !== '') params.catalog = catalog;
     if (schema != null && schema !== '') params.schema = schema;
+    if (whereClause != null && whereClause !== '') params.whereClause = whereClause;
+    if (orderByColumn != null && orderByColumn !== '') {
+      params.orderByColumn = orderByColumn;
+      params.orderByDirection = orderByDirection ?? 'asc';
+    }
 
     const response = await http.get<TableDataResponse>(ApiPaths.TABLE_DATA, { params });
     return response.data;
@@ -38,7 +46,10 @@ export const tableDataService = {
     catalog?: string,
     schema?: string,
     currentPage: number = 1,
-    pageSize: number = 100
+    pageSize: number = 100,
+    whereClause?: string,
+    orderByColumn?: string,
+    orderByDirection?: 'asc' | 'desc'
   ): Promise<TableDataResponse> => {
     const params: Record<string, string | number> = {
       connectionId,
@@ -48,6 +59,11 @@ export const tableDataService = {
     };
     if (catalog != null && catalog !== '') params.catalog = catalog;
     if (schema != null && schema !== '') params.schema = schema;
+    if (whereClause != null && whereClause !== '') params.whereClause = whereClause;
+    if (orderByColumn != null && orderByColumn !== '') {
+      params.orderByColumn = orderByColumn;
+      params.orderByDirection = orderByDirection ?? 'asc';
+    }
 
     const response = await http.get<TableDataResponse>(ApiPaths.VIEW_DATA, { params });
     return response.data;

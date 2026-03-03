@@ -34,12 +34,54 @@ export function useDataViewActions({
     setDdlDialogOpen(true);
   }, [setSelectedDdlNode, setDdlDialogOpen]);
 
-  const handleViewData = useCallback((node: ExplorerNode, highlightCol?: string) => {
-    if (!node.connectionId) return;
-    setHighlightColumn(highlightCol);
-    setSelectedTableDataNode(node);
-    setTableDataDialogOpen(true);
-  }, [setHighlightColumn, setSelectedTableDataNode, setTableDataDialogOpen]);
+  const handleViewData = useCallback(
+    (node: ExplorerNode, highlightCol?: string) => {
+      if (!node.connectionId) return;
+
+      const isTableOrView = node.type === ExplorerNodeType.TABLE || node.type === ExplorerNodeType.VIEW;
+      const isColumnIndexKey = node.type === ExplorerNodeType.COLUMN || node.type === ExplorerNodeType.INDEX || node.type === ExplorerNodeType.KEY;
+
+      let objectName: string;
+      let objectType: 'table' | 'view';
+      let connId = node.connectionId;
+      let connectionName = node.dbConnection?.name || 'Unknown';
+      let databaseName = node.catalog || node.schema || null;
+      let schemaName = node.schema || null;
+
+      if (isTableOrView) {
+        objectName = node.tableName || node.objectName || node.name;
+        objectType = node.type === ExplorerNodeType.TABLE ? 'table' : 'view';
+      } else if (isColumnIndexKey && node.tableName) {
+        objectName = node.tableName;
+        objectType = node.id?.includes('folder-views') ? 'view' : 'table';
+      } else {
+        setHighlightColumn(highlightCol);
+        setSelectedTableDataNode(node);
+        setTableDataDialogOpen(true);
+        return;
+      }
+
+      const tabId = `table-${connId}-${objectName}-${Date.now()}`;
+
+      openTab({
+        id: tabId,
+        name: objectName,
+        type: 'table',
+        content: '',
+        metadata: {
+          connectionId: Number(connId),
+          connectionName,
+          databaseName,
+          schemaName,
+          objectName,
+          objectType,
+          catalog: node.catalog,
+          schema: node.schema,
+        },
+      });
+    },
+    [openTab, setHighlightColumn, setSelectedTableDataNode, setTableDataDialogOpen]
+  );
 
   const handleOpenQueryConsole = useCallback((node: ExplorerNode) => {
     // For ROOT nodes (connections), get connectionId from dbConnection.id

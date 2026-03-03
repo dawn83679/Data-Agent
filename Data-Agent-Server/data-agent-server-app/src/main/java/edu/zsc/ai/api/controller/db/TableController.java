@@ -69,11 +69,19 @@ public class TableController {
             @RequestParam(required = false) String catalog,
             @RequestParam(required = false) String schema,
             @RequestParam(defaultValue = "1") Integer currentPage,
-            @RequestParam(defaultValue = "100") Integer pageSize) {
+            @RequestParam(defaultValue = "100") Integer pageSize,
+            @RequestParam(required = false) String whereClause,
+            @RequestParam(required = false) String orderByColumn,
+            @RequestParam(required = false) String orderByDirection) {
         log.info("Getting table data: connectionId={}, tableName={}, catalog={}, schema={}, currentPage={}, pageSize={}",
                 connectionId, tableName, catalog, schema, currentPage, pageSize);
         long userId = StpUtil.getLoginIdAsLong();
-        TableDataResponse response = tableService.getTableData(connectionId, catalog, schema, tableName, userId, currentPage, pageSize);
+        boolean hasFilter = (whereClause != null && !whereClause.isBlank())
+                || (orderByColumn != null && !orderByColumn.isBlank());
+        TableDataResponse response = hasFilter
+                ? tableService.getTableData(connectionId, catalog, schema, tableName, userId, currentPage, pageSize,
+                        whereClause, orderByColumn, orderByDirection)
+                : tableService.getTableData(connectionId, catalog, schema, tableName, userId, currentPage, pageSize);
         return ApiResponse.success(response);
     }
 }
