@@ -1,5 +1,4 @@
 import { TodoListBlock } from './TodoListBlock';
-import { McpToolBlock } from './McpToolBlock';
 import { ToolRunStreaming } from './ToolRunStreaming';
 import { ToolRunExecuting } from './ToolRunExecuting';
 import { GenericToolRun } from './GenericToolRun';
@@ -25,8 +24,6 @@ export interface ToolRunBlockProps {
   pending?: boolean;
   /** Execution state: streaming arguments, executing, or complete. */
   executionState?: ToolExecutionState;
-  /** MCP server name (e.g., "chart-server") for server-specific rendering */
-  serverName?: string;
 }
 
 /**
@@ -36,7 +33,6 @@ export interface ToolRunBlockProps {
  * - TODO: TodoWrite → TodoListBlock
  * - ASK_USER: AskUserQuestion → AskUserQuestionCard (Inline)
  * - WRITE_CONFIRM: AskUserConfirm → WriteConfirmCard (Inline)
- * - MCP: External tools (charts, etc.) → McpToolBlock
  * - GENERIC: All other tools (database, etc.) → ToolRunDetail
  */
 export function ToolRunBlock({
@@ -46,9 +42,8 @@ export function ToolRunBlock({
   responseError = false,
   pending = false,
   executionState,
-  serverName,
 }: ToolRunBlockProps) {
-  const toolType = getToolType(toolName, serverName);
+  const toolType = getToolType(toolName);
   const formattedParameters = formatParameters(parametersData);
   const isInteractive = toolType === ToolType.ASK_USER || toolType === ToolType.WRITE_CONFIRM;
 
@@ -128,17 +123,6 @@ export function ToolRunBlock({
         </div>
       );
     }
-
-    case ToolType.MCP:
-      return (
-        <McpToolBlock
-          toolName={toolName}
-          parametersData={parametersData}
-          responseData={responseData}
-          responseError={responseError}
-          serverName={serverName}
-        />
-      );
 
     // CATEGORY C: Generic Data Fetching / DB Tools
     case ToolType.GENERIC:

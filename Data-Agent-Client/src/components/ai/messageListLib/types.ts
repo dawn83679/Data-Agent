@@ -34,8 +34,6 @@ export type Segment =
       pending?: boolean;
       executionState?: ToolExecutionState;
       toolCallId?: string;
-      /** MCP server name (e.g., "chart-server") for server-specific rendering */
-      serverName?: string;
     };
 
 /** One todo box to show in the list: todoId and latest items for that list. */

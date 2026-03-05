@@ -17,7 +17,6 @@ import edu.zsc.ai.agent.tool.AgentTool;
 
 import dev.langchain4j.community.model.dashscope.QwenChatRequestParameters;
 import dev.langchain4j.community.model.dashscope.QwenStreamingChatModel;
-import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
@@ -88,38 +87,33 @@ public class MultiModelAgentConfig {
     public ReActAgent reActAgentQwen3Max(
             @Qualifier("streamingChatModelQwen3Max") StreamingChatModel streamingChatModel,
             ChatMemoryProvider chatMemoryProvider,
-            @Qualifier("agentTools") List<Object> agentTools,
-            @Qualifier("mcpToolProvider") McpToolProvider mcpToolProvider) {
-        return buildAgent(streamingChatModel, chatMemoryProvider, agentTools, mcpToolProvider);
+            @Qualifier("agentTools") List<Object> agentTools) {
+        return buildAgent(streamingChatModel, chatMemoryProvider, agentTools);
     }
 
     @Bean("reActAgentQwen3MaxThinking")
     public ReActAgent reActAgentQwen3MaxThinking(
             @Qualifier("streamingChatModelQwen3MaxThinking") StreamingChatModel streamingChatModel,
             ChatMemoryProvider chatMemoryProvider,
-            @Qualifier("agentTools") List<Object> agentTools,
-            @Qualifier("mcpToolProvider") McpToolProvider mcpToolProvider) {
-        return buildAgent(streamingChatModel, chatMemoryProvider, agentTools, mcpToolProvider);
+            @Qualifier("agentTools") List<Object> agentTools) {
+        return buildAgent(streamingChatModel, chatMemoryProvider, agentTools);
     }
 
     @Bean("reActAgentQwenPlus")
     public ReActAgent reActAgentQwenPlus(
             @Qualifier("streamingChatModelQwenPlus") StreamingChatModel streamingChatModel,
             ChatMemoryProvider chatMemoryProvider,
-            @Qualifier("agentTools") List<Object> agentTools,
-            @Qualifier("mcpToolProvider") McpToolProvider mcpToolProvider) {
-        return buildAgent(streamingChatModel, chatMemoryProvider, agentTools, mcpToolProvider);
+            @Qualifier("agentTools") List<Object> agentTools) {
+        return buildAgent(streamingChatModel, chatMemoryProvider, agentTools);
     }
 
     private ReActAgent buildAgent(StreamingChatModel streamingChatModel,
                                   ChatMemoryProvider chatMemoryProvider,
-                                  @Qualifier("agentTools") List<Object> agentTools,
-                                  McpToolProvider mcpToolProvider) {
+                                  @Qualifier("agentTools") List<Object> agentTools) {
         return AiServices.builder(ReActAgent.class)
                 .streamingChatModel(streamingChatModel)
                 .chatMemoryProvider(chatMemoryProvider)
                 .tools(agentTools)
-                .toolProvider(mcpToolProvider)
                 .build();
     }
 

@@ -77,7 +77,7 @@ export function useMarkdownComponents(): React.ComponentProps<typeof ReactMarkdo
       <td className="border theme-border px-2 py-1.5 text-left">{children}</td>
     ),
     img: ({ src, alt }: { src?: string; alt?: string }) => {
-      // Filter out Aliyun OSS images (already shown in McpToolBlock)
+      // Filter out Aliyun OSS images to avoid duplicated rendering.
       if (src && src.includes('alipayobjects.com')) {
         return null;
       }

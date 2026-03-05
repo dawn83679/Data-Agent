@@ -5,7 +5,7 @@ import dev.langchain4j.invocation.InvocationParameters;
 import dev.langchain4j.service.TokenStream;
 import edu.zsc.ai.agent.ReActAgent;
 import edu.zsc.ai.agent.ReActAgentProvider;
- import edu.zsc.ai.agent.memory.MemoryUtil;
+import edu.zsc.ai.agent.memory.MemoryUtil;
 import edu.zsc.ai.common.constant.ChatErrorConstants;
 import edu.zsc.ai.common.enums.ai.ModelEnum;
 import edu.zsc.ai.context.RequestContext;
@@ -22,7 +22,6 @@ import edu.zsc.ai.api.model.request.ChatRequest;
 import edu.zsc.ai.config.ai.MemoryProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -32,7 +31,6 @@ import reactor.core.publisher.Sinks;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -47,7 +45,6 @@ public class ChatServiceImpl implements ChatService {
     private final AiMessageService aiMessageService;
     private final MemoryService memoryService;
     private final MemoryCandidateService memoryCandidateService;
-    private final Map<String, String> mcpToolNameToServerMap;
     private final MemoryProperties memoryProperties;
 
     public ChatServiceImpl(
@@ -56,14 +53,12 @@ public class ChatServiceImpl implements ChatService {
             AiMessageService aiMessageService,
             MemoryService memoryService,
             MemoryCandidateService memoryCandidateService,
-            @Qualifier("mcpToolNameToServerMap") Map<String, String> mcpToolNameToServerMap,
             MemoryProperties memoryProperties) {
         this.reActAgentProvider = reActAgentProvider;
         this.aiConversationService = aiConversationService;
         this.aiMessageService = aiMessageService;
         this.memoryService = memoryService;
         this.memoryCandidateService = memoryCandidateService;
-        this.mcpToolNameToServerMap = mcpToolNameToServerMap;
         this.memoryProperties = memoryProperties;
     }
 
@@ -109,7 +104,6 @@ public class ChatServiceImpl implements ChatService {
         final Set<String> streamedToolCallIds = new HashSet<>();
 
         tokenStream.onPartialToolCallWithContext((partialToolCall, context) -> {
-            String serverName = mcpToolNameToServerMap.get(partialToolCall.name());
             log.debug("Partial tool call: index={}, id={}, name={}, partialArgs='{}'",
                     partialToolCall.index(), partialToolCall.id(), partialToolCall.name(),
                     partialToolCall.partialArguments());
@@ -123,7 +117,6 @@ public class ChatServiceImpl implements ChatService {
                     partialToolCall.id(),
                     partialToolCall.name(),
                     partialToolCall.partialArguments(),
-                    serverName,
                     true  // streaming=true
             ));
         });
@@ -138,8 +131,6 @@ public class ChatServiceImpl implements ChatService {
                         continue;
                     }
 
-                    // Query mapping table for MCP server name
-                    String serverName = mcpToolNameToServerMap.get(toolRequest.name());
                     log.debug("Complete tool call (non-streaming provider): id={}, name={}",
                             toolRequest.id(), toolRequest.name());
 
@@ -147,7 +138,6 @@ public class ChatServiceImpl implements ChatService {
                             toolRequest.id(),
                             toolRequest.name(),
                             toolRequest.arguments(),
-                            serverName,
                             false  // streaming=false, arguments complete
                     ));
                 }
@@ -156,15 +146,12 @@ public class ChatServiceImpl implements ChatService {
 
         tokenStream.onToolExecuted(toolExecution -> {
             ToolExecutionRequest req = toolExecution.request();
-            // Query mapping table for MCP server name
-            String serverName = mcpToolNameToServerMap.get(req.name());
 
             sink.tryEmitNext(ChatResponseBlock.toolResult(
                     req.id(),
                     req.name(),
                     toolExecution.result(),
-                    toolExecution.hasFailed(),
-                    serverName));
+                    toolExecution.hasFailed()));
         });
 
         tokenStream.onCompleteResponse(response -> {

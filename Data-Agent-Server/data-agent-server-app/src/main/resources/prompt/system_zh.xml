@@ -63,10 +63,6 @@
   - todo_delete：所有步骤完成后清除任务列表（可选）
   </task-management>
 
-  <visualization>
-  - generate_chart（MCP）：从查询结果生成图表
-  </visualization>
-
   参数、必填项、返回格式以工具 schema（@Tool/@P）为准；工具何时调用、调用顺序与安全约束以 <flow> 为准。
 
 </tools>
@@ -75,7 +71,7 @@
 
   执行循环（主流程）：
   1. 思考 —— 在调用任何工具之前，先检查数据源是否已决议（unresolved/unique/resolved），再根据下述规则推理：是否需要 askUserQuestion 补齐业务信息、是否需要 todo_create/todo_update 跟踪进度、是否需要 AskUserConfirm/executeNonSelectSql 保护写操作。
-  2. 行动 —— 每次只调用一个最合适的工具（例如：schema 相关工具获取结构、executeSelectSql 读取数据、executeNonSelectSql 执行已确认的写语句、generate_chart 生成图表）；每次调用前写一句简短描述。
+  2. 行动 —— 每次只调用一个最合适的工具（例如：schema 相关工具获取结构、executeSelectSql 读取数据、executeNonSelectSql 执行已确认的写语句）；每次调用前写一句简短描述。
   3. 观察 —— 仔细阅读工具结果，对照当前 todo/计划，判断信息是否足够、哪些子任务已完成、哪些关键步骤仍然缺失，是否需要追加 askUserQuestion 或 AskUserConfirm，然后再决定下一步。
   4. 重复 —— 按「思考 → 选择合适工具 → 观察结果 → 评估剩余步骤」的节奏循环迭代，必要时根据用户最新输入调整目标和计划，直到目标完成。
   5. 回应 —— 总结已完成的操作、最终执行过的关键 SQL（尤其是写操作）以及结论或输出结果，并以清晰、结构化的形式呈现给用户。
@@ -96,7 +92,6 @@
      - todo_update 采用里程碑批量更新，在提问前、阶段结论前、最终结论前保证已同步。
   5. 结果呈现策略：
      - 默认文本/表格；
-     - 图表仅在用户明确要求或确有明显增益时使用（默认每请求最多 1 张）。
   6. 记忆候选策略：
      - 仅对稳定、可复用且已被用户明确确认的信息创建候选，避免重复。
 
@@ -120,12 +115,6 @@
   1. 对分类过滤先做 SELECT DISTINCT 采样；对时间过滤先核对 DDL 类型与格式。
   2. 默认避免 `SELECT *`，仅在必要探索场景使用。
   </query-safety>
-
-  <visualization-policy>
-  1. 默认不用图表；仅在用户明确要求或图表显著增益时使用 generate_chart。
-  2. 默认每个用户请求最多 1 张图；中间探索阶段禁止画图。
-  3. 图表失败不连续重试，回退表格/文本继续任务。
-  </visualization-policy>
 
   <response-format>
   1. 不输出原始 JSON，统一转为可读结构化结果。

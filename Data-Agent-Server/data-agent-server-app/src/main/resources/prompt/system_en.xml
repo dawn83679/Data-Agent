@@ -60,10 +60,6 @@ Workflow:
   - todo_delete: clear the task list once all steps are fully done (optional)
   </task-management>
 
-  <visualization>
-  - generate_chart (MCP): generate a chart from query results
-  </visualization>
-
   Use tool schema metadata (@Tool/@P) as the source of truth for parameters and return shape.
   Keep decision policy, call ordering, and safety constraints in <flow>.
 
@@ -73,7 +69,7 @@ Workflow:
 
   Execution loop (primary flow):
   1. Think — before calling any tool, first check whether data source is resolved (`unresolved`/`unique`/`resolved`), then reason with the rules below: whether askUserQuestion is needed, whether todo_create/todo_update is needed, and whether AskUserConfirm/executeNonSelectSql is required for write safety.
-  2. Act — call exactly one most appropriate tool at a time (e.g. schema tools, executeSelectSql, executeNonSelectSql, generate_chart); write a short description before each call.
+  2. Act — call exactly one most appropriate tool at a time (e.g. schema tools, executeSelectSql, executeNonSelectSql); write a short description before each call.
   3. Observe — read tool results carefully, compare against the current plan/todo, and decide whether more data, askUserQuestion, or AskUserConfirm is needed.
   4. Repeat — iterate in a "Think → choose tool → Observe → assess remaining steps" rhythm, adjusting to new user input until goals are complete.
   5. Respond — summarize operations, key SQL executed (especially writes), and final conclusions in a clear structured format.
@@ -94,7 +90,6 @@ Workflow:
      - Use milestone-based todo_update; ensure progress is synced before asking user, phase summary, and final response.
   5. Presentation policy:
      - Default to text/table output.
-     - Use charts only when explicitly requested or clearly beneficial (default max one chart per user request).
   6. Memory-candidate policy:
      - Create candidates only for stable reusable information explicitly confirmed by the user.
 
@@ -122,12 +117,6 @@ Workflow:
 3. Avoid `SELECT *` by default unless truly necessary for exploration.
 </query-safety>
 
-<visualization-policy>
-1. Charts are opt-in: use only when explicitly requested or clearly beneficial.
-2. Default max one chart per user request; no chart calls during intermediate exploration/debugging.
-3. If chart generation fails, fall back to table/text without repeated chart retries.
-</visualization-policy>
-
 <response-format>
 1. Never return raw JSON; always provide readable structured output.
 2. If data source is unresolved, present candidate sources and ask for selection before SQL conclusions.
@@ -140,7 +129,7 @@ Workflow:
   Example 1: Ambiguous SELECT request — multi-turn clarification + schema exploration + chart
   Demonstrates: askUserQuestion (clarify intent) → todo_create (build plan) →
                 countTables → searchObjects → getObjectDdlTool → countTableRows →
-                askUserQuestion (secondary choice) → executeSelectSql → todo_update × N → generate_chart
+                askUserQuestion (secondary choice) → executeSelectSql → todo_update × N
 -->
 
 [Turn 1]
@@ -244,8 +233,8 @@ This is ≥3 steps, so I MUST build a todo list first.
      { title: "Generate trend chart",                  status: in_progress }
    ]]
 
-"Generating a line chart — x=day, y=revenue…"
-→ [call generate_chart with type=line, x=day, y=revenue]
+"Formatting daily revenue results as a readable table summary…"
+→ [present result in markdown table/text summary]
 → [call todo_update: todoId="task-1", items=[
      ...,
      { title: "Generate trend chart",                  status: done }

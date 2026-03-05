@@ -29,7 +29,6 @@ export function renderSegment(
           responseData={segment.responseData}
           responseError={segment.responseError}
           pending={segment.pending}
-          serverName={segment.serverName}
         />
       );
   }

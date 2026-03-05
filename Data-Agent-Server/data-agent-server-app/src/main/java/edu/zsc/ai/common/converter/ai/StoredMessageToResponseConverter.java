@@ -13,12 +13,10 @@ import edu.zsc.ai.domain.model.entity.ai.StoredChatMessage;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -27,9 +25,6 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class StoredMessageToResponseConverter {
-
-    @Qualifier("mcpToolNameToServerMap")
-    private final Map<String, String> mcpToolNameToServerMap;
 
     /**
      * Converts one stored message (with its deserialized payload) to ConversationMessageResponse.
@@ -50,15 +45,11 @@ public class StoredMessageToResponseConverter {
             content = StringUtils.defaultString(toolMsg.text());
             boolean isError = Boolean.TRUE.equals(toolMsg.isError());
 
-            // Query serverName from mapping table
-            String serverName = mcpToolNameToServerMap.get(toolMsg.toolName());
-
             blocks = List.of(ChatResponseBlock.toolResult(
                     toolMsg.id(),
                     toolMsg.toolName(),
                     toolMsg.text(),
-                    isError,
-                    serverName));
+                    isError));
         } else {
             content = "";
             blocks = List.of();
@@ -94,14 +85,10 @@ public class StoredMessageToResponseConverter {
         }
         if (CollectionUtils.isNotEmpty(aiMsg.toolExecutionRequests())) {
             for (var req : aiMsg.toolExecutionRequests()) {
-                // Query serverName from mapping table
-                String serverName = mcpToolNameToServerMap.get(req.name());
-
                 out.add(ChatResponseBlock.toolCall(
                         req.id(),
                         StringUtils.defaultString(req.name()),
-                        StringUtils.defaultString(req.arguments()),
-                        serverName));
+                        StringUtils.defaultString(req.arguments())));
             }
         }
         return CollectionUtils.isEmpty(out) ? List.of() : out;

@@ -67,17 +67,6 @@ langchain4j:
         api-key: ${ALIYUN_AI_API_KEY:}
         model-name: text-embedding-v4
         dimension: 1024
-mcp:
-  enabled: true
-  servers:
-    chart-server:
-      packageName: "@antv/mcp-server-chart"
-      enabled: true
-      timeoutSeconds: 60
-      debug: false
-      autoHealthCheck: true
-      healthCheckIntervalSeconds: 60
-
 memory:
   enabled: true
   embedding:
