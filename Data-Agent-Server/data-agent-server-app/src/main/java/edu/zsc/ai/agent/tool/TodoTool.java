@@ -6,13 +6,13 @@ import edu.zsc.ai.agent.tool.model.Todo;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Component
+@AgentTool
 @Slf4j
 public class TodoTool {
 
@@ -34,7 +34,7 @@ public class TodoTool {
 
     @Tool({
         "[WHAT] Update the task progress list after a step completes.",
-        "[WHEN] Call after each step finishes to reflect current progress.",
+        "[WHEN] Call at milestones to reflect current progress; batching multiple completed steps is allowed.",
         "[HOW] Use the same todoId as todo_create; pass the full updated items list with revised statuses."
     })
     public AgentToolResult todo_update(

@@ -13,10 +13,15 @@ import java.util.List;
 public interface ViewProvider {
 
     default List<String> getViews(Connection connection, String catalog, String schema) {
+        return searchViews(connection, catalog, schema, null);
+    }
+
+    default List<String> searchViews(Connection connection, String catalog, String schema, String viewNamePattern) {
         try {
             List<String> list = new ArrayList<>();
+            String pattern = StringUtils.isBlank(viewNamePattern) ? null : viewNamePattern;
             try (ResultSet rs = connection.getMetaData().getTables(
-                    catalog, schema, null, new String[] { JdbcMetaDataConstants.TABLE_TYPE_VIEW })) {
+                    catalog, schema, pattern, new String[] { JdbcMetaDataConstants.TABLE_TYPE_VIEW })) {
                 while (rs.next()) {
                     String name = rs.getString(JdbcMetaDataConstants.TABLE_NAME);
                     if (StringUtils.isNotBlank(name)) {

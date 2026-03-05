@@ -8,6 +8,9 @@ public interface TriggerService {
 
     List<TriggerMetadata> getTriggers(Long connectionId, String catalog, String schema, String tableName, Long userId);
 
+    List<TriggerMetadata> searchTriggers(Long connectionId, String catalog, String schema,
+                                         String tableName, String triggerNamePattern, Long userId);
+
     String getTriggerDdl(Long connectionId, String catalog, String schema, String triggerName, Long userId);
 
     void deleteTrigger(Long connectionId, String catalog, String schema, String triggerName, Long userId);

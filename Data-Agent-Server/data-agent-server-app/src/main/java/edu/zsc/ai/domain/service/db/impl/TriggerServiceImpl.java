@@ -29,6 +29,17 @@ public class TriggerServiceImpl implements TriggerService {
     }
 
     @Override
+    public List<TriggerMetadata> searchTriggers(Long connectionId, String catalog, String schema,
+                                                String tableName, String triggerNamePattern, Long userId) {
+        connectionService.openConnection(connectionId, catalog, schema, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+
+        TriggerProvider provider = DefaultPluginManager.getInstance().getTriggerProviderByPluginId(active.pluginId());
+        return provider.searchTriggers(active.connection(), catalog, schema, tableName, triggerNamePattern);
+    }
+
+    @Override
     public String getTriggerDdl(Long connectionId, String catalog, String schema, String triggerName, Long userId) {
         connectionService.openConnection(connectionId, catalog, schema, userId);
 

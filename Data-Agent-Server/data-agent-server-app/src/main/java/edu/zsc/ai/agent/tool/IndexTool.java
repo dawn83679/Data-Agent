@@ -9,12 +9,12 @@ import edu.zsc.ai.plugin.model.metadata.IndexMetadata;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+
 
 import java.util.List;
 import java.util.Objects;
 
-@Component
+@AgentTool
 @Slf4j
 @RequiredArgsConstructor
 public class IndexTool {

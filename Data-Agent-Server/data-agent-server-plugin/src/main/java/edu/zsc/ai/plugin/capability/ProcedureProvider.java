@@ -19,10 +19,15 @@ import java.util.List;
 public interface ProcedureProvider {
 
     default List<ProcedureMetadata> getProcedures(Connection connection, String catalog, String schema) {
+        return searchProcedures(connection, catalog, schema, null);
+    }
+
+    default List<ProcedureMetadata> searchProcedures(Connection connection, String catalog, String schema, String procedureNamePattern) {
         try {
             List<ProcedureMetadata> list = new ArrayList<>();
             DatabaseMetaData meta = connection.getMetaData();
-            try (ResultSet rs = meta.getProcedures(catalog, schema, null)) {
+            String pattern = StringUtils.isBlank(procedureNamePattern) ? null : procedureNamePattern;
+            try (ResultSet rs = meta.getProcedures(catalog, schema, pattern)) {
                 while (rs.next()) {
                     short procType = rs.getShort(JdbcMetaDataConstants.PROCEDURE_TYPE);
                     if (procType == DatabaseMetaData.procedureResultUnknown

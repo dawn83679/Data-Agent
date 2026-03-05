@@ -8,6 +8,8 @@ public interface ViewService {
 
     List<String> getViews(Long connectionId, String catalog, String schema, Long userId);
 
+    List<String> searchViews(Long connectionId, String catalog, String schema, String viewNamePattern, Long userId);
+
     String getViewDdl(Long connectionId, String catalog, String schema, String viewName, Long userId);
 
     void deleteView(Long connectionId, String catalog, String schema, String viewName, Long userId);

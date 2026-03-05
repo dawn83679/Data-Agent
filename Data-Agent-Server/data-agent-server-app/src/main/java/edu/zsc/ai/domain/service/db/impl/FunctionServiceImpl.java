@@ -29,6 +29,17 @@ public class FunctionServiceImpl implements FunctionService {
     }
 
     @Override
+    public List<FunctionMetadata> searchFunctions(Long connectionId, String catalog, String schema,
+                                                  String functionNamePattern, Long userId) {
+        connectionService.openConnection(connectionId, catalog, schema, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+
+        FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
+        return provider.searchFunctions(active.connection(), catalog, schema, functionNamePattern);
+    }
+
+    @Override
     public String getFunctionDdl(Long connectionId, String catalog, String schema, String functionName, Long userId) {
         connectionService.openConnection(connectionId, catalog, schema, userId);
 

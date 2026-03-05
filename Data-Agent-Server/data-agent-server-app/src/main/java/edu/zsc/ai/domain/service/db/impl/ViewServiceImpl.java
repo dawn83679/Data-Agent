@@ -30,6 +30,16 @@ public class ViewServiceImpl implements ViewService {
     }
 
     @Override
+    public List<String> searchViews(Long connectionId, String catalog, String schema, String viewNamePattern, Long userId) {
+        connectionService.openConnection(connectionId, catalog, schema, userId);
+
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+
+        ViewProvider provider = DefaultPluginManager.getInstance().getViewProviderByPluginId(active.pluginId());
+        return provider.searchViews(active.connection(), catalog, schema, viewNamePattern);
+    }
+
+    @Override
     public String getViewDdl(Long connectionId, String catalog, String schema, String viewName, Long userId) {
         connectionService.openConnection(connectionId, catalog, schema, userId);
 
