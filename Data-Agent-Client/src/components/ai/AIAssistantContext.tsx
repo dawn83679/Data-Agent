@@ -26,6 +26,8 @@ export interface AIAssistantContextValue {
   onStop?: () => void;
   /** Send a message as the user (e.g. answer to askUserQuestion); uses current conversationId. */
   submitMessage: (message: string) => Promise<void>;
+  /** Queue a message to be sent right after current streaming ends. */
+  enqueueMessage?: (message: string) => void;
   isLoading: boolean;
   /** Current conversation ID (null for new conversations) */
   conversationId: number | null;

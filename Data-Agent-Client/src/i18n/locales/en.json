@@ -183,6 +183,14 @@
       "executing": "Executing...",
       "parameters": "Parameters"
     },
+    "chartType": {
+      "line": "Line Chart",
+      "bar": "Bar Chart",
+      "pie": "Pie Chart",
+      "scatter": "Scatter Chart",
+      "area": "Area Chart",
+      "unknown": "Chart"
+    },
     "writeConfirm": {
       "label": "Write Confirmation Required",
       "labelAction": "The following SQL will be executed",

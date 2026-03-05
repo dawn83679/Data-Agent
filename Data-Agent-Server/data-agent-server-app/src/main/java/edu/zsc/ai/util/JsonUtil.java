@@ -82,4 +82,25 @@ public class JsonUtil {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * Parse JSON text and ensure root node is an object.
+     *
+     * @throws IllegalArgumentException when JSON is blank/invalid or root is not object
+     */
+    public static JsonNode readObjectNode(String json, String fieldName) {
+        if (StringUtils.isBlank(json)) {
+            throw new IllegalArgumentException(fieldName + " cannot be blank");
+        }
+        JsonNode node;
+        try {
+            node = objectMapper.readTree(json);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException(fieldName + " must be valid JSON", e);
+        }
+        if (node == null || !node.isObject()) {
+            throw new IllegalArgumentException(fieldName + " must be a JSON object");
+        }
+        return node;
+    }
 }

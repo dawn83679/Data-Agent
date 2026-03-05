@@ -2,6 +2,7 @@ import { TodoListBlock } from './TodoListBlock';
 import { ToolRunStreaming } from './ToolRunStreaming';
 import { ToolRunExecuting } from './ToolRunExecuting';
 import { GenericToolRun } from './GenericToolRun';
+import { ChartToolBlock } from './ChartToolBlock';
 import { parseTodoListResponse } from './todoTypes';
 import {
   parseAskUserQuestionParameters,
@@ -24,6 +25,10 @@ export interface ToolRunBlockProps {
   pending?: boolean;
   /** Execution state: streaming arguments, executing, or complete. */
   executionState?: ToolExecutionState;
+  /** Tool call id from TOOL_CALL block; used for pairing and retry dedupe. */
+  toolCallId?: string;
+  /** Whether this tool run belongs to current streaming turn and can auto retry. */
+  allowAutoRetry?: boolean;
 }
 
 /**
@@ -42,6 +47,8 @@ export function ToolRunBlock({
   responseError = false,
   pending = false,
   executionState,
+  toolCallId,
+  allowAutoRetry = false,
 }: ToolRunBlockProps) {
   const toolType = getToolType(toolName);
   const formattedParameters = formatParameters(parametersData);
@@ -58,8 +65,9 @@ export function ToolRunBlock({
     return <ToolRunExecuting toolName={toolName} parametersData={parametersData} />;
   }
 
-  // 2. Error Fallback (Always generic)
-  if (responseError) {
+  // 2. Error fallback for non-chart tools.
+  // Chart errors should still go through ChartToolBlock to trigger auto-feedback.
+  if (responseError && toolType !== ToolType.CHART) {
     return (
       <GenericToolRun
         toolName={toolName}
@@ -123,6 +131,18 @@ export function ToolRunBlock({
         </div>
       );
     }
+
+    case ToolType.CHART:
+      return (
+        <ChartToolBlock
+          toolName={toolName}
+          parametersData={parametersData}
+          responseData={responseData}
+          responseError={responseError}
+          toolCallId={toolCallId}
+          allowAutoRetry={allowAutoRetry}
+        />
+      );
 
     // CATEGORY C: Generic Data Fetching / DB Tools
     case ToolType.GENERIC:

@@ -42,10 +42,10 @@ public class DatabaseObjectTool {
             "[WHAT] List all database names (catalogs) available on a given connection.",
             "[WHEN] Use when the user has not specified a database, or when exploring what databases exist on a connection. Pass connectionId from session context or getMyConnections."
     })
-    public AgentToolResult listDatabases(
+    public AgentToolResult getCatologNames(
             @P("The connection id (from session context or getMyConnections result)") Long connectionId,
             InvocationParameters parameters) {
-        log.info("[Tool] listDatabases, connectionId={}", connectionId);
+        log.info("[Tool] getCatologNames, connectionId={}", connectionId);
         try {
             Long userId = parameters.get(RequestContextConstant.USER_ID);
             if (Objects.isNull(userId)) {
@@ -53,13 +53,13 @@ public class DatabaseObjectTool {
             }
             List<String> databases = databaseService.listDatabases(connectionId, userId);
             if (CollectionUtils.isEmpty(databases)) {
-                log.info("[Tool done] listDatabases -> empty");
+                log.info("[Tool done] getCatologNames -> empty");
                 return AgentToolResult.empty();
             }
-            log.info("[Tool done] listDatabases, result size={}", databases.size());
+            log.info("[Tool done] getCatologNames, result size={}", databases.size());
             return AgentToolResult.success(databases);
         } catch (Exception e) {
-            log.error("[Tool error] listDatabases, connectionId={}", connectionId, e);
+            log.error("[Tool error] getCatologNames, connectionId={}", connectionId, e);
             return AgentToolResult.fail(e);
         }
     }
@@ -144,14 +144,14 @@ public class DatabaseObjectTool {
             "[WHEN] Use this to inspect TABLE/VIEW/FUNCTION/PROCEDURE/TRIGGER before writing SQL.",
             "IMPORTANT — objectName must be exact in the target schema."
     })
-    public AgentToolResult getObjectDdlTool(
+    public AgentToolResult getObjectDdl(
             @P("Object type: TABLE, VIEW, FUNCTION, PROCEDURE, TRIGGER") String objectType,
             @P("Exact object name in the current schema") String objectName,
             @P("Connection id from current session context") Long connectionId,
             @P("Database (catalog) name from current session context") String databaseName,
             @P(value = "Schema name from current session context; omit if not used", required = false) String schemaName,
             InvocationParameters parameters) {
-        log.info("[Tool] getObjectDdlTool, objectType={}, objectName={}, connectionId={}, database={}, schema={}",
+        log.info("[Tool] getObjectDdl, objectType={}, objectName={}, connectionId={}, database={}, schema={}",
                 objectType, objectName, connectionId, databaseName, schemaName);
         try {
             Long userId = parameters.get(RequestContextConstant.USER_ID);
@@ -166,11 +166,11 @@ public class DatabaseObjectTool {
             String ddl = databaseObjectService.getObjectDdl(
                     normalizedType, objectName, connectionId, databaseName, schemaName, userId);
 
-            log.info("[Tool done] getObjectDdlTool, objectType={}, objectName={}, ddlLength={}",
+            log.info("[Tool done] getObjectDdl, objectType={}, objectName={}, ddlLength={}",
                     normalizedType, objectName, StringUtils.isNotBlank(ddl) ? ddl.length() : 0);
             return AgentToolResult.success(ddl);
         } catch (Exception e) {
-            log.error("[Tool error] getObjectDdlTool, objectType={}, objectName={}", objectType, objectName, e);
+            log.error("[Tool error] getObjectDdl, objectType={}, objectName={}", objectType, objectName, e);
             return AgentToolResult.fail(e);
         }
     }

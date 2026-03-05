@@ -102,6 +102,7 @@ export function AIAssistant() {
     onSend: handleSend,
     onStop: stop,
     submitMessage,
+    enqueueMessage: messageQueue.addToQueue,
     isLoading,
     conversationId: currentConversationId,
     modelState: { model, setModel, modelOptions },

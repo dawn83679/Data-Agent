@@ -337,6 +337,14 @@ export const I18N_KEYS = {
       PARAMETERS: 'ai.toolRun.parameters',
       STREAMING_ARGUMENTS: 'ai.toolRun.streamingArguments',
     },
+    CHART_TYPE: {
+      LINE: 'ai.chartType.line',
+      BAR: 'ai.chartType.bar',
+      PIE: 'ai.chartType.pie',
+      SCATTER: 'ai.chartType.scatter',
+      AREA: 'ai.chartType.area',
+      UNKNOWN: 'ai.chartType.unknown',
+    },
   },
 
   // Error keys

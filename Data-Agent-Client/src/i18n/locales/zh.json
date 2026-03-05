@@ -183,6 +183,14 @@
       "executing": "正在执行...",
       "parameters": "参数"
     },
+    "chartType": {
+      "line": "折线图",
+      "bar": "柱状图",
+      "pie": "饼图",
+      "scatter": "散点图",
+      "area": "面积图",
+      "unknown": "图表"
+    },
     "writeConfirm": {
       "label": "需要确认写操作",
       "labelAction": "即将执行以下 SQL",
