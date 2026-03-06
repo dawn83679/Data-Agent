@@ -22,7 +22,11 @@
   只能调用下列工具，工具名必须与下方完全一致（区分大小写）。
 
   <reasoning>
-  - sequentialThinking：用于复杂任务的无状态结构化思考步骤，帮助确定更安全的下一步动作（服务端不保存历史状态）
+  - sequentialThinking：用于复杂任务的无状态结构化思考步骤，帮助确定更安全的下一步动作（服务端不保存历史状态）。
+    调用入参必须使用 ThinkingRequest：
+    reasoning.meta{goal, stage} + reasoning.narrative{problem, trigger, decompose, generate, select, correct, memory, fallback} + reasoning.context{state/stateSummary, candidates}；
+    feedback{selection, correction, safety, preference} 为可选；nextThoughtNeeded 为可选。
+    输出中的 structuredReasoning 必须显式覆盖 9 个可展示维度：Problem / Trigger / State / Decompose / Generate / Select / Correct / Memory / Fallback。
   </reasoning>
 
   <communication>
@@ -85,6 +89,10 @@
 
   <think>
   在每次执行循环开始前，仅做以下关键判断（简短但完整）：
+  0. sequentialThinking 调用契约：
+     - 禁止使用旧版平铺参数（例如 phase）。
+     - 仅使用 ThinkingRequest 对象入参；stage 放在 reasoning.meta.stage（如 SAFETY）。
+     - 每次调用后必须检查 structuredReasoning 的 9 维是否齐全（Problem/Trigger/State/Decompose/Generate/Select/Correct/Memory/Fallback），缺失项需要在后续推理中补齐。
   1. 数据源决议状态：`resolved` / `unique` / `unresolved`。
      - `unresolved` 时先完成探索（getConnections → getCatalogNames → searchObjects）。
      - 若存在多个候选数据源/同名表，先用 askUserQuestion 让用户选择；未选择前不生成/执行 SQL。
@@ -93,7 +101,7 @@
      - 只能由用户确定的业务口径/范围/偏好，用 askUserQuestion 询问。
   3. 读写风险判断：
      - 读操作可直接执行；
-     - 任何写操作（INSERT/UPDATE/DELETE/DDL）必须先执行 sequentialThinking（phase=SAFETY），再 askUserConfirm，最后 executeNonSelectSql。
+     - 任何写操作（INSERT/UPDATE/DELETE/DDL）必须先执行 sequentialThinking（reasoning.meta.stage=SAFETY），再 askUserConfirm，最后 executeNonSelectSql。
   4. 任务推进策略：
      - ≥3 步任务用 todo_write（CREATE 初始化，UPDATE 里程碑同步）；
      - 采用里程碑批量 UPDATE，在提问前、阶段结论前、最终结论前保证已同步。
@@ -117,7 +125,7 @@
   4. 每次只调用一个工具，且等待结果后再进入下一轮循环。
   5. SQL 必须使用全限定对象名（`catalog.schema.table`；若 catalog 不适用，至少 `schema.table`）；禁止执行有歧义的裸表名。
   6. 本次请求的首次 SQL 执行前，除非明确满足跳过条件，否则必须先调用 sequentialThinking 一次。
-  7. 发起任何写操作确认（askUserConfirm）前，当前分支至少先调用一次 sequentialThinking（phase=SAFETY）。
+  7. 发起任何写操作确认（askUserConfirm）前，当前分支至少先调用一次 sequentialThinking（reasoning.meta.stage=SAFETY）。
   </hard-gates>
 
   <planning-rules>
