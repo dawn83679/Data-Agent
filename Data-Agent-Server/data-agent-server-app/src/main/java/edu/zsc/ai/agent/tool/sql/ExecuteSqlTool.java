@@ -6,6 +6,7 @@ import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.agent.confirm.WriteConfirmationStore;
 import edu.zsc.ai.agent.tool.annotation.AgentTool;
 import edu.zsc.ai.common.constant.RequestContextConstant;
+import edu.zsc.ai.agent.tool.model.AgentSqlResult;
 import edu.zsc.ai.domain.model.dto.request.db.AgentExecuteSqlRequest;
 import edu.zsc.ai.domain.model.dto.response.db.ExecuteSqlResponse;
 import edu.zsc.ai.domain.service.db.SqlExecutionService;
@@ -31,7 +32,7 @@ public class ExecuteSqlTool {
         "[SAFETY] For large tables (>10000 rows), SQL should include WHERE/LIMIT to avoid excessive scans.",
         "[FAILSAFE] If tableName or SQL safety checks fail, stop execution and return clarification/error."
     })
-    public ExecuteSqlResponse executeSelectSql(
+    public AgentSqlResult executeSelectSql(
             @P("Connection id from current session context") Long connectionId,
             @P("Database (catalog) name from current session context") String databaseName,
             @P(value = "Schema name from current session context; omit if not used", required = false) String schemaName,
@@ -46,23 +47,14 @@ public class ExecuteSqlTool {
         try {
             String tableValidationError = validateQualifiedTableName(tableName, true);
             if (tableValidationError != null) {
-                return ExecuteSqlResponse.builder()
-                        .success(false)
-                        .errorMessage(tableValidationError)
-                        .build();
+                return AgentSqlResult.fail(tableValidationError);
             }
             if (!isReadOnlySql(sql)) {
-                return ExecuteSqlResponse.builder()
-                        .success(false)
-                        .errorMessage("Only read-only statements (SELECT, WITH, SHOW, EXPLAIN) are allowed.")
-                        .build();
+                return AgentSqlResult.fail("Only read-only statements (SELECT, WITH, SHOW, EXPLAIN) are allowed.");
             }
             Long userId = parameters.get(RequestContextConstant.USER_ID);
             if (userId == null) {
-                return ExecuteSqlResponse.builder()
-                        .success(false)
-                        .errorMessage("User context is missing.")
-                        .build();
+                return AgentSqlResult.fail("User context is missing.");
             }
             AgentExecuteSqlRequest request = AgentExecuteSqlRequest.builder()
                     .connectionId(connectionId)
@@ -73,13 +65,10 @@ public class ExecuteSqlTool {
                     .build();
             ExecuteSqlResponse response = sqlExecutionService.executeSql(request);
             log.info("{} executeSelectSql", "[Tool done]");
-            return response;
+            return AgentSqlResult.from(response);
         } catch (Exception e) {
             log.error("{} executeSelectSql", "[Tool error]", e);
-            return ExecuteSqlResponse.builder()
-                    .success(false)
-                    .errorMessage(e.getMessage())
-                    .build();
+            return AgentSqlResult.fail(e.getMessage());
         }
     }
 
@@ -92,7 +81,7 @@ public class ExecuteSqlTool {
         "[SAFETY] Server validates user confirmation against exact SQL and scope. Missing/expired confirmation must be rejected.",
         "[FAILSAFE] On rejection or validation failure, stop execution and return to user clarification/approval flow."
     })
-    public ExecuteSqlResponse executeNonSelectSql(
+    public AgentSqlResult executeNonSelectSql(
             @P("Connection id from current session context") Long connectionId,
             @P("Database (catalog) name from current session context") String databaseName,
             @P(value = "Schema name from current session context; omit if not used", required = false) String schemaName,
@@ -107,18 +96,12 @@ public class ExecuteSqlTool {
         try {
             String tableValidationError = validateQualifiedTableName(tableName, false);
             if (tableValidationError != null) {
-                return ExecuteSqlResponse.builder()
-                        .success(false)
-                        .errorMessage(tableValidationError)
-                        .build();
+                return AgentSqlResult.fail(tableValidationError);
             }
             Long userId = parameters.get(RequestContextConstant.USER_ID);
             Long conversationId = parameters.get(RequestContextConstant.CONVERSATION_ID);
             if (userId == null || conversationId == null) {
-                return ExecuteSqlResponse.builder()
-                        .success(false)
-                        .errorMessage("User or conversation context is missing.")
-                        .build();
+                return AgentSqlResult.fail("User or conversation context is missing.");
             }
 
             // Server-side gate: find and consume a CONFIRMED token for this user + conversation + connection + database + schema + sql.
@@ -128,11 +111,8 @@ public class ExecuteSqlTool {
             if (!consumed) {
                 log.warn("[Tool] executeNonSelectSql rejected: no CONFIRMED token for userId={} conversationId={}",
                         userId, conversationId);
-                return ExecuteSqlResponse.builder()
-                        .success(false)
-                        .errorMessage("Write operation rejected: no valid user confirmation found. "
-                                + "You must call askUserConfirm first and wait for the user to confirm.")
-                        .build();
+                return AgentSqlResult.fail("Write operation rejected: no valid user confirmation found. "
+                        + "You must call askUserConfirm first and wait for the user to confirm.");
             }
 
             AgentExecuteSqlRequest request = AgentExecuteSqlRequest.builder()
@@ -144,13 +124,10 @@ public class ExecuteSqlTool {
                     .build();
             ExecuteSqlResponse response = sqlExecutionService.executeSql(request);
             log.info("{} executeNonSelectSql", "[Tool done]");
-            return response;
+            return AgentSqlResult.from(response);
         } catch (Exception e) {
             log.error("{} executeNonSelectSql", "[Tool error]", e);
-            return ExecuteSqlResponse.builder()
-                    .success(false)
-                    .errorMessage(e.getMessage())
-                    .build();
+            return AgentSqlResult.fail(e.getMessage());
         }
     }
 

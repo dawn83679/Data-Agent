@@ -9,6 +9,8 @@ import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.agent.tool.annotation.AgentTool;
+import edu.zsc.ai.agent.tool.model.AgentMemoryCandidateView;
+import edu.zsc.ai.agent.tool.model.AgentMemoryView;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.common.constant.RequestContextConstant;
 import edu.zsc.ai.common.converter.ai.MemoryConverter;
@@ -59,7 +61,7 @@ public class MemoryTool {
             if (results.isEmpty()) {
                 return AgentToolResult.empty();
             }
-            return AgentToolResult.success(results);
+            return AgentToolResult.success(AgentMemoryView.fromList(results));
         } catch (Exception e) {
             log.error("[Tool error] searchMemories", e);
             return AgentToolResult.fail(e);
@@ -98,7 +100,7 @@ public class MemoryTool {
             if (response.isEmpty()) {
                 return AgentToolResult.empty();
             }
-            return AgentToolResult.success(response);
+            return AgentToolResult.success(AgentMemoryCandidateView.fromList(response));
         } catch (Exception e) {
             log.error("[Tool error] listCandidateMemories", e);
             return AgentToolResult.fail(e);
@@ -135,7 +137,7 @@ public class MemoryTool {
                     candidateContent,
                     reason);
 
-            return AgentToolResult.success(MemoryConverter.toCandidateResponse(candidate));
+            return AgentToolResult.success(AgentMemoryCandidateView.from(MemoryConverter.toCandidateResponse(candidate)));
         } catch (Exception e) {
             log.error("[Tool error] createCandidateMemory", e);
             return AgentToolResult.fail(e);

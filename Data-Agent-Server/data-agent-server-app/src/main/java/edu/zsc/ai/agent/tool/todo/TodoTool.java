@@ -25,7 +25,7 @@ public class TodoTool {
         "[INPUT] action must be CREATE/UPDATE/DELETE. todoId is required for all actions. items are required for CREATE/UPDATE and ignored for DELETE.",
         "[AFTER] Keep statuses aligned with real execution progress before user-facing summaries."
     })
-    public AgentToolResult todo_write(
+    public AgentToolResult todoWrite(
             @P("Action type: CREATE, UPDATE, DELETE.")
             String action,
             @P("Unique id for this todo list (e.g. 'task-1').")

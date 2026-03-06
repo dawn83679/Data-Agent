@@ -87,7 +87,7 @@ export function parseTodoListResponse(responseData: string): TodoListResponse | 
 }
 
 /** Recognized todo tools. */
-export const TODO_TOOL_NAMES = ['todo_write'] as const;
+export const TODO_TOOL_NAMES = ['todoWrite'] as const;
 
 export function isTodoTool(toolName: string): boolean {
   return TODO_TOOL_NAMES.includes(toolName as (typeof TODO_TOOL_NAMES)[number]);

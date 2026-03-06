@@ -42,7 +42,7 @@ export function ToolRunDetail({
           {TOOL_RUN_SECTION_PARAMETERS}
           <span className="opacity-50" aria-hidden>☰</span>
         </div>
-        <div className="rounded overflow-hidden bg-black/10 dark:bg-black/20 text-[11px] max-h-[220px] overflow-auto">
+        <div className="rounded bg-black/10 dark:bg-black/20 text-[11px] max-h-[220px] overflow-auto">
           <SyntaxHighlighter {...highlighterProps}>
             {formattedParameters || TOOL_RUN_EMPTY_PLACEHOLDER}
           </SyntaxHighlighter>
@@ -52,7 +52,7 @@ export function ToolRunDetail({
         <div className="text-[10px] font-semibold uppercase tracking-wide opacity-90 mb-1">
           {TOOL_RUN_SECTION_RESPONSE}
         </div>
-        <div className="rounded overflow-hidden bg-black/10 dark:bg-black/20 text-[11px] max-h-[220px] overflow-auto">
+        <div className="rounded bg-black/10 dark:bg-black/20 text-[11px] max-h-[220px] overflow-auto">
           <SyntaxHighlighter {...highlighterProps}>
             {responseData || TOOL_RUN_EMPTY_PLACEHOLDER}
           </SyntaxHighlighter>

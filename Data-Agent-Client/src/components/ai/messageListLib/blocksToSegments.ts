@@ -6,6 +6,23 @@ import type { Segment } from './types';
 import { SegmentKind, ToolExecutionState } from './types';
 
 /**
+ * Detect application-level tool errors.
+ * LangChain4j only sets hasFailed=true on uncaught exceptions.
+ * Tools that return structured error objects (AgentToolResult / AgentSqlResult with success:false)
+ * come back as hasFailed=false, so we check the result JSON as well.
+ */
+function isResultError(hasFailed: boolean, result: string | undefined): boolean {
+  if (hasFailed) return true;
+  if (!result) return false;
+  try {
+    const parsed = JSON.parse(result) as Record<string, unknown>;
+    return parsed?.success === false;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Merge consecutive TOOL_CALL blocks with the same id (streaming chunks) by concatenating arguments.
  */
 function mergeConsecutiveToolCalls(
@@ -132,7 +149,7 @@ export function blocksToSegments(blocks: ChatResponseBlock[]): Segment[] {
             toolName: lastCall.toolName,
             parametersData,
             responseData: resultPayload.result ?? '',
-            responseError: resultPayload.error ?? false,
+            responseError: isResultError(resultPayload.error ?? false, resultPayload.result),
             pending: false,
             executionState,
             toolCallId: lastCall.id,
@@ -167,7 +184,7 @@ export function blocksToSegments(blocks: ChatResponseBlock[]): Segment[] {
             toolName: resultPayload.toolName ?? '',
             parametersData: '',
             responseData: resultPayload.result ?? '',
-            responseError: resultPayload.error ?? false,
+            responseError: isResultError(resultPayload.error ?? false, resultPayload.result),
             pending: false,
             toolCallId: resultPayload.id,
           });

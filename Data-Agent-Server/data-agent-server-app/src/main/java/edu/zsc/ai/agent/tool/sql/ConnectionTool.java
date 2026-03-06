@@ -4,10 +4,11 @@ import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.agent.tool.annotation.AgentTool;
+import edu.zsc.ai.agent.tool.model.AgentConnectionView;
+import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.common.constant.RequestContextConstant;
 import edu.zsc.ai.domain.model.dto.response.db.ConnectionResponse;
 import edu.zsc.ai.domain.service.db.DbConnectionService;
-import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -40,7 +41,7 @@ public class ConnectionTool {
                 return AgentToolResult.empty();
             }
             log.info("{} getConnections, result size={}", "[Tool done]", connections.size());
-            return AgentToolResult.success(connections);
+            return AgentToolResult.success(AgentConnectionView.fromList(connections));
         } catch (Exception e) {
             log.error("{} getConnections", "[Tool error]", e);
             return AgentToolResult.fail(e);
@@ -64,7 +65,7 @@ public class ConnectionTool {
             }
             ConnectionResponse connection = dbConnectionService.getConnectionById(connectionId, userId);
             log.info("[Tool done] getConnectionById, connectionId={}", connectionId);
-            return AgentToolResult.success(connection);
+            return AgentToolResult.success(AgentConnectionView.from(connection));
         } catch (Exception e) {
             log.error("[Tool error] getConnectionById, connectionId={}", connectionId, e);
             return AgentToolResult.fail(e);

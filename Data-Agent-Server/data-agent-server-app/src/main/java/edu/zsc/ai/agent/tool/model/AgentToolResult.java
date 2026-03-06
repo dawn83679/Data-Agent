@@ -17,16 +17,11 @@ import lombok.Data;
 @Builder
 public class AgentToolResult {
 
-    private static final String MSG_SUCCESS =
-            "Tool executed successfully. Use the result to continue answering the user's request.";
+    private static final String MSG_SUCCESS = "ok";
 
-    private static final String MSG_EMPTY =
-            "The tool returned no results. Reconsider your input parameters (e.g. try a different " +
-            "pattern, value, or scope), or call askUserQuestion to ask the user for more specific information.";
+    private static final String MSG_EMPTY = "no results; try different params or ask user";
 
-    private static final String MSG_FAIL =
-            "The tool encountered an error. Reconsider your parameters or approach, " +
-            "or call askUserQuestion to ask the user for clarification. Error: ";
+    private static final String MSG_FAIL = "error: ";
 
     private boolean success;
 
@@ -52,7 +47,7 @@ public class AgentToolResult {
     public static AgentToolResult noContext() {
         return AgentToolResult.builder()
                 .success(false)
-                .message("User context is missing. This is a system error — please retry or contact support.")
+                .message("system error: missing user context")
                 .build();
     }
 
