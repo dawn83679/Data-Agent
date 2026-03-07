@@ -8,10 +8,10 @@ import java.util.List;
  * Slim connection view for agent consumption.
  * Omits internal fields irrelevant to query planning (driverJarPath, createdAt, updatedAt, timeout, properties).
  */
-public record AgentConnectionView(Long id, String name, String dbType, String host, Integer port, String database) {
+public record AgentConnectionView(Long id, String name, String dbType) {
 
     public static AgentConnectionView from(ConnectionResponse r) {
-        return new AgentConnectionView(r.getId(), r.getName(), r.getDbType(), r.getHost(), r.getPort(), r.getDatabase());
+        return new AgentConnectionView(r.getId(), r.getName(), r.getDbType());
     }
 
     public static List<AgentConnectionView> fromList(List<ConnectionResponse> list) {
