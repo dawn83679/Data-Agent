@@ -6,8 +6,7 @@ import { ChatInput } from './ChatInput';
 import { AIAssistantHeader } from './AIAssistantHeader';
 import { AIAssistantContent } from './AIAssistantContent';
 import { MemoryCandidateDock } from './MemoryCandidateDock';
-import { useChat } from '../../hooks/useChat';
-import { useMessageQueue } from '../../hooks/useMessageQueue';
+import { useConversationRuntime } from '../../hooks/useConversationRuntime';
 import { useAuthStore } from '../../store/authStore';
 import { conversationService } from '../../services/conversation.service';
 import { aiService } from '../../services/ai.service';
@@ -27,30 +26,27 @@ export function AIAssistant() {
   const [modelOptions, setModelOptions] = useState<ModelOption[]>(FALLBACK_MODELS);
   const [model, setModel] = useState<string>(DEFAULT_MODEL);
   const [chatContext, setChatContext] = useState<ChatContext>({});
-  const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
-  const messageQueue = useMessageQueue();
+  const [input, setInput] = useState('');
 
   const {
     messages,
-    setMessages,
-    input,
-    setInput,
     isLoading,
     isWaiting,
-    stop,
-    error,
-    handleSubmit,
+    queue,
     submitMessage,
-  } = useChat({
+    stop,
+    removeFromQueue,
+    setActiveConversation,
+    loadMessages,
+    activeConversationId,
+  } = useConversationRuntime({
     api: ChatPaths.STREAM,
     body: {
       model,
       language: i18n.resolvedLanguage ?? i18n.language ?? 'en',
       agentType: agent,
-      ...(currentConversationId != null && { conversationId: currentConversationId }),
       ...(chatContext.connectionId != null && { connectionId: chatContext.connectionId }),
       ...(chatContext.databaseName != null && chatContext.databaseName !== '' && { databaseName: chatContext.databaseName }),
       ...(chatContext.schemaName != null && chatContext.schemaName !== '' && { schemaName: chatContext.schemaName }),
@@ -60,19 +56,13 @@ export function AIAssistant() {
       if (!headerConversationId) return;
       const parsed = Number(headerConversationId);
       if (Number.isFinite(parsed) && parsed > 0) {
-        setCurrentConversationId(parsed);
+        setActiveConversation(parsed);
       }
     },
-    onConversationId: (id) => setCurrentConversationId(id),
-    onFinish: messageQueue.drainOnFinish,
     onError: (err) => {
       console.error('Stream error:', err);
     },
   });
-
-  useEffect(() => {
-    messageQueue.setSubmitMessage(submitMessage);
-  }, [messageQueue, submitMessage]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -94,13 +84,10 @@ export function AIAssistant() {
 
   const handleSend = useCallback(() => {
     if (!input.trim()) return;
-    if (isLoading) {
-      messageQueue.addToQueue(input);
-      setInput('');
-      return;
-    }
-    handleSubmit({ preventDefault: () => {} } as unknown as React.FormEvent);
-  }, [input, isLoading, handleSubmit, setInput, messageQueue.addToQueue]);
+    const messageText = input.trim();
+    setInput('');
+    submitMessage(messageText);
+  }, [input, setInput, submitMessage]);
 
   const chatMessages = chatMessagesToMessages(messages);
   // Refresh memory candidates only after the full assistant response is done
@@ -111,7 +98,7 @@ export function AIAssistant() {
     const hasDoneBlock = message.blocks?.some((block) => block.done) ?? false;
     return hasDoneBlock ? count + 1 : count;
   }, 0);
-  const candidateRefreshKey = `${currentConversationId ?? 'none'}:${isLoading ? 'loading' : completedAssistantCount}`;
+  const candidateRefreshKey = `${activeConversationId ?? 'none'}:${isLoading ? 'loading' : completedAssistantCount}`;
 
   const contextValue = {
     input,
@@ -119,17 +106,17 @@ export function AIAssistant() {
     onSend: handleSend,
     onStop: stop,
     submitMessage,
-    enqueueMessage: messageQueue.addToQueue,
+    enqueueMessage: submitMessage, // Queue is now handled internally
     isLoading,
-    conversationId: currentConversationId,
+    conversationId: activeConversationId,
     modelState: { model, setModel, modelOptions },
     agentState: { agent, setAgent },
     chatContextState: { chatContext, setChatContext },
     messages,
     onCommand: (id: string) => {
       if (id === SLASH_COMMAND_IDS.NEW) {
-        setCurrentConversationId(null);
-        setMessages([]);
+        setActiveConversation(null);
+        loadMessages(null, []);
       } else if (id === SLASH_COMMAND_IDS.HISTORY) {
         setIsHistoryOpen(true);
       }
@@ -147,34 +134,34 @@ export function AIAssistant() {
           setIsHistoryOpen={setIsHistoryOpen}
           isSettingsOpen={isSettingsOpen}
           setIsSettingsOpen={setIsSettingsOpen}
-          currentConversationId={currentConversationId}
+          currentConversationId={activeConversationId}
           onSelectConversation={async (id) => {
-            setCurrentConversationId(id);
+            setActiveConversation(id);
             try {
               const list = await conversationService.getMessages(id);
-              setMessages(list);
+              loadMessages(id, list);
             } catch {
-              setMessages([]);
+              loadMessages(id, []);
             }
           }}
           onNewChat={() => {
-            setCurrentConversationId(null);
-            setMessages([]);
+            setActiveConversation(null);
+            loadMessages(null, []);
           }}
         />
 
         <AIAssistantContent
-          error={error}
+          error={undefined}
           messages={chatMessages}
           messagesEndRef={messagesEndRef}
           isLoading={isLoading}
           isWaiting={isWaiting}
-          queue={messageQueue.queue}
-          onRemoveFromQueue={messageQueue.removeFromQueue}
+          queue={queue}
+          onRemoveFromQueue={removeFromQueue}
         />
 
         <MemoryCandidateDock
-          conversationId={currentConversationId}
+          conversationId={activeConversationId}
           refreshKey={candidateRefreshKey}
         />
 
