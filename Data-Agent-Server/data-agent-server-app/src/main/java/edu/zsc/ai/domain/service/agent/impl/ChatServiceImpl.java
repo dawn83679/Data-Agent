@@ -9,7 +9,9 @@ import edu.zsc.ai.agent.memory.MemoryUtil;
 import edu.zsc.ai.common.constant.ChatErrorConstants;
 import edu.zsc.ai.common.enums.ai.AgentModeEnum;
 import edu.zsc.ai.common.enums.ai.ModelEnum;
+import edu.zsc.ai.common.enums.ai.ToolNameEnum;
 import edu.zsc.ai.context.RequestContext;
+import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.model.dto.response.agent.ChatResponseBlock;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
 import edu.zsc.ai.domain.model.entity.ai.AiMemoryCandidate;
@@ -32,7 +34,9 @@ import reactor.core.publisher.Sinks;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Service
@@ -75,7 +79,7 @@ public class ChatServiceImpl implements ChatService {
 
         ReActAgent agent = reActAgentProvider.getAgent(modelName, request.getLanguage(), agentMode.getCode());
 
-        if (request.getConversationId() == null) {
+        if (Objects.isNull(request.getConversationId())) {
             Long userId = RequestContext.getUserId();
             AiConversation conversation = aiConversationService.createConversation(userId, request.getMessage());
             request.setConversationId(conversation.getId());
@@ -83,17 +87,75 @@ public class ChatServiceImpl implements ChatService {
             log.info("Created new conversation: id={}", conversation.getId());
         }
 
-        Sinks.Many<ChatResponseBlock> sink = Sinks.many().unicast().onBackpressureBuffer();
         String memoryId = RequestContext.getUserId() + ":" + request.getConversationId();
         InvocationParameters parameters = InvocationParameters.from(RequestContext.toMap());
         String enrichedMessage = buildMessageWithMemoryContext(
                 RequestContext.getUserId(),
                 request.getConversationId(),
                 request.getMessage());
-        TokenStream tokenStream = agent.chat(memoryId, enrichedMessage, parameters);
-
-        // Stream token callbacks (inlined from streamTokenStreamToSink)
         Long conversationId = request.getConversationId();
+
+        // Capture RequestContext snapshot for use in deferred Flux (may run on different thread)
+        RequestContextInfo contextSnapshot = RequestContext.hasContext()
+                ? RequestContext.get()
+                : null;
+
+        AtomicBoolean enterPlanTriggered = new AtomicBoolean(false);
+
+        // First stream: current agent mode (emitDoneBlock=false, defer block handles it)
+        Flux<ChatResponseBlock> agentFlux = streamAgent(
+                agent, memoryId, enrichedMessage, parameters,
+                conversationId, enterPlanTriggered, false);
+
+        // Chain second stream: only when enterPlanMode was triggered
+        return agentFlux.concatWith(Flux.defer(() -> {
+            if (!enterPlanTriggered.get()) {
+                // enterPlanMode not triggered — emit the doneBlock normally
+                return Flux.just(ChatResponseBlock.doneBlock());
+            }
+
+            log.info("enterPlanMode triggered for conversation {}, chaining Plan mode agent", conversationId);
+
+            // Restore RequestContext on the deferred thread
+            if (Objects.nonNull(contextSnapshot)) {
+                RequestContext.set(contextSnapshot);
+                RequestContext.get().setAgentMode(AgentModeEnum.PLAN.getCode());
+            }
+
+            ReActAgent planAgent = reActAgentProvider.getAgent(
+                    modelName, request.getLanguage(), AgentModeEnum.PLAN.getCode());
+            InvocationParameters planParams = InvocationParameters.from(RequestContext.toMap());
+            String continuation = "Continue analyzing the user's request and create a structured execution plan.";
+
+            return streamAgent(planAgent, memoryId, continuation, planParams,
+                    conversationId, new AtomicBoolean(false), true);
+        })).map(block -> {
+            if (Objects.nonNull(block) && Objects.isNull(block.getConversationId())) {
+                block.setConversationId(conversationId);
+            }
+            return block;
+        });
+    }
+
+    /**
+     * Streams a single agent invocation into a Flux of ChatResponseBlocks.
+     *
+     * @param agent               the agent to invoke
+     * @param memoryId            chat memory identifier
+     * @param message             the user message (or continuation prompt)
+     * @param parameters          invocation parameters (RequestContext snapshot)
+     * @param conversationId      conversation ID for token tracking
+     * @param enterPlanTriggered  set to true if enterPlanMode tool is executed
+     * @param emitDoneBlock       whether to emit doneBlock on completion
+     */
+    private Flux<ChatResponseBlock> streamAgent(
+            ReActAgent agent, String memoryId, String message,
+            InvocationParameters parameters, Long conversationId,
+            AtomicBoolean enterPlanTriggered, boolean emitDoneBlock) {
+
+        Sinks.Many<ChatResponseBlock> sink = Sinks.many().unicast().onBackpressureBuffer();
+        TokenStream tokenStream = agent.chat(memoryId, message, parameters);
+        Set<String> streamedToolCallIds = new HashSet<>();
 
         tokenStream.onPartialResponse(content -> {
             if (StringUtils.isNotBlank(content)) {
@@ -107,16 +169,12 @@ public class ChatServiceImpl implements ChatService {
             }
         });
 
-        // Track tool call IDs that have been streamed to avoid duplicates in onIntermediateResponse
-        final Set<String> streamedToolCallIds = new HashSet<>();
-
         tokenStream.onPartialToolCallWithContext((partialToolCall, context) -> {
             log.debug("Partial tool call: index={}, id={}, name={}, partialArgs='{}'",
                     partialToolCall.index(), partialToolCall.id(), partialToolCall.name(),
                     partialToolCall.partialArguments());
 
-            // Mark this tool call ID as streamed
-            if (partialToolCall.id() != null) {
+            if (Objects.nonNull(partialToolCall.id())) {
                 streamedToolCallIds.add(partialToolCall.id());
             }
 
@@ -124,14 +182,13 @@ public class ChatServiceImpl implements ChatService {
                     partialToolCall.id(),
                     partialToolCall.name(),
                     partialToolCall.partialArguments(),
-                    true  // streaming=true
+                    true
             ));
         });
 
         tokenStream.onIntermediateResponse(response -> {
             if (response.aiMessage().hasToolExecutionRequests()) {
                 for (ToolExecutionRequest toolRequest : response.aiMessage().toolExecutionRequests()) {
-                    // Skip if this tool call was already streamed via onPartialToolCall
                     if (streamedToolCallIds.contains(toolRequest.id())) {
                         log.debug("Skipping already-streamed tool call: id={}, name={}",
                                 toolRequest.id(), toolRequest.name());
@@ -145,7 +202,7 @@ public class ChatServiceImpl implements ChatService {
                             toolRequest.id(),
                             toolRequest.name(),
                             toolRequest.arguments(),
-                            false  // streaming=false, arguments complete
+                            false
                     ));
                 }
             }
@@ -153,6 +210,11 @@ public class ChatServiceImpl implements ChatService {
 
         tokenStream.onToolExecuted(toolExecution -> {
             ToolExecutionRequest req = toolExecution.request();
+
+            // Detect enterPlanMode tool execution
+            if (ToolNameEnum.ENTER_PLAN_MODE.getToolName().equals(req.name())) {
+                enterPlanTriggered.set(true);
+            }
 
             sink.tryEmitNext(ChatResponseBlock.toolResult(
                     req.id(),
@@ -163,27 +225,27 @@ public class ChatServiceImpl implements ChatService {
 
         tokenStream.onCompleteResponse(response -> {
             // Extract and persist token usage
-            if (response.tokenUsage() != null) {
+            if (Objects.nonNull(response.tokenUsage())) {
                 Integer outputTokens = response.tokenUsage().outputTokenCount();
                 Integer totalTokens = response.tokenUsage().totalTokenCount();
 
-                if (totalTokens != null && totalTokens > 0) {
+                if (Objects.nonNull(totalTokens) && totalTokens > 0) {
                     log.info("Chat completed for conversation {}: {} total tokens (output: {})",
                             conversationId, totalTokens, outputTokens);
 
-                    // Update the last AI message's token count (output tokens only)
-                    if (outputTokens != null && outputTokens > 0) {
+                    if (Objects.nonNull(outputTokens) && outputTokens > 0) {
                         aiMessageService.updateLastAiMessageTokenCount(conversationId, outputTokens);
                     }
 
-                    // Update conversation with total tokens (includes input + output)
                     aiConversationService.updateTokenCount(conversationId, totalTokens);
                 } else {
                     log.debug("No token usage available for conversation {}", conversationId);
                 }
             }
 
-            sink.tryEmitNext(ChatResponseBlock.doneBlock());
+            if (emitDoneBlock) {
+                sink.tryEmitNext(ChatResponseBlock.doneBlock());
+            }
             sink.tryEmitComplete();
         });
 
@@ -193,13 +255,7 @@ public class ChatServiceImpl implements ChatService {
         });
 
         tokenStream.start();
-
-        return sink.asFlux().map(block -> {
-            if (block != null && block.getConversationId() == null) {
-                block.setConversationId(conversationId);
-            }
-            return block;
-        });
+        return sink.asFlux();
     }
 
     /**
@@ -217,7 +273,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     private String buildMessageWithMemoryContext(Long userId, Long conversationId, String userMessage) {
-        if (!memoryProperties.isEnabled() || userId == null || conversationId == null) {
+        if (!memoryProperties.isEnabled() || Objects.isNull(userId) || Objects.isNull(conversationId)) {
             return userMessage;
         }
 

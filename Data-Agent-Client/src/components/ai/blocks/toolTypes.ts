@@ -1,6 +1,7 @@
 import { isTodoTool } from './todoTypes';
 import { isAskUserQuestionTool } from './askUserQuestionTypes';
 import { isWriteConfirmTool } from './writeConfirmTypes';
+import { isEnterPlanModeTool } from './enterPlanModeTypes';
 import { isExitPlanModeTool } from './exitPlanModeTypes';
 
 const CHART_TOOL_NAMES = new Set(['renderChart']);
@@ -26,6 +27,8 @@ export enum ToolType {
   CHART = 'CHART',
   /** SequentialThinking tool - renders as collapsible thought block. */
   THINKING = 'THINKING',
+  /** EnterPlanMode tool - renders as compact transition indicator. */
+  ENTER_PLAN = 'ENTER_PLAN',
   /** ExitPlanMode tool - renders as plan card with action buttons. */
   EXIT_PLAN = 'EXIT_PLAN',
   /** All other tools (including built-in database tools) - renders as ToolRunDetail */
@@ -44,6 +47,7 @@ export function getToolType(toolName: string): ToolType {
   if (isWriteConfirmTool(toolName)) return ToolType.WRITE_CONFIRM;
   if (CHART_TOOL_NAMES.has(toolName)) return ToolType.CHART;
   if (THINKING_TOOL_NAMES.has(toolName)) return ToolType.THINKING;
+  if (isEnterPlanModeTool(toolName)) return ToolType.ENTER_PLAN;
   if (isExitPlanModeTool(toolName)) return ToolType.EXIT_PLAN;
   return ToolType.GENERIC;
 }

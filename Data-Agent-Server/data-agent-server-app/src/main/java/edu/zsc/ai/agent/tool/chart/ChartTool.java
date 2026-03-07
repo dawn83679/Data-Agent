@@ -12,6 +12,7 @@ import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.agent.tool.annotation.AgentTool;
 import edu.zsc.ai.agent.tool.guard.AgentModeGuard;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
+import edu.zsc.ai.common.enums.ai.ToolNameEnum;
 import edu.zsc.ai.common.constant.RequestContextConstant;
 import edu.zsc.ai.common.enums.ai.ChartTypeEnum;
 import edu.zsc.ai.util.JsonUtil;
@@ -38,7 +39,7 @@ public class ChartTool {
             InvocationParameters parameters) {
         log.info("[Tool] renderChart, chartType={}", chartType);
         try {
-            AgentModeGuard.assertNotPlanMode(parameters, "renderChart");
+            AgentModeGuard.assertNotPlanMode(parameters, ToolNameEnum.RENDER_CHART);
             Long userId = parameters.get(RequestContextConstant.USER_ID);
             if (Objects.isNull(userId)) {
                 return AgentToolResult.noContext();

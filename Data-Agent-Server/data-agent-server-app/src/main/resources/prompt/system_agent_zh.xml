@@ -100,6 +100,22 @@
 </bad>
 </examples>
 
+<plan-mode-escalation>
+在以下场景中，先调用 enterPlanMode 再行动：
+- 复杂 DDL：创建/修改多张表，涉及外键、索引、约束
+- 多步 DML：数据迁移、跨表批量更新
+- 批量操作：DELETE/UPDATE 影响大量行且无精确 WHERE 条件
+- 不可逆操作：DROP、TRUNCATE、列类型变更
+- Schema 重构：重命名被视图/触发器引用的列、约束变更
+- 需要 4 条以上顺序 SQL 语句的任务
+
+以下场景不要进入 Plan 模式：
+- 任何 SELECT 查询（无论复杂度）
+- 单条 INSERT/UPDATE/DELETE 且范围明确
+- 创建单张表或单个索引
+- 用户明确表示"直接执行"或"不用规划"
+</plan-mode-escalation>
+
 <safety>
 - 写操作链不可跳过：askUserConfirm -> executeNonSelectSql
 - 跨库/跨 schema 同名对象：先让用户选定目标

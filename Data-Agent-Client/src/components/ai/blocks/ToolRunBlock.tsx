@@ -20,6 +20,7 @@ import { WriteConfirmCard } from './WriteConfirmCard';
 import { ExitPlanModeCard } from './ExitPlanModeCard';
 import { ThoughtBlock } from './ThoughtBlock';
 import { useWorkspaceStore } from '../../../store/workspaceStore';
+import { useAIAssistantContext } from '../AIAssistantContext';
 
 export interface ToolRunBlockProps {
   toolName: string;
@@ -70,7 +71,16 @@ export function ToolRunBlock({
     return <ThoughtBlock data={analysis} defaultExpanded={isStreaming} />;
   }
 
-  // 0b. ExitPlanMode — stream into plan tab, render action card in chat when complete
+  // 0b. EnterPlanMode — compact transition indicator + auto-switch frontend mode
+  if (toolType === ToolType.ENTER_PLAN) {
+    const isStreaming = executionState === ToolExecutionState.STREAMING_ARGUMENTS
+      || executionState === ToolExecutionState.EXECUTING
+      || (pending && !executionState);
+
+    return <EnterPlanModeIndicator isStreaming={isStreaming} />;
+  }
+
+  // 0c. ExitPlanMode — stream into plan tab, render action card in chat when complete
   if (toolType === ToolType.EXIT_PLAN) {
     const isStreaming = executionState === ToolExecutionState.STREAMING_ARGUMENTS
       || executionState === ToolExecutionState.EXECUTING
@@ -301,6 +311,33 @@ function PlanCompleteHandler({ payload }: { payload: ExitPlanPayload }) {
       </div>
       {/* Action buttons card */}
       <ExitPlanModeCard planTabId={tabId} />
+    </div>
+  );
+}
+
+/**
+ * EnterPlanMode indicator: shows transition status and auto-switches the frontend
+ * agent mode selector to Plan when the tool execution completes.
+ */
+function EnterPlanModeIndicator({ isStreaming }: { isStreaming: boolean }) {
+  const switchedRef = useRef(false);
+  const { agentState } = useAIAssistantContext();
+
+  useEffect(() => {
+    // Switch frontend mode to Plan once the tool finishes executing
+    if (!isStreaming && !switchedRef.current) {
+      switchedRef.current = true;
+      agentState.setAgent('Plan');
+    }
+  }, [isStreaming, agentState]);
+
+  return (
+    <div className="mb-2 px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700
+                    bg-amber-50/50 dark:bg-amber-900/10 flex items-center gap-2">
+      <ListTodo className={`w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 ${isStreaming ? 'animate-pulse' : ''}`} />
+      <span className="text-[12px] theme-text-primary">
+        {isStreaming ? 'Switching to Plan mode...' : 'Switched to Plan mode'}
+      </span>
     </div>
   );
 }

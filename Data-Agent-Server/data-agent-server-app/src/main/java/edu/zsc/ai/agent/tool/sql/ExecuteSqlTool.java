@@ -5,9 +5,12 @@ import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.agent.confirm.WriteConsumeResult;
 import edu.zsc.ai.agent.confirm.WriteConfirmationStore;
+import java.util.Objects;
+
 import edu.zsc.ai.agent.tool.annotation.AgentTool;
 import edu.zsc.ai.agent.tool.guard.AgentModeGuard;
 import edu.zsc.ai.common.constant.RequestContextConstant;
+import edu.zsc.ai.common.enums.ai.ToolNameEnum;
 import edu.zsc.ai.agent.tool.model.AgentSqlResult;
 import edu.zsc.ai.domain.model.dto.request.db.AgentExecuteSqlRequest;
 import edu.zsc.ai.domain.model.dto.response.db.ExecuteSqlResponse;
@@ -42,15 +45,15 @@ public class ExecuteSqlTool {
             InvocationParameters parameters) {
         log.info("{} executeSelectSql, connectionId={}, database={}, schema={}, sqlLength={}",
                 "[Tool]", connectionId, databaseName, schemaName,
-                sql != null ? sql.length() : 0);
+                Objects.nonNull(sql) ? sql.length() : 0);
         try {
-            AgentModeGuard.assertNotPlanMode(parameters, "executeSelectSql");
+            AgentModeGuard.assertNotPlanMode(parameters, ToolNameEnum.EXECUTE_SELECT_SQL);
             if (!isReadOnlySql(sql, connectionId)) {
                 return AgentSqlResult.fail("Only read-only statements (SELECT, WITH, SHOW, EXPLAIN) are allowed in executeSelectSql. "
                         + "For INSERT/UPDATE/DELETE/DDL, use executeNonSelectSql instead (requires askUserConfirm first).");
             }
             Long userId = parameters.get(RequestContextConstant.USER_ID);
-            if (userId == null) {
+            if (Objects.isNull(userId)) {
                 return AgentSqlResult.fail("Internal error: user session context is not available. "
                         + "This is a system issue — do not retry. Report the problem to the user.");
             }
@@ -86,12 +89,12 @@ public class ExecuteSqlTool {
             InvocationParameters parameters) {
         log.info("{} executeNonSelectSql, connectionId={}, database={}, schema={}, sqlLength={}",
                 "[Tool]", connectionId, databaseName, schemaName,
-                sql != null ? sql.length() : 0);
+                Objects.nonNull(sql) ? sql.length() : 0);
         try {
-            AgentModeGuard.assertNotPlanMode(parameters, "executeNonSelectSql");
+            AgentModeGuard.assertNotPlanMode(parameters, ToolNameEnum.EXECUTE_NON_SELECT_SQL);
             Long userId = parameters.get(RequestContextConstant.USER_ID);
             Long conversationId = parameters.get(RequestContextConstant.CONVERSATION_ID);
-            if (userId == null || conversationId == null) {
+            if (Objects.isNull(userId) || Objects.isNull(conversationId)) {
                 return AgentSqlResult.fail("Internal error: user or conversation session context is not available. "
                         + "This is a system issue — do not retry. Report the problem to the user.");
             }
@@ -122,12 +125,12 @@ public class ExecuteSqlTool {
     }
 
     private boolean isReadOnlySql(String sql, Long connectionId) {
-        if (sql == null || sql.isBlank()) return false;
+        if (Objects.isNull(sql) || sql.isBlank()) return false;
         String pluginId = ConnectionManager.getAnyActiveConnection(connectionId)
                 .map(ConnectionManager.ActiveConnection::pluginId)
                 .orElse(null);
         SqlValidator validator = DefaultPluginManager.getInstance()
-                .getSqlValidatorByPluginId(pluginId != null ? pluginId : "");
+                .getSqlValidatorByPluginId(Objects.nonNull(pluginId) ? pluginId : "");
         return validator.classifySql(sql).isReadOnly();
     }
 }
