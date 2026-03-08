@@ -20,6 +20,7 @@ import org.springframework.util.StreamUtils;
 import edu.zsc.ai.agent.tool.annotation.AgentTool;
 import edu.zsc.ai.agent.tool.ask.AskUserConfirmTool;
 import edu.zsc.ai.agent.tool.chart.ChartTool;
+import edu.zsc.ai.agent.tool.plan.ExitPlanModeTool;
 import edu.zsc.ai.agent.tool.sql.ExecuteSqlTool;
 
 import dev.langchain4j.community.model.dashscope.QwenChatRequestParameters;
@@ -107,16 +108,28 @@ public class MultiModelAgentConfig {
             AskUserConfirmTool.class
     );
 
+    /**
+     * Tool classes disabled in Agent mode — Plan-only tools that should not appear in Agent mode.
+     */
+    private static final Set<Class<?>> AGENT_MODE_DISABLED_TOOL_CLASSES = Set.of(
+            ExitPlanModeTool.class
+    );
+
     private ReActAgent buildAgent(StreamingChatModel streamingChatModel,
                                   ChatMemoryProvider chatMemoryProvider,
                                   List<Object> agentTools,
                                   AgentModeEnum mode,
                                   String systemPrompt) {
-        List<Object> tools = mode == AgentModeEnum.PLAN
-                ? agentTools.stream()
+        List<Object> tools;
+        if (mode == AgentModeEnum.PLAN) {
+            tools = agentTools.stream()
                     .filter(tool -> !PLAN_MODE_DISABLED_TOOL_CLASSES.contains(tool.getClass()))
-                    .toList()
-                : agentTools;
+                    .toList();
+        } else {
+            tools = agentTools.stream()
+                    .filter(tool -> !AGENT_MODE_DISABLED_TOOL_CLASSES.contains(tool.getClass()))
+                    .toList();
+        }
         return AiServices.builder(ReActAgent.class)
                 .streamingChatModel(streamingChatModel)
                 .systemMessage(systemPrompt)

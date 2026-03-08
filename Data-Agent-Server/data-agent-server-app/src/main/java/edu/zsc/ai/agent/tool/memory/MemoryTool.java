@@ -36,9 +36,13 @@ public class MemoryTool {
     private final MemoryProperties memoryProperties;
 
     @Tool({
-            "[GOAL] Retrieve user-confirmed long-term knowledge (preferences, rules, terms) to guide current decisions.",
-            "[WHEN] Call when historical preferences may affect SQL scope, filter conventions, naming, or output style.",
-            "[WHEN_NOT] Do not call on every request. Only use when prior knowledge is likely relevant to the current task."
+            "Supercharges your accuracy with learned knowledge — retrieves the user's confirmed ",
+            "preferences, business rules, terminology mappings, and proven SQL patterns. Memories ",
+            "contain hard-won insights from past conversations that no schema can provide.",
+            "",
+            "Call this whenever domain-specific terms, recurring patterns, or user conventions ",
+            "might be relevant. One memory hit can save you from misinterpreting 'active users' ",
+            "as 'status=active' when the user actually means 'logged in within 30 days'."
     })
     public AgentToolResult searchMemories(
             @P("Natural language query to search memories") String queryText,
@@ -63,14 +67,17 @@ public class MemoryTool {
             return AgentToolResult.success(AgentMemoryView.fromList(results));
         } catch (Exception e) {
             log.error("[Tool error] searchMemories", e);
-            return AgentToolResult.fail(e);
+            return AgentToolResult.fail("Failed to search memories with query '" + queryText + "': " + e.getMessage());
         }
     }
 
     @Tool({
-            "[GOAL] List pending candidate memories in current conversation to avoid duplicates.",
-            "[WHEN] Use before createCandidateMemory to check if similar candidate already exists.",
-            "[WHEN_NOT] Do not call if no candidate memory creation is planned."
+            "Prevents duplicate knowledge and keeps your memory proposals organized — shows all ",
+            "pending candidates in this conversation so you know exactly what's already been ",
+            "captured before proposing new entries.",
+            "",
+            "Check this before every createCandidateMemory call. Duplicate or conflicting ",
+            "candidates confuse users during review and erode trust in the memory system."
     })
     public AgentToolResult listCandidateMemories(
             @P(value = "Conversation id from current session context", required = false) Long conversationId,
@@ -101,15 +108,19 @@ public class MemoryTool {
             return AgentToolResult.success(AgentMemoryCandidateView.fromList(response));
         } catch (Exception e) {
             log.error("[Tool error] listCandidateMemories", e);
-            return AgentToolResult.fail(e);
+            return AgentToolResult.fail("Failed to list candidate memories: " + e.getMessage());
         }
     }
 
     @Tool({
-            "[GOAL] Propose a new reusable memory candidate for later user review/commit.",
-            "[WHEN] Use when user explicitly confirms a stable preference, business rule, or terminology mapping.",
-            "[WHEN_NOT] Do not save transient or session-specific facts. Do not force creation on every conversation.",
-            "[INPUT] Provide candidateType + normalized candidateContent + optional reason."
+            "Makes the system smarter over time — captures reusable knowledge that will improve ",
+            "accuracy in all future conversations. Each confirmed memory is a permanent boost to ",
+            "the system's understanding of this user's domain, preferences, and conventions.",
+            "",
+            "Propose candidates when you discover stable, confirmed knowledge: user preferences, ",
+            "business rules, domain terminology, golden SQL patterns, workflow constraints. ",
+            "The user reviews all candidates, so propose generously — quality filtering happens ",
+            "at review time."
     })
     public AgentToolResult createCandidateMemory(
             @P(value = "Conversation id from current session context", required = false) Long conversationId,
@@ -138,14 +149,18 @@ public class MemoryTool {
             return AgentToolResult.success(AgentMemoryCandidateView.from(MemoryConverter.toCandidateResponse(candidate)));
         } catch (Exception e) {
             log.error("[Tool error] createCandidateMemory", e);
-            return AgentToolResult.fail(e);
+            return AgentToolResult.fail("Failed to create candidate memory (type=" + candidateType + "): " + e.getMessage()
+                    + ". Verify candidateType is one of PREFERENCE/BUSINESS_RULE/KNOWLEDGE_POINT/GOLDEN_SQL_CASE/WORKFLOW_CONSTRAINT.");
         }
     }
 
     @Tool({
-            "[GOAL] Remove invalid or redundant candidate memories.",
-            "[WHEN] Use when candidate is incorrect, stale, duplicate, or user rejects it.",
-            "[WHEN_NOT] Do not call without first checking candidates via listCandidateMemories."
+            "Maintains memory quality — removes incorrect, outdated, or redundant candidates ",
+            "so only high-value knowledge reaches the user for review. Clean candidates build ",
+            "user trust in the memory system and improve long-term learning accuracy.",
+            "",
+            "Use proactively when you discover a candidate is wrong, duplicated, or superseded ",
+            "by better information. A curated candidate list is far more valuable than a noisy one."
     })
     public AgentToolResult deleteCandidateMemory(
             @P("Candidate id to delete") Long candidateId,
@@ -158,7 +173,8 @@ public class MemoryTool {
 
             boolean deleted = memoryCandidateService.deleteCandidate(userId, candidateId);
             if (!deleted) {
-                return AgentToolResult.empty();
+                return AgentToolResult.fail("Candidate memory with id=" + candidateId
+                        + " not found or not owned by current user. Use listCandidateMemories to verify the candidateId.");
             }
 
             Map<String, Object> result = new HashMap<>();
@@ -166,8 +182,8 @@ public class MemoryTool {
             result.put("deleted", true);
             return AgentToolResult.success(result);
         } catch (Exception e) {
-            log.error("[Tool error] deleteCandidateMemory", e);
-            return AgentToolResult.fail(e);
+            log.error("[Tool error] deleteCandidateMemory, candidateId={}", candidateId, e);
+            return AgentToolResult.fail("Failed to delete candidate memory with id=" + candidateId + ": " + e.getMessage());
         }
     }
 }

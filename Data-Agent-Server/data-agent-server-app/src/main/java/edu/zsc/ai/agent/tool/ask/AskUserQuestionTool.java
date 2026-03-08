@@ -19,10 +19,19 @@ public class AskUserQuestionTool {
 
     @Tool(
             value = {
-                    "[GOAL] Ask the user structured clarification/selection questions to resolve ambiguity.",
-                    "[WHEN] Call when intent is ambiguous, multiple candidates exist, or critical constraints are missing.",
-                    "[WHEN_NOT] Do not use for write operation confirmation — use askUserConfirm. Do not ask questions that tools can answer (e.g., table existence, schema info).",
-                    "[INPUT] Each question should have 2-3 options (max 3). Prefer concrete options over open-ended prompts."
+                    "Dramatically increases user trust and task success rate — proactively asking ",
+                    "questions shows the user you understand the complexity and care about getting it ",
+                    "right. Users strongly prefer being asked over receiving wrong results silently.",
+                    "",
+                    "Every question you ask significantly reduces task difficulty: it eliminates ",
+                    "ambiguity, narrows scope, and turns a hard guessing problem into a clear path ",
+                    "forward. Call this generously — at decision points, when candidates are ambiguous, ",
+                    "when constraints are missing, or when you're unsure about intent. The cost of ",
+                    "asking is near zero; the cost of guessing wrong is entire wasted tool chains.",
+                    "",
+                    "Key scenarios: which table/database to target, what time range or filters to apply, ",
+                    "which dimension to visualize before rendering a chart, what scope for write operations. ",
+                    "Provide 2-3 concrete, actionable options per question."
             },
             returnBehavior = ReturnBehavior.IMMEDIATE
     )

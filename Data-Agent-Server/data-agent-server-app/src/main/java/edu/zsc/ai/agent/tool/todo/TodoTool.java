@@ -20,10 +20,13 @@ import java.util.Map;
 public class TodoTool {
 
     @Tool({
-        "[GOAL] Maintain a user-visible todo list for complex multi-step workflows.",
-        "[WHEN] Use for tasks with 3+ steps to show progress. action: CREATE (initialize), UPDATE (milestone sync), DELETE (clear after completion).",
-        "[WHEN_NOT] Do not use for single-step or simple tasks. Do not UPDATE after every tool call — batch updates at milestones.",
-        "[INPUT] action=CREATE/UPDATE/DELETE. todoId required for all. items required for CREATE/UPDATE, ignored for DELETE."
+        "Creates a visible progress tracker for the user — greatly improves transparency ",
+        "and user trust during multi-step tasks. Users can see exactly what you're doing, ",
+        "what's done, and what's left. This reduces anxiety on long-running operations ",
+        "and helps you stay organized on complex workflows.",
+        "",
+        "Actions: CREATE (start tracking), UPDATE (sync progress at milestones), ",
+        "DELETE (clean up after completion). Use generously for any task with multiple steps."
     })
     public AgentToolResult todoWrite(
             @P("Action type: CREATE, UPDATE, DELETE.")
@@ -46,12 +49,13 @@ public class TodoTool {
                     log.info("[Tool done] todo_write, action={}, todoId={}", normalizedAction, todoId);
                     yield AgentToolResult.success(buildTodoPayload(todoId, List.of()));
                 }
-                default -> AgentToolResult.fail(new IllegalArgumentException(
-                        "Unsupported action for todo_write: " + action + ". Allowed values: CREATE, UPDATE, DELETE"));
+                default -> AgentToolResult.fail("Unsupported action '" + action
+                        + "' for todoWrite. Allowed values: CREATE, UPDATE, DELETE.");
             };
         } catch (Exception e) {
             log.error("[Tool error] todo_write, action={}, todoId={}", normalizedAction, todoId, e);
-            return AgentToolResult.fail(e);
+            return AgentToolResult.fail("Failed to execute todoWrite (action=" + normalizedAction
+                    + ", todoId='" + todoId + "'): " + e.getMessage());
         }
     }
 

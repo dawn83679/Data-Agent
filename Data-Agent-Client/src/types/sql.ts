@@ -41,7 +41,6 @@ export interface ExecuteSqlExecutionInfo {
   startTime?: number | null;
   endTime?: number | null;
   durationMs?: number | null;
-  executionMs?: number | null;
   fetchingMs?: number | null;
   affectedRows?: number | null;
   fetchRows?: number | null;

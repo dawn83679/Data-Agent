@@ -1,6 +1,7 @@
 package edu.zsc.ai.agent.confirm;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -90,30 +91,82 @@ public class WriteConfirmationStore {
      * Find a CONFIRMED token matching userId + conversationId + connection + database + schema + sql, then consume it.
      * The agent never needs to know or pass the token — the server matches it automatically.
      *
-     * @return true if a matching CONFIRMED token was found and consumed, false otherwise
+     * @return a {@link WriteConsumeResult} indicating success or a structured failure reason
      */
-    public boolean consumeConfirmedBySql(Long userId, Long conversationId, Long connectionId,
-                                         String databaseName, String schemaName, String sql) {
+    public WriteConsumeResult consumeConfirmedBySql(Long userId, Long conversationId, Long connectionId,
+                                                     String databaseName, String schemaName, String sql) {
         String normalizedSql = normalizeSql(sql);
-        return cache.asMap().values().stream()
-                .filter(e -> e.getUserId().equals(userId)
-                        && e.getConversationId().equals(conversationId)
-                        && e.getStatus() == WriteConfirmationStatus.CONFIRMED
-                        && Objects.equals(e.getConnectionId(), connectionId)
-                        && Objects.equals(e.getDatabaseName(), databaseName)
-                        && Objects.equals(e.getSchemaName(), schemaName)
-                        && normalizeSql(e.getSql()).equals(normalizedSql))
-                .findFirst()
-                .map(entry -> {
-                    entry.setStatus(WriteConfirmationStatus.CONSUMED);
-                    log.info("[WriteConfirm] Consumed by sql match: userId={} conversationId={}", userId, conversationId);
-                    return true;
-                })
-                .orElseGet(() -> {
-                    log.warn("[WriteConfirm] consumeConfirmedBySql: no CONFIRMED token found for userId={} conversationId={} connectionId={} database={} schema={}",
-                            userId, conversationId, connectionId, databaseName, schemaName);
-                    return false;
-                });
+
+        // Step 1: find all tokens for this user + conversation
+        List<WriteConfirmationEntry> sessionTokens = cache.asMap().values().stream()
+                .filter(e -> e.getUserId().equals(userId) && e.getConversationId().equals(conversationId))
+                .toList();
+
+        if (sessionTokens.isEmpty()) {
+            log.warn("[WriteConfirm] consumeConfirmedBySql: no tokens at all for userId={} conversationId={}", userId, conversationId);
+            return WriteConsumeResult.fail("NO_TOKEN",
+                    "No confirmation token exists for this conversation. You must call askUserConfirm first.");
+        }
+
+        // Step 2: check token statuses
+        boolean hasConfirmed = sessionTokens.stream().anyMatch(e -> e.getStatus() == WriteConfirmationStatus.CONFIRMED);
+
+        if (!hasConfirmed) {
+            boolean hasPending = sessionTokens.stream().anyMatch(e -> e.getStatus() == WriteConfirmationStatus.PENDING);
+            if (hasPending) {
+                log.warn("[WriteConfirm] consumeConfirmedBySql: only PENDING tokens for userId={} conversationId={}", userId, conversationId);
+                return WriteConsumeResult.fail("NOT_CONFIRMED",
+                        "Confirmation token exists but user has not confirmed yet. Wait for user confirmation.");
+            }
+            // all must be CONSUMED
+            log.warn("[WriteConfirm] consumeConfirmedBySql: only CONSUMED tokens for userId={} conversationId={}", userId, conversationId);
+            return WriteConsumeResult.fail("ALREADY_CONSUMED",
+                    "Confirmation token was already used. Call askUserConfirm again for a new confirmation.");
+        }
+
+        // Step 3: among CONFIRMED tokens, try to find an exact match
+        List<WriteConfirmationEntry> confirmedTokens = sessionTokens.stream()
+                .filter(e -> e.getStatus() == WriteConfirmationStatus.CONFIRMED)
+                .toList();
+
+        for (WriteConfirmationEntry entry : confirmedTokens) {
+            if (Objects.equals(entry.getConnectionId(), connectionId)
+                    && Objects.equals(entry.getDatabaseName(), databaseName)
+                    && Objects.equals(entry.getSchemaName(), schemaName)
+                    && normalizeSql(entry.getSql()).equals(normalizedSql)) {
+                entry.setStatus(WriteConfirmationStatus.CONSUMED);
+                log.info("[WriteConfirm] Consumed by sql match: userId={} conversationId={}", userId, conversationId);
+                return WriteConsumeResult.ok();
+            }
+        }
+
+        // Step 4: no exact match — diagnose the mismatch using the first CONFIRMED token
+        WriteConfirmationEntry closest = confirmedTokens.get(0);
+
+        if (!Objects.equals(closest.getConnectionId(), connectionId)) {
+            return WriteConsumeResult.fail("PARAM_MISMATCH",
+                    "Confirmed token connectionId=" + closest.getConnectionId()
+                            + " but executeNonSelectSql received connectionId=" + connectionId
+                            + ". Use the same connectionId.");
+        }
+        if (!Objects.equals(closest.getDatabaseName(), databaseName)) {
+            return WriteConsumeResult.fail("PARAM_MISMATCH",
+                    "Confirmed token databaseName='" + closest.getDatabaseName()
+                            + "' but executeNonSelectSql received databaseName='" + databaseName
+                            + "'. Use the same databaseName.");
+        }
+        if (!Objects.equals(closest.getSchemaName(), schemaName)) {
+            return WriteConsumeResult.fail("PARAM_MISMATCH",
+                    "Confirmed token schemaName='" + closest.getSchemaName()
+                            + "' but executeNonSelectSql received schemaName='" + schemaName
+                            + "'. Use the same schemaName.");
+        }
+        // SQL must differ
+        log.warn("[WriteConfirm] consumeConfirmedBySql: SQL mismatch for userId={} conversationId={}", userId, conversationId);
+        return WriteConsumeResult.fail("SQL_MISMATCH",
+                "SQL content differs from the confirmed SQL. Confirmed: '" + closest.getSql()
+                        + "'; Received: '" + sql
+                        + "'. You must call askUserConfirm again with the new SQL.");
     }
 
     /**

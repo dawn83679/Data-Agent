@@ -6,6 +6,9 @@ import { viewService } from '../services/view.service';
 import { functionService } from '../services/function.service';
 import { procedureService } from '../services/procedure.service';
 import { triggerService } from '../services/trigger.service';
+import { useWorkspaceStore } from '../store/workspaceStore';
+import { TableDblClickConsoleTargetEnum } from '../constants/workspacePreferences';
+import { I18N_KEYS } from '../constants/i18nKeys';
 import type { ExplorerNode } from '../types/explorer';
 
 interface DataViewActionsProps {
@@ -21,8 +24,8 @@ interface DataViewActionsProps {
 }
 
 export function useDataViewActions({
-  setSelectedDdlNode,
-  setDdlDialogOpen,
+  setSelectedDdlNode: _setSelectedDdlNode,
+  setDdlDialogOpen: _setDdlDialogOpen,
   setTableDataDialogOpen,
   setSelectedTableDataNode,
   setHighlightColumn,
@@ -32,11 +35,76 @@ export function useDataViewActions({
   selectedDdlNode,
 }: DataViewActionsProps) {
   const { t } = useTranslation();
+  const { tableDblClickConsoleTarget, tabs, updateTabContent, switchTab } = useWorkspaceStore();
 
-  const handleViewDdl = useCallback((node: ExplorerNode) => {
-    setSelectedDdlNode(node);
-    setDdlDialogOpen(true);
-  }, [setSelectedDdlNode, setDdlDialogOpen]);
+  const handleViewDdl = useCallback(
+    async (node: ExplorerNode) => {
+      const connId = node.connectionId || (node.type === ExplorerNodeType.ROOT ? node.dbConnection?.id : undefined);
+      if (!connId) return;
+
+      const catalog = node.catalog ?? '';
+      const schema = node.schema ?? '';
+      const objectName = node.objectName ?? node.name;
+      const connectionName = node.dbConnection?.name || 'Unknown';
+      let loadDdl: () => Promise<string>;
+
+      switch (node.type) {
+        case ExplorerNodeType.TABLE:
+          loadDdl = () => tableService.getTableDdl(String(connId), objectName, catalog, schema);
+          break;
+        case ExplorerNodeType.VIEW:
+          loadDdl = () => viewService.getViewDdl(String(connId), objectName, catalog, schema);
+          break;
+        case ExplorerNodeType.FUNCTION:
+          loadDdl = () => functionService.getFunctionDdl(String(connId), objectName, catalog, schema);
+          break;
+        case ExplorerNodeType.PROCEDURE:
+          loadDdl = () => procedureService.getProcedureDdl(String(connId), objectName, catalog, schema);
+          break;
+        case ExplorerNodeType.TRIGGER:
+          loadDdl = () => triggerService.getTriggerDdl(String(connId), objectName, catalog, schema);
+          break;
+        default:
+          return;
+      }
+
+      // Open or reuse console tab
+      const dbName = node.catalog || null;
+      const schemaName = node.schema || null;
+      const consoleTabs = tabs.filter((tab) => tab.type === 'file' && tab.metadata?.connectionId === Number(connId));
+      const reuseTab =
+        tableDblClickConsoleTarget === TableDblClickConsoleTargetEnum.REUSE && consoleTabs.length > 0;
+      const tabId = reuseTab ? consoleTabs[0].id : `console-${Date.now()}`;
+      const nameParts = [connectionName, dbName, schemaName].filter(Boolean);
+      const tabName = nameParts.join('_') || 'console';
+
+      if (!reuseTab) {
+        openTab({
+          id: tabId,
+          name: tabName,
+          type: 'file',
+          content: '',
+          metadata: {
+            connectionId: Number(connId),
+            connectionName,
+            databaseName: dbName,
+            schemaName: schemaName,
+          },
+        });
+      } else {
+        switchTab(tabId);
+      }
+
+      try {
+        const ddl = await loadDdl();
+        updateTabContent(tabId, ddl);
+      } catch (err) {
+        const errMsg = (err as Error).message || t(I18N_KEYS.EXPLORER.LOAD_DDL_FAILED);
+        updateTabContent(tabId, `-- ${errMsg}\n`);
+      }
+    },
+    [openTab, tabs, tableDblClickConsoleTarget, updateTabContent, switchTab, t]
+  );
 
   const handleViewData = useCallback(
     (node: ExplorerNode, highlightCol?: string) => {

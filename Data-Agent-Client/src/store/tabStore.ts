@@ -1,14 +1,14 @@
 import { create } from 'zustand';
-import type { TabMetadata } from '../types/tab';
+import type { ConsoleTabMetadata, PlanTabMetadata } from '../types/tab';
 
 export interface Tab {
   id: string;
   name: string;
-  type: 'file' | 'table' | 'tableData';
+  type: 'file' | 'table' | 'plan';
   icon?: string;
   content?: string;
   active: boolean;
-  metadata?: TabMetadata;
+  metadata?: ConsoleTabMetadata | PlanTabMetadata;
 }
 
 interface TabState {
@@ -24,7 +24,8 @@ interface TabState {
   closeAllTabs: () => void;
   switchTab: (id: string) => void;
   updateTabContent: (id: string, content: string) => void;
-  updateTabMetadata: (id: string, metadata: Partial<TabMetadata>) => void;
+  updateTabMetadata: (id: string, metadata: Partial<ConsoleTabMetadata>) => void;
+  updatePlanPayload: (id: string, payload: PlanTabMetadata['planPayload']) => void;
   reorderTabs: (sourceId: string, destinationId: string) => void;
 }
 
@@ -120,6 +121,15 @@ export const useTabStore = create<TabState>((set) => ({
     set((state) => ({
       tabs: state.tabs.map((t) =>
         t.id === id ? { ...t, metadata: { ...t.metadata, ...metadata } as ConsoleTabMetadata } : t
+      ),
+    })),
+
+  updatePlanPayload: (id, payload) =>
+    set((state) => ({
+      tabs: state.tabs.map((t) =>
+        t.id === id && t.type === 'plan'
+          ? { ...t, metadata: { planPayload: payload } as PlanTabMetadata }
+          : t
       ),
     })),
 

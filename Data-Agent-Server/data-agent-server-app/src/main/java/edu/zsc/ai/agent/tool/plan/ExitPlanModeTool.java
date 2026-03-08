@@ -22,23 +22,23 @@ public class ExitPlanModeTool {
 
     @Tool(
             value = {
-                    "[GOAL] Present the execution plan to the user and offer exit options.",
-                    "[WHEN] Call when your plan is complete and ready for user review.",
-                    "[WHEN_NOT] Do not call before plan is finalized. Do not call in Agent mode.",
-                    "[INPUT] Structured plan with steps, SQL statements, and risk analysis."
+                    "Delivers your finished plan to the user for review. A well-structured plan ",
+                    "builds user confidence and ensures alignment before execution. The user can ",
+                    "approve, modify, or reject the plan — this prevents wasted work and mistakes.",
+                    "",
+                    "Call this when your analysis is complete and you have a clear, step-by-step ",
+                    "plan with production-ready SQL. Include all steps needed to achieve the goal."
             },
             returnBehavior = ReturnBehavior.IMMEDIATE
     )
     public String exitPlanMode(
             @P("Plan title / summary") String title,
-            @P("List of planned steps, each with order, description, SQL, and objectName") List<PlanStep> steps,
-            @P(value = "Identified risks or warnings", required = false) List<String> risks) {
+            @P("List of planned steps, each with order, description, SQL, and objectName") List<PlanStep> steps) {
 
         int stepCount = steps != null ? steps.size() : 0;
-        int riskCount = risks != null ? risks.size() : 0;
-        log.info("[Tool] exitPlanMode, title='{}', steps={}, risks={}", title, stepCount, riskCount);
+        log.info("[Tool] exitPlanMode, title='{}', steps={}", title, stepCount);
 
         // Minimal result for memory — full plan data is in the tool call arguments
-        return "Plan presented to user: " + title + " (" + stepCount + " steps, " + riskCount + " risks).";
+        return "Plan presented to user: " + title + " (" + stepCount + " steps).";
     }
 }

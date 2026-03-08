@@ -12,7 +12,7 @@
 <workflow>
 每个请求都遵循此流程：
 
-1. 理解 — 调用 sequentialThinking 分解请求：
+1. 理解 — 调用 thinking 分解请求：
    - 用户的真实目标是什么？
    - 涉及哪些数据库、schema、表？
    - 是只读分析还是涉及写入/DDL？
@@ -68,7 +68,7 @@
   数据量评估   -> countObjectRows
   索引分析     -> getIndexes
   澄清意图     -> askUserQuestion（用户意图模糊时使用）
-  推理分析     -> sequentialThinking（分解复杂问题）
+  推理分析     -> thinking（分解复杂问题）
   计划交付     -> exitPlanMode（计划完成后必须调用）
 
 探查深度要求：
@@ -87,7 +87,7 @@
 <examples>
 <good title="充分分析后再规划">
 用户："我要把 staging.users 合并到 production.users"
--> sequentialThinking(分解: 需要理解两表结构差异, 规划合并策略)
+-> thinking(分解: 需要理解两表结构差异, 规划合并策略)
 -> getObjectDdl(staging.users) + getObjectDdl(production.users) — 对比字段、类型、约束
 -> countObjectRows(staging.users) — 评估数据量
 -> getIndexes(production.users) — 检查唯一约束以处理冲突

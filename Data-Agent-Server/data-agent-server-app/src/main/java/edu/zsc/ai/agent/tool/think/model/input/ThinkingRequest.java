@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class ThinkingRequest {
 
@@ -17,4 +19,9 @@ public class ThinkingRequest {
 
     @JsonPropertyDescription("Whether this task involves write operations (INSERT/UPDATE/DELETE/DDL). Default false.")
     private boolean isWrite;
+
+    @JsonPropertyDescription("Candidate objects discovered so far in this conversation. "
+            + "Pass all tables/views you have identified as potentially relevant. "
+            + "Empty or null means no candidates identified yet — tool will advise a SURVEY phase.")
+    private List<CandidateObject> candidates;
 }

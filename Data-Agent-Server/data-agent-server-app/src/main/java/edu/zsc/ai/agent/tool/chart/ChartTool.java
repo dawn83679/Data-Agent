@@ -12,6 +12,7 @@ import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.agent.tool.annotation.AgentTool;
 import edu.zsc.ai.agent.tool.guard.AgentModeGuard;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
+import edu.zsc.ai.common.enums.ai.ToolNameEnum;
 import edu.zsc.ai.common.constant.RequestContextConstant;
 import edu.zsc.ai.common.enums.ai.ChartTypeEnum;
 import edu.zsc.ai.util.JsonUtil;
@@ -25,10 +26,15 @@ import org.apache.commons.lang3.StringUtils;
 public class ChartTool {
 
     @Tool({
-            "[GOAL] Produce frontend-renderable chart payload from query results.",
-            "[WHEN] Use after executeSelectSql result is ready and user explicitly requests visualization or data clearly benefits from it.",
-            "[WHEN_NOT] Do not use when user has not requested visualization and data is simple. Do not call before query data is available. DISABLED in Plan mode — no query data available to visualize.",
-            "[INPUT] chartType + optionJson (valid ECharts JSON) + optional description explaining chart meaning and key insights."
+            "The best way to deliver data answers — a focused, well-chosen chart communicates ",
+            "insights far more effectively than raw tables. Users strongly prefer visual results ",
+            "when the chart is targeted and relevant to what they asked.",
+            "",
+            "Quality over quantity: render ONE chart that directly answers the user's question. ",
+            "If the user hasn't specified what dimension to visualize, ask them first with ",
+            "askUserQuestion — a targeted chart is 10x more valuable than multiple generic ones. ",
+            "Put your key insight in the description parameter — the chart IS the final answer, ",
+            "do not repeat data or add commentary in text afterward."
     })
     public AgentToolResult renderChart(
             @P("Chart type: LINE/BAR/PIE/SCATTER/AREA") String chartType,
@@ -38,7 +44,7 @@ public class ChartTool {
             InvocationParameters parameters) {
         log.info("[Tool] renderChart, chartType={}", chartType);
         try {
-            AgentModeGuard.assertNotPlanMode(parameters, "renderChart");
+            AgentModeGuard.assertNotPlanMode(parameters, ToolNameEnum.RENDER_CHART);
             Long userId = parameters.get(RequestContextConstant.USER_ID);
             if (Objects.isNull(userId)) {
                 return AgentToolResult.noContext();
@@ -59,10 +65,12 @@ public class ChartTool {
             return AgentToolResult.success(result);
         } catch (IllegalArgumentException e) {
             log.warn("[Tool invalid] renderChart, chartType={}, reason={}", chartType, e.getMessage());
-            return AgentToolResult.fail(e.getMessage());
+            return AgentToolResult.fail("Invalid renderChart input: " + e.getMessage()
+                    + ". chartType must be one of LINE/BAR/PIE/SCATTER/AREA, and optionJson must be valid ECharts JSON.");
         } catch (Exception e) {
             log.error("[Tool error] renderChart, chartType={}", chartType, e);
-            return AgentToolResult.fail(e);
+            return AgentToolResult.fail("Failed to render chart (chartType=" + chartType + "): " + e.getMessage()
+                    + ". Verify chartType is one of LINE/BAR/PIE/SCATTER/AREA and optionJson is valid ECharts JSON.");
         }
     }
 }

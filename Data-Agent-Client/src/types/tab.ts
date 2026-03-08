@@ -23,22 +23,9 @@ export interface TableTabMetadata extends ConsoleTabMetadata {
 }
 
 /**
- * Table data tab metadata
- * Used for table/view data console tabs
+ * Plan Tab Metadata
+ * Stored in Tab.metadata for plan tabs opened from AI ExitPlanMode
  */
-export interface TableDataTabMetadata {
-  connectionId: number;
-  connectionName: string;
-  databaseName: string | null;
-  schemaName: string | null;
-  objectName: string;
-  objectType: 'table' | 'view';
-  catalog?: string;
-  highlightColumn?: string;
-  currentPage?: number;
-  pageSize?: number;
-  whereClause?: string;
-  orderBy?: string;
+export interface PlanTabMetadata {
+  planPayload: import('../components/ai/blocks/exitPlanModeTypes').ExitPlanPayload;
 }
-
-export type TabMetadata = ConsoleTabMetadata | TableDataTabMetadata;

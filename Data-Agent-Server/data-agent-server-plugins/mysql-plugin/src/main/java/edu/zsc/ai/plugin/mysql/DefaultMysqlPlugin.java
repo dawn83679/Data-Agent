@@ -2,6 +2,9 @@ package edu.zsc.ai.plugin.mysql;
 
 import edu.zsc.ai.plugin.base.AbstractDatabasePlugin;
 import edu.zsc.ai.plugin.capability.*;
+import edu.zsc.ai.plugin.model.sql.SqlType;
+import edu.zsc.ai.plugin.model.sql.SqlValidationResult;
+import edu.zsc.ai.plugin.mysql.validator.MySqlSqlValidator;
 import edu.zsc.ai.plugin.sql.DefaultSqlSplitter;
 import edu.zsc.ai.plugin.connection.ConnectionConfig;
 import edu.zsc.ai.plugin.connection.JdbcConnectionBuilder;
@@ -26,13 +29,15 @@ import java.util.logging.Logger;
 public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
         implements ConnectionProvider, CommandExecutor<SqlCommandRequest, SqlCommandResult>, DatabaseProvider,
         SchemaProvider, TableProvider, ViewProvider, ColumnProvider, IndexProvider,
-        FunctionProvider, ProcedureProvider, TriggerProvider, SqlSplitter {
+        FunctionProvider, ProcedureProvider, TriggerProvider, SqlSplitter, SqlValidator {
 
     private static final Logger logger = Logger.getLogger(DefaultMysqlPlugin.class.getName());
 
     private final JdbcConnectionBuilder connectionBuilder = new MysqlJdbcConnectionBuilder();
 
     private final MySQLSqlExecutor sqlExecutor = new MySQLSqlExecutor();
+
+    private final MySqlSqlValidator sqlValidator = new MySqlSqlValidator();
 
     @Override
     public boolean supportSchema() {
@@ -121,6 +126,16 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
     @Override
     public java.util.List<String> split(String sql) {
         return DefaultSqlSplitter.INSTANCE.split(sql);
+    }
+
+    @Override
+    public SqlValidationResult validate(String sql) {
+        return sqlValidator.validate(sql);
+    }
+
+    @Override
+    public SqlType classifySql(String sql) {
+        return sqlValidator.classifySql(sql);
     }
 
     @Override

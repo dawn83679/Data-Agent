@@ -26,10 +26,14 @@ public class AskUserConfirmTool {
 
     @Tool(
             value = {
-                    "[GOAL] Request explicit user approval before any write SQL (INSERT/UPDATE/DELETE/DDL).",
-                    "[WHEN] MUST be called before every write operation. Without it, executeNonSelectSql will be rejected.",
-                    "[WHEN_NOT] Do not use for clarification questions — use askUserQuestion. Do not call before SQL is finalized. DISABLED in Plan mode.",
-                    "[INPUT] Pass exact SQL, connectionId, and clear impact explanation."
+                    "The critical safety net that prevents irreversible data damage — shows the user ",
+                    "exactly what will change and gets explicit approval before any write executes. ",
+                    "This single step has prevented countless accidental DELETEs and wrong UPDATEs.",
+                    "",
+                    "Mandatory before every write operation: the server enforces this by rejecting ",
+                    "executeNonSelectSql without a valid confirmation token. Always pass the finalized ",
+                    "SQL, connectionId, and a clear impact explanation so the user can make an ",
+                    "informed decision."
             },
             returnBehavior = ReturnBehavior.IMMEDIATE
     )
@@ -54,7 +58,8 @@ public class AskUserConfirmTool {
 
         if (userId == null || conversationId == null) {
             log.error("[Tool] askUserConfirm: missing context userId={} conversationId={}", userId, conversationId);
-            return WriteConfirmationResult.error("User or conversation context is missing.");
+            return WriteConfirmationResult.error("Internal error: user or conversation session context is not available. "
+                    + "This is a system issue — do not retry. Report the problem to the user.");
         }
 
         WriteConfirmationEntry entry = confirmationStore.create(

@@ -6,8 +6,9 @@ import { ResultsPanel } from "../components/results/ResultsPanel";
 import { Toolbar } from "../components/workspace/Toolbar";
 import { TableDataTab } from "../components/workspace/TableDataTab";
 import { EmptyState } from "../components/workspace/EmptyState";
+import { PlanConsole } from "../components/plan/PlanConsole";
 import { useWorkspaceStore } from "../store/workspaceStore";
-import type { TableTabMetadata } from "../types/tab";
+import type { TableTabMetadata, PlanTabMetadata } from "../types/tab";
 import type { ExecuteSqlResponse } from "../types/sql";
 import { sqlExecutionService } from "../services/sqlExecution.service";
 import { I18N_KEYS } from "../constants/i18nKeys";
@@ -15,13 +16,15 @@ import { I18N_KEYS } from "../constants/i18nKeys";
 export default function Home() {
     const { t } = useTranslation();
     const { tabs, activeTabId, updateTabContent, updateTabMetadata } = useWorkspaceStore();
-    const editorRef = useRef<MonacoEditorHandle | null>(null);
     const [isResultsVisible, setIsResultsVisible] = useState(false);
     const [executeResult, setExecuteResult] = useState<ExecuteSqlResponse | null>(null);
+    const editorRef = useRef<MonacoEditorHandle | null>(null);
     const [isRunning, setIsRunning] = useState(false);
 
     const activeTab = tabs.find(t => t.id === activeTabId);
-    const sqlContext = activeTab?.metadata;
+    const sqlContext = activeTab?.type !== 'plan'
+        ? activeTab?.metadata as import('../types/tab').ConsoleTabMetadata | undefined
+        : undefined;
 
     const handleRunQuery = useCallback(async () => {
         const sql = editorRef.current?.getSelectionOrAllContent().trim()
@@ -78,49 +81,56 @@ export default function Home() {
             <TabBar />
 
             {/* Workspace Area */}
-            <ResultsPanel
-                isVisible={isResultsVisible}
-                onClose={() => setIsResultsVisible(false)}
-                executeResult={executeResult}
-                isRunning={isRunning}
-            >
-                <div className="flex-1 flex flex-col min-h-0 relative">
-                    {activeTab?.type === 'file' && (
-                        <div className="h-8 flex items-center px-2 theme-bg-main border-b theme-border text-[10px] theme-text-secondary shrink-0 gap-1">
-                            <Toolbar
-                                onRun={handleRunQuery}
-                                onStop={() => setIsRunning(false)}
-                                isRunning={isRunning}
-                                connectionId={sqlContext?.connectionId}
-                                currentDatabase={sqlContext?.databaseName}
-                                onDatabaseChange={(db) =>
-                                    updateTabMetadata(activeTab.id, { databaseName: db })
-                                }
-                            />
-                        </div>
-                    )}
-
-                    <div className="flex-1 relative overflow-hidden flex flex-col">
-                        <div className="flex-1 relative overflow-hidden">
-                            {activeTab?.type === 'file' ? (
-                                <MonacoEditor
-                                    ref={editorRef}
-                                    value={activeTab.content || ''}
-                                    onChange={(val) => updateTabContent(activeTab.id, val || '')}
+            {activeTab?.type === 'plan' ? (
+                <PlanConsole
+                    tabId={activeTab.id}
+                    payload={(activeTab.metadata as PlanTabMetadata).planPayload}
+                />
+            ) : (
+                <ResultsPanel
+                    isVisible={isResultsVisible}
+                    onClose={() => setIsResultsVisible(false)}
+                    executeResult={executeResult}
+                    isRunning={isRunning}
+                >
+                    <div className="flex-1 flex flex-col min-h-0 relative">
+                        {activeTab?.type === 'file' && (
+                            <div className="h-8 flex items-center px-2 theme-bg-main border-b theme-border text-[10px] theme-text-secondary shrink-0 gap-1">
+                                <Toolbar
+                                    onRun={handleRunQuery}
+                                    onStop={() => setIsRunning(false)}
+                                    isRunning={isRunning}
+                                    connectionId={sqlContext?.connectionId}
+                                    currentDatabase={sqlContext?.databaseName}
+                                    onDatabaseChange={(db) =>
+                                        updateTabMetadata(activeTab.id, { databaseName: db })
+                                    }
                                 />
-                            ) : activeTab?.type === 'table' && activeTab.metadata ? (
-                                <TableDataTab key={activeTab.id} tabId={activeTab.id} metadata={activeTab.metadata as TableTabMetadata} />
-                            ) : activeTab?.type === 'table' ? (
-                                <div className="flex-1 h-full flex items-center justify-center theme-text-secondary italic text-xs">
-                                    -- {t(I18N_KEYS.WORKSPACE.DATA_GRID_PLACEHOLDER)} --
-                                </div>
-                            ) : (
-                                <EmptyState />
-                            )}
+                            </div>
+                        )}
+
+                        <div className="flex-1 relative overflow-hidden flex flex-col">
+                            <div className="flex-1 relative overflow-hidden">
+                                {activeTab?.type === 'file' ? (
+                                    <MonacoEditor
+                                        ref={editorRef}
+                                        value={activeTab.content || ''}
+                                        onChange={(val) => updateTabContent(activeTab.id, val || '')}
+                                    />
+                                ) : activeTab?.type === 'table' && activeTab.metadata ? (
+                                    <TableDataTab key={activeTab.id} tabId={activeTab.id} metadata={activeTab.metadata as TableTabMetadata} />
+                                ) : activeTab?.type === 'table' ? (
+                                    <div className="flex-1 h-full flex items-center justify-center theme-text-secondary italic text-xs">
+                                        -- {t(I18N_KEYS.WORKSPACE.DATA_GRID_PLACEHOLDER)} --
+                                    </div>
+                                ) : (
+                                    <EmptyState />
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            </ResultsPanel>
+                </ResultsPanel>
+            )}
         </div>
     );
 }

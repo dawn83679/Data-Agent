@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+import { ListTodo } from 'lucide-react';
 import { TodoListBlock } from './TodoListBlock';
 import { ToolRunStreaming } from './ToolRunStreaming';
 import { ToolRunExecuting } from './ToolRunExecuting';
@@ -9,7 +11,7 @@ import {
   parseAskUserQuestionResponse,
 } from './askUserQuestionTypes';
 import { parseWriteConfirmPayload, parseWriteConfirmToken } from './writeConfirmTypes';
-import { parseExitPlanPayload } from './exitPlanModeTypes';
+import { parseExitPlanPayload, parsePartialExitPlanPayload, type ExitPlanPayload } from './exitPlanModeTypes';
 import { getToolType, ToolType } from './toolTypes';
 import { formatParameters } from './formatParameters';
 import { ToolExecutionState } from '../messageListLib/types';
@@ -17,6 +19,8 @@ import { AskUserQuestionCard } from './AskUserQuestionCard';
 import { WriteConfirmCard } from './WriteConfirmCard';
 import { ExitPlanModeCard } from './ExitPlanModeCard';
 import { ThoughtBlock } from './ThoughtBlock';
+import { useWorkspaceStore } from '../../../store/workspaceStore';
+import { useAIAssistantContext } from '../AIAssistantContext';
 
 export interface ToolRunBlockProps {
   toolName: string;
@@ -67,21 +71,27 @@ export function ToolRunBlock({
     return <ThoughtBlock data={analysis} defaultExpanded={isStreaming} />;
   }
 
-  // 0b. ExitPlanMode — stream as thought block, render card when complete
+  // 0b. EnterPlanMode — compact transition indicator + auto-switch frontend mode
+  if (toolType === ToolType.ENTER_PLAN) {
+    const isStreaming = executionState === ToolExecutionState.STREAMING_ARGUMENTS
+      || executionState === ToolExecutionState.EXECUTING
+      || (pending && !executionState);
+
+    return <EnterPlanModeIndicator isStreaming={isStreaming} />;
+  }
+
+  // 0c. ExitPlanMode — stream into plan tab, render action card in chat when complete
   if (toolType === ToolType.EXIT_PLAN) {
     const isStreaming = executionState === ToolExecutionState.STREAMING_ARGUMENTS
       || executionState === ToolExecutionState.EXECUTING
       || (pending && !executionState);
+
     if (isStreaming) {
-      // During streaming, show raw arguments as a thought block (like thinking tool)
-      const analysis = extractThinkingAnalysis(parametersData);
-      if (!analysis) return null;
-      return <ThoughtBlock data={analysis} defaultExpanded={true} />;
+      return <PlanStreamHandler parametersData={parametersData} />;
     }
-    // Complete — render the full plan card
     const payload = parseExitPlanPayload(parametersData);
     if (!payload) return null;
-    return <ExitPlanModeCard payload={payload} />;
+    return <PlanCompleteHandler payload={payload} />;
   }
 
   // 1. Handle Execution Lifecycle States
@@ -202,7 +212,137 @@ export function ToolRunBlock({
   }
 }
 
-/** Extract the "analysis" field from sequentialThinking tool call arguments. */
+/** Derive a stable tab ID from a plan title. */
+function planTabId(title: string): string {
+  return `plan-${title.replace(/\s+/g, '-').toLowerCase().slice(0, 40)}`;
+}
+
+/**
+ * During streaming: parse partial JSON, open/update the plan tab,
+ * and show a compact streaming indicator in the chat sidebar.
+ */
+function PlanStreamHandler({ parametersData }: { parametersData: string }) {
+  const openedRef = useRef(false);
+
+  const partial = parsePartialExitPlanPayload(parametersData);
+
+  useEffect(() => {
+    if (!partial) return;
+    const tabId = planTabId(partial.title);
+    const ws = useWorkspaceStore.getState();
+
+    if (!openedRef.current) {
+      // First render — open the tab
+      openedRef.current = true;
+      ws.openTab({
+        id: tabId,
+        name: partial.title,
+        type: 'plan',
+        metadata: { planPayload: partial },
+      });
+    } else {
+      // Subsequent renders — update the payload
+      ws.updatePlanPayload(tabId, partial);
+    }
+  }, [parametersData]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!partial) return null;
+
+  return (
+    <div className="mb-2 px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10 flex items-center gap-2">
+      <ListTodo className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 animate-pulse" />
+      <span className="text-[12px] theme-text-primary flex-1 truncate">
+        Generating plan: <span className="font-medium">{partial.title}</span>
+        <span className="ml-1.5 theme-text-secondary">
+          ({partial.steps.length} step{partial.steps.length !== 1 ? 's' : ''})
+        </span>
+      </span>
+    </div>
+  );
+}
+
+/**
+ * On complete: finalize the plan tab with full payload,
+ * render the ExitPlanModeCard (risks + action buttons) in chat + "View Plan" link.
+ */
+function PlanCompleteHandler({ payload }: { payload: ExitPlanPayload }) {
+  const finalizedRef = useRef(false);
+  const tabId = planTabId(payload.title);
+
+  useEffect(() => {
+    if (finalizedRef.current) return;
+    finalizedRef.current = true;
+    const ws = useWorkspaceStore.getState();
+    const existingTab = ws.tabs.find((t) => t.id === tabId);
+    if (existingTab) {
+      ws.updatePlanPayload(tabId, payload);
+    } else {
+      ws.openTab({
+        id: tabId,
+        name: payload.title,
+        type: 'plan',
+        metadata: { planPayload: payload },
+      });
+    }
+  }, [tabId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleViewPlan = () => {
+    useWorkspaceStore.getState().switchTab(tabId);
+  };
+
+  return (
+    <div className="flex flex-col gap-2 mb-2">
+      {/* "View Plan" link */}
+      <div className="px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10 flex items-center gap-2">
+        <ListTodo className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+        <span className="text-[12px] theme-text-primary flex-1 truncate">
+          Plan: <span className="font-medium">{payload.title}</span>
+          <span className="ml-1.5 theme-text-secondary">
+            ({payload.steps.length} step{payload.steps.length !== 1 ? 's' : ''})
+          </span>
+        </span>
+        <button
+          type="button"
+          onClick={handleViewPlan}
+          className="text-[11px] text-amber-600 dark:text-amber-400 hover:underline shrink-0"
+        >
+          View Plan
+        </button>
+      </div>
+      {/* Action buttons card */}
+      <ExitPlanModeCard planTabId={tabId} />
+    </div>
+  );
+}
+
+/**
+ * EnterPlanMode indicator: shows transition status and auto-switches the frontend
+ * agent mode selector to Plan when the tool execution completes.
+ */
+function EnterPlanModeIndicator({ isStreaming }: { isStreaming: boolean }) {
+  const switchedRef = useRef(false);
+  const { agentState } = useAIAssistantContext();
+
+  useEffect(() => {
+    // Switch frontend mode to Plan once the tool finishes executing
+    if (!isStreaming && !switchedRef.current) {
+      switchedRef.current = true;
+      agentState.setAgent('Plan');
+    }
+  }, [isStreaming, agentState]);
+
+  return (
+    <div className="mb-2 px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700
+                    bg-amber-50/50 dark:bg-amber-900/10 flex items-center gap-2">
+      <ListTodo className={`w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 ${isStreaming ? 'animate-pulse' : ''}`} />
+      <span className="text-[12px] theme-text-primary">
+        {isStreaming ? 'Switching to Plan mode...' : 'Switched to Plan mode'}
+      </span>
+    </div>
+  );
+}
+
+/** Extract the "analysis" field from thinking tool call arguments. */
 function extractThinkingAnalysis(parametersData: string): string | null {
   if (!parametersData) return null;
   try {

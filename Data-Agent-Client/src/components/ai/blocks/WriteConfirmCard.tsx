@@ -4,8 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
 import { WriteConfirmPayload } from './writeConfirmTypes';
 import { I18N_KEYS } from '../../../constants/i18nKeys';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { SqlCodeBlock } from '../../common/SqlCodeBlock';
 import { confirmWriteOperation, cancelWriteOperation } from '../../../services/writeConfirmationApi';
 import { useAIAssistantContext } from '../AIAssistantContext';
 import { connectionService } from '../../../services/connection.service';
@@ -172,23 +171,7 @@ export function WriteConfirmCard({ payload, submittedAnswer }: WriteConfirmCardP
                         <span>{t(I18N_KEYS.AI.WRITE_CONFIRM.SQL_PREVIEW_LABEL)}</span>
                         <span className="opacity-60 font-mono">{connectionPath}</span>
                     </div>
-                    <div className="p-0 overflow-x-auto text-[12px]">
-                        <SyntaxHighlighter
-                            language="sql"
-                            style={vscDarkPlus}
-                            customStyle={{
-                                margin: 0,
-                                padding: '0.75rem',
-                                background: 'transparent',
-                                fontSize: '12px',
-                                textShadow: 'none',
-                                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
-                            }}
-                            wrapLongLines={true}
-                        >
-                            {payload.sqlPreview}
-                        </SyntaxHighlighter>
-                    </div>
+                    <SqlCodeBlock variant="compact" sql={payload.sqlPreview} wrapLongLines={true} />
                 </div>
             )}
 

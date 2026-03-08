@@ -47,7 +47,8 @@ public class AgentToolResult {
     public static AgentToolResult noContext() {
         return AgentToolResult.builder()
                 .success(false)
-                .message("system error: missing user context")
+                .message("Internal error: user session context is not available. "
+                        + "This is a system issue — do not retry. Report the problem to the user.")
                 .build();
     }
 

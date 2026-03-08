@@ -76,8 +76,20 @@ export function AIAssistant() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Only auto-scroll when user is near the bottom (hasn't manually scrolled up).
+  // During streaming, messages update frequently; without this check, every update
+  // would force scroll-to-bottom and prevent the user from reading earlier content.
+  const SCROLL_FOLLOW_THRESHOLD = 80; // px from bottom to consider "following"
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = messagesEndRef.current;
+    if (!el) return;
+    const scrollParent = el.parentElement;
+    if (!scrollParent || scrollParent.scrollHeight <= scrollParent.clientHeight) return;
+    const { scrollTop, clientHeight, scrollHeight } = scrollParent;
+    const isNearBottom = scrollTop + clientHeight >= scrollHeight - SCROLL_FOLLOW_THRESHOLD;
+    if (isNearBottom) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   useEffect(() => {

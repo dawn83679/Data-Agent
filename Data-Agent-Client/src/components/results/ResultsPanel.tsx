@@ -4,9 +4,7 @@ import { cn } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { I18N_KEYS } from '../../constants/i18nKeys';
 import type { ExecuteSqlMessage, ExecuteSqlResponse, ExecuteSqlResultSet } from '../../types/sql';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { useTheme } from '../../hooks/useTheme';
+import { SqlCodeBlock } from '../common/SqlCodeBlock';
 import { buildCsvFromResult, downloadCsv } from '../../utils/exportResult';
 import { useToast } from '../../hooks/useToast';
 import {
@@ -25,7 +23,6 @@ interface ResultsPanelProps {
 
 export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = false, children }: ResultsPanelProps) {
   const { t } = useTranslation();
-  const { theme } = useTheme();
   const toast = useToast();
   const [activeTab, setActiveTab] = useState<'result' | 'output'>('output');
 
@@ -98,8 +95,6 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
     if (level === 'WARN') return 'text-amber-400';
     return 'theme-text-secondary';
   };
-  const syntaxTheme = theme === 'dark' ? oneDark : oneLight;
-
   const formatTimestamp = (ts?: number | null) => {
     if (!ts) return '--';
     const d = new Date(ts);
@@ -278,30 +273,7 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
                           <span className={index === 0 ? 'theme-text-secondary' : 'theme-text-secondary opacity-0'} aria-hidden={index !== 0}>
                             {sqlPrefixText}
                           </span>
-                          <SyntaxHighlighter
-                            language="sql"
-                            style={syntaxTheme}
-                            PreTag="span"
-                            CodeTag="span"
-                            customStyle={{
-                              background: 'transparent',
-                              padding: 0,
-                              margin: 0,
-                              fontFamily: 'inherit',
-                              fontSize: 'inherit',
-                              lineHeight: 'inherit',
-                            }}
-                            codeTagProps={{
-                              style: {
-                                fontFamily: 'inherit',
-                                fontSize: 'inherit',
-                                lineHeight: 'inherit',
-                                color: 'inherit',
-                              }
-                            }}
-                          >
-                            {line}
-                          </SyntaxHighlighter>
+                          <SqlCodeBlock variant="inline" sql={line} />
                         </div>
                       ))}
                     </div>

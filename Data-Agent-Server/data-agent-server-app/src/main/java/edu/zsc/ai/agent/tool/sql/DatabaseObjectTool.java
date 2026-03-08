@@ -46,9 +46,13 @@ public class DatabaseObjectTool {
     private final IndexService indexService;
 
     @Tool({
-            "[GOAL] Resolve source scope at catalog level before object lookup or SQL.",
-            "[WHEN] Use when database/catalog is unspecified or multiple catalogs may contain same-name objects.",
-            "[WHEN_NOT] Do not use to discover tables — use getObjectNames. Do not use to get table structure — use getObjectDdl."
+            "Significantly improves target accuracy — reveals all databases/catalogs within a ",
+            "connection so you can find exactly where the user's data lives. Skipping this step ",
+            "and guessing the database name is a frequent source of 'table not found' errors.",
+            "",
+            "Call this for every connection that might contain relevant data. Scanning all catalogs ",
+            "takes seconds but saves entire rounds of failed queries. Combined with getConnections, ",
+            "gives you complete environment awareness before committing to a target."
     })
     public AgentToolResult getCatalogNames(
             @P("The connection id (from session context or getConnections result)") Long connectionId,
@@ -68,15 +72,19 @@ public class DatabaseObjectTool {
             return AgentToolResult.success(databases);
         } catch (Exception e) {
             log.error("[Tool error] getCatalogNames, connectionId={}", connectionId, e);
-            return AgentToolResult.fail(e);
+            return AgentToolResult.fail("Failed to list catalogs for connectionId=" + connectionId + ": " + e.getMessage()
+                    + ". Verify the connectionId by calling getConnections.");
         }
     }
 
     @Tool({
-            "[GOAL] List database objects (tables/views/functions/procedures/triggers) by type, optionally filtered by name pattern.",
-            "[WHEN] Use to discover what objects exist, check if a specific table exists, or narrow candidates by name.",
-            "[WHEN_NOT] Do not use to get table structure — use getObjectDdl. Do not use to count rows — use countObjectRows.",
-            "[INPUT] objectNamePattern supports '%' and '_' wildcards. Omit to list all."
+            "Your most powerful discovery tool — finds tables, views, functions, procedures, and ",
+            "triggers by name pattern. Every call dramatically narrows down your candidate list ",
+            "and prevents you from missing relevant objects hiding in unexpected databases.",
+            "",
+            "Use wildcard patterns ('%order%', 'user_%') for targeted search, or omit the pattern ",
+            "to scan everything. Call this generously across multiple databases during discovery — ",
+            "the cost of an extra call is negligible compared to querying the wrong table."
     })
     public AgentToolResult getObjectNames(
             @P("Object type: TABLE, VIEW, FUNCTION, PROCEDURE, TRIGGER") String objectType,
@@ -117,15 +125,19 @@ public class DatabaseObjectTool {
             return AgentToolResult.success(result);
         } catch (Exception e) {
             log.error("[Tool error] getObjectNames, objectType={}", objectType, e);
-            return AgentToolResult.fail(e);
+            return AgentToolResult.fail("Failed to list " + objectType + " names for connectionId=" + connectionId
+                    + ", database='" + databaseName + "', schema='" + schemaName + "': " + e.getMessage());
         }
     }
 
     @Tool({
-            "[GOAL] Get exact row count for a table/view to decide if WHERE/LIMIT is needed.",
-            "[WHEN] Call before SELECT on potentially large tables to enforce safe query shape.",
-            "[WHEN_NOT] Do not use to list table names — use getObjectNames. Do not use to get table structure — use getObjectDdl.",
-            "[BOUNDARY] Supports objectType=TABLE/VIEW only."
+            "Prevents dangerous blind queries — returns the exact row count so you know the data ",
+            "scale before writing SQL. This single call can save the user from accidentally ",
+            "running a full-table scan on millions of rows or a mass UPDATE without realizing it.",
+            "",
+            "Especially critical before write operations: knowing '3 rows vs 3 million rows' ",
+            "completely changes the approach. Call this whenever you're unsure about table size — ",
+            "it's fast, cheap, and dramatically improves query safety. TABLE and VIEW only."
     })
     public AgentToolResult countObjectRows(
             @P("Object type: TABLE, VIEW") String objectType,
@@ -149,14 +161,20 @@ public class DatabaseObjectTool {
             return AgentToolResult.success(count);
         } catch (Exception e) {
             log.error("[Tool error] countObjectRows, objectType={}, objectName={}", objectType, objectName, e);
-            return AgentToolResult.fail(e);
+            return AgentToolResult.fail("Failed to count rows for " + objectType + " '" + objectName
+                    + "' in connectionId=" + connectionId + ", database='" + databaseName + "', schema='" + schemaName
+                    + "': " + e.getMessage());
         }
     }
 
     @Tool({
-            "[GOAL] Get DDL definition to validate column names, types, keys, and constraints before SQL generation.",
-            "[WHEN] Use before writing SQL filters/joins/time conditions or before write operations.",
-            "[WHEN_NOT] Do not use to discover table names — use getObjectNames. Do not use to count rows — use countObjectRows."
+            "The single most important step before writing SQL — retrieves exact column names, ",
+            "types, keys, and constraints. Calling this reduces SQL errors by an order of magnitude: ",
+            "no more guessing column names, wrong types, or missing JOIN keys.",
+            "",
+            "Call this for EVERY table you plan to reference. Skipping getObjectDdl is the #1 cause ",
+            "of incorrect SQL. The DDL is your ground truth — it takes one call but prevents entire ",
+            "rounds of debugging. Use generously, especially before JOINs and WHERE clauses."
     })
     public AgentToolResult getObjectDdl(
             @P("Object type: TABLE, VIEW, FUNCTION, PROCEDURE, TRIGGER") String objectType,
@@ -185,14 +203,20 @@ public class DatabaseObjectTool {
             return AgentToolResult.success(ddl);
         } catch (Exception e) {
             log.error("[Tool error] getObjectDdl, objectType={}, objectName={}", objectType, objectName, e);
-            return AgentToolResult.fail(e);
+            return AgentToolResult.fail("Failed to get DDL for " + objectType + " '" + objectName
+                    + "' in connectionId=" + connectionId + ", database='" + databaseName + "', schema='" + schemaName
+                    + "': " + e.getMessage() + ". Verify the object exists by calling getObjectNames.");
         }
     }
 
     @Tool({
-            "[GOAL] Inspect table indexes for performance diagnosis and query optimization.",
-            "[WHEN] Use for index-related user questions or slow-query diagnosis.",
-            "[WHEN_NOT] Do not use to discover tables — use getObjectNames. Do not use to get table structure — use getObjectDdl."
+            "Unlocks query optimization insights — reveals which columns are indexed, index types ",
+            "(unique, composite, fulltext), and key ordering. This knowledge lets you write queries ",
+            "that are orders of magnitude faster by leveraging existing indexes correctly.",
+            "",
+            "Especially valuable for performance-related tasks and before write operations on ",
+            "indexed tables. Understanding indexes prevents you from accidentally writing slow ",
+            "queries that bypass indexes through wrong column order or function wrapping."
     })
     public AgentToolResult getIndexes(
             @P("The exact name of the table") String tableName,
@@ -216,8 +240,10 @@ public class DatabaseObjectTool {
             log.info("[Tool done] getIndexes, result size={}", indexes.size());
             return AgentToolResult.success(indexes);
         } catch (Exception e) {
-            log.error("[Tool error] getIndexes", e);
-            return AgentToolResult.fail(e);
+            log.error("[Tool error] getIndexes, tableName={}, connectionId={}", tableName, connectionId, e);
+            return AgentToolResult.fail("Failed to get indexes for table '" + tableName
+                    + "' in connectionId=" + connectionId + ", database='" + databaseName + "', schema='" + schemaName
+                    + "': " + e.getMessage() + ". Verify the table exists by calling getObjectNames.");
         }
     }
 

@@ -1,0 +1,198 @@
+package edu.zsc.ai.agent.tool.think;
+
+import dev.langchain4j.agent.tool.P;
+import dev.langchain4j.agent.tool.Tool;
+import edu.zsc.ai.agent.tool.annotation.AgentTool;
+import edu.zsc.ai.agent.tool.model.AgentToolResult;
+import edu.zsc.ai.agent.tool.think.model.input.CandidateObject;
+import edu.zsc.ai.agent.tool.think.model.input.ThinkingRequest;
+import edu.zsc.ai.agent.tool.think.model.output.ChecklistItem;
+import edu.zsc.ai.agent.tool.think.model.output.PreflightChecklist;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@AgentTool
+@Slf4j
+public class ThinkingTool {
+
+    @Tool({
+            "Your reasoning engine — calling this tool significantly improves task accuracy ",
+            "and reduces errors. It helps you: (1) understand what the user really needs, ",
+            "(2) break complex tasks into clear steps, (3) manage your candidate list to track ",
+            "which tables/connections you've discovered, and (4) decide when to ask the user vs. ",
+            "when to proceed vs. when to enter Plan mode.",
+            "",
+            "Pass your current candidates list (tables/views discovered so far) and the tool ",
+            "returns: what phase you're in (SURVEY → DISAMBIGUATE → EXPLORE), what to do next, ",
+            "risks to watch for, and whether Plan mode is recommended.",
+            "",
+            "Call this tool generously — every call makes your next action more accurate. ",
+            "Especially valuable at the start of new requests, before write operations, ",
+            "when results surprise you, or when you're unsure what to do next."
+    })
+    public AgentToolResult thinking(
+            @P("Thinking request: goal, analysis, isWrite flag, and candidates list (objects discovered so far)")
+            ThinkingRequest request) {
+        log.info("[Tool] thinking, goal={}, isWrite={}, candidates={}",
+                request != null ? request.getGoal() : null,
+                request != null && request.isWrite(),
+                request != null && request.getCandidates() != null ? request.getCandidates().size() : 0);
+        try {
+            validate(request);
+            PreflightChecklist checklist = buildChecklist(request);
+            return AgentToolResult.success(checklist);
+        } catch (Exception e) {
+            log.error("[Tool error] thinking", e);
+            return AgentToolResult.fail("thinking failed: " + e.getMessage()
+                    + ". Ensure goal and analysis fields are provided and not blank.");
+        }
+    }
+
+    private void validate(ThinkingRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("ThinkingRequest must not be null");
+        }
+        if (StringUtils.isBlank(request.getGoal())) {
+            throw new IllegalArgumentException("goal must not be blank");
+        }
+        if (StringUtils.isBlank(request.getAnalysis())) {
+            throw new IllegalArgumentException("analysis must not be blank");
+        }
+    }
+
+    private PreflightChecklist buildChecklist(ThinkingRequest request) {
+        List<ChecklistItem> required = new ArrayList<>();
+        List<ChecklistItem> recommended = new ArrayList<>();
+        List<String> risks = new ArrayList<>();
+
+        List<CandidateObject> candidates = request.getCandidates();
+        boolean noCandidates = candidates == null || candidates.isEmpty();
+        int candidateCount = noCandidates ? 0 : candidates.size();
+
+        // Determine phase based on candidate list state
+        if (noCandidates) {
+            // Phase: SURVEY — nothing discovered yet
+            required.add(ChecklistItem.builder()
+                    .action("Survey data landscape — scan all connections and databases, "
+                            + "collect candidate tables, then confirm target with user if ambiguous")
+                    .toolToCall("getConnections → getCatalogNames (all) → getObjectNames (all candidate DBs)")
+                    .reason("No candidates identified yet. Scan ALL available connections and databases "
+                            + "to build a complete candidate set before narrowing down. "
+                            + "Do NOT deep-dive into any single connection before surveying all options.")
+                    .build());
+        } else if (candidateCount > 1) {
+            // Phase: DISAMBIGUATE — multiple candidates, need user to choose
+            String candidateList = candidates.stream()
+                    .map(this::formatCandidate)
+                    .collect(Collectors.joining(", "));
+            required.add(ChecklistItem.builder()
+                    .action("Disambiguate — " + candidateCount + " candidates found, ask user to choose")
+                    .toolToCall("askUserQuestion")
+                    .reason("Multiple candidates discovered: [" + candidateList + "]. "
+                            + "Do NOT silently pick one — ask the user which target to use.")
+                    .build());
+        } else {
+            // Phase: EXPLORE — single confirmed target, deep-dive
+            CandidateObject target = candidates.get(0);
+            required.add(ChecklistItem.builder()
+                    .action("Explore confirmed target: " + formatCandidate(target))
+                    .toolToCall("getObjectDdl")
+                    .reason("Target confirmed — retrieve structure (columns, types, constraints) "
+                            + "before generating SQL.")
+                    .build());
+        }
+
+        // Write operation checks
+        if (request.isWrite()) {
+            risks.add("Write operation detected — must call askUserConfirm before executeNonSelectSql.");
+
+            if (!noCandidates) {
+                recommended.add(ChecklistItem.builder()
+                        .action("Verify write impact: check row counts and indexes on target tables")
+                        .toolToCall("countObjectRows, getIndexes")
+                        .reason("Write operation — understand impact scope before proceeding")
+                        .build());
+            }
+        }
+
+        // Risk detection from analysis text
+        String analysis = request.getAnalysis().toLowerCase();
+        if (analysis.contains("large table") || analysis.contains("大表")) {
+            risks.add("Large table referenced — include WHERE/LIMIT to prevent full-table scans.");
+        }
+        if (analysis.contains("pii") || analysis.contains("sensitive") || analysis.contains("敏感")) {
+            risks.add("Sensitive data — apply minimal disclosure.");
+        }
+        if (analysis.contains("ambiguous") || analysis.contains("歧义") || analysis.contains("conflict")) {
+            risks.add("Ambiguity detected — consider askUserQuestion to clarify.");
+        }
+
+        // Complexity assessment
+        int complexityScore = (noCandidates ? 2 : 0)
+                + (candidateCount > 1 ? 1 : 0)
+                + (request.isWrite() ? 2 : 0)
+                + (candidateCount > 2 ? 2 : 0);
+        String complexity;
+        if (complexityScore >= 5) {
+            complexity = "complex";
+        } else if (complexityScore >= 3) {
+            complexity = "moderate";
+        } else {
+            complexity = "simple";
+        }
+
+        boolean suggestPlan = complexityScore >= 5 || candidateCount >= 4;
+        String planReason = null;
+        if (suggestPlan) {
+            List<String> reasons = new ArrayList<>();
+            if (complexityScore >= 5) reasons.add("high complexity score (" + complexityScore + ")");
+            if (candidateCount >= 4) reasons.add(candidateCount + " candidate objects");
+            if (request.isWrite() && candidateCount > 1) reasons.add("multi-table write operation");
+            planReason = "Recommend Plan mode: " + String.join(", ", reasons);
+        }
+
+        // Build summary
+        StringBuilder summary = new StringBuilder();
+        summary.append("Goal: ").append(request.getGoal());
+        if (request.isWrite()) {
+            summary.append(" [WRITE OPERATION]");
+        }
+        if (noCandidates) {
+            summary.append(" | Phase: SURVEY — map all data sources before selecting target.");
+        } else if (candidateCount > 1) {
+            summary.append(" | Phase: DISAMBIGUATE — ").append(candidateCount)
+                    .append(" candidates found, ask user to choose.");
+        } else {
+            summary.append(" | Phase: EXPLORE — deep-dive into confirmed target.");
+        }
+
+        return PreflightChecklist.builder()
+                .summary(summary.toString())
+                .requiredBefore(required)
+                .recommended(recommended)
+                .risks(risks)
+                .complexityAssessment(complexity)
+                .suggestPlanMode(suggestPlan)
+                .suggestPlanModeReason(planReason)
+                .build();
+    }
+
+    private String formatCandidate(CandidateObject c) {
+        StringBuilder sb = new StringBuilder();
+        if (c.getDatabaseName() != null) {
+            sb.append(c.getDatabaseName()).append(".");
+        }
+        if (c.getSchemaName() != null) {
+            sb.append(c.getSchemaName()).append(".");
+        }
+        sb.append(c.getObjectName() != null ? c.getObjectName() : "?");
+        if (c.getConnectionId() != null) {
+            sb.append("(conn:").append(c.getConnectionId()).append(")");
+        }
+        return sb.toString();
+    }
+}

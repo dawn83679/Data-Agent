@@ -18,5 +18,4 @@ public class ExitPlanResult {
 
     private String title;
     private List<PlanStep> steps;
-    private List<String> risks;
 }

@@ -1,4 +1,4 @@
-import { FileCode, Table as TableIcon, X } from 'lucide-react';
+import { FileCode, ListTodo, Table as TableIcon, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
 import { useTabStore } from '../../store/tabStore';
@@ -30,7 +30,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '../ui/
 interface SortableTabProps {
   tabId: string;
   name: string;
-  type: 'file' | 'table';
+  type: 'file' | 'table' | 'plan';
   connectionName?: string;
   databaseName?: string | null;
   isActive: boolean;
@@ -67,11 +67,13 @@ function SortableTab({
   } = useSortable({ id: tabId });
 
   const tabLabel =
-    type === 'table'
+    type === 'plan'
       ? name
-      : connectionName
-        ? `${connectionName}${databaseName ? '_' + databaseName : ''}`
-        : name;
+      : type === 'table'
+        ? name
+        : connectionName
+          ? `${connectionName}${databaseName ? '_' + databaseName : ''}`
+          : name;
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -98,7 +100,9 @@ function SortableTab({
               {...listeners}
             >
               <span className="mr-1.5 shrink-0">
-                {type === 'file' ? (
+                {type === 'plan' ? (
+                  <ListTodo className="w-3 h-3 text-amber-400" />
+                ) : type === 'file' ? (
                   <FileCode className="w-3 h-3 text-blue-400" />
                 ) : (
                   <TableIcon className="w-3 h-3 text-green-400" />
@@ -183,8 +187,8 @@ export function TabBar() {
                 tabId={tab.id}
                 name={tab.name}
                 type={tab.type}
-                connectionName={tab.metadata?.connectionName}
-                databaseName={tab.metadata?.databaseName}
+                connectionName={tab.type !== 'plan' ? (tab.metadata as import('../../types/tab').ConsoleTabMetadata | undefined)?.connectionName : undefined}
+                databaseName={tab.type !== 'plan' ? (tab.metadata as import('../../types/tab').ConsoleTabMetadata | undefined)?.databaseName : undefined}
                 isActive={tab.active}
                 onSwitch={switchTab}
                 onClose={closeTab}

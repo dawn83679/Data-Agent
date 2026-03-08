@@ -44,6 +44,7 @@ export interface WorkspaceState extends PreferenceState {
   switchTab: (id: string) => void;
   updateTabContent: (id: string, content: string) => void;
   updateTabMetadata: (id: string, metadata: Partial<ConsoleTabMetadata>) => void;
+  updatePlanPayload: (id: string, payload: import('../components/ai/blocks/exitPlanModeTypes').ExitPlanPayload) => void;
   reorderTabs: (sourceId: string, destinationId: string) => void;
 
   // UI actions
@@ -98,6 +99,7 @@ const getAggregatedState = (): WorkspaceState => {
     switchTab: () => {},
     updateTabContent: () => {},
     updateTabMetadata: () => {},
+    updatePlanPayload: () => {},
     reorderTabs: () => {},
     setSettingsModalOpen: () => {},
     updatePreferences: () => {},
@@ -172,6 +174,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => {
 
     updateTabMetadata: (id, metadata) => {
       useTabStore.getState().updateTabMetadata(id, metadata);
+      const tabState = useTabStore.getState();
+      set({
+        tabs: tabState.tabs,
+      });
+    },
+
+    updatePlanPayload: (id, payload) => {
+      useTabStore.getState().updatePlanPayload(id, payload);
       const tabState = useTabStore.getState();
       set({
         tabs: tabState.tabs,
@@ -255,6 +265,7 @@ useWorkspaceStore.getState = () => {
     switchTab: current.switchTab,
     updateTabContent: current.updateTabContent,
     updateTabMetadata: current.updateTabMetadata,
+    updatePlanPayload: current.updatePlanPayload,
     reorderTabs: current.reorderTabs,
     setSettingsModalOpen: current.setSettingsModalOpen,
     updatePreferences: current.updatePreferences,
