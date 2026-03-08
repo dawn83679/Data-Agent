@@ -293,3 +293,44 @@
     color: var(--text-primary) !important;
   }
 }
+
+@layer utilities {
+  .tabs-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+  }
+  /* Show scrollbar while scrolling, hide when idle (controlled by class). */
+  .tabs-scroll--idle {
+    scrollbar-width: none; /* Firefox */
+  }
+  .tabs-scroll--idle::-webkit-scrollbar {
+    height: 0px; /* WebKit */
+  }
+
+  .tabs-scroll--scrolling {
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: rgba(140, 140, 140, 0.8) transparent;
+  }
+  .tabs-scroll--scrolling::-webkit-scrollbar {
+    height: 8px;
+  }
+  .tabs-scroll--scrolling::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .tabs-scroll--scrolling::-webkit-scrollbar-thumb {
+    background: rgba(140, 140, 140, 0.75);
+    border-radius: 9999px;
+  }
+  .tabs-scroll--scrolling::-webkit-scrollbar-thumb:hover {
+    background: rgba(170, 170, 170, 0.85);
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE/Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+}
