@@ -95,7 +95,11 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
             throw new BusinessException(ResponseCode.PARAM_ERROR, ResponseMessageKey.CONNECTION_NAME_EXISTS_MESSAGE);
         }
 
+        String originalPassword = existingConnection.getPassword();
         BeanUtils.copyProperties(request, existingConnection);
+        if (!StringUtils.isNotBlank(request.getPassword())) {
+            existingConnection.setPassword(originalPassword);
+        }
         existingConnection.setId(connectionId);
         existingConnection.setProperties(JsonUtil.map2Json(request.getProperties()));
 

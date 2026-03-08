@@ -22,18 +22,6 @@ public enum PromptLanguageEnum {
     }
 
     /**
-     * Get the system prompt resource path for the given agent mode.
-     * AGENT mode uses the default resource; PLAN mode uses the plan-specific resource.
-     */
-    public String getSystemPromptResource(AgentModeEnum mode) {
-        if (mode == AgentModeEnum.PLAN) {
-            // prompt/system_agent_en.xml → prompt/system_plan_en.xml
-            return systemPromptResource.replace("system_agent_", "system_plan_");
-        }
-        return systemPromptResource;
-    }
-
-    /**
      * Resolve request language to prompt language.
      * Unknown/blank values fallback to EN by design.
      */
