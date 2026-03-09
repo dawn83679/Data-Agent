@@ -361,6 +361,11 @@ export const I18N_KEYS = {
       AREA: 'ai.chartType.area',
       UNKNOWN: 'ai.chartType.unknown',
     },
+    CHART_ACTIONS: {
+      COPY_IMAGE: 'ai.chartActions.copyImage',
+      COPIED: 'ai.chartActions.copied',
+      DOWNLOAD_PNG: 'ai.chartActions.downloadPng',
+    },
   },
 
   // Error keys

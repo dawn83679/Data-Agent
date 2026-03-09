@@ -196,6 +196,11 @@
       "area": "面积图",
       "unknown": "图表"
     },
+    "chartActions": {
+      "copyImage": "复制图片",
+      "copied": "已复制！",
+      "downloadPng": "下载为 PNG"
+    },
     "writeConfirm": {
       "label": "需要确认写操作",
       "labelAction": "即将执行以下 SQL",
