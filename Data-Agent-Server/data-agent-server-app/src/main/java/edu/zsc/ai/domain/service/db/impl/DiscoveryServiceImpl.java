@@ -2,7 +2,9 @@ package edu.zsc.ai.domain.service.db.impl;
 
 import edu.zsc.ai.agent.tool.sql.model.CatalogInfo;
 import edu.zsc.ai.agent.tool.sql.model.ConnectionOverview;
+import edu.zsc.ai.agent.tool.sql.model.NamedObjectDetail;
 import edu.zsc.ai.agent.tool.sql.model.ObjectDetail;
+import edu.zsc.ai.agent.tool.sql.model.ObjectQueryItem;
 import edu.zsc.ai.agent.tool.sql.model.ObjectSearchResponse;
 import edu.zsc.ai.agent.tool.sql.model.ObjectSearchResult;
 import edu.zsc.ai.domain.model.dto.response.db.ConnectionResponse;
@@ -175,6 +177,30 @@ public class DiscoveryServiceImpl implements DiscoveryService {
                 : null;
 
         return new ObjectDetail(ddl, rowCount, indexes);
+    }
+
+    // ==================== getObjectDetails (batch) ====================
+
+    @Override
+    public List<NamedObjectDetail> getObjectDetails(List<ObjectQueryItem> items, Long userId) {
+        List<NamedObjectDetail> results = new ArrayList<>(items.size());
+        for (ObjectQueryItem item : items) {
+            try {
+                DatabaseObjectTypeEnum type = DatabaseObjectTypeEnum.parseQueryable(item.getObjectType());
+                ObjectDetail detail = getObjectDetail(
+                        type, item.getObjectName(), item.getConnectionId(),
+                        item.getDatabaseName(), item.getSchemaName(), userId);
+                results.add(new NamedObjectDetail(
+                        item.getObjectName(), item.getObjectType(), true, null, detail));
+            } catch (Exception e) {
+                log.warn("Batch getObjectDetail failed for {} '{}': {}",
+                        item.getObjectType(), item.getObjectName(), e.getMessage());
+                String errorMsg = StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getSimpleName());
+                results.add(new NamedObjectDetail(
+                        item.getObjectName(), item.getObjectType(), false, errorMsg, null));
+            }
+        }
+        return results;
     }
 
     // ==================== helpers ====================

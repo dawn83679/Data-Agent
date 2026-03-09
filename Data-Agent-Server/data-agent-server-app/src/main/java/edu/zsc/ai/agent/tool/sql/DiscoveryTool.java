@@ -6,7 +6,9 @@ import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.agent.annotation.AgentTool;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.agent.tool.sql.model.ConnectionOverview;
-import edu.zsc.ai.agent.tool.sql.model.ObjectDetail;
+import edu.zsc.ai.agent.tool.sql.model.NamedObjectDetail;
+import edu.zsc.ai.agent.tool.sql.model.ObjectQueryItem;
+import edu.zsc.ai.agent.tool.sql.model.ObjectSearchQuery;
 import edu.zsc.ai.agent.tool.sql.model.ObjectSearchResponse;
 import edu.zsc.ai.common.constant.RequestContextConstant;
 import edu.zsc.ai.domain.service.db.DiscoveryService;
@@ -75,13 +77,15 @@ public class DiscoveryTool {
             "connectionId/databaseName from previous results to avoid repeating the cost."
     })
     public AgentToolResult searchObjects(
-            @P("SQL wildcard pattern, e.g. '%order%' or 'user_%'") String objectNamePattern,
-            @P(value = "Object type: TABLE, VIEW, FUNCTION, PROCEDURE, TRIGGER. Omit to search TABLE + VIEW.", required = false) String objectType,
-            @P(value = "Filter to a specific connection. Omit to search all connections.", required = false) Long connectionId,
-            @P(value = "Filter to a specific database/catalog. Requires connectionId.", required = false) String databaseName,
-            @P(value = "Filter to a specific schema. Requires connectionId + databaseName.", required = false) String schemaName,
+            @P("Search query parameters") ObjectSearchQuery query,
             InvocationParameters parameters) {
         return AgentToolResult.timed(() -> {
+            String objectNamePattern = query.getObjectNamePattern();
+            String objectType = query.getObjectType();
+            Long connectionId = query.getConnectionId();
+            String databaseName = query.getDatabaseName();
+            String schemaName = query.getSchemaName();
+
             log.info("[Tool] searchObjects, pattern={}, type={}, connectionId={}, database={}, schema={}",
                     objectNamePattern, objectType, connectionId, databaseName, schemaName);
             try {
@@ -122,49 +126,40 @@ public class DiscoveryTool {
     }
 
     @Tool({
-            "Returns complete details for a specific database object in a single call: DDL (structure), ",
-            "row count, and index information. This replaces three separate calls to getObjectDdl, ",
-            "countObjectRows, and getIndexes.",
+            "Returns complete details for one or more database objects in a single call: DDL (structure), ",
+            "row count, and index information. Accepts a list of objects — pass multiple objects to ",
+            "retrieve all their details at once and save LLM reasoning rounds.",
             "",
             "For TABLE: returns DDL + rowCount + indexes. For VIEW: returns DDL + rowCount (no indexes). ",
             "For FUNCTION/PROCEDURE/TRIGGER: returns DDL only. Call this for EVERY table you plan to ",
             "reference in SQL — the DDL is your ground truth for column names, types, and constraints.",
             "",
-            "Response includes elapsedMs. If > 2000ms, the connection may be slow — factor this into ",
-            "how many objects you explore before acting."
+            "Each object in the result includes success/error fields — a single object's failure does ",
+            "not affect the others. Response includes elapsedMs."
     })
     public AgentToolResult getObjectDetail(
-            @P("Object type: TABLE, VIEW, FUNCTION, PROCEDURE, TRIGGER") String objectType,
-            @P("Exact object name") String objectName,
-            @P("Connection id") Long connectionId,
-            @P("Database (catalog) name") String databaseName,
-            @P(value = "Schema name; omit if not used", required = false) String schemaName,
+            @P("List of objects to retrieve details for") List<ObjectQueryItem> objects,
             InvocationParameters parameters) {
         return AgentToolResult.timed(() -> {
-            log.info("[Tool] getObjectDetail, type={}, name={}, connectionId={}, database={}, schema={}",
-                    objectType, objectName, connectionId, databaseName, schemaName);
+            log.info("[Tool] getObjectDetail, objectCount={}", CollectionUtils.size(objects));
             try {
                 Long userId = parameters.get(RequestContextConstant.USER_ID);
                 if (Objects.isNull(userId)) {
                     return AgentToolResult.noContext();
                 }
-                if (StringUtils.isBlank(objectName)) {
-                    return AgentToolResult.fail("objectName must not be blank.");
+                if (CollectionUtils.isEmpty(objects)) {
+                    return AgentToolResult.fail("objects list must not be empty.");
                 }
 
-                DatabaseObjectTypeEnum normalizedType = DatabaseObjectTypeEnum.parseQueryable(objectType);
-                ObjectDetail detail = discoveryService.getObjectDetail(
-                        normalizedType, objectName, connectionId, databaseName, schemaName, userId);
+                List<NamedObjectDetail> results = discoveryService.getObjectDetails(objects, userId);
 
-                log.info("[Tool done] getObjectDetail, type={}, name={}, ddlLength={}",
-                        normalizedType, objectName, StringUtils.length(detail.ddl()));
-                return AgentToolResult.success(detail);
+                log.info("[Tool done] getObjectDetail, requested={}, succeeded={}",
+                        objects.size(), results.stream().filter(NamedObjectDetail::success).count());
+                return AgentToolResult.success(results);
             } catch (Exception e) {
-                log.error("[Tool error] getObjectDetail, type={}, name={}", objectType, objectName, e);
+                log.error("[Tool error] getObjectDetail", e);
                 String errorMsg = StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getSimpleName());
-                return AgentToolResult.fail("Failed to get details for " + objectType + " '" + objectName
-                        + "' in connectionId=" + connectionId + ", database='" + databaseName + "', schema='" + schemaName
-                        + "': " + errorMsg + ". Verify the object exists by calling searchObjects.");
+                return AgentToolResult.fail("Failed to get object details: " + errorMsg);
             }
         });
     }
