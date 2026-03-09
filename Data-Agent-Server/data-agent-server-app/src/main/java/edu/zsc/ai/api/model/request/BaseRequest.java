@@ -15,24 +15,24 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BaseRequest {
-    
+
     /**
      * Conversation ID
      */
     private Long conversationId;
-    
+
     /**
      * Connection ID
      */
     private Long connectionId;
-    
+
     /**
-     * Database Name
+     * Database catalog name
      */
-    private String databaseName;
-    
+    private String catalog;
+
     /**
-     * Schema Name
+     * Schema name
      */
-    private String schemaName;
+    private String schema;
 }

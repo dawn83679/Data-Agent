@@ -12,9 +12,9 @@ import java.util.Map;
  */
 @Slf4j
 public class RequestContext {
-    
+
     private static final ThreadLocal<RequestContextInfo> CONTEXT_HOLDER = new ThreadLocal<>();
-    
+
     /**
      * Set context for current thread
      */
@@ -24,10 +24,10 @@ public class RequestContext {
             return;
         }
         CONTEXT_HOLDER.set(contextInfo);
-        log.debug("Context set for conversation: {}, user: {}", 
+        log.debug("Context set for conversation: {}, user: {}",
             contextInfo.getConversationId(), contextInfo.getUserId());
     }
-    
+
     /**
      * Get context from current thread
      */
@@ -38,7 +38,7 @@ public class RequestContext {
         }
         return context;
     }
-    
+
     /**
      * Get conversation ID from current context
      */
@@ -46,7 +46,7 @@ public class RequestContext {
         RequestContextInfo context = get();
         return context != null ? context.getConversationId() : null;
     }
-    
+
     /**
      * Get user ID from current context
      */
@@ -54,7 +54,7 @@ public class RequestContext {
         RequestContextInfo context = get();
         return context != null ? context.getUserId() : null;
     }
-    
+
     /**
      * Get connection ID from current context
      */
@@ -62,21 +62,21 @@ public class RequestContext {
         RequestContextInfo context = get();
         return context != null ? context.getConnectionId() : null;
     }
-    
+
     /**
-     * Get database name from current context
+     * Get catalog (database) name from current context
      */
-    public static String getDatabaseName() {
+    public static String getCatalog() {
         RequestContextInfo context = get();
-        return context != null ? context.getDatabaseName() : null;
+        return context != null ? context.getCatalog() : null;
     }
-    
+
     /**
      * Get schema name from current context
      */
-    public static String getSchemaName() {
+    public static String getSchema() {
         RequestContextInfo context = get();
-        return context != null ? context.getSchemaName() : null;
+        return context != null ? context.getSchema() : null;
     }
 
     /**
@@ -86,7 +86,7 @@ public class RequestContext {
         RequestContextInfo context = get();
         return context != null ? context.getAgentMode() : null;
     }
-    
+
     /**
      * Clear context from current thread
      */
@@ -97,7 +97,7 @@ public class RequestContext {
         }
         CONTEXT_HOLDER.remove();
     }
-    
+
     /**
      * Check if context exists
      */
@@ -124,8 +124,8 @@ public class RequestContext {
         putIfNotNull(map, RequestContextConstant.USER_ID, getUserId());
         putIfNotNull(map, RequestContextConstant.CONVERSATION_ID, getConversationId());
         putIfNotNull(map, RequestContextConstant.CONNECTION_ID, getConnectionId());
-        putIfNotNull(map, RequestContextConstant.DATABASE_NAME, getDatabaseName());
-        putIfNotNull(map, RequestContextConstant.SCHEMA_NAME, getSchemaName());
+        putIfNotNull(map, RequestContextConstant.DATABASE_NAME, getCatalog());
+        putIfNotNull(map, RequestContextConstant.SCHEMA_NAME, getSchema());
         putIfNotNull(map, RequestContextConstant.AGENT_MODE, getAgentMode());
         return map;
     }

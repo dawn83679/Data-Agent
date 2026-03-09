@@ -14,31 +14,31 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RequestContextInfo {
-    
+
     /**
      * Conversation ID
      */
     private Long conversationId;
-    
+
     /**
      * User ID
      */
     private Long userId;
-    
+
     /**
      * Connection ID
      */
     private Long connectionId;
-    
+
     /**
-     * Database Name
+     * Database catalog name
      */
-    private String databaseName;
-    
+    private String catalog;
+
     /**
-     * Schema Name
+     * Schema name
      */
-    private String schemaName;
+    private String schema;
 
     /**
      * Agent mode (agent / plan)

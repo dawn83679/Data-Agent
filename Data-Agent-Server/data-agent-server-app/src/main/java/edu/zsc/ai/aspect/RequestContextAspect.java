@@ -49,8 +49,8 @@ public class RequestContextAspect {
                     .conversationId(request.getConversationId())
                     .userId(userId)
                     .connectionId(request.getConnectionId())
-                    .databaseName(request.getDatabaseName())
-                    .schemaName(request.getSchemaName())
+                    .catalog(request.getCatalog())
+                    .schema(request.getSchema())
                     .build();
                 
                 RequestContext.set(contextInfo);
