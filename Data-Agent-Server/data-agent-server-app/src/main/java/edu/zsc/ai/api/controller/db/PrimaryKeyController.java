@@ -1,6 +1,6 @@
 package edu.zsc.ai.api.controller.db;
 
-import cn.dev33.satoken.stp.StpUtil;
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.service.db.PrimaryKeyService;
 import edu.zsc.ai.plugin.model.metadata.PrimaryKeyMetadata;
@@ -32,8 +32,8 @@ public class PrimaryKeyController {
             @RequestParam(required = false) String schema) {
         log.info("Listing primary keys: connectionId={}, catalog={}, schema={}, tableName={}",
                 connectionId, catalog, schema, tableName);
-        long userId = StpUtil.getLoginIdAsLong();
-        List<PrimaryKeyMetadata> primaryKeys = primaryKeyService.listPrimaryKeys(connectionId, catalog, schema, tableName, userId);
+        DbContext db = new DbContext(connectionId, catalog, schema);
+        List<PrimaryKeyMetadata> primaryKeys = primaryKeyService.listPrimaryKeys(db, tableName);
         return ApiResponse.success(primaryKeys);
     }
 }

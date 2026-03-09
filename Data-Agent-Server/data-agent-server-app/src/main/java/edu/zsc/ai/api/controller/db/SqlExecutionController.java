@@ -1,6 +1,5 @@
 package edu.zsc.ai.api.controller.db;
 
-import cn.dev33.satoken.stp.StpUtil;
 import edu.zsc.ai.domain.model.dto.request.db.AgentExecuteSqlRequest;
 import edu.zsc.ai.domain.model.dto.request.db.ExecuteSqlRequest;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
@@ -26,18 +25,15 @@ public class SqlExecutionController {
 
     @PostMapping("/execute")
     public ApiResponse<ExecuteSqlResponse> executeSql(@Valid @RequestBody ExecuteSqlRequest request) {
-        log.info("Executing SQL: connectionId={}, databaseName={}, schemaName={}",
-                request.getConnectionId(), request.getDatabaseName(), request.getSchemaName());
-
-        long userId = StpUtil.getLoginIdAsLong();
+        log.info("Executing SQL: connectionId={}, catalog={}, schema={}",
+                request.getConnectionId(), request.getCatalog(), request.getSchema());
 
         AgentExecuteSqlRequest agentRequest = AgentExecuteSqlRequest.builder()
                 .conversationId(request.getConversationId())
                 .connectionId(request.getConnectionId())
-                .databaseName(request.getDatabaseName())
-                .schemaName(request.getSchemaName())
+                .catalog(request.getCatalog())
+                .schema(request.getSchema())
                 .sql(request.getSql())
-                .userId(userId)
                 .build();
 
         ExecuteSqlResponse response = sqlExecutionService.executeSql(agentRequest);

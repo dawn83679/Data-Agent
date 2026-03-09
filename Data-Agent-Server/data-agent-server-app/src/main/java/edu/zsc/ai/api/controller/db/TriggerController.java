@@ -1,6 +1,6 @@
 package edu.zsc.ai.api.controller.db;
 
-import cn.dev33.satoken.stp.StpUtil;
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.request.db.DeleteTriggerRequest;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.service.db.TriggerService;
@@ -36,8 +36,8 @@ public class TriggerController {
             @RequestParam(required = false) String tableName) {
         log.info("Listing triggers: connectionId={}, catalog={}, schema={}, tableName={}",
                 connectionId, catalog, schema, tableName);
-        long userId = StpUtil.getLoginIdAsLong();
-        List<TriggerMetadata> triggers = triggerService.getTriggers(connectionId, catalog, schema, tableName, userId);
+        DbContext db = new DbContext(connectionId, catalog, schema);
+        List<TriggerMetadata> triggers = triggerService.getTriggers(db, tableName);
         return ApiResponse.success(triggers);
     }
 
@@ -49,8 +49,8 @@ public class TriggerController {
             @RequestParam(required = false) String schema) {
         log.info("Getting trigger DDL: connectionId={}, triggerName={}, catalog={}, schema={}",
                 connectionId, triggerName, catalog, schema);
-        long userId = StpUtil.getLoginIdAsLong();
-        String ddl = triggerService.getTriggerDdl(connectionId, catalog, schema, triggerName, userId);
+        DbContext db = new DbContext(connectionId, catalog, schema);
+        String ddl = triggerService.getTriggerDdl(db, triggerName);
         return ApiResponse.success(ddl);
     }
 
@@ -58,9 +58,8 @@ public class TriggerController {
     public ApiResponse<Void> deleteTrigger(@Valid @RequestBody DeleteTriggerRequest request) {
         log.info("Deleting trigger: connectionId={}, triggerName={}, catalog={}, schema={}",
                 request.getConnectionId(), request.getTriggerName(), request.getCatalog(), request.getSchema());
-        long userId = StpUtil.getLoginIdAsLong();
-        triggerService.deleteTrigger(request.getConnectionId(), request.getCatalog(),
-                request.getSchema(), request.getTriggerName(), userId);
+        DbContext db = new DbContext(request.getConnectionId(), request.getCatalog(), request.getSchema());
+        triggerService.deleteTrigger(db, request.getTriggerName());
         return ApiResponse.success(null);
     }
 }

@@ -1,6 +1,6 @@
 package edu.zsc.ai.api.controller.db;
 
-import cn.dev33.satoken.stp.StpUtil;
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.service.db.IndexService;
 import edu.zsc.ai.plugin.model.metadata.IndexMetadata;
@@ -32,8 +32,8 @@ public class IndexController {
             @RequestParam(required = false) String schema) {
         log.info("Listing indexes: connectionId={}, catalog={}, schema={}, tableName={}",
                 connectionId, catalog, schema, tableName);
-        long userId = StpUtil.getLoginIdAsLong();
-        List<IndexMetadata> indexes = indexService.getIndexes(connectionId, catalog, schema, tableName, userId);
+        DbContext db = new DbContext(connectionId, catalog, schema);
+        List<IndexMetadata> indexes = indexService.getIndexes(db, tableName);
         return ApiResponse.success(indexes);
     }
 }

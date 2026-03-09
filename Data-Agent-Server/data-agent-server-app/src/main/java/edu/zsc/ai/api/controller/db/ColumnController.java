@@ -1,6 +1,6 @@
 package edu.zsc.ai.api.controller.db;
 
-import cn.dev33.satoken.stp.StpUtil;
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.service.db.ColumnService;
 import edu.zsc.ai.plugin.model.metadata.ColumnMetadata;
@@ -32,8 +32,8 @@ public class ColumnController {
             @RequestParam(required = false) String schema) {
         log.info("Listing columns: connectionId={}, catalog={}, schema={}, tableName={}",
                 connectionId, catalog, schema, tableName);
-        long userId = StpUtil.getLoginIdAsLong();
-        List<ColumnMetadata> columns = columnService.listColumns(connectionId, catalog, schema, tableName, userId);
+        DbContext db = new DbContext(connectionId, catalog, schema);
+        List<ColumnMetadata> columns = columnService.listColumns(db, tableName);
         return ApiResponse.success(columns);
     }
 }

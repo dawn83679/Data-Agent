@@ -1,6 +1,6 @@
 package edu.zsc.ai.api.controller.db;
 
-import cn.dev33.satoken.stp.StpUtil;
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.request.db.DeleteTableRequest;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.model.dto.response.db.TableDataResponse;
@@ -34,8 +34,8 @@ public class TableController {
             @RequestParam(required = false) String catalog,
             @RequestParam(required = false) String schema) {
         log.info("Listing tables: connectionId={}, catalog={}, schema={}", connectionId, catalog, schema);
-        long userId = StpUtil.getLoginIdAsLong();
-        List<String> tables = tableService.getTables(connectionId, catalog, schema, userId);
+        DbContext db = new DbContext(connectionId, catalog, schema);
+        List<String> tables = tableService.getTables(db);
         return ApiResponse.success(tables);
     }
 
@@ -47,8 +47,8 @@ public class TableController {
             @RequestParam(required = false) String schema) {
         log.info("Getting table DDL: connectionId={}, tableName={}, catalog={}, schema={}",
                 connectionId, tableName, catalog, schema);
-        long userId = StpUtil.getLoginIdAsLong();
-        String ddl = tableService.getTableDdl(connectionId, catalog, schema, tableName, userId);
+        DbContext db = new DbContext(connectionId, catalog, schema);
+        String ddl = tableService.getTableDdl(db, tableName);
         return ApiResponse.success(ddl);
     }
 
@@ -56,9 +56,8 @@ public class TableController {
     public ApiResponse<Void> deleteTable(@Valid @RequestBody DeleteTableRequest request) {
         log.info("Deleting table: connectionId={}, tableName={}, catalog={}, schema={}",
                 request.getConnectionId(), request.getTableName(), request.getCatalog(), request.getSchema());
-        long userId = StpUtil.getLoginIdAsLong();
-        tableService.deleteTable(request.getConnectionId(), request.getCatalog(),
-                request.getSchema(), request.getTableName(), userId);
+        DbContext db = new DbContext(request.getConnectionId(), request.getCatalog(), request.getSchema());
+        tableService.deleteTable(db, request.getTableName());
         return ApiResponse.success(null);
     }
 
@@ -75,13 +74,13 @@ public class TableController {
             @RequestParam(required = false) String orderByDirection) {
         log.info("Getting table data: connectionId={}, tableName={}, catalog={}, schema={}, currentPage={}, pageSize={}",
                 connectionId, tableName, catalog, schema, currentPage, pageSize);
-        long userId = StpUtil.getLoginIdAsLong();
+        DbContext db = new DbContext(connectionId, catalog, schema);
         boolean hasFilter = (whereClause != null && !whereClause.isBlank())
                 || (orderByColumn != null && !orderByColumn.isBlank());
         TableDataResponse response = hasFilter
-                ? tableService.getTableData(connectionId, catalog, schema, tableName, userId, currentPage, pageSize,
+                ? tableService.getTableData(db, tableName, currentPage, pageSize,
                         whereClause, orderByColumn, orderByDirection)
-                : tableService.getTableData(connectionId, catalog, schema, tableName, userId, currentPage, pageSize);
+                : tableService.getTableData(db, tableName, currentPage, pageSize);
         return ApiResponse.success(response);
     }
 }

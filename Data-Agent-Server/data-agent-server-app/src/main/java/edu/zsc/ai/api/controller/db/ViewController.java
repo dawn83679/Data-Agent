@@ -1,6 +1,6 @@
 package edu.zsc.ai.api.controller.db;
 
-import cn.dev33.satoken.stp.StpUtil;
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.request.db.DeleteViewRequest;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.model.dto.response.db.TableDataResponse;
@@ -34,8 +34,8 @@ public class ViewController {
             @RequestParam(required = false) String catalog,
             @RequestParam(required = false) String schema) {
         log.info("Listing views: connectionId={}, catalog={}, schema={}", connectionId, catalog, schema);
-        long userId = StpUtil.getLoginIdAsLong();
-        List<String> views = viewService.getViews(connectionId, catalog, schema, userId);
+        DbContext db = new DbContext(connectionId, catalog, schema);
+        List<String> views = viewService.getViews(db);
         return ApiResponse.success(views);
     }
 
@@ -47,8 +47,8 @@ public class ViewController {
             @RequestParam(required = false) String schema) {
         log.info("Getting view DDL: connectionId={}, viewName={}, catalog={}, schema={}",
                 connectionId, viewName, catalog, schema);
-        long userId = StpUtil.getLoginIdAsLong();
-        String ddl = viewService.getViewDdl(connectionId, catalog, schema, viewName, userId);
+        DbContext db = new DbContext(connectionId, catalog, schema);
+        String ddl = viewService.getViewDdl(db, viewName);
         return ApiResponse.success(ddl);
     }
 
@@ -56,9 +56,8 @@ public class ViewController {
     public ApiResponse<Void> deleteView(@Valid @RequestBody DeleteViewRequest request) {
         log.info("Deleting view: connectionId={}, viewName={}, catalog={}, schema={}",
                 request.getConnectionId(), request.getViewName(), request.getCatalog(), request.getSchema());
-        long userId = StpUtil.getLoginIdAsLong();
-        viewService.deleteView(request.getConnectionId(), request.getCatalog(),
-                request.getSchema(), request.getViewName(), userId);
+        DbContext db = new DbContext(request.getConnectionId(), request.getCatalog(), request.getSchema());
+        viewService.deleteView(db, request.getViewName());
         return ApiResponse.success(null);
     }
 
@@ -75,13 +74,13 @@ public class ViewController {
             @RequestParam(required = false) String orderByDirection) {
         log.info("Getting view data: connectionId={}, viewName={}, catalog={}, schema={}, currentPage={}, pageSize={}",
                 connectionId, viewName, catalog, schema, currentPage, pageSize);
-        long userId = StpUtil.getLoginIdAsLong();
+        DbContext db = new DbContext(connectionId, catalog, schema);
         boolean hasFilter = (whereClause != null && !whereClause.isBlank())
                 || (orderByColumn != null && !orderByColumn.isBlank());
         TableDataResponse response = hasFilter
-                ? viewService.getViewData(connectionId, catalog, schema, viewName, userId, currentPage, pageSize,
+                ? viewService.getViewData(db, viewName, currentPage, pageSize,
                         whereClause, orderByColumn, orderByDirection)
-                : viewService.getViewData(connectionId, catalog, schema, viewName, userId, currentPage, pageSize);
+                : viewService.getViewData(db, viewName, currentPage, pageSize);
         return ApiResponse.success(response);
     }
 }

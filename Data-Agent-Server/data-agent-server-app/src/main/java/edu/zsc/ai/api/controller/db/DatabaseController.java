@@ -1,6 +1,5 @@
 package edu.zsc.ai.api.controller.db;
 
-import cn.dev33.satoken.stp.StpUtil;
 import edu.zsc.ai.domain.model.dto.request.db.DeleteDatabaseRequest;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.service.db.DatabaseService;
@@ -39,8 +38,7 @@ public class DatabaseController {
     public ApiResponse<Void> deleteDatabase(@Valid @RequestBody DeleteDatabaseRequest request) {
         log.info("Deleting database: connectionId={}, databaseName={}",
                 request.getConnectionId(), request.getDatabaseName());
-        long userId = StpUtil.getLoginIdAsLong();
-        databaseService.deleteDatabase(request.getConnectionId(), request.getDatabaseName(), userId);
+        databaseService.deleteDatabase(request.getConnectionId(), request.getDatabaseName());
         return ApiResponse.success(null);
     }
 }

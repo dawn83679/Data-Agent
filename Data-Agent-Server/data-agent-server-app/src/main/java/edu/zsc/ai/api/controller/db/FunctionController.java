@@ -1,6 +1,6 @@
 package edu.zsc.ai.api.controller.db;
 
-import cn.dev33.satoken.stp.StpUtil;
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.request.db.DeleteFunctionRequest;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.service.db.FunctionService;
@@ -34,8 +34,8 @@ public class FunctionController {
             @RequestParam(required = false) String catalog,
             @RequestParam(required = false) String schema) {
         log.info("Listing functions: connectionId={}, catalog={}, schema={}", connectionId, catalog, schema);
-        long userId = StpUtil.getLoginIdAsLong();
-        List<FunctionMetadata> functions = functionService.getFunctions(connectionId, catalog, schema, userId);
+        DbContext db = new DbContext(connectionId, catalog, schema);
+        List<FunctionMetadata> functions = functionService.getFunctions(db);
         return ApiResponse.success(functions);
     }
 
@@ -47,8 +47,8 @@ public class FunctionController {
             @RequestParam(required = false) String schema) {
         log.info("Getting function DDL: connectionId={}, functionName={}, catalog={}, schema={}",
                 connectionId, functionName, catalog, schema);
-        long userId = StpUtil.getLoginIdAsLong();
-        String ddl = functionService.getFunctionDdl(connectionId, catalog, schema, functionName, userId);
+        DbContext db = new DbContext(connectionId, catalog, schema);
+        String ddl = functionService.getFunctionDdl(db, functionName);
         return ApiResponse.success(ddl);
     }
 
@@ -56,9 +56,8 @@ public class FunctionController {
     public ApiResponse<Void> deleteFunction(@Valid @RequestBody DeleteFunctionRequest request) {
         log.info("Deleting function: connectionId={}, functionName={}, catalog={}, schema={}",
                 request.getConnectionId(), request.getFunctionName(), request.getCatalog(), request.getSchema());
-        long userId = StpUtil.getLoginIdAsLong();
-        functionService.deleteFunction(request.getConnectionId(), request.getCatalog(),
-                request.getSchema(), request.getFunctionName(), userId);
+        DbContext db = new DbContext(request.getConnectionId(), request.getCatalog(), request.getSchema());
+        functionService.deleteFunction(db, request.getFunctionName());
         return ApiResponse.success(null);
     }
 }

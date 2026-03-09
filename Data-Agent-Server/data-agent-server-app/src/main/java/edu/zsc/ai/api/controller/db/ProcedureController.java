@@ -1,6 +1,6 @@
 package edu.zsc.ai.api.controller.db;
 
-import cn.dev33.satoken.stp.StpUtil;
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.request.db.DeleteProcedureRequest;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.service.db.ProcedureService;
@@ -34,8 +34,8 @@ public class ProcedureController {
             @RequestParam(required = false) String catalog,
             @RequestParam(required = false) String schema) {
         log.info("Listing procedures: connectionId={}, catalog={}, schema={}", connectionId, catalog, schema);
-        long userId = StpUtil.getLoginIdAsLong();
-        List<ProcedureMetadata> procedures = procedureService.getProcedures(connectionId, catalog, schema, userId);
+        DbContext db = new DbContext(connectionId, catalog, schema);
+        List<ProcedureMetadata> procedures = procedureService.getProcedures(db);
         return ApiResponse.success(procedures);
     }
 
@@ -47,8 +47,8 @@ public class ProcedureController {
             @RequestParam(required = false) String schema) {
         log.info("Getting procedure DDL: connectionId={}, procedureName={}, catalog={}, schema={}",
                 connectionId, procedureName, catalog, schema);
-        long userId = StpUtil.getLoginIdAsLong();
-        String ddl = procedureService.getProcedureDdl(connectionId, catalog, schema, procedureName, userId);
+        DbContext db = new DbContext(connectionId, catalog, schema);
+        String ddl = procedureService.getProcedureDdl(db, procedureName);
         return ApiResponse.success(ddl);
     }
 
@@ -56,9 +56,8 @@ public class ProcedureController {
     public ApiResponse<Void> deleteProcedure(@Valid @RequestBody DeleteProcedureRequest request) {
         log.info("Deleting procedure: connectionId={}, procedureName={}, catalog={}, schema={}",
                 request.getConnectionId(), request.getProcedureName(), request.getCatalog(), request.getSchema());
-        long userId = StpUtil.getLoginIdAsLong();
-        procedureService.deleteProcedure(request.getConnectionId(), request.getCatalog(),
-                request.getSchema(), request.getProcedureName(), userId);
+        DbContext db = new DbContext(request.getConnectionId(), request.getCatalog(), request.getSchema());
+        procedureService.deleteProcedure(db, request.getProcedureName());
         return ApiResponse.success(null);
     }
 }
