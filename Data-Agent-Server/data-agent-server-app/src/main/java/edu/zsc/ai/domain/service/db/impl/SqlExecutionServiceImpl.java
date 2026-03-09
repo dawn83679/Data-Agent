@@ -1,6 +1,7 @@
 package edu.zsc.ai.domain.service.db.impl;
 
 import edu.zsc.ai.common.converter.db.SqlExecutionConverter;
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.request.db.AgentExecuteSqlRequest;
 import edu.zsc.ai.domain.model.dto.response.db.ExecuteSqlResponse;
 import edu.zsc.ai.domain.service.db.ConnectionService;
@@ -25,16 +26,12 @@ public class SqlExecutionServiceImpl implements SqlExecutionService {
 
     @Override
     public ExecuteSqlResponse executeSql(AgentExecuteSqlRequest request) {
-        Long connectionId = request.getConnectionId();
-        String databaseName = request.getDatabaseName();
-        String schemaName = request.getSchemaName();
+        DbContext db = DbContext.from(request);
         String sql = request.getSql();
-        Long userId = request.getUserId();
 
-        connectionService.openConnection(connectionId, databaseName, schemaName, userId);
+        connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(
-                connectionId, databaseName, schemaName, userId);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
 
         CommandExecutor<SqlCommandRequest, SqlCommandResult> executor = DefaultPluginManager.getInstance()
                 .getSqlCommandExecutorByPluginId(active.pluginId());
@@ -43,27 +40,25 @@ public class SqlExecutionServiceImpl implements SqlExecutionService {
         pluginRequest.setConnection(active.connection());
         pluginRequest.setOriginalSql(sql);
         pluginRequest.setExecuteSql(sql);
-        pluginRequest.setDatabase(databaseName);
-        pluginRequest.setSchema(schemaName);
+        pluginRequest.setDatabase(db.catalog());
+        pluginRequest.setSchema(db.schema());
         pluginRequest.setNeedTransaction(false);
 
         SqlCommandResult result = executor.executeCommand(pluginRequest);
 
         ExecuteSqlResponse response = SqlExecutionConverter.toResponse(result);
         if (response != null) {
-            response.setDatabaseName(databaseName);
-            response.setSchemaName(schemaName);
+            response.setDatabaseName(db.catalog());
+            response.setSchemaName(db.schema());
         }
         return response;
     }
 
     @Override
-    public List<ExecuteSqlResponse> executeBatchSql(Long connectionId, String databaseName,
-                                                     String schemaName, Long userId, List<String> sqls) {
-        connectionService.openConnection(connectionId, databaseName, schemaName, userId);
+    public List<ExecuteSqlResponse> executeBatchSql(DbContext db, List<String> sqls) {
+        connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(
-                connectionId, databaseName, schemaName, userId);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
 
         CommandExecutor<SqlCommandRequest, SqlCommandResult> executor = DefaultPluginManager.getInstance()
                 .getSqlCommandExecutorByPluginId(active.pluginId());
@@ -75,16 +70,16 @@ public class SqlExecutionServiceImpl implements SqlExecutionService {
                 pluginRequest.setConnection(active.connection());
                 pluginRequest.setOriginalSql(sql);
                 pluginRequest.setExecuteSql(sql);
-                pluginRequest.setDatabase(databaseName);
-                pluginRequest.setSchema(schemaName);
+                pluginRequest.setDatabase(db.catalog());
+                pluginRequest.setSchema(db.schema());
                 pluginRequest.setNeedTransaction(false);
 
                 SqlCommandResult result = executor.executeCommand(pluginRequest);
 
                 ExecuteSqlResponse response = SqlExecutionConverter.toResponse(result);
                 if (response != null) {
-                    response.setDatabaseName(databaseName);
-                    response.setSchemaName(schemaName);
+                    response.setDatabaseName(db.catalog());
+                    response.setSchemaName(db.schema());
                 }
                 responses.add(response);
             } catch (Exception e) {
@@ -93,8 +88,8 @@ public class SqlExecutionServiceImpl implements SqlExecutionService {
                         .success(false)
                         .errorMessage(e.getMessage())
                         .originalSql(sql)
-                        .databaseName(databaseName)
-                        .schemaName(schemaName)
+                        .databaseName(db.catalog())
+                        .schemaName(db.schema())
                         .build();
                 responses.add(errorResponse);
             }

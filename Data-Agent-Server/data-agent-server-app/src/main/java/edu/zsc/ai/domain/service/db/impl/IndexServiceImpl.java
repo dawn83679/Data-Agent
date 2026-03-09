@@ -1,5 +1,6 @@
 package edu.zsc.ai.domain.service.db.impl;
 
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.IndexService;
 import edu.zsc.ai.plugin.capability.IndexProvider;
@@ -19,12 +20,12 @@ public class IndexServiceImpl implements IndexService {
     private final ConnectionService connectionService;
 
     @Override
-    public List<IndexMetadata> getIndexes(Long connectionId, String catalog, String schema, String tableName, Long userId) {
-        connectionService.openConnection(connectionId, catalog, schema, userId);
+    public List<IndexMetadata> getIndexes(DbContext db, String tableName) {
+        connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
 
         IndexProvider provider = DefaultPluginManager.getInstance().getIndexProviderByPluginId(active.pluginId());
-        return provider.getIndexes(active.connection(), catalog, schema, tableName);
+        return provider.getIndexes(active.connection(), db.catalog(), db.schema(), tableName);
     }
 }

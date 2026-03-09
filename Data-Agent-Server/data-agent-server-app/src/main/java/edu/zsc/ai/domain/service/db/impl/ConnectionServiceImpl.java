@@ -4,6 +4,7 @@ import edu.zsc.ai.common.constant.ResponseCode;
 import edu.zsc.ai.common.constant.ResponseMessageKey;
 import edu.zsc.ai.common.converter.db.ConnectionConverter;
 import edu.zsc.ai.common.enums.db.ConnectionTestStatuEnum;
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.request.db.ConnectRequest;
 import edu.zsc.ai.domain.model.dto.response.db.ConnectionTestResponse;
 import edu.zsc.ai.domain.model.entity.db.DbConnection;
@@ -73,50 +74,45 @@ public class ConnectionServiceImpl implements ConnectionService {
 
     @Override
     public Boolean openConnection(Long connectionId) {
-        return openConnection(connectionId, null, null);
+        return openConnection(new DbContext(connectionId, null, null));
     }
 
     @Override
-    public Boolean openConnection(Long connectionId, String catalog, String schema) {
-        return openConnection(connectionId, catalog, schema, null);
-    }
+    public Boolean openConnection(DbContext db) {
+        DbConnection dbConnection = dbConnectionService.getOwnedById(db.connectionId());
 
-    @Override
-    public Boolean openConnection(Long connectionId, String catalog, String schema, Long userId) {
-        DbConnection dbConnection = dbConnectionService.getOwnedById(connectionId, userId);
-
-        if (ConnectionManager.getConnection(connectionId, catalog, schema).isPresent()) {
+        if (ConnectionManager.getConnection(db).isPresent()) {
             return Boolean.TRUE;
         }
 
         ConnectionConfig config = ConnectionConverter.convertToConfig(dbConnection);
-        if (catalog != null) {
-            config.setDatabase(catalog);
+        if (db.catalog() != null) {
+            config.setDatabase(db.catalog());
         }
-        if (schema != null) {
-            config.setSchema(schema);
+        if (db.schema() != null) {
+            config.setSchema(db.schema());
         }
 
         List<ConnectionProvider> providers = DefaultPluginManager.getInstance()
                 .getConnectionProviderByDbType(dbConnection.getDbType());
-        
+
         TryFirstSuccess.AttemptResult<ConnectionProvider, Connection> res =
                 TryFirstSuccess.tryFirstSuccess(providers, p -> p.connect(config));
-        
+
         BusinessException.assertNotNull(res, ResponseCode.PARAM_ERROR, ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE);
 
         ConnectionManager.ActiveConnection active = new ConnectionManager.ActiveConnection(
                 res.result(),
                 dbConnection.getUserId(),
-                connectionId,
+                db.connectionId(),
                 dbConnection.getDbType(),
                 ((Plugin) res.candidate()).getPluginId(),
-                catalog,
-                schema,
+                db.catalog(),
+                db.schema(),
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
-        ConnectionManager.registerConnection(connectionId, active);
+        ConnectionManager.registerConnection(db.connectionId(), active);
 
         return Boolean.TRUE;
     }

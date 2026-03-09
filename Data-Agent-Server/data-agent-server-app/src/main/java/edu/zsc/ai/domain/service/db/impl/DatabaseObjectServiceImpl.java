@@ -1,5 +1,6 @@
 package edu.zsc.ai.domain.service.db.impl;
 
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.service.db.DatabaseObjectService;
 import edu.zsc.ai.domain.service.db.FunctionService;
 import edu.zsc.ai.domain.service.db.ProcedureService;
@@ -40,24 +41,19 @@ public class DatabaseObjectServiceImpl implements DatabaseObjectService {
     private final TriggerService triggerService;
 
     @Override
-    public List<String> getObjectNames(DatabaseObjectTypeEnum objectType,
-                                       Long connectionId,
-                                       String catalog,
-                                       String schema,
-                                       String tableName,
-                                       Long userId) {
+    public List<String> getObjectNames(DatabaseObjectTypeEnum objectType, DbContext db, String tableName) {
         return switch (objectType) {
-            case TABLE -> tableService.getTables(connectionId, catalog, schema, userId);
-            case VIEW -> viewService.getViews(connectionId, catalog, schema, userId);
-            case FUNCTION -> functionService.getFunctions(connectionId, catalog, schema, userId).stream()
+            case TABLE -> tableService.getTables(db);
+            case VIEW -> viewService.getViews(db);
+            case FUNCTION -> functionService.getFunctions(db).stream()
                     .map(FunctionMetadata::name)
                     .collect(Collectors.toList());
-            case PROCEDURE -> procedureService.getProcedures(connectionId, catalog, schema, userId).stream()
+            case PROCEDURE -> procedureService.getProcedures(db).stream()
                     .map(ProcedureMetadata::name)
                     .collect(Collectors.toList());
             case TRIGGER -> {
                 validateTriggerTableName(tableName);
-                yield triggerService.getTriggers(connectionId, catalog, schema, tableName, userId).stream()
+                yield triggerService.getTriggers(db, tableName).stream()
                         .map(TriggerMetadata::name)
                         .collect(Collectors.toList());
             }
@@ -66,25 +62,20 @@ public class DatabaseObjectServiceImpl implements DatabaseObjectService {
     }
 
     @Override
-    public List<String> searchObjects(DatabaseObjectTypeEnum objectType,
-                                      String namePattern,
-                                      Long connectionId,
-                                      String catalog,
-                                      String schema,
-                                      String tableName,
-                                      Long userId) {
+    public List<String> searchObjects(DatabaseObjectTypeEnum objectType, String namePattern,
+                                      DbContext db, String tableName) {
         return switch (objectType) {
-            case TABLE -> tableService.searchTables(connectionId, catalog, schema, namePattern, userId);
-            case VIEW -> viewService.searchViews(connectionId, catalog, schema, namePattern, userId);
-            case FUNCTION -> functionService.searchFunctions(connectionId, catalog, schema, namePattern, userId).stream()
+            case TABLE -> tableService.searchTables(db, namePattern);
+            case VIEW -> viewService.searchViews(db, namePattern);
+            case FUNCTION -> functionService.searchFunctions(db, namePattern).stream()
                     .map(FunctionMetadata::name)
                     .collect(Collectors.toList());
-            case PROCEDURE -> procedureService.searchProcedures(connectionId, catalog, schema, namePattern, userId).stream()
+            case PROCEDURE -> procedureService.searchProcedures(db, namePattern).stream()
                     .map(ProcedureMetadata::name)
                     .collect(Collectors.toList());
             case TRIGGER -> {
                 validateTriggerTableName(tableName);
-                yield triggerService.searchTriggers(connectionId, catalog, schema, tableName, namePattern, userId).stream()
+                yield triggerService.searchTriggers(db, tableName, namePattern).stream()
                         .map(TriggerMetadata::name)
                         .collect(Collectors.toList());
             }
@@ -93,55 +84,40 @@ public class DatabaseObjectServiceImpl implements DatabaseObjectService {
     }
 
     @Override
-    public long countObjects(DatabaseObjectTypeEnum objectType,
-                             String namePattern,
-                             Long connectionId,
-                             String catalog,
-                             String schema,
-                             String tableName,
-                             Long userId) {
+    public long countObjects(DatabaseObjectTypeEnum objectType, String namePattern,
+                             DbContext db, String tableName) {
         if (!COUNT_SUPPORTED_TYPES.contains(objectType)) {
             throw new IllegalArgumentException("Unsupported objectType for countObjects: " + objectType);
         }
         return switch (objectType) {
-            case TABLE -> tableService.countTables(connectionId, catalog, schema, namePattern, userId);
-            case VIEW -> viewService.countViews(connectionId, catalog, schema, namePattern, userId);
-            case FUNCTION -> functionService.countFunctions(connectionId, catalog, schema, namePattern, userId);
-            case PROCEDURE -> procedureService.countProcedures(connectionId, catalog, schema, namePattern, userId);
+            case TABLE -> tableService.countTables(db, namePattern);
+            case VIEW -> viewService.countViews(db, namePattern);
+            case FUNCTION -> functionService.countFunctions(db, namePattern);
+            case PROCEDURE -> procedureService.countProcedures(db, namePattern);
             default -> throw new IllegalArgumentException("Unsupported objectType for countObjects: " + objectType);
         };
     }
 
     @Override
-    public long countObjectRows(DatabaseObjectTypeEnum objectType,
-                                Long connectionId,
-                                String catalog,
-                                String schema,
-                                String objectName,
-                                Long userId) {
+    public long countObjectRows(DatabaseObjectTypeEnum objectType, DbContext db, String objectName) {
         if (!ROW_COUNT_SUPPORTED_TYPES.contains(objectType)) {
             throw new IllegalArgumentException("Unsupported objectType for countObjectRows: " + objectType);
         }
         return switch (objectType) {
-            case TABLE -> tableService.countTableRows(connectionId, catalog, schema, objectName, userId);
-            case VIEW -> viewService.countViewRows(connectionId, catalog, schema, objectName, userId);
+            case TABLE -> tableService.countTableRows(db, objectName);
+            case VIEW -> viewService.countViewRows(db, objectName);
             default -> throw new IllegalArgumentException("Unsupported objectType for countObjectRows: " + objectType);
         };
     }
 
     @Override
-    public String getObjectDdl(DatabaseObjectTypeEnum objectType,
-                               String objectName,
-                               Long connectionId,
-                               String catalog,
-                               String schema,
-                               Long userId) {
+    public String getObjectDdl(DatabaseObjectTypeEnum objectType, String objectName, DbContext db) {
         return switch (objectType) {
-            case TABLE -> tableService.getTableDdl(connectionId, catalog, schema, objectName, userId);
-            case VIEW -> viewService.getViewDdl(connectionId, catalog, schema, objectName, userId);
-            case FUNCTION -> functionService.getFunctionDdl(connectionId, catalog, schema, objectName, userId);
-            case PROCEDURE -> procedureService.getProcedureDdl(connectionId, catalog, schema, objectName, userId);
-            case TRIGGER -> triggerService.getTriggerDdl(connectionId, catalog, schema, objectName, userId);
+            case TABLE -> tableService.getTableDdl(db, objectName);
+            case VIEW -> viewService.getViewDdl(db, objectName);
+            case FUNCTION -> functionService.getFunctionDdl(db, objectName);
+            case PROCEDURE -> procedureService.getProcedureDdl(db, objectName);
+            case TRIGGER -> triggerService.getTriggerDdl(db, objectName);
             default -> throw new IllegalArgumentException("Unsupported objectType: " + objectType);
         };
     }

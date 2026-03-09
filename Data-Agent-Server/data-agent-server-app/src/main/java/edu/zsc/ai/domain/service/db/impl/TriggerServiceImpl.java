@@ -1,5 +1,6 @@
 package edu.zsc.ai.domain.service.db.impl;
 
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.TriggerService;
 import edu.zsc.ai.plugin.capability.TriggerProvider;
@@ -19,46 +20,45 @@ public class TriggerServiceImpl implements TriggerService {
     private final ConnectionService connectionService;
 
     @Override
-    public List<TriggerMetadata> getTriggers(Long connectionId, String catalog, String schema, String tableName, Long userId) {
-        connectionService.openConnection(connectionId, catalog, schema, userId);
+    public List<TriggerMetadata> getTriggers(DbContext db, String tableName) {
+        connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
 
         TriggerProvider provider = DefaultPluginManager.getInstance().getTriggerProviderByPluginId(active.pluginId());
-        return provider.getTriggers(active.connection(), catalog, schema, tableName);
+        return provider.getTriggers(active.connection(), db.catalog(), db.schema(), tableName);
     }
 
     @Override
-    public List<TriggerMetadata> searchTriggers(Long connectionId, String catalog, String schema,
-                                                String tableName, String triggerNamePattern, Long userId) {
-        connectionService.openConnection(connectionId, catalog, schema, userId);
+    public List<TriggerMetadata> searchTriggers(DbContext db, String tableName, String triggerNamePattern) {
+        connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
 
         TriggerProvider provider = DefaultPluginManager.getInstance().getTriggerProviderByPluginId(active.pluginId());
-        return provider.searchTriggers(active.connection(), catalog, schema, tableName, triggerNamePattern);
+        return provider.searchTriggers(active.connection(), db.catalog(), db.schema(), tableName, triggerNamePattern);
     }
 
     @Override
-    public String getTriggerDdl(Long connectionId, String catalog, String schema, String triggerName, Long userId) {
-        connectionService.openConnection(connectionId, catalog, schema, userId);
+    public String getTriggerDdl(DbContext db, String triggerName) {
+        connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
 
         TriggerProvider provider = DefaultPluginManager.getInstance().getTriggerProviderByPluginId(active.pluginId());
-        return provider.getTriggerDdl(active.connection(), catalog, schema, triggerName);
+        return provider.getTriggerDdl(active.connection(), db.catalog(), db.schema(), triggerName);
     }
 
     @Override
-    public void deleteTrigger(Long connectionId, String catalog, String schema, String triggerName, Long userId) {
-        connectionService.openConnection(connectionId, catalog, schema, userId);
+    public void deleteTrigger(DbContext db, String triggerName) {
+        connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
 
         TriggerProvider provider = DefaultPluginManager.getInstance().getTriggerProviderByPluginId(active.pluginId());
-        provider.deleteTrigger(active.connection(), catalog, schema, triggerName);
+        provider.deleteTrigger(active.connection(), db.catalog(), db.schema(), triggerName);
 
         log.info("Trigger deleted successfully: connectionId={}, catalog={}, schema={}, triggerName={}",
-                connectionId, catalog, schema, triggerName);
+                db.connectionId(), db.catalog(), db.schema(), triggerName);
     }
 }

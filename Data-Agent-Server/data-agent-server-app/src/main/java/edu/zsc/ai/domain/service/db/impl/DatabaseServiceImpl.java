@@ -1,6 +1,5 @@
 package edu.zsc.ai.domain.service.db.impl;
 
-import cn.dev33.satoken.stp.StpUtil;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.DatabaseService;
 import edu.zsc.ai.plugin.capability.DatabaseProvider;
@@ -20,15 +19,9 @@ public class DatabaseServiceImpl implements DatabaseService {
 
     @Override
     public List<String> getDatabases(Long connectionId) {
-        return getDatabases(connectionId, null);
-    }
+        connectionService.openConnection(connectionId);
 
-    @Override
-    public List<String> getDatabases(Long connectionId, Long userId) {
-        long uid = userId != null ? userId : StpUtil.getLoginIdAsLong();
-        connectionService.openConnection(connectionId, null, null, uid);
-
-        ConnectionManager.ActiveConnection active = ConnectionManager.getAnyOwnedActiveConnection(connectionId, uid);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getAnyOwnedActiveConnection(connectionId);
 
         DatabaseProvider provider = DefaultPluginManager.getInstance().getDatabaseProviderByPluginId(active.pluginId());
 
@@ -36,11 +29,10 @@ public class DatabaseServiceImpl implements DatabaseService {
     }
 
     @Override
-    public void deleteDatabase(Long connectionId, String databaseName, Long userId) {
-        long uid = userId != null ? userId : StpUtil.getLoginIdAsLong();
-        connectionService.openConnection(connectionId, null, null, uid);
+    public void deleteDatabase(Long connectionId, String databaseName) {
+        connectionService.openConnection(connectionId);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getAnyOwnedActiveConnection(connectionId, uid);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getAnyOwnedActiveConnection(connectionId);
 
         DatabaseProvider provider = DefaultPluginManager.getInstance().getDatabaseProviderByPluginId(active.pluginId());
         provider.deleteDatabase(active.connection(), databaseName);

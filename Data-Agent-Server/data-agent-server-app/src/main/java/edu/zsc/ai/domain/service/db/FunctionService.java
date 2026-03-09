@@ -1,18 +1,19 @@
 package edu.zsc.ai.domain.service.db;
 
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.plugin.model.metadata.FunctionMetadata;
 
 import java.util.List;
 
 public interface FunctionService {
 
-    List<FunctionMetadata> getFunctions(Long connectionId, String catalog, String schema, Long userId);
+    List<FunctionMetadata> getFunctions(DbContext db);
 
-    List<FunctionMetadata> searchFunctions(Long connectionId, String catalog, String schema, String functionNamePattern, Long userId);
+    List<FunctionMetadata> searchFunctions(DbContext db, String functionNamePattern);
 
-    long countFunctions(Long connectionId, String catalog, String schema, String functionNamePattern, Long userId);
+    long countFunctions(DbContext db, String functionNamePattern);
 
-    String getFunctionDdl(Long connectionId, String catalog, String schema, String functionName, Long userId);
+    String getFunctionDdl(DbContext db, String functionName);
 
-    void deleteFunction(Long connectionId, String catalog, String schema, String functionName, Long userId);
+    void deleteFunction(DbContext db, String functionName);
 }

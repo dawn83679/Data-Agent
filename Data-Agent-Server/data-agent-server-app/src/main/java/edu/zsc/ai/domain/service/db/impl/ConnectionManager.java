@@ -1,8 +1,9 @@
 package edu.zsc.ai.domain.service.db.impl;
 
-import cn.dev33.satoken.stp.StpUtil;
 import edu.zsc.ai.common.constant.ResponseCode;
 import edu.zsc.ai.common.constant.ResponseMessageKey;
+import edu.zsc.ai.context.RequestContext;
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.plugin.capability.ConnectionProvider;
 import edu.zsc.ai.plugin.manager.DefaultPluginManager;
 import edu.zsc.ai.domain.exception.BusinessException;
@@ -52,37 +53,34 @@ public class ConnectionManager {
         String innerKey = generateInnerKey(activeConnection.databaseName(), activeConnection.schemaName());
         activeConnections.computeIfAbsent(dbConnectionId, k -> new ConcurrentHashMap<>())
                 .put(innerKey, activeConnection);
-        
+
         log.info("Connection registered: dbConnectionId={}, key={}, dbType={}",
                 dbConnectionId, innerKey, activeConnection.dbType());
     }
 
     /**
-     * Get active connection for a dbConnectionId and specific catalog/schema.
+     * Get active connection for a DbContext.
      */
-    public static Optional<ActiveConnection> getConnection(Long dbConnectionId, String catalog, String schema) {
-        Map<String, ActiveConnection> innerMap = activeConnections.get(dbConnectionId);
+    public static Optional<ActiveConnection> getConnection(DbContext db) {
+        Map<String, ActiveConnection> innerMap = activeConnections.get(db.connectionId());
         if (innerMap == null) {
             return Optional.empty();
         }
-        String key = generateInnerKey(catalog, schema);
+        String key = generateInnerKey(db.catalog(), db.schema());
         return Optional.ofNullable(innerMap.get(key));
     }
 
     /**
-     * Get active connection for a dbConnectionId and specific catalog/schema,
-     * and verify ownership by current user (StpUtil). Use on request thread only.
+     * Get active connection for a DbContext,
+     * and verify ownership by the current user from RequestContext.
      */
-    public static ActiveConnection getOwnedConnection(Long dbConnectionId, String catalog, String schema) {
-        return getOwnedConnection(dbConnectionId, catalog, schema, StpUtil.getLoginIdAsLong());
-    }
+    public static ActiveConnection getOwnedConnection(DbContext db) {
+        Long userId = RequestContext.getUserId();
+        if (userId == null) {
+            throw new IllegalStateException("No userId available in RequestContext");
+        }
 
-    /**
-     * Get active connection and verify ownership by the given user.
-     * Use this overload when userId is passed explicitly (e.g. from tool InvocationParameters).
-     */
-    public static ActiveConnection getOwnedConnection(Long dbConnectionId, String catalog, String schema, Long userId) {
-        ActiveConnection active = getConnection(dbConnectionId, catalog, schema)
+        ActiveConnection active = getConnection(db)
                 .orElseThrow(() -> BusinessException.notFound(ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE));
 
         if (!active.userId().equals(userId)) {
@@ -100,16 +98,15 @@ public class ConnectionManager {
     }
 
     /**
-     * Get any active connection for a dbConnectionId and verify ownership by current user (StpUtil). Use on request thread only.
+     * Get any active connection for a dbConnectionId and verify ownership
+     * by the current user from RequestContext.
      */
     public static ActiveConnection getAnyOwnedActiveConnection(Long dbConnectionId) {
-        return getAnyOwnedActiveConnection(dbConnectionId, StpUtil.getLoginIdAsLong());
-    }
+        Long userId = RequestContext.getUserId();
+        if (userId == null) {
+            throw new IllegalStateException("No userId available in RequestContext");
+        }
 
-    /**
-     * Get any active connection and verify ownership by the given user.
-     */
-    public static ActiveConnection getAnyOwnedActiveConnection(Long dbConnectionId, Long userId) {
         ActiveConnection active = getAnyActiveConnection(dbConnectionId)
                 .orElseThrow(() -> BusinessException.notFound(ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE));
 

@@ -1,5 +1,6 @@
 package edu.zsc.ai.domain.service.db.impl;
 
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.service.db.ColumnService;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.plugin.capability.ColumnProvider;
@@ -19,12 +20,12 @@ public class ColumnServiceImpl implements ColumnService {
     private final ConnectionService connectionService;
 
     @Override
-    public List<ColumnMetadata> listColumns(Long connectionId, String catalog, String schema, String tableName, Long userId) {
-        connectionService.openConnection(connectionId, catalog, schema, userId);
+    public List<ColumnMetadata> listColumns(DbContext db, String tableName) {
+        connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
 
         ColumnProvider provider = DefaultPluginManager.getInstance().getColumnProviderByPluginId(active.pluginId());
-        return provider.getColumns(active.connection(), catalog, schema, tableName);
+        return provider.getColumns(active.connection(), db.catalog(), db.schema(), tableName);
     }
 }

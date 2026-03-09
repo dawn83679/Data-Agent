@@ -1,25 +1,26 @@
 package edu.zsc.ai.domain.service.db;
 
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.response.db.TableDataResponse;
 
 import java.util.List;
 
 public interface ViewService {
 
-    List<String> getViews(Long connectionId, String catalog, String schema, Long userId);
+    List<String> getViews(DbContext db);
 
-    List<String> searchViews(Long connectionId, String catalog, String schema, String viewNamePattern, Long userId);
+    List<String> searchViews(DbContext db, String viewNamePattern);
 
-    long countViews(Long connectionId, String catalog, String schema, String viewNamePattern, Long userId);
+    long countViews(DbContext db, String viewNamePattern);
 
-    long countViewRows(Long connectionId, String catalog, String schema, String viewName, Long userId);
+    long countViewRows(DbContext db, String viewName);
 
-    String getViewDdl(Long connectionId, String catalog, String schema, String viewName, Long userId);
+    String getViewDdl(DbContext db, String viewName);
 
-    void deleteView(Long connectionId, String catalog, String schema, String viewName, Long userId);
+    void deleteView(DbContext db, String viewName);
 
-    TableDataResponse getViewData(Long connectionId, String catalog, String schema, String viewName, Long userId, Integer currentPage, Integer pageSize);
+    TableDataResponse getViewData(DbContext db, String viewName, Integer currentPage, Integer pageSize);
 
-    TableDataResponse getViewData(Long connectionId, String catalog, String schema, String viewName, Long userId,
+    TableDataResponse getViewData(DbContext db, String viewName,
             Integer currentPage, Integer pageSize, String whereClause, String orderByColumn, String orderByDirection);
 }

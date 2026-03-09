@@ -1,5 +1,6 @@
 package edu.zsc.ai.domain.service.db.impl;
 
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.ProcedureService;
 import edu.zsc.ai.plugin.capability.ProcedureProvider;
@@ -19,57 +20,55 @@ public class ProcedureServiceImpl implements ProcedureService {
     private final ConnectionService connectionService;
 
     @Override
-    public List<ProcedureMetadata> getProcedures(Long connectionId, String catalog, String schema, Long userId) {
-        connectionService.openConnection(connectionId, catalog, schema, userId);
+    public List<ProcedureMetadata> getProcedures(DbContext db) {
+        connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
 
         ProcedureProvider provider = DefaultPluginManager.getInstance().getProcedureProviderByPluginId(active.pluginId());
-        return provider.getProcedures(active.connection(), catalog, schema);
+        return provider.getProcedures(active.connection(), db.catalog(), db.schema());
     }
 
     @Override
-    public List<ProcedureMetadata> searchProcedures(Long connectionId, String catalog, String schema,
-                                                    String procedureNamePattern, Long userId) {
-        connectionService.openConnection(connectionId, catalog, schema, userId);
+    public List<ProcedureMetadata> searchProcedures(DbContext db, String procedureNamePattern) {
+        connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
 
         ProcedureProvider provider = DefaultPluginManager.getInstance().getProcedureProviderByPluginId(active.pluginId());
-        return provider.searchProcedures(active.connection(), catalog, schema, procedureNamePattern);
+        return provider.searchProcedures(active.connection(), db.catalog(), db.schema(), procedureNamePattern);
     }
 
     @Override
-    public long countProcedures(Long connectionId, String catalog, String schema,
-                                String procedureNamePattern, Long userId) {
-        connectionService.openConnection(connectionId, catalog, schema, userId);
+    public long countProcedures(DbContext db, String procedureNamePattern) {
+        connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
 
         ProcedureProvider provider = DefaultPluginManager.getInstance().getProcedureProviderByPluginId(active.pluginId());
-        return provider.countProcedures(active.connection(), catalog, schema, procedureNamePattern);
+        return provider.countProcedures(active.connection(), db.catalog(), db.schema(), procedureNamePattern);
     }
 
     @Override
-    public String getProcedureDdl(Long connectionId, String catalog, String schema, String procedureName, Long userId) {
-        connectionService.openConnection(connectionId, catalog, schema, userId);
+    public String getProcedureDdl(DbContext db, String procedureName) {
+        connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
 
         ProcedureProvider provider = DefaultPluginManager.getInstance().getProcedureProviderByPluginId(active.pluginId());
-        return provider.getProcedureDdl(active.connection(), catalog, schema, procedureName);
+        return provider.getProcedureDdl(active.connection(), db.catalog(), db.schema(), procedureName);
     }
 
     @Override
-    public void deleteProcedure(Long connectionId, String catalog, String schema, String procedureName, Long userId) {
-        connectionService.openConnection(connectionId, catalog, schema, userId);
+    public void deleteProcedure(DbContext db, String procedureName) {
+        connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
 
         ProcedureProvider provider = DefaultPluginManager.getInstance().getProcedureProviderByPluginId(active.pluginId());
-        provider.deleteProcedure(active.connection(), catalog, schema, procedureName);
+        provider.deleteProcedure(active.connection(), db.catalog(), db.schema(), procedureName);
 
         log.info("Procedure deleted successfully: connectionId={}, catalog={}, schema={}, procedureName={}",
-                connectionId, catalog, schema, procedureName);
+                db.connectionId(), db.catalog(), db.schema(), procedureName);
     }
 }

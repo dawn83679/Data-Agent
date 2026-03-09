@@ -1,18 +1,19 @@
 package edu.zsc.ai.domain.service.db;
 
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.plugin.model.metadata.ProcedureMetadata;
 
 import java.util.List;
 
 public interface ProcedureService {
 
-    List<ProcedureMetadata> getProcedures(Long connectionId, String catalog, String schema, Long userId);
+    List<ProcedureMetadata> getProcedures(DbContext db);
 
-    List<ProcedureMetadata> searchProcedures(Long connectionId, String catalog, String schema, String procedureNamePattern, Long userId);
+    List<ProcedureMetadata> searchProcedures(DbContext db, String procedureNamePattern);
 
-    long countProcedures(Long connectionId, String catalog, String schema, String procedureNamePattern, Long userId);
+    long countProcedures(DbContext db, String procedureNamePattern);
 
-    String getProcedureDdl(Long connectionId, String catalog, String schema, String procedureName, Long userId);
+    String getProcedureDdl(DbContext db, String procedureName);
 
-    void deleteProcedure(Long connectionId, String catalog, String schema, String procedureName, Long userId);
+    void deleteProcedure(DbContext db, String procedureName);
 }

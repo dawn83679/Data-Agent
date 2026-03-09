@@ -7,6 +7,7 @@ import edu.zsc.ai.agent.tool.sql.model.ObjectDetail;
 import edu.zsc.ai.agent.tool.sql.model.ObjectQueryItem;
 import edu.zsc.ai.agent.tool.sql.model.ObjectSearchResponse;
 import edu.zsc.ai.agent.tool.sql.model.ObjectSearchResult;
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.response.db.ConnectionResponse;
 import edu.zsc.ai.domain.service.db.DatabaseObjectService;
 import edu.zsc.ai.domain.service.db.DatabaseService;
@@ -57,18 +58,18 @@ public class DiscoveryServiceImpl implements DiscoveryService {
     // ==================== getEnvironmentOverview ====================
 
     @Override
-    public List<ConnectionOverview> getEnvironmentOverview(Long userId) {
-        List<ConnectionResponse> connections = dbConnectionService.getAllConnections(userId);
+    public List<ConnectionOverview> getEnvironmentOverview() {
+        List<ConnectionResponse> connections = dbConnectionService.getAllConnections();
         if (CollectionUtils.isEmpty(connections)) {
             return Collections.emptyList();
         }
-        return connections.stream().map(conn -> buildConnectionOverview(conn, userId)).toList();
+        return connections.stream().map(this::buildConnectionOverview).toList();
     }
 
-    private ConnectionOverview buildConnectionOverview(ConnectionResponse conn, Long userId) {
+    private ConnectionOverview buildConnectionOverview(ConnectionResponse conn) {
         List<CatalogInfo> catalogs;
         try {
-            List<String> databases = databaseService.getDatabases(conn.getId(), userId);
+            List<String> databases = databaseService.getDatabases(conn.getId());
             catalogs = databases.stream()
                     .map(db -> new CatalogInfo(db, getSchemas(conn.getId(), db)))
                     .toList();
@@ -84,16 +85,16 @@ public class DiscoveryServiceImpl implements DiscoveryService {
 
     @Override
     public ObjectSearchResponse searchObjects(String pattern, DatabaseObjectTypeEnum type,
-                                              Long connectionId, String databaseName,
-                                              String schemaName, Long userId) {
-        List<ConnectionResponse> connections = resolveConnections(connectionId, userId);
+                                              Long connectionId, String catalog,
+                                              String schema) {
+        List<ConnectionResponse> connections = resolveConnections(connectionId);
         List<DatabaseObjectTypeEnum> typesToSearch = Objects.nonNull(type) ? List.of(type) : DEFAULT_SEARCH_TYPES;
         List<ObjectSearchResult> results = new ArrayList<>();
 
         for (ConnectionResponse conn : connections) {
-            for (String db : resolveDatabases(conn, databaseName, userId)) {
-                for (String schema : resolveSchemas(conn.getId(), db, schemaName)) {
-                    collectSearchResults(conn, db, schema, pattern, typesToSearch, userId, results);
+            for (String db : resolveDatabases(conn, catalog)) {
+                for (String s : resolveSchemas(conn.getId(), db, schema)) {
+                    collectSearchResults(conn, db, s, pattern, typesToSearch, results);
                     if (results.size() >= SEARCH_RESULT_LIMIT) {
                         List<ObjectSearchResult> truncated = results.subList(0, SEARCH_RESULT_LIMIT);
                         return new ObjectSearchResponse(truncated, truncated.size(), true);
@@ -104,20 +105,20 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         return new ObjectSearchResponse(results, results.size(), false);
     }
 
-    private List<ConnectionResponse> resolveConnections(Long connectionId, Long userId) {
+    private List<ConnectionResponse> resolveConnections(Long connectionId) {
         if (Objects.nonNull(connectionId)) {
-            return List.of(dbConnectionService.getConnectionById(connectionId, userId));
+            return List.of(dbConnectionService.getConnectionById(connectionId));
         }
-        List<ConnectionResponse> all = dbConnectionService.getAllConnections(userId);
+        List<ConnectionResponse> all = dbConnectionService.getAllConnections();
         return CollectionUtils.isEmpty(all) ? Collections.emptyList() : all;
     }
 
-    private List<String> resolveDatabases(ConnectionResponse conn, String databaseName, Long userId) {
-        if (StringUtils.isNotBlank(databaseName)) {
-            return List.of(databaseName);
+    private List<String> resolveDatabases(ConnectionResponse conn, String catalog) {
+        if (StringUtils.isNotBlank(catalog)) {
+            return List.of(catalog);
         }
         try {
-            List<String> dbs = databaseService.getDatabases(conn.getId(), userId);
+            List<String> dbs = databaseService.getDatabases(conn.getId());
             return CollectionUtils.isEmpty(dbs) ? Collections.emptyList() : dbs;
         } catch (Exception e) {
             log.warn("Failed to list databases for connection {} ({}): {}",
@@ -126,9 +127,9 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         }
     }
 
-    private List<String> resolveSchemas(Long connectionId, String database, String schemaName) {
-        if (StringUtils.isNotBlank(schemaName)) {
-            return List.of(schemaName);
+    private List<String> resolveSchemas(Long connectionId, String database, String schema) {
+        if (StringUtils.isNotBlank(schema)) {
+            return List.of(schema);
         }
         List<String> schemas = getSchemas(connectionId, database);
         // No schemas (e.g. MySQL) → use null as placeholder to still search the database
@@ -137,14 +138,15 @@ public class DiscoveryServiceImpl implements DiscoveryService {
 
     private void collectSearchResults(ConnectionResponse conn, String database, String schema,
                                       String pattern, List<DatabaseObjectTypeEnum> types,
-                                      Long userId, List<ObjectSearchResult> results) {
+                                      List<ObjectSearchResult> results) {
+        DbContext db = new DbContext(conn.getId(), database, schema);
         for (DatabaseObjectTypeEnum searchType : types) {
             if (searchType == DatabaseObjectTypeEnum.TRIGGER) {
                 continue;
             }
             try {
                 List<String> names = databaseObjectService.searchObjects(
-                        searchType, pattern, conn.getId(), database, schema, null, userId);
+                        searchType, pattern, db, null);
                 for (String name : names) {
                     results.add(new ObjectSearchResult(
                             conn.getId(), conn.getName(), conn.getDbType(),
@@ -163,17 +165,15 @@ public class DiscoveryServiceImpl implements DiscoveryService {
     // ==================== getObjectDetail ====================
 
     @Override
-    public ObjectDetail getObjectDetail(DatabaseObjectTypeEnum type, String objectName,
-                                        Long connectionId, String databaseName,
-                                        String schemaName, Long userId) {
-        String ddl = databaseObjectService.getObjectDdl(type, objectName, connectionId, databaseName, schemaName, userId);
+    public ObjectDetail getObjectDetail(DatabaseObjectTypeEnum type, String objectName, DbContext db) {
+        String ddl = databaseObjectService.getObjectDdl(type, objectName, db);
 
         Long rowCount = ROW_COUNT_TYPES.contains(type)
-                ? databaseObjectService.countObjectRows(type, connectionId, databaseName, schemaName, objectName, userId)
+                ? databaseObjectService.countObjectRows(type, db, objectName)
                 : null;
 
         List<IndexMetadata> indexes = (type == DatabaseObjectTypeEnum.TABLE)
-                ? indexService.getIndexes(connectionId, databaseName, schemaName, objectName, userId)
+                ? indexService.getIndexes(db, objectName)
                 : null;
 
         return new ObjectDetail(ddl, rowCount, indexes);
@@ -182,14 +182,13 @@ public class DiscoveryServiceImpl implements DiscoveryService {
     // ==================== getObjectDetails (batch) ====================
 
     @Override
-    public List<NamedObjectDetail> getObjectDetails(List<ObjectQueryItem> items, Long userId) {
+    public List<NamedObjectDetail> getObjectDetails(List<ObjectQueryItem> items) {
         List<NamedObjectDetail> results = new ArrayList<>(items.size());
         for (ObjectQueryItem item : items) {
             try {
                 DatabaseObjectTypeEnum type = DatabaseObjectTypeEnum.parseQueryable(item.getObjectType());
-                ObjectDetail detail = getObjectDetail(
-                        type, item.getObjectName(), item.getConnectionId(),
-                        item.getDatabaseName(), item.getSchemaName(), userId);
+                DbContext db = new DbContext(item.getConnectionId(), item.getDatabaseName(), item.getSchemaName());
+                ObjectDetail detail = getObjectDetail(type, item.getObjectName(), db);
                 results.add(new NamedObjectDetail(
                         item.getObjectName(), item.getObjectType(), true, null, detail));
             } catch (Exception e) {

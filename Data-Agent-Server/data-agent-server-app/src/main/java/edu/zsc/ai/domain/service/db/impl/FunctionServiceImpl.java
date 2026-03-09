@@ -1,5 +1,6 @@
 package edu.zsc.ai.domain.service.db.impl;
 
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.FunctionService;
 import edu.zsc.ai.plugin.capability.FunctionProvider;
@@ -19,57 +20,55 @@ public class FunctionServiceImpl implements FunctionService {
     private final ConnectionService connectionService;
 
     @Override
-    public List<FunctionMetadata> getFunctions(Long connectionId, String catalog, String schema, Long userId) {
-        connectionService.openConnection(connectionId, catalog, schema, userId);
+    public List<FunctionMetadata> getFunctions(DbContext db) {
+        connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
 
         FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
-        return provider.getFunctions(active.connection(), catalog, schema);
+        return provider.getFunctions(active.connection(), db.catalog(), db.schema());
     }
 
     @Override
-    public List<FunctionMetadata> searchFunctions(Long connectionId, String catalog, String schema,
-                                                  String functionNamePattern, Long userId) {
-        connectionService.openConnection(connectionId, catalog, schema, userId);
+    public List<FunctionMetadata> searchFunctions(DbContext db, String functionNamePattern) {
+        connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
 
         FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
-        return provider.searchFunctions(active.connection(), catalog, schema, functionNamePattern);
+        return provider.searchFunctions(active.connection(), db.catalog(), db.schema(), functionNamePattern);
     }
 
     @Override
-    public long countFunctions(Long connectionId, String catalog, String schema,
-                               String functionNamePattern, Long userId) {
-        connectionService.openConnection(connectionId, catalog, schema, userId);
+    public long countFunctions(DbContext db, String functionNamePattern) {
+        connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
 
         FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
-        return provider.countFunctions(active.connection(), catalog, schema, functionNamePattern);
+        return provider.countFunctions(active.connection(), db.catalog(), db.schema(), functionNamePattern);
     }
 
     @Override
-    public String getFunctionDdl(Long connectionId, String catalog, String schema, String functionName, Long userId) {
-        connectionService.openConnection(connectionId, catalog, schema, userId);
+    public String getFunctionDdl(DbContext db, String functionName) {
+        connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
 
         FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
-        return provider.getFunctionDdl(active.connection(), catalog, schema, functionName);
+        return provider.getFunctionDdl(active.connection(), db.catalog(), db.schema(), functionName);
     }
 
     @Override
-    public void deleteFunction(Long connectionId, String catalog, String schema, String functionName, Long userId) {
-        connectionService.openConnection(connectionId, catalog, schema, userId);
+    public void deleteFunction(DbContext db, String functionName) {
+        connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);
+        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
 
         FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
-        provider.deleteFunction(active.connection(), catalog, schema, functionName);
+        provider.deleteFunction(active.connection(), db.catalog(), db.schema(), functionName);
 
         log.info("Function deleted successfully: connectionId={}, catalog={}, schema={}, functionName={}",
-                connectionId, catalog, schema, functionName);
+                db.connectionId(), db.catalog(), db.schema(), functionName);
     }
 }

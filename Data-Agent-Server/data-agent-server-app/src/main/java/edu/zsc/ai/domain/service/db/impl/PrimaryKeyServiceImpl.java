@@ -1,5 +1,6 @@
 package edu.zsc.ai.domain.service.db.impl;
 
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.service.db.IndexService;
 import edu.zsc.ai.domain.service.db.PrimaryKeyService;
 import edu.zsc.ai.plugin.model.metadata.IndexMetadata;
@@ -18,8 +19,8 @@ public class PrimaryKeyServiceImpl implements PrimaryKeyService {
     private final IndexService indexService;
 
     @Override
-    public List<PrimaryKeyMetadata> listPrimaryKeys(Long connectionId, String catalog, String schema, String tableName, Long userId) {
-        List<IndexMetadata> indexes = indexService.getIndexes(connectionId, catalog, schema, tableName, userId);
+    public List<PrimaryKeyMetadata> listPrimaryKeys(DbContext db, String tableName) {
+        List<IndexMetadata> indexes = indexService.getIndexes(db, tableName);
         return indexes.stream()
                 .filter(IndexMetadata::isPrimaryKey)
                 .map(idx -> new PrimaryKeyMetadata(idx.name(), idx.columns()))
