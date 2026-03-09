@@ -83,7 +83,8 @@ public class ViewServiceImpl implements ViewService {
     }
 
     @Override
-    public TableDataResponse getViewData(Long connectionId, String catalog, String schema, String viewName, Long userId, Integer currentPage, Integer pageSize) {
+    public TableDataResponse getViewData(Long connectionId, String catalog, String schema, String viewName, Long userId,
+                                         Integer currentPage, Integer pageSize) {
         connectionService.openConnection(connectionId, catalog, schema, userId);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);

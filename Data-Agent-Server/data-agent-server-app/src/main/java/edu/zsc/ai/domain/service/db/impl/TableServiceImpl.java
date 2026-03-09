@@ -83,7 +83,8 @@ public class TableServiceImpl implements TableService {
     }
 
     @Override
-    public TableDataResponse getTableData(Long connectionId, String catalog, String schema, String tableName, Long userId, Integer currentPage, Integer pageSize) {
+    public TableDataResponse getTableData(Long connectionId, String catalog, String schema, String tableName, Long userId,
+                                          Integer currentPage, Integer pageSize) {
         connectionService.openConnection(connectionId, catalog, schema, userId);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(connectionId, catalog, schema, userId);

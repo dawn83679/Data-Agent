@@ -52,6 +52,13 @@ public class AgentSqlResult {
         return AgentSqlResult.builder().success(false).error(error).build();
     }
 
+    public static AgentSqlResult fromBatch(List<ExecuteSqlResponse> responses) {
+        List<AgentSqlResult> subResults = responses.stream()
+                .map(r -> r == null ? fail("null response") : from(r))
+                .toList();
+        return AgentSqlResult.builder().success(true).results(subResults).build();
+    }
+
     public static AgentSqlResult from(ExecuteSqlResponse r) {
         if (!r.isSuccess()) {
             return fail(r.getErrorMessage());

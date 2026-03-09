@@ -10,7 +10,6 @@ import edu.zsc.ai.agent.annotation.AgentTool;
 import edu.zsc.ai.agent.tool.sql.model.AgentSqlResult;
 import edu.zsc.ai.common.constant.RequestContextConstant;
 import edu.zsc.ai.common.enums.ai.ToolNameEnum;
-import edu.zsc.ai.domain.model.dto.request.db.AgentExecuteSqlRequest;
 import edu.zsc.ai.domain.model.dto.response.db.ExecuteSqlResponse;
 import edu.zsc.ai.domain.service.db.SqlExecutionService;
 import edu.zsc.ai.domain.service.db.impl.ConnectionManager;
@@ -19,6 +18,7 @@ import edu.zsc.ai.plugin.manager.DefaultPluginManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
 import java.util.Objects;
 
 
@@ -35,6 +35,9 @@ public class ExecuteSqlTool {
         "directly to the user. The quality of results depends entirely on the discovery work ",
         "you did before: correct connection, correct database, correct column names.",
         "",
+        "Accepts a list of SQL statements. Pass multiple related queries in one call to reduce ",
+        "round-trips — results are returned in a 'results' array, one entry per statement.",
+        "",
         "For maximum accuracy: call thinking first, resolve the data source via getConnections ",
         "and getCatalogNames, then verify every referenced table with getObjectDdl. SQL built ",
         "on verified DDL almost never fails. For large tables (>10000 rows), always include ",
@@ -44,15 +47,15 @@ public class ExecuteSqlTool {
             @P("Connection id from current session context") Long connectionId,
             @P("Database (catalog) name from current session context") String databaseName,
             @P(value = "Schema name from current session context; omit if not used", required = false) String schemaName,
-            @P("The SELECT statement to execute.")
-            String sql,
+            @P("List of read-only SQL statements to execute.")
+            List<String> sqls,
             InvocationParameters parameters) {
-        log.info("{} executeSelectSql, connectionId={}, database={}, schema={}, sqlLength={}",
+        log.info("{} executeSelectSql, connectionId={}, database={}, schema={}, sqlCount={}",
                 "[Tool]", connectionId, databaseName, schemaName,
-                Objects.nonNull(sql) ? sql.length() : 0);
+                Objects.nonNull(sqls) ? sqls.size() : 0);
         try {
             AgentModeGuard.assertNotPlanMode(parameters, ToolNameEnum.EXECUTE_SELECT_SQL);
-            if (!isReadOnlySql(sql, connectionId)) {
+            if (!allReadOnly(sqls, connectionId)) {
                 return AgentSqlResult.fail("Only read-only statements (SELECT, WITH, SHOW, EXPLAIN) are allowed in executeSelectSql. "
                         + "For INSERT/UPDATE/DELETE/DDL, use executeNonSelectSql instead (requires askUserConfirm first).");
             }
@@ -61,16 +64,10 @@ public class ExecuteSqlTool {
                 return AgentSqlResult.fail("Internal error: user session context is not available. "
                         + "This is a system issue — do not retry. Report the problem to the user.");
             }
-            AgentExecuteSqlRequest request = AgentExecuteSqlRequest.builder()
-                    .connectionId(connectionId)
-                    .databaseName(databaseName)
-                    .schemaName(schemaName)
-                    .sql(sql)
-                    .userId(userId)
-                    .build();
-            ExecuteSqlResponse response = sqlExecutionService.executeSql(request);
+            List<ExecuteSqlResponse> responses = sqlExecutionService.executeBatchSql(
+                    connectionId, databaseName, schemaName, userId, sqls);
             log.info("{} executeSelectSql", "[Tool done]");
-            return AgentSqlResult.from(response);
+            return AgentSqlResult.fromBatch(responses);
         } catch (Exception e) {
             log.error("{} executeSelectSql", "[Tool error]", e);
             return AgentSqlResult.fail("executeSelectSql failed for connectionId=" + connectionId
@@ -83,6 +80,9 @@ public class ExecuteSqlTool {
         "requires a valid confirmation token from askUserConfirm. This two-step flow has ",
         "prevented countless accidental data modifications and is non-negotiable.",
         "",
+        "Accepts a list of SQL statements. Pass multiple related statements in one call — ",
+        "results are returned in a 'results' array, one entry per statement.",
+        "",
         "The server automatically rejects any write without prior user confirmation. Always: ",
         "(1) finalize your SQL, (2) call askUserConfirm with impact explanation, (3) wait for ",
         "approval, (4) execute here with the exact same SQL. For read-only queries, use ",
@@ -92,12 +92,12 @@ public class ExecuteSqlTool {
             @P("Connection id from current session context") Long connectionId,
             @P("Database (catalog) name from current session context") String databaseName,
             @P(value = "Schema name from current session context; omit if not used", required = false) String schemaName,
-            @P("The non-SELECT statement to execute (INSERT, UPDATE, DELETE, DDL, etc.).")
-            String sql,
+            @P("List of non-SELECT SQL statements to execute (INSERT, UPDATE, DELETE, DDL, etc.).")
+            List<String> sqls,
             InvocationParameters parameters) {
-        log.info("{} executeNonSelectSql, connectionId={}, database={}, schema={}, sqlLength={}",
+        log.info("{} executeNonSelectSql, connectionId={}, database={}, schema={}, sqlCount={}",
                 "[Tool]", connectionId, databaseName, schemaName,
-                Objects.nonNull(sql) ? sql.length() : 0);
+                Objects.nonNull(sqls) ? sqls.size() : 0);
         try {
             AgentModeGuard.assertNotPlanMode(parameters, ToolNameEnum.EXECUTE_NON_SELECT_SQL);
             Long userId = parameters.get(RequestContextConstant.USER_ID);
@@ -107,24 +107,19 @@ public class ExecuteSqlTool {
                         + "This is a system issue — do not retry. Report the problem to the user.");
             }
 
+            String joinedSql = String.join(";\n", sqls);
             WriteConsumeResult consumeResult = writeConfirmationStore.consumeConfirmedBySql(
-                    userId, conversationId, connectionId, databaseName, schemaName, sql);
+                    userId, conversationId, connectionId, databaseName, schemaName, joinedSql);
             if (!consumeResult.success()) {
                 log.warn("[Tool] executeNonSelectSql rejected: reason={} for userId={} conversationId={}",
                         consumeResult.reason(), userId, conversationId);
                 return AgentSqlResult.fail(consumeResult.detail());
             }
 
-            AgentExecuteSqlRequest request = AgentExecuteSqlRequest.builder()
-                    .connectionId(connectionId)
-                    .databaseName(databaseName)
-                    .schemaName(schemaName)
-                    .sql(sql)
-                    .userId(userId)
-                    .build();
-            ExecuteSqlResponse response = sqlExecutionService.executeSql(request);
+            List<ExecuteSqlResponse> responses = sqlExecutionService.executeBatchSql(
+                    connectionId, databaseName, schemaName, userId, sqls);
             log.info("{} executeNonSelectSql", "[Tool done]");
-            return AgentSqlResult.from(response);
+            return AgentSqlResult.fromBatch(responses);
         } catch (Exception e) {
             log.error("{} executeNonSelectSql", "[Tool error]", e);
             return AgentSqlResult.fail("executeNonSelectSql failed for connectionId=" + connectionId
@@ -132,13 +127,13 @@ public class ExecuteSqlTool {
         }
     }
 
-    private boolean isReadOnlySql(String sql, Long connectionId) {
-        if (Objects.isNull(sql) || sql.isBlank()) return false;
+    private boolean allReadOnly(List<String> sqls, Long connectionId) {
+        if (Objects.isNull(sqls) || sqls.isEmpty()) return false;
         String pluginId = ConnectionManager.getAnyActiveConnection(connectionId)
                 .map(ConnectionManager.ActiveConnection::pluginId)
                 .orElse(null);
         SqlValidator validator = DefaultPluginManager.getInstance()
                 .getSqlValidatorByPluginId(Objects.nonNull(pluginId) ? pluginId : "");
-        return validator.classifySql(sql).isReadOnly();
+        return sqls.stream().allMatch(stmt -> validator.classifySql(stmt).isReadOnly());
     }
 }
