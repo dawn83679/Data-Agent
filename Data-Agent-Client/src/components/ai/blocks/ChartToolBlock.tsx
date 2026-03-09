@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as echarts from 'echarts';
 import type { ECharts, EChartsOption } from 'echarts';
-import { AlertTriangle, CheckCircle, ChevronDown, ChevronRight } from 'lucide-react';
+import { AlertTriangle, CheckCircle, ChevronDown, ChevronRight, Download, Copy, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAIAssistantContext } from '../AIAssistantContext';
 import { GenericToolRun } from './GenericToolRun';
 import { formatParameters } from './formatParameters';
 import { useTheme } from '../../../hooks/useTheme';
 import { I18N_KEYS } from '../../../constants/i18nKeys';
+import { COPY_FEEDBACK_DELAY_MS } from '../../../constants/timing';
 
 interface ChartToolBlockProps {
   toolName: string;
@@ -182,14 +183,96 @@ function applyThemeDefaults(option: Record<string, unknown>, theme: 'light' | 'd
   const sourceTitle = (option.title as Record<string, unknown> | undefined) ?? {};
   const sourceTitleTextStyle = (sourceTitle.textStyle as Record<string, unknown> | undefined) ?? {};
   const sourceTitleSubTextStyle = (sourceTitle.subtextStyle as Record<string, unknown> | undefined) ?? {};
+  const sourceGrid = (option.grid as Record<string, unknown> | undefined) ?? {};
 
-  return {
+  // Detect if this is a pie chart
+  const series = option.series;
+  const isPieChart = Array.isArray(series) 
+    ? series.some((s: unknown) => (s as Record<string, unknown>)?.type === 'pie')
+    : (series as Record<string, unknown> | undefined)?.type === 'pie';
+
+  // Calculate top padding based on title presence
+  const hasTitle = sourceTitle && (sourceTitle.text || sourceTitle.subtext);
+  const defaultTop = hasTitle ? 80 : 60;
+
+  const baseConfig = {
     ...option,
     backgroundColor: option.backgroundColor ?? 'transparent',
     textStyle: {
       color: textColor,
       ...sourceTextStyle,
     },
+    title: {
+      left: 'center',
+      top: 20,
+      ...sourceTitle,
+      textStyle: {
+        color: textColor,
+        fontSize: 14,
+        fontWeight: 'normal',
+        overflow: 'break',
+        width: '90%',
+        ...sourceTitleTextStyle,
+      },
+      subtextStyle: {
+        color: subTextColor,
+        ...sourceTitleSubTextStyle,
+      },
+    },
+  };
+
+  if (isPieChart) {
+    // Adjust pie chart series to have better positioning
+    const adjustedSeries = Array.isArray(series)
+      ? series.map((s: unknown) => {
+          const seriesItem = s as Record<string, unknown>;
+          if (seriesItem.type === 'pie') {
+            return {
+              ...seriesItem,
+              center: seriesItem.center ?? ['60%', '55%'],
+              radius: seriesItem.radius ?? ['0%', '65%'],
+              label: {
+                fontSize: 12,
+                ...(seriesItem.label as Record<string, unknown> | undefined),
+              },
+            };
+          }
+          return seriesItem;
+        })
+      : {
+          ...(series as Record<string, unknown>),
+          center: (series as Record<string, unknown>)?.center ?? ['60%', '55%'],
+          radius: (series as Record<string, unknown>)?.radius ?? ['0%', '65%'],
+          label: {
+            fontSize: 12,
+            ...((series as Record<string, unknown>)?.label as Record<string, unknown> | undefined),
+          },
+        };
+
+    // Special handling for pie charts
+    return {
+      ...baseConfig,
+      series: adjustedSeries,
+      legend: {
+        orient: 'vertical',
+        left: 20,
+        top: 'middle',
+        itemGap: 12,
+        itemWidth: 18,
+        itemHeight: 12,
+        ...sourceLegend,
+        textStyle: {
+          color: textColor,
+          fontSize: 12,
+          ...sourceLegendTextStyle,
+        },
+      },
+    } as EChartsOption;
+  }
+
+  // Default handling for bar/line/scatter charts
+  return {
+    ...baseConfig,
     legend: {
       ...sourceLegend,
       textStyle: {
@@ -197,16 +280,13 @@ function applyThemeDefaults(option: Record<string, unknown>, theme: 'light' | 'd
         ...sourceLegendTextStyle,
       },
     },
-    title: {
-      ...sourceTitle,
-      textStyle: {
-        color: textColor,
-        ...sourceTitleTextStyle,
-      },
-      subtextStyle: {
-        color: subTextColor,
-        ...sourceTitleSubTextStyle,
-      },
+    grid: {
+      top: defaultTop,
+      left: 70,
+      right: 50,
+      bottom: 100,
+      containLabel: true,
+      ...sourceGrid,
     },
     xAxis: mergeThemeAxis(option.xAxis, isDark),
     yAxis: mergeThemeAxis(option.yAxis, isDark),
@@ -246,6 +326,52 @@ export function ChartToolBlock({
   const chartInstanceRef = useRef<ECharts | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleExportChart = () => {
+    const chart = chartInstanceRef.current;
+    if (!chart) return;
+    
+    const url = chart.getDataURL({
+      type: 'png',
+      pixelRatio: 2,
+      backgroundColor: theme === 'dark' ? '#1f2937' : '#ffffff',
+    });
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `chart-${Date.now()}.png`;
+    link.click();
+  };
+
+  const handleCopyImage = async () => {
+    const chart = chartInstanceRef.current;
+    if (!chart) return;
+    
+    try {
+      const dataUrl = chart.getDataURL({
+        type: 'png',
+        pixelRatio: 2,
+        backgroundColor: theme === 'dark' ? '#1f2937' : '#ffffff',
+      });
+      
+      // Convert data URL to blob
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      
+      // Copy to clipboard
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'image/png': blob
+        })
+      ]);
+      
+      setCopied(true);
+      setTimeout(() => setCopied(false), COPY_FEEDBACK_DELAY_MS);
+    } catch (error) {
+      console.error('Failed to copy image:', error);
+    }
+  };
 
   const parsedParams = useMemo(() => parseChartParams(parametersData), [parametersData]);
   const chartPayload = useMemo(() => parseChartPayload(responseData), [responseData]);
@@ -386,10 +512,36 @@ export function ChartToolBlock({
             </div>
           ) : (
             <>
-              <div
-                ref={chartContainerRef}
-                className="w-full h-72 rounded border theme-border theme-bg-main"
-              />
+              <div className="relative group">
+                <div
+                  ref={chartContainerRef}
+                  className="w-full min-h-[400px] h-[450px] rounded border theme-border theme-bg-main"
+                />
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-sm border theme-border overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={handleCopyImage}
+                      className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-r theme-border"
+                      title={copied ? t(I18N_KEYS.AI.CHART_ACTIONS.COPIED) : t(I18N_KEYS.AI.CHART_ACTIONS.COPY_IMAGE)}
+                    >
+                      {copied ? (
+                        <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+                      ) : (
+                        <Copy className="w-4 h-4 theme-text-primary" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportChart}
+                      className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      title={t(I18N_KEYS.AI.CHART_ACTIONS.DOWNLOAD_PNG)}
+                    >
+                      <Download className="w-4 h-4 theme-text-primary" />
+                    </button>
+                  </div>
+                </div>
+              </div>
               {chartDescription !== '' && (
                 <div className="rounded border theme-border px-2 py-1.5 text-[11px] theme-text-secondary whitespace-pre-wrap">
                   {chartDescription}

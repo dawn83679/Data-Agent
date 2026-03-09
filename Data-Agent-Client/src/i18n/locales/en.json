@@ -196,6 +196,11 @@
       "area": "Area Chart",
       "unknown": "Chart"
     },
+    "chartActions": {
+      "copyImage": "Copy image",
+      "copied": "Copied!",
+      "downloadPng": "Download as PNG"
+    },
     "writeConfirm": {
       "label": "Write Confirmation Required",
       "labelAction": "The following SQL will be executed",
