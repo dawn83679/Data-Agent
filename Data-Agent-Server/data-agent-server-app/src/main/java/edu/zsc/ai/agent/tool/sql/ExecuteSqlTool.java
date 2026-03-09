@@ -3,13 +3,14 @@ package edu.zsc.ai.agent.tool.sql;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.invocation.InvocationParameters;
+import edu.zsc.ai.agent.tool.ToolContext;
 import edu.zsc.ai.agent.tool.ask.confirm.WriteConfirmationStore;
 import edu.zsc.ai.agent.tool.ask.confirm.WriteConsumeResult;
 import edu.zsc.ai.agent.guard.AgentModeGuard;
 import edu.zsc.ai.agent.annotation.AgentTool;
 import edu.zsc.ai.agent.tool.sql.model.AgentSqlResult;
-import edu.zsc.ai.common.constant.RequestContextConstant;
 import edu.zsc.ai.common.enums.ai.ToolNameEnum;
+import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.response.db.ExecuteSqlResponse;
 import edu.zsc.ai.domain.service.db.SqlExecutionService;
 import edu.zsc.ai.domain.service.db.impl.ConnectionManager;
@@ -50,22 +51,17 @@ public class ExecuteSqlTool {
             @P("List of read-only SQL statements to execute.")
             List<String> sqls,
             InvocationParameters parameters) {
-        log.info("{} executeSelectSql, connectionId={}, database={}, schema={}, sqlCount={}",
-                "[Tool]", connectionId, databaseName, schemaName,
-                Objects.nonNull(sqls) ? sqls.size() : 0);
-        try {
-            AgentModeGuard.assertNotPlanMode(parameters, ToolNameEnum.EXECUTE_SELECT_SQL);
+        try (var ctx = ToolContext.from(parameters)) {
+            log.info("{} executeSelectSql, connectionId={}, database={}, schema={}, sqlCount={}",
+                    "[Tool]", connectionId, databaseName, schemaName,
+                    Objects.nonNull(sqls) ? sqls.size() : 0);
+            AgentModeGuard.assertNotPlanMode(ToolNameEnum.EXECUTE_SELECT_SQL);
             if (!allReadOnly(sqls, connectionId)) {
                 return AgentSqlResult.fail("Only read-only statements (SELECT, WITH, SHOW, EXPLAIN) are allowed in executeSelectSql. "
                         + "For INSERT/UPDATE/DELETE/DDL, use executeNonSelectSql instead (requires askUserConfirm first).");
             }
-            Long userId = parameters.get(RequestContextConstant.USER_ID);
-            if (Objects.isNull(userId)) {
-                return AgentSqlResult.fail("Internal error: user session context is not available. "
-                        + "This is a system issue — do not retry. Report the problem to the user.");
-            }
-            List<ExecuteSqlResponse> responses = sqlExecutionService.executeBatchSql(
-                    connectionId, databaseName, schemaName, userId, sqls);
+            DbContext db = new DbContext(connectionId, databaseName, schemaName);
+            List<ExecuteSqlResponse> responses = sqlExecutionService.executeBatchSql(db, sqls);
             log.info("{} executeSelectSql", "[Tool done]");
             return AgentSqlResult.fromBatch(responses);
         } catch (Exception e) {
@@ -95,29 +91,21 @@ public class ExecuteSqlTool {
             @P("List of non-SELECT SQL statements to execute (INSERT, UPDATE, DELETE, DDL, etc.).")
             List<String> sqls,
             InvocationParameters parameters) {
-        log.info("{} executeNonSelectSql, connectionId={}, database={}, schema={}, sqlCount={}",
-                "[Tool]", connectionId, databaseName, schemaName,
-                Objects.nonNull(sqls) ? sqls.size() : 0);
-        try {
-            AgentModeGuard.assertNotPlanMode(parameters, ToolNameEnum.EXECUTE_NON_SELECT_SQL);
-            Long userId = parameters.get(RequestContextConstant.USER_ID);
-            Long conversationId = parameters.get(RequestContextConstant.CONVERSATION_ID);
-            if (Objects.isNull(userId) || Objects.isNull(conversationId)) {
-                return AgentSqlResult.fail("Internal error: user or conversation session context is not available. "
-                        + "This is a system issue — do not retry. Report the problem to the user.");
-            }
+        try (var ctx = ToolContext.from(parameters)) {
+            log.info("{} executeNonSelectSql, connectionId={}, database={}, schema={}, sqlCount={}",
+                    "[Tool]", connectionId, databaseName, schemaName,
+                    Objects.nonNull(sqls) ? sqls.size() : 0);
+            AgentModeGuard.assertNotPlanMode(ToolNameEnum.EXECUTE_NON_SELECT_SQL);
 
+            DbContext db = new DbContext(connectionId, databaseName, schemaName);
             String joinedSql = String.join(";\n", sqls);
-            WriteConsumeResult consumeResult = writeConfirmationStore.consumeConfirmedBySql(
-                    userId, conversationId, connectionId, databaseName, schemaName, joinedSql);
+            WriteConsumeResult consumeResult = writeConfirmationStore.consumeConfirmedBySql(db, joinedSql);
             if (!consumeResult.success()) {
-                log.warn("[Tool] executeNonSelectSql rejected: reason={} for userId={} conversationId={}",
-                        consumeResult.reason(), userId, conversationId);
+                log.warn("[Tool] executeNonSelectSql rejected: reason={}", consumeResult.reason());
                 return AgentSqlResult.fail(consumeResult.detail());
             }
 
-            List<ExecuteSqlResponse> responses = sqlExecutionService.executeBatchSql(
-                    connectionId, databaseName, schemaName, userId, sqls);
+            List<ExecuteSqlResponse> responses = sqlExecutionService.executeBatchSql(db, sqls);
             log.info("{} executeNonSelectSql", "[Tool done]");
             return AgentSqlResult.fromBatch(responses);
         } catch (Exception e) {

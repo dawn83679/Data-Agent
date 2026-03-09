@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
+import edu.zsc.ai.context.RequestContext;
+import edu.zsc.ai.domain.model.context.DbContext;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -33,19 +35,21 @@ public class WriteConfirmationStore {
             .build();
 
     /**
-     * Create a new PENDING confirmation token bound to the given user, conversation and connection context.
+     * Create a new PENDING confirmation token bound to the current user and conversation context.
      */
-    public WriteConfirmationEntry create(Long userId, Long conversationId, Long connectionId,
-                                         String sql, String databaseName, String schemaName) {
+    public WriteConfirmationEntry create(DbContext db, String sql) {
+        Long userId = RequestContext.getUserId();
+        Long conversationId = RequestContext.getConversationId();
+
         String token = UUID.randomUUID().toString();
         WriteConfirmationEntry entry = WriteConfirmationEntry.builder()
                 .token(token)
                 .userId(userId)
                 .conversationId(conversationId)
-                .connectionId(connectionId)
+                .connectionId(db.connectionId())
                 .sql(sql)
-                .databaseName(databaseName)
-                .schemaName(schemaName)
+                .catalog(db.catalog())
+                .schema(db.schema())
                 .status(WriteConfirmationStatus.PENDING)
                 .build();
         cache.put(token, entry);
@@ -59,7 +63,8 @@ public class WriteConfirmationStore {
      *
      * @return true if successfully confirmed, false otherwise
      */
-    public boolean confirm(String token, Long userId) {
+    public boolean confirm(String token) {
+        Long userId = RequestContext.getUserId();
         WriteConfirmationEntry entry = cache.getIfPresent(token);
         if (entry == null || !entry.getUserId().equals(userId) || entry.getStatus() != WriteConfirmationStatus.PENDING) {
             log.warn("[WriteConfirm] confirm failed: invalid token, ownership mismatch, or not PENDING. token={}", token);
@@ -76,7 +81,8 @@ public class WriteConfirmationStore {
      *
      * @return true if found and removed, false if not found or not owned by this user
      */
-    public boolean cancel(String token, Long userId) {
+    public boolean cancel(String token) {
+        Long userId = RequestContext.getUserId();
         WriteConfirmationEntry entry = cache.getIfPresent(token);
         if (entry == null || !entry.getUserId().equals(userId)) {
             log.warn("[WriteConfirm] cancel failed: token not found or ownership mismatch. token={}", token);
@@ -88,13 +94,14 @@ public class WriteConfirmationStore {
     }
 
     /**
-     * Find a CONFIRMED token matching userId + conversationId + connection + database + schema + sql, then consume it.
+     * Find a CONFIRMED token matching current userId + conversationId + connection + catalog + schema + sql, then consume it.
      * The agent never needs to know or pass the token — the server matches it automatically.
      *
      * @return a {@link WriteConsumeResult} indicating success or a structured failure reason
      */
-    public WriteConsumeResult consumeConfirmedBySql(Long userId, Long conversationId, Long connectionId,
-                                                     String databaseName, String schemaName, String sql) {
+    public WriteConsumeResult consumeConfirmedBySql(DbContext db, String sql) {
+        Long userId = RequestContext.getUserId();
+        Long conversationId = RequestContext.getConversationId();
         String normalizedSql = normalizeSql(sql);
 
         // Step 1: find all tokens for this user + conversation
@@ -130,9 +137,9 @@ public class WriteConfirmationStore {
                 .toList();
 
         for (WriteConfirmationEntry entry : confirmedTokens) {
-            if (Objects.equals(entry.getConnectionId(), connectionId)
-                    && Objects.equals(entry.getDatabaseName(), databaseName)
-                    && Objects.equals(entry.getSchemaName(), schemaName)
+            if (Objects.equals(entry.getConnectionId(), db.connectionId())
+                    && Objects.equals(entry.getCatalog(), db.catalog())
+                    && Objects.equals(entry.getSchema(), db.schema())
                     && normalizeSql(entry.getSql()).equals(normalizedSql)) {
                 entry.setStatus(WriteConfirmationStatus.CONSUMED);
                 log.info("[WriteConfirm] Consumed by sql match: userId={} conversationId={}", userId, conversationId);
@@ -143,23 +150,23 @@ public class WriteConfirmationStore {
         // Step 4: no exact match — diagnose the mismatch using the first CONFIRMED token
         WriteConfirmationEntry closest = confirmedTokens.get(0);
 
-        if (!Objects.equals(closest.getConnectionId(), connectionId)) {
+        if (!Objects.equals(closest.getConnectionId(), db.connectionId())) {
             return WriteConsumeResult.fail("PARAM_MISMATCH",
                     "Confirmed token connectionId=" + closest.getConnectionId()
-                            + " but executeNonSelectSql received connectionId=" + connectionId
+                            + " but executeNonSelectSql received connectionId=" + db.connectionId()
                             + ". Use the same connectionId.");
         }
-        if (!Objects.equals(closest.getDatabaseName(), databaseName)) {
+        if (!Objects.equals(closest.getCatalog(), db.catalog())) {
             return WriteConsumeResult.fail("PARAM_MISMATCH",
-                    "Confirmed token databaseName='" + closest.getDatabaseName()
-                            + "' but executeNonSelectSql received databaseName='" + databaseName
-                            + "'. Use the same databaseName.");
+                    "Confirmed token catalog='" + closest.getCatalog()
+                            + "' but executeNonSelectSql received catalog='" + db.catalog()
+                            + "'. Use the same catalog.");
         }
-        if (!Objects.equals(closest.getSchemaName(), schemaName)) {
+        if (!Objects.equals(closest.getSchema(), db.schema())) {
             return WriteConsumeResult.fail("PARAM_MISMATCH",
-                    "Confirmed token schemaName='" + closest.getSchemaName()
-                            + "' but executeNonSelectSql received schemaName='" + schemaName
-                            + "'. Use the same schemaName.");
+                    "Confirmed token schema='" + closest.getSchema()
+                            + "' but executeNonSelectSql received schema='" + db.schema()
+                            + "'. Use the same schema.");
         }
         // SQL must differ
         log.warn("[WriteConfirm] consumeConfirmedBySql: SQL mismatch for userId={} conversationId={}", userId, conversationId);

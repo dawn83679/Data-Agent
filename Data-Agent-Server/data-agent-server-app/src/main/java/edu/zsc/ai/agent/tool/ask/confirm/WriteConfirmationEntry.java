@@ -21,7 +21,7 @@ public class WriteConfirmationEntry {
     private Long conversationId;
     private Long connectionId;
     private String sql;
-    private String databaseName;
-    private String schemaName;
+    private String catalog;
+    private String schema;
     private WriteConfirmationStatus status;
 }

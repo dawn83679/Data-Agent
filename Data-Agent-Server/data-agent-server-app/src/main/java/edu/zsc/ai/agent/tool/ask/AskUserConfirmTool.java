@@ -7,7 +7,8 @@ import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.agent.tool.ask.confirm.WriteConfirmationEntry;
 import edu.zsc.ai.agent.tool.ask.confirm.WriteConfirmationStore;
 import edu.zsc.ai.agent.annotation.AgentTool;
-import edu.zsc.ai.common.constant.RequestContextConstant;
+import edu.zsc.ai.agent.tool.ToolContext;
+import edu.zsc.ai.domain.model.context.DbContext;
 import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -49,27 +50,19 @@ public class AskUserConfirmTool {
             @P("Brief explanation of what this operation does and its potential impact")
             String explanation,
             InvocationParameters parameters) {
+        try (var ctx = ToolContext.from(parameters)) {
+            log.info("[Tool] askUserConfirm, connectionId={}, database={}, schema={}, sqlLength={}",
+                    connectionId, databaseName, schemaName, sql != null ? sql.length() : 0);
 
-        log.info("[Tool] askUserConfirm, connectionId={}, database={}, schema={}, sqlLength={}",
-                connectionId, databaseName, schemaName, sql != null ? sql.length() : 0);
+            DbContext db = new DbContext(connectionId, databaseName, schemaName);
+            WriteConfirmationEntry entry = confirmationStore.create(db, sql);
 
-        Long userId = parameters.get(RequestContextConstant.USER_ID);
-        Long conversationId = parameters.get(RequestContextConstant.CONVERSATION_ID);
-
-        if (userId == null || conversationId == null) {
-            log.error("[Tool] askUserConfirm: missing context userId={} conversationId={}", userId, conversationId);
-            return WriteConfirmationResult.error("Internal error: user or conversation session context is not available. "
-                    + "This is a system issue — do not retry. Report the problem to the user.");
+            log.info("[Tool done] askUserConfirm, token={}", entry.getToken());
+            return WriteConfirmationResult.builder()
+                    .confirmationToken(entry.getToken())
+                    .expiresInSeconds(300)
+                    .build();
         }
-
-        WriteConfirmationEntry entry = confirmationStore.create(
-                userId, conversationId, connectionId, sql, databaseName, schemaName);
-
-        log.info("[Tool done] askUserConfirm, token={}", entry.getToken());
-        return WriteConfirmationResult.builder()
-                .confirmationToken(entry.getToken())
-                .expiresInSeconds(300)
-                .build();
     }
 
     /**
