@@ -1,6 +1,6 @@
 package edu.zsc.ai.config.ai;
 
-import edu.zsc.ai.common.enums.ai.PromptLanguageEnum;
+import edu.zsc.ai.common.enums.ai.PromptEnum;
 import lombok.SneakyThrows;
 import org.springframework.core.io.ClassPathResource;
 
@@ -10,16 +10,16 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class PromptConfig {
 
-    private static final Map<String, String> SYSTEM_PROMPTS = buildPromptCache();
+    private static final Map<String, String> PROMPT_CACHE = buildPromptCache();
 
-    public static String getSystemPrompt(PromptLanguageEnum language) {
-        return SYSTEM_PROMPTS.get(language.getCode());
+    public static String getPrompt(PromptEnum prompt) {
+        return PROMPT_CACHE.get(prompt.getCode());
     }
 
     private static Map<String, String> buildPromptCache() {
         Map<String, String> cache = new ConcurrentHashMap<>();
-        for (PromptLanguageEnum lang : PromptLanguageEnum.values()) {
-            cache.put(lang.getCode(), loadClassPathResource(lang.getSystemPromptResource()));
+        for (PromptEnum prompt : PromptEnum.values()) {
+            cache.put(prompt.getCode(), loadClassPathResource(prompt.getSystemPromptResource()));
         }
         return cache;
     }

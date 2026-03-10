@@ -1,7 +1,9 @@
 package edu.zsc.ai.config.ai;
 
+import dev.langchain4j.community.model.dashscope.QwenChatModel;
 import dev.langchain4j.community.model.dashscope.QwenChatRequestParameters;
 import dev.langchain4j.community.model.dashscope.QwenStreamingChatModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import edu.zsc.ai.common.enums.ai.ModelEnum;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,15 @@ public class QwenModelConfig implements ChatModelProvider {
         );
     }
 
+    @Override
+    public Map<String, ChatModel> chatModels() {
+        return Map.of(
+                ModelEnum.QWEN3_MAX.getModelName(), buildChatModel(ModelEnum.QWEN3_MAX),
+                ModelEnum.QWEN3_MAX_THINKING.getModelName(), buildChatModel(ModelEnum.QWEN3_MAX),
+                ModelEnum.QWEN_PLUS.getModelName(), buildChatModel(ModelEnum.QWEN_PLUS)
+        );
+    }
+
     private StreamingChatModel buildModel(ModelEnum model, boolean enableThinking) {
         QwenChatRequestParameters.Builder params = QwenChatRequestParameters.builder()
                 .enableThinking(enableThinking)
@@ -37,6 +48,13 @@ public class QwenModelConfig implements ChatModelProvider {
                 .apiKey(qwenProperties.getApiKey())
                 .modelName(model.getModelName())
                 .defaultRequestParameters(params.build())
+                .build();
+    }
+
+    private ChatModel buildChatModel(ModelEnum model) {
+        return QwenChatModel.builder()
+                .apiKey(qwenProperties.getApiKey())
+                .modelName(model.getModelName())
                 .build();
     }
 }

@@ -6,7 +6,7 @@ import dev.langchain4j.service.AiServices;
 import edu.zsc.ai.agent.ReActAgent;
 import edu.zsc.ai.agent.ReActAgentProvider;
 import edu.zsc.ai.common.enums.ai.AgentModeEnum;
-import edu.zsc.ai.common.enums.ai.PromptLanguageEnum;
+import edu.zsc.ai.common.enums.ai.PromptEnum;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -33,7 +33,7 @@ public class AgentManager {
     @Primary
     public ReActAgentProvider reActAgentProvider() {
         return (modelName, language, agentMode) -> {
-            PromptLanguageEnum promptLanguage = PromptLanguageEnum.fromRequestLanguage(language);
+            PromptEnum promptLanguage = PromptEnum.fromRequestLanguage(language);
             AgentModeEnum mode = AgentModeEnum.fromRequest(agentMode);
             StreamingChatModel model = modelsByName.get(modelName);
             if (model == null) {
@@ -44,7 +44,7 @@ public class AgentManager {
             return dynamicAgentCache.computeIfAbsent(cacheKey, key -> {
                 log.info("Create ReActAgent dynamically: model={}, language={}, mode={}",
                         modelName, promptLanguage.getCode(), mode.getCode());
-                String systemPrompt = PromptConfig.getSystemPrompt(promptLanguage);
+                String systemPrompt = PromptConfig.getPrompt(promptLanguage);
                 return buildAgent(model, mode, systemPrompt);
             });
         };
