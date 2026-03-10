@@ -88,17 +88,10 @@ function renderToolEntry(entry: SubAgentToolEntry, index: number) {
   );
 }
 
-function useContentFingerprint(entries: SubAgentBlockModel['entries']): number {
-  const last = entries[entries.length - 1];
-  const lastLen = last?.kind === 'text' ? last.data.length : 0;
-  return entries.length * 100000 + lastLen;
-}
-
 export function SubAgentBlock({ block }: SubAgentBlockProps) {
   const isRunning = (block.status ?? '').toLowerCase() === 'running';
   const [expanded, setExpanded] = useState(isRunning);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const contentFingerprint = useContentFingerprint(block.entries);
 
   useEffect(() => {
     if (isRunning) {
@@ -108,11 +101,23 @@ export function SubAgentBlock({ block }: SubAgentBlockProps) {
     }
   }, [isRunning]);
 
+  // Auto-scroll via MutationObserver — fires after DOM actually updates (including
+  // async markdown/code-block rendering), so scrollHeight is always accurate.
   useEffect(() => {
-    if (isRunning && expanded && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [contentFingerprint, isRunning, expanded]);
+    const container = scrollRef.current;
+    if (!container || !isRunning || !expanded) return;
+
+    const scrollToBottom = () => {
+      container.scrollTop = container.scrollHeight;
+    };
+
+    scrollToBottom();
+
+    const observer = new MutationObserver(scrollToBottom);
+    observer.observe(container, { childList: true, subtree: true, characterData: true });
+
+    return () => observer.disconnect();
+  }, [isRunning, expanded]);
 
   return (
     <div className="mb-1.5 last:mb-0">

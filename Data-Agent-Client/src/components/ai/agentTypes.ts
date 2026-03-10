@@ -1,5 +1,5 @@
 /** List of available agent types */
-export const AGENT_TYPES = ['Agent', 'Plan'] as const;
+export const AGENT_TYPES = ['Agent', 'Plan', 'Multi-Agent'] as const;
 
 /** Agent type definition derived from AGENT_TYPES */
 export type AgentType = (typeof AGENT_TYPES)[number];
@@ -15,6 +15,7 @@ export const AGENT_COLORS: Record<
     sendBtn: string;
     popupHighlight: string;
     mentionText: string;
+    caret: string;
   }
 > = {
   Agent: {
@@ -25,6 +26,7 @@ export const AGENT_COLORS: Record<
     sendBtn: 'text-violet-400 hover:text-violet-300',
     popupHighlight: 'bg-violet-500 text-white',
     mentionText: 'text-violet-400',
+    caret: 'caret-violet-400',
   },
   Plan: {
     icon: 'text-amber-400',
@@ -34,5 +36,16 @@ export const AGENT_COLORS: Record<
     sendBtn: 'text-amber-400 hover:text-amber-300',
     popupHighlight: 'bg-amber-500 text-white',
     mentionText: 'text-amber-400',
+    caret: 'caret-amber-400',
+  },
+  'Multi-Agent': {
+    icon: 'text-emerald-400',
+    bg: 'bg-emerald-500/20',
+    border: 'border-emerald-400/50',
+    focusBorder: 'focus-within:border-emerald-400/50',
+    sendBtn: 'text-emerald-400 hover:text-emerald-300',
+    popupHighlight: 'bg-emerald-500 text-white',
+    mentionText: 'text-emerald-400',
+    caret: 'caret-emerald-400',
   },
 };

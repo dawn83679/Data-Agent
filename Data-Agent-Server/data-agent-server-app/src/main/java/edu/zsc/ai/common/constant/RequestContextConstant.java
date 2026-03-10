@@ -14,4 +14,10 @@ public final class RequestContextConstant {
     public static final String DATABASE_NAME = "databaseName";
     public static final String SCHEMA_NAME = "schemaName";
     public static final String AGENT_MODE = "agentMode";
+    public static final String MODEL_NAME = "modelName";
+    public static final String LANGUAGE = "language";
+    public static final String RUN_ID = "runId";
+    public static final String TASK_ID = "taskId";
+    public static final String AGENT_ROLE = "agentRole";
+    public static final String PARENT_AGENT_ROLE = "parentAgentRole";
 }

@@ -275,7 +275,7 @@ export const ChatInputArea = forwardRef<ChatInputAreaRef, ChatInputAreaProps>(
                         onCompositionStart={handleCompositionStart}
                         onCompositionEnd={handleCompositionEnd}
                         placeholder={t('ai.placeholder_mention')}
-                        className={`relative z-10 w-full bg-transparent text-xs p-3 focus:outline-none placeholder:text-muted-foreground/50 overflow-y-auto whitespace-pre-wrap ${agent === 'Agent' ? 'caret-violet-400' : 'caret-amber-400'}`}
+                        className={`relative z-10 w-full bg-transparent text-xs p-3 focus:outline-none placeholder:text-muted-foreground/50 overflow-y-auto whitespace-pre-wrap ${AGENT_COLORS[agent].caret}`}
                         style={{
                             resize: 'none',
                             minHeight: '96px',
