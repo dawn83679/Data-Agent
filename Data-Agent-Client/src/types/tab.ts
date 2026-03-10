@@ -20,7 +20,14 @@ export interface TableTabMetadata extends ConsoleTabMetadata {
   objectType: 'table' | 'view';
   catalog?: string;
   schema?: string;
+  highlightColumn?: string;
+  currentPage?: number;
+  pageSize?: number;
+  whereClause?: string;
+  orderBy?: string;
 }
+
+export type TableDataTabMetadata = TableTabMetadata;
 
 /**
  * Plan Tab Metadata
@@ -29,3 +36,5 @@ export interface TableTabMetadata extends ConsoleTabMetadata {
 export interface PlanTabMetadata {
   planPayload: import('../components/ai/blocks/exitPlanModeTypes').ExitPlanPayload;
 }
+
+export type WorkspaceTabMetadata = ConsoleTabMetadata | TableTabMetadata | PlanTabMetadata;

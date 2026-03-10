@@ -29,7 +29,13 @@ public class ToolContext implements AutoCloseable {
                     .connectionId(params.get(RequestContextConstant.CONNECTION_ID))
                     .catalog(params.get(RequestContextConstant.DATABASE_NAME))
                     .schema(params.get(RequestContextConstant.SCHEMA_NAME))
+                    .modelName(params.get(RequestContextConstant.MODEL_NAME))
+                    .language(params.get(RequestContextConstant.LANGUAGE))
                     .agentMode(params.get(RequestContextConstant.AGENT_MODE))
+                    .runId(params.get(RequestContextConstant.RUN_ID))
+                    .taskId(params.get(RequestContextConstant.TASK_ID))
+                    .agentRole(params.get(RequestContextConstant.AGENT_ROLE))
+                    .parentAgentRole(params.get(RequestContextConstant.PARENT_AGENT_ROLE))
                     .build();
             RequestContext.set(contextInfo);
         }

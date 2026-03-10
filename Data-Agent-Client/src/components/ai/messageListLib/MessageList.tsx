@@ -10,6 +10,7 @@ import { segmentsHaveTodo } from './segmentTodoUtils';
 import { useTodoInMessages } from './useTodoInMessages';
 import { PlanningIndicator } from '../blocks';
 import { getToolType, ToolType } from '../blocks/toolTypes';
+import { projectSubAgentBlocks } from './subAgentProjection';
 import type { Message, TodoBoxSpec } from './types';
 import { SegmentKind } from './types';
 
@@ -62,9 +63,13 @@ export function MessageList({
         const isLastMessage = actualIndex === displayMessages.length - 1;
         const isLastAssistantStreaming =
           isLastMessage && msg.role === MessageRole.ASSISTANT && isLoading;
+        const subAgentProjection =
+          msg.blocks && msg.blocks.length > 0
+            ? projectSubAgentBlocks(msg.blocks)
+            : { anchors: [], anchorByToolCallId: new Map() };
         let segments =
           msg.blocks && msg.blocks.length > 0
-            ? blocksToSegments(msg.blocks)
+            ? blocksToSegments(msg.blocks, subAgentProjection.anchorByToolCallId)
             : msg.role === MessageRole.ASSISTANT && (msg.content ?? '').trim() !== ''
               ? [{ kind: SegmentKind.TEXT as const, data: msg.content ?? '' }]
               : [];

@@ -1,11 +1,13 @@
 package edu.zsc.ai.domain.service.agent.impl;
 
 import edu.zsc.ai.api.model.request.ChatRequest;
+import edu.zsc.ai.common.enums.ai.AgentModeEnum;
 import edu.zsc.ai.domain.model.dto.response.agent.ChatResponseBlock;
 import edu.zsc.ai.domain.service.agent.ChatService;
 import edu.zsc.ai.domain.service.agent.ChatSession;
 import edu.zsc.ai.domain.service.agent.ChatSessionFactory;
 import edu.zsc.ai.domain.service.agent.ChatStreamBridge;
+import edu.zsc.ai.domain.service.agent.multi.MultiAgentChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,10 +23,15 @@ public class ChatServiceImpl implements ChatService {
 
     private final ChatSessionFactory chatSessionFactory;
     private final ChatStreamBridge chatStreamBridge;
+    private final MultiAgentChatService multiAgentChatService;
 
     @Override
     public Flux<ChatResponseBlock> chat(ChatRequest request) {
         ChatSession session = chatSessionFactory.create(request);
+
+        if (session.agentMode() == AgentModeEnum.MULTI_AGENT) {
+            return multiAgentChatService.chat(request, session);
+        }
 
         AtomicBoolean enterPlanTriggered = new AtomicBoolean(false);
 

@@ -39,8 +39,8 @@ public class ExecuteSqlTool {
         "Accepts a list of SQL statements. Pass multiple related queries in one call to reduce ",
         "round-trips — results are returned in a 'results' array, one entry per statement.",
         "",
-        "For maximum accuracy: call thinking first, resolve the data source via getConnections ",
-        "and getCatalogNames, then verify every referenced table with getObjectDdl. SQL built ",
+        "For maximum accuracy: call thinking first, resolve the data source via getEnvironmentOverview ",
+        "or searchObjects, then verify every referenced table with getObjectDetail. SQL built ",
         "on verified DDL almost never fails. For large tables (>10000 rows), always include ",
         "WHERE/LIMIT — full-table scans frustrate users and waste resources."
     })

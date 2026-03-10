@@ -1,5 +1,5 @@
 import React from 'react';
-import { StatusBlock, TextBlock, ThoughtBlock, ToolRunBlock } from '../blocks';
+import { StatusBlock, SubAgentBlock, TextBlock, ThoughtBlock, ToolRunBlock } from '../blocks';
 import type { Segment } from './types';
 import { SegmentKind } from './types';
 
@@ -23,6 +23,8 @@ export function renderSegment(
       );
     case SegmentKind.STATUS:
       return <StatusBlock key={key} statusKey={segment.statusKey} />;
+    case SegmentKind.SUB_AGENT:
+      return <SubAgentBlock key={key} block={segment.block} />;
     case SegmentKind.TOOL_RUN:
       return (
         <ToolRunBlock

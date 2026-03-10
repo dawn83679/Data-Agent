@@ -43,6 +43,8 @@ public class ChatSessionFactory {
         AgentModeEnum agentMode = AgentModeEnum.fromRequest(request.getAgentType());
 
         RequestContext.get().setAgentMode(agentMode.getCode());
+        RequestContext.get().setModelName(modelName);
+        RequestContext.get().setLanguage(request.getLanguage());
 
         ReActAgent agent = reActAgentProvider.getAgent(modelName, request.getLanguage(), agentMode.getCode());
 
@@ -63,17 +65,51 @@ public class ChatSessionFactory {
      * reusing the conversation and model from the original session.
      */
     public ChatSession createPlanContinuation(ChatSession original, ChatRequest request) {
-        RequestContext.set(original.contextSnapshot());
-        RequestContext.get().setAgentMode(AgentModeEnum.PLAN.getCode());
+        return createContinuation(
+                original,
+                request.getLanguage(),
+                "Continue analyzing the user's request and create a structured execution plan.",
+                AgentModeEnum.PLAN);
+    }
 
-        ReActAgent planAgent = reActAgentProvider.getAgent(
-                original.modelName(), request.getLanguage(), AgentModeEnum.PLAN.getCode());
-        InvocationParameters planParams = InvocationParameters.from(RequestContext.toMap());
-        String continuation = "Continue analyzing the user's request and create a structured execution plan.";
+    public ChatSession createContinuation(
+            ChatSession original,
+            String language,
+            String message,
+            AgentModeEnum targetMode) {
+        return createContinuation(original, language, message, targetMode, null);
+    }
 
-        return new ChatSession(original.modelName(), AgentModeEnum.PLAN, planAgent,
-                original.memoryId(), continuation, planParams,
-                original.conversationId(), original.contextSnapshot());
+    public ChatSession createContinuation(
+            ChatSession original,
+            String language,
+            String message,
+            AgentModeEnum targetMode,
+            RequestContextInfo contextOverride) {
+        RequestContextInfo base = contextOverride != null ? contextOverride : original.contextSnapshot();
+        RequestContextInfo continuationContext = RequestContextInfo.builder()
+                .conversationId(base.getConversationId())
+                .userId(base.getUserId())
+                .connectionId(base.getConnectionId())
+                .catalog(base.getCatalog())
+                .schema(base.getSchema())
+                .modelName(base.getModelName())
+                .language(language != null ? language : base.getLanguage())
+                .agentMode(targetMode.getCode())
+                .runId(base.getRunId())
+                .taskId(base.getTaskId())
+                .agentRole(base.getAgentRole())
+                .parentAgentRole(base.getParentAgentRole())
+                .build();
+        RequestContext.set(continuationContext);
+
+        ReActAgent agent = reActAgentProvider.getAgent(
+                original.modelName(), language, targetMode.getCode());
+        InvocationParameters params = InvocationParameters.from(RequestContext.toMap());
+
+        return new ChatSession(original.modelName(), targetMode, agent,
+                original.memoryId(), message, params,
+                original.conversationId(), continuationContext);
     }
 
     private String resolveModel(String model) {

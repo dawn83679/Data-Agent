@@ -29,8 +29,8 @@ public class DiscoveryTool {
 
     @Tool({
             "Returns the complete environment overview: all connections with their databases (catalogs) ",
-            "and schemas in a single nested structure. This replaces the need to call getConnections and ",
-            "getCatalogNames separately — one call gives you the full landscape.",
+            "and schemas in a single nested structure. Use this as the first discovery step when ",
+            "the target data source is still unclear — one call gives you the full landscape.",
             "",
             "Call this at the start of every new request to understand the user's data environment. ",
             "For PostgreSQL, schemas (excluding system schemas) are included under each catalog. ",

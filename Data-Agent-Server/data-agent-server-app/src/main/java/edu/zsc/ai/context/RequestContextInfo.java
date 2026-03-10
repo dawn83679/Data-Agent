@@ -41,7 +41,37 @@ public class RequestContextInfo {
     private String schema;
 
     /**
+     * Resolved model name for the current agent run
+     */
+    private String modelName;
+
+    /**
+     * Request language used to resolve prompts
+     */
+    private String language;
+
+    /**
      * Agent mode (agent / plan)
      */
     private String agentMode;
+
+    /**
+     * Multi-agent run id
+     */
+    private Long runId;
+
+    /**
+     * Multi-agent task id
+     */
+    private Long taskId;
+
+    /**
+     * Current agent role
+     */
+    private String agentRole;
+
+    /**
+     * Parent agent role for delegated tasks
+     */
+    private String parentAgentRole;
 }

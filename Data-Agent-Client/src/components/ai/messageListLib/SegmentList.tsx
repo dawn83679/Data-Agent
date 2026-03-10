@@ -5,7 +5,31 @@ import { renderSegment } from './segmentRenderer';
 import { findLastTodoSegmentIndex, isTodoSegment } from './segmentTodoUtils';
 import type { TodoBoxSpec } from './types';
 import type { Segment } from './types';
-import { SegmentKind } from './types';
+import { SegmentKind, ToolExecutionState } from './types';
+
+function hasInFlightToolExecution(segments: Segment[]): boolean {
+  return segments.some((seg) => {
+    if (seg.kind === SegmentKind.TOOL_RUN) {
+      return Boolean(
+        seg.pending ||
+        seg.executionState === ToolExecutionState.STREAMING_ARGUMENTS ||
+        seg.executionState === ToolExecutionState.EXECUTING
+      );
+    }
+
+    if (seg.kind === SegmentKind.SUB_AGENT) {
+      return seg.block.entries.some((entry) =>
+        entry.kind === 'tool' && Boolean(
+          entry.pending ||
+          entry.executionState === ToolExecutionState.STREAMING_ARGUMENTS ||
+          entry.executionState === ToolExecutionState.EXECUTING
+        )
+      );
+    }
+
+    return false;
+  });
+}
 
 export interface SegmentListProps {
   /** Segments to render in order (from blocksToSegments). Same pipeline for streaming and history. */
@@ -52,6 +76,7 @@ export function SegmentList({
 
   const lastSeg = segments[segments.length - 1];
   const lastTodoIndex = findLastTodoSegmentIndex(segments);
+  const hasToolExecuting = hasInFlightToolExecution(segments);
 
   return (
     <div className="space-y-0">
@@ -76,11 +101,9 @@ export function SegmentList({
           seg === lastSeg;
         return renderSegment(seg, i, isStreamingThought, isLastAssistantStreaming);
       })}
-      {/* Phase C: has content but gap in stream — show Planning at end.
-          Suppress when the last segment is any TOOL_RUN: the tool is still
-          rendering or executing, so the gap is tool latency, not AI thinking. */}
+      {/* Phase C: show Planning only when the stream is idle and no tool is currently executing. */}
       {isLastAssistantStreaming && isWaiting &&
-        lastSeg?.kind !== SegmentKind.TOOL_RUN &&
+        !hasToolExecuting &&
         <PlanningIndicator />}
     </div>
   );

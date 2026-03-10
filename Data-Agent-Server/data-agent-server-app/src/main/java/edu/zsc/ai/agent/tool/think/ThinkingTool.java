@@ -77,9 +77,9 @@ public class ThinkingTool {
         if (noCandidates) {
             // Phase: SURVEY — nothing discovered yet
             required.add(ChecklistItem.builder()
-                    .action("Survey data landscape — scan all connections and databases, "
-                            + "collect candidate tables, then confirm target with user if ambiguous")
-                    .toolToCall("getConnections → getCatalogNames (all) → getObjectNames (all candidate DBs)")
+                    .action("Survey the data landscape with the discovery tools currently visible in this session, "
+                            + "collect candidate objects, then narrow down only after you have evidence.")
+                    .toolToCall("Use the visible discovery/introspection tool schema in the current session.")
                     .reason("No candidates identified yet. Scan ALL available connections and databases "
                             + "to build a complete candidate set before narrowing down. "
                             + "Do NOT deep-dive into any single connection before surveying all options.")
@@ -90,8 +90,9 @@ public class ThinkingTool {
                     .map(this::formatCandidate)
                     .collect(Collectors.joining(", "));
             required.add(ChecklistItem.builder()
-                    .action("Disambiguate — " + candidateCount + " candidates found, ask user to choose")
-                    .toolToCall("askUserQuestion")
+                    .action("Disambiguate — " + candidateCount + " candidates found. If you cannot resolve them "
+                            + "with visible evidence, report the ambiguity clearly so the orchestrator can ask the user.")
+                    .toolToCall("Prefer visible evidence-gathering tools; otherwise hand back a precise ambiguity report.")
                     .reason("Multiple candidates discovered: [" + candidateList + "]. "
                             + "Do NOT silently pick one — ask the user which target to use.")
                     .build());
@@ -99,8 +100,9 @@ public class ThinkingTool {
             // Phase: EXPLORE — single confirmed target, deep-dive
             CandidateObject target = candidates.get(0);
             required.add(ChecklistItem.builder()
-                    .action("Explore confirmed target: " + formatCandidate(target))
-                    .toolToCall("getObjectDdl")
+                    .action("Explore the confirmed target with the authoritative object-detail tool visible in this session: "
+                            + formatCandidate(target))
+                    .toolToCall("Use the visible object detail / DDL / metadata inspection tool.")
                     .reason("Target confirmed — retrieve structure (columns, types, constraints) "
                             + "before generating SQL.")
                     .build());
@@ -112,9 +114,9 @@ public class ThinkingTool {
 
             if (!noCandidates) {
                 recommended.add(ChecklistItem.builder()
-                        .action("Verify write impact: check row counts and indexes on target tables")
-                        .toolToCall("countObjectRows, getIndexes")
-                        .reason("Write operation — understand impact scope before proceeding")
+                        .action("Verify write impact with the visible verification tools before proceeding.")
+                        .toolToCall("Use the visible detail/count/index verification tools, if available.")
+                        .reason("Write operation — use verified object detail before proceeding")
                         .build());
             }
         }

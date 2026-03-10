@@ -32,7 +32,7 @@ export interface WriteConfirmCardProps {
 
 export function WriteConfirmCard({ payload, submittedAnswer }: WriteConfirmCardProps) {
     const { t } = useTranslation();
-    const { submitMessage, isLoading } = useAIAssistantContext();
+    const { submitMessage, isLoading, agentState } = useAIAssistantContext();
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [supplementaryInput, setSupplementaryInput] = useState('');
@@ -74,10 +74,13 @@ export function WriteConfirmCard({ payload, submittedAnswer }: WriteConfirmCardP
                 ? t(I18N_KEYS.AI.WRITE_CONFIRM.CONFIRM_WITH_INPUT_MESSAGE, { info: supplementaryInput })
                 : t(I18N_KEYS.AI.WRITE_CONFIRM.CONFIRM_MESSAGE);
 
-            submitMessage(msg);
+            submitMessage(msg, agentState.agent === 'Multi-Agent' ? { agentType: 'multi-agent' } : undefined);
             setIsSubmitted(true);
         } catch {
-            submitMessage(t(I18N_KEYS.AI.WRITE_CONFIRM.CONFIRM_FAILED));
+            submitMessage(
+                t(I18N_KEYS.AI.WRITE_CONFIRM.CONFIRM_FAILED),
+                agentState.agent === 'Multi-Agent' ? { agentType: 'multi-agent' } : undefined
+            );
         } finally {
             setIsProcessing(false);
         }
@@ -95,7 +98,7 @@ export function WriteConfirmCard({ payload, submittedAnswer }: WriteConfirmCardP
                 ? t(I18N_KEYS.AI.WRITE_CONFIRM.CANCEL_WITH_INPUT_MESSAGE, { info: supplementaryInput })
                 : t(I18N_KEYS.AI.WRITE_CONFIRM.CANCEL_MESSAGE);
 
-            submitMessage(msg);
+            submitMessage(msg, agentState.agent === 'Multi-Agent' ? { agentType: 'multi-agent' } : undefined);
             setIsSubmitted(true);
             setIsProcessing(false);
         }

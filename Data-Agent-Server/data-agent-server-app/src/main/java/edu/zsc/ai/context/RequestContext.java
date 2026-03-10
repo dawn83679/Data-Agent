@@ -79,12 +79,42 @@ public class RequestContext {
         return context != null ? context.getSchema() : null;
     }
 
+    public static String getModelName() {
+        RequestContextInfo context = get();
+        return context != null ? context.getModelName() : null;
+    }
+
+    public static String getLanguage() {
+        RequestContextInfo context = get();
+        return context != null ? context.getLanguage() : null;
+    }
+
     /**
      * Get agent mode from current context
      */
     public static String getAgentMode() {
         RequestContextInfo context = get();
         return context != null ? context.getAgentMode() : null;
+    }
+
+    public static Long getRunId() {
+        RequestContextInfo context = get();
+        return context != null ? context.getRunId() : null;
+    }
+
+    public static Long getTaskId() {
+        RequestContextInfo context = get();
+        return context != null ? context.getTaskId() : null;
+    }
+
+    public static String getAgentRole() {
+        RequestContextInfo context = get();
+        return context != null ? context.getAgentRole() : null;
+    }
+
+    public static String getParentAgentRole() {
+        RequestContextInfo context = get();
+        return context != null ? context.getParentAgentRole() : null;
     }
 
     /**
@@ -126,7 +156,13 @@ public class RequestContext {
         putIfNotNull(map, RequestContextConstant.CONNECTION_ID, getConnectionId());
         putIfNotNull(map, RequestContextConstant.DATABASE_NAME, getCatalog());
         putIfNotNull(map, RequestContextConstant.SCHEMA_NAME, getSchema());
+        putIfNotNull(map, RequestContextConstant.MODEL_NAME, getModelName());
+        putIfNotNull(map, RequestContextConstant.LANGUAGE, getLanguage());
         putIfNotNull(map, RequestContextConstant.AGENT_MODE, getAgentMode());
+        putIfNotNull(map, RequestContextConstant.RUN_ID, getRunId());
+        putIfNotNull(map, RequestContextConstant.TASK_ID, getTaskId());
+        putIfNotNull(map, RequestContextConstant.AGENT_ROLE, getAgentRole());
+        putIfNotNull(map, RequestContextConstant.PARENT_AGENT_ROLE, getParentAgentRole());
         return map;
     }
 

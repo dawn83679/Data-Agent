@@ -44,6 +44,9 @@ public class ChatStreamBridge {
             boolean emitDoneBlock) {
 
         Long conversationId = session.conversationId();
+        Long runId = session.contextSnapshot().getRunId();
+        Long taskId = session.contextSnapshot().getTaskId();
+        String agentRole = session.contextSnapshot().getAgentRole();
         TokenStream tokenStream = session.startChat();
 
         Sinks.Many<ChatResponseBlock> sink = Sinks.many().unicast().onBackpressureBuffer();
@@ -75,7 +78,10 @@ public class ChatStreamBridge {
                     partialToolCall.id(),
                     partialToolCall.name(),
                     partialToolCall.partialArguments(),
-                    true
+                    true,
+                    runId,
+                    taskId,
+                    agentRole
             ));
         });
 
@@ -97,7 +103,10 @@ public class ChatStreamBridge {
                         toolRequest.id(),
                         toolRequest.name(),
                         toolRequest.arguments(),
-                        false
+                        false,
+                        runId,
+                        taskId,
+                        agentRole
                 ));
             }
         });
@@ -113,7 +122,10 @@ public class ChatStreamBridge {
                     req.id(),
                     req.name(),
                     toolExecution.result(),
-                    toolExecution.hasFailed()));
+                    toolExecution.hasFailed(),
+                    runId,
+                    taskId,
+                    agentRole));
         });
 
         tokenStream.onCompleteResponse(response -> {

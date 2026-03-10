@@ -1,8 +1,11 @@
 package edu.zsc.ai.plugin.mysql;
 
 import edu.zsc.ai.plugin.connection.ConnectionConfig;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -14,14 +17,35 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class Mysql8PluginConnectionTest {
 
-    private static final String DRIVER_JAR_PATH = "/Users/dawn/Desktop/mysql-connector-j-8.2.0.jar";
-    private static final String HOST = "localhost";
-    private static final int PORT = 3306;
-    private static final String USERNAME = "root";
-    private static final String PASSWORD = "root";
+    private static final String DRIVER_JAR_PATH =
+            System.getProperty("mysql.test.driverJar",
+                    System.getenv().getOrDefault("MYSQL_TEST_DRIVER_JAR", ""));
+    private static final String HOST =
+            System.getProperty("mysql.test.host",
+                    System.getenv().getOrDefault("MYSQL_TEST_HOST", "localhost"));
+    private static final int PORT =
+            Integer.parseInt(System.getProperty("mysql.test.port",
+                    System.getenv().getOrDefault("MYSQL_TEST_PORT", "3306")));
+    private static final String USERNAME =
+            System.getProperty("mysql.test.username",
+                    System.getenv().getOrDefault("MYSQL_TEST_USERNAME", "root"));
+    private static final String PASSWORD =
+            System.getProperty("mysql.test.password",
+                    System.getenv().getOrDefault("MYSQL_TEST_PASSWORD", "root"));
+    private static final String DATABASE =
+            System.getProperty("mysql.test.database",
+                    System.getenv().getOrDefault("MYSQL_TEST_DATABASE", "mysql"));
+
+    private static void assumeIntegrationEnvironment() {
+        Assumptions.assumeTrue(DRIVER_JAR_PATH != null && !DRIVER_JAR_PATH.isBlank(),
+                "Skipping MySQL integration test: MYSQL_TEST_DRIVER_JAR or -Dmysql.test.driverJar is not set");
+        Assumptions.assumeTrue(Files.exists(Path.of(DRIVER_JAR_PATH)),
+                "Skipping MySQL integration test: driver jar does not exist at " + DRIVER_JAR_PATH);
+    }
 
     @Test
     public void testConnect() throws Exception {
+        assumeIntegrationEnvironment();
         Mysql8Plugin plugin = new Mysql8Plugin();
 
         ConnectionConfig config = new ConnectionConfig();
@@ -54,12 +78,13 @@ public class Mysql8PluginConnectionTest {
 
     @Test
     public void testConnectWithDatabase() throws Exception {
+        assumeIntegrationEnvironment();
         Mysql8Plugin plugin = new Mysql8Plugin();
 
         ConnectionConfig config = new ConnectionConfig();
         config.setHost(HOST);
         config.setPort(PORT);
-        config.setDatabase("mysql");
+        config.setDatabase(DATABASE);
         config.setUsername(USERNAME);
         config.setPassword(PASSWORD);
         config.setDriverJarPath(DRIVER_JAR_PATH);
@@ -73,7 +98,7 @@ public class Mysql8PluginConnectionTest {
             Statement stmt = connection.createStatement();
             ResultSet rs = stmt.executeQuery("SELECT DATABASE() as db_name");
             assertTrue(rs.next(), "Should have result");
-            assertEquals("mysql", rs.getString("db_name"), "Should be connected to mysql database");
+            assertEquals(DATABASE, rs.getString("db_name"), "Should be connected to configured database");
 
             System.out.println("✅ MySQL 8 connection with database test successful!");
 
@@ -86,6 +111,7 @@ public class Mysql8PluginConnectionTest {
 
     @Test
     public void testConnectionWithProperties() throws Exception {
+        assumeIntegrationEnvironment();
         Mysql8Plugin plugin = new Mysql8Plugin();
 
         // Build properties map
@@ -118,6 +144,7 @@ public class Mysql8PluginConnectionTest {
 
     @Test
     public void testTestConnection() {
+        assumeIntegrationEnvironment();
         Mysql8Plugin plugin = new Mysql8Plugin();
 
         ConnectionConfig config = new ConnectionConfig();
@@ -135,6 +162,7 @@ public class Mysql8PluginConnectionTest {
 
     @Test
     public void testTestConnectionFailure() {
+        assumeIntegrationEnvironment();
         Mysql8Plugin plugin = new Mysql8Plugin();
 
         ConnectionConfig config = new ConnectionConfig();
@@ -150,4 +178,3 @@ public class Mysql8PluginConnectionTest {
         System.out.println("✅ MySQL 8 testConnection() failure test successful!");
     }
 }
-

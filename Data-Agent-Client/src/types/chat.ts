@@ -10,7 +10,7 @@ export interface ChatRequest {
   model?: string;
   /** Prompt language for backend system prompt routing (e.g. en, zh). */
   language?: string;
-  /** Agent mode: "Agent" or "Plan". */
+  /** Agent mode: "Agent", "Plan", or "Multi-Agent". */
   agentType?: string;
   conversationId?: number;
   connectionId?: number;
@@ -25,6 +25,12 @@ export const MessageBlockType = {
   TOOL_CALL: 'TOOL_CALL',
   TOOL_RESULT: 'TOOL_RESULT',
   STATUS: 'STATUS',
+  TASK_PLAN: 'TASK_PLAN',
+  TASK_START: 'TASK_START',
+  TASK_STATUS: 'TASK_STATUS',
+  TASK_TEXT: 'TASK_TEXT',
+  TASK_RESULT: 'TASK_RESULT',
+  TASK_APPROVAL: 'TASK_APPROVAL',
 } as const;
 
 export type MessageBlockType = (typeof MessageBlockType)[keyof typeof MessageBlockType];
@@ -41,6 +47,9 @@ export interface ToolCallData {
   arguments: string;
   /** True when arguments are still streaming (partial), false when complete, undefined for stored messages. */
   streaming?: boolean;
+  runId?: number;
+  taskId?: number;
+  agentRole?: string;
 }
 
 /** Parsed from TOOL_RESULT block.data (id matches tool call for pairing). */
@@ -50,6 +59,42 @@ export interface ToolResultData {
   result: string;
   /** True when tool execution failed (backend ToolExecution.hasFailed()). */
   error?: boolean;
+  runId?: number;
+  taskId?: number;
+  agentRole?: string;
+}
+
+export interface MultiAgentTaskPlanItem {
+  taskId?: number;
+  agentRole?: string;
+  title?: string;
+  status?: string;
+  goal?: string;
+}
+
+export interface MultiAgentTaskPlanData {
+  runId?: number;
+  title?: string;
+  tasks?: MultiAgentTaskPlanItem[];
+}
+
+export interface MultiAgentTaskEventData {
+  runId?: number;
+  taskId?: number;
+  agentRole?: string;
+  title?: string;
+  status?: string;
+  summary?: string;
+  details?: string;
+  requiresApproval?: boolean;
+}
+
+export interface MultiAgentTaskTextData {
+  runId?: number;
+  taskId?: number;
+  agentRole?: string;
+  content?: string;
+  streaming?: boolean;
 }
 
 export interface ChatResponseBlock {

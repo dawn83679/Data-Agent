@@ -9,5 +9,11 @@ public enum MessageBlockEnum {
     THOUGHT,
     TOOL_CALL,
     TOOL_RESULT,
-    STATUS
+    STATUS,
+    TASK_PLAN,
+    TASK_START,
+    TASK_STATUS,
+    TASK_TEXT,
+    TASK_RESULT,
+    TASK_APPROVAL
 }

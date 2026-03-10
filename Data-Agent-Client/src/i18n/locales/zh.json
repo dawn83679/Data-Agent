@@ -147,6 +147,7 @@
     "mention_error_load": "加载失败，请先在资源管理器中连接该数据源",
     "agent": "智能体",
     "plan": "计划",
+    "multiAgent": "多智能体",
     "plan.executeBtn": "执行计划",
     "plan.exitBtn": "退出",
     "plan.continueBtn": "继续规划",

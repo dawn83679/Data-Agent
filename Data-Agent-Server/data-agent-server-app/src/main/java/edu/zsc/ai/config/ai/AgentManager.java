@@ -24,6 +24,7 @@ public class AgentManager {
 
     private final ChatMemoryProvider chatMemoryProvider;
     private final AgentToolConfig agentToolConfig;
+    private final MultiAgentPromptConfig multiAgentPromptConfig;
     private final Map<String, StreamingChatModel> modelsByName;
     private final List<Object> agentTools;
 
@@ -44,7 +45,9 @@ public class AgentManager {
             return dynamicAgentCache.computeIfAbsent(cacheKey, key -> {
                 log.info("Create ReActAgent dynamically: model={}, language={}, mode={}",
                         modelName, promptLanguage.getCode(), mode.getCode());
-                String systemPrompt = PromptConfig.getPrompt(promptLanguage);
+                String systemPrompt = mode == AgentModeEnum.MULTI_AGENT
+                        ? multiAgentPromptConfig.getOrchestratorPrompt(promptLanguage.getCode())
+                        : PromptConfig.getPrompt(promptLanguage);
                 return buildAgent(model, mode, systemPrompt);
             });
         };
@@ -55,11 +58,11 @@ public class AgentManager {
                                    String systemPrompt) {
         List<Object> tools = agentToolConfig.filterTools(agentTools, mode);
 
-        return AiServices.builder(ReActAgent.class)
+        var builder = AiServices.builder(ReActAgent.class)
                 .streamingChatModel(model)
                 .systemMessage(systemPrompt)
                 .chatMemoryProvider(chatMemoryProvider)
-                .tools(tools)
-                .build();
+                .tools(tools);
+        return builder.build();
     }
 }

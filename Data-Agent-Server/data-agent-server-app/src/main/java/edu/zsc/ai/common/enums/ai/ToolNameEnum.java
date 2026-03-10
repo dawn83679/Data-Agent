@@ -23,13 +23,10 @@ public enum ToolNameEnum {
     ASK_USER_QUESTION("askUserQuestion"),
     ASK_USER_CONFIRM("askUserConfirm"),
 
-    // ── Database objects ──
-    GET_CONNECTIONS("getConnections"),
-    GET_CATALOG_NAMES("getCatalogNames"),
-    GET_OBJECT_NAMES("getObjectNames"),
-    COUNT_OBJECT_ROWS("countObjectRows"),
-    GET_OBJECT_DDL("getObjectDdl"),
-    GET_INDEXES("getIndexes"),
+    // ── Discovery tools ──
+    GET_ENVIRONMENT_OVERVIEW("getEnvironmentOverview"),
+    SEARCH_OBJECTS("searchObjects"),
+    GET_OBJECT_DETAIL("getObjectDetail"),
 
     // ── Thinking ──
     THINKING("thinking"),
@@ -45,6 +42,12 @@ public enum ToolNameEnum {
 
     // ── Task management ──
     TODO_WRITE("todoWrite"),
+
+    // ── Multi-agent delegation ──
+    DELEGATE_TO_SCHEMA_ANALYST("delegateToSchemaAnalyst"),
+    DELEGATE_TO_SQL_PLANNER("delegateToSqlPlanner"),
+    DELEGATE_TO_SQL_EXECUTOR("delegateToSqlExecutor"),
+    DELEGATE_TO_RESULT_ANALYST("delegateToResultAnalyst"),
 
     // ── Skill ──
     ACTIVATE_SKILL("activateSkill"),

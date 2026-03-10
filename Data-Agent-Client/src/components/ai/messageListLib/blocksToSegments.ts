@@ -4,6 +4,8 @@ import type { ToolCallData } from '../../../types/chat';
 import { parseToolCall, parseToolResult, idStr, matchById } from './blockParsing';
 import type { Segment } from './types';
 import { SegmentKind, ToolExecutionState } from './types';
+import type { SubAgentBlockModel } from './types';
+import { isDelegationTool } from './subAgentProjection';
 
 /**
  * Detect application-level tool errors.
@@ -76,7 +78,10 @@ function findResultById(
  * Convert raw blocks into display segments: merge TEXT, merge THOUGHT, pair TOOL_CALL+TOOL_RESULT by id.
  * @param blocks - Raw blocks to convert
  */
-export function blocksToSegments(blocks: ChatResponseBlock[]): Segment[] {
+export function blocksToSegments(
+  blocks: ChatResponseBlock[],
+  subAgentAnchorByToolCallId?: Map<string, SubAgentBlockModel>
+): Segment[] {
   const segments: Segment[] = [];
   let textBuffer = '';
   const processedIndices = new Set<number>(); // Track processed blocks to avoid duplicates
@@ -143,6 +148,26 @@ export function blocksToSegments(blocks: ChatResponseBlock[]): Segment[] {
           executionState = ToolExecutionState.COMPLETE;
         }
 
+        if (isDelegationTool(lastCall.toolName) && lastCall.id && subAgentAnchorByToolCallId?.has(lastCall.id)) {
+          segments.push({
+            kind: SegmentKind.SUB_AGENT,
+            block: subAgentAnchorByToolCallId.get(lastCall.id)!,
+          });
+          if (resultInfo) {
+            processedIndices.add(resultInfo.index);
+          }
+          i = j;
+          break;
+        }
+
+        if (lastCall.taskId != null || resultPayload?.taskId != null) {
+          if (resultInfo) {
+            processedIndices.add(resultInfo.index);
+          }
+          i = j;
+          break;
+        }
+
         if (paired && resultPayload) {
           segments.push({
             kind: SegmentKind.TOOL_RUN,
@@ -180,9 +205,21 @@ export function blocksToSegments(blocks: ChatResponseBlock[]): Segment[] {
         break;
       }
 
+      case MessageBlockType.TASK_PLAN:
+      case MessageBlockType.TASK_START:
+      case MessageBlockType.TASK_STATUS:
+      case MessageBlockType.TASK_TEXT:
+      case MessageBlockType.TASK_RESULT:
+      case MessageBlockType.TASK_APPROVAL:
+        flushText();
+        break;
+
       case MessageBlockType.TOOL_RESULT: {
         flushText();
         const resultPayload = parseToolResult(block);
+        if (resultPayload?.taskId != null) {
+          break;
+        }
         const hasId = resultPayload?.id != null && resultPayload.id !== '';
         if (!hasId && resultPayload) {
           segments.push({

@@ -23,4 +23,14 @@ public class SseEmitterRegistry {
     public Optional<Sinks.Many<ChatResponseBlock>> get(Long conversationId) {
         return Optional.ofNullable(sinks.get(conversationId));
     }
+
+    public void emit(Long conversationId, ChatResponseBlock block) {
+        if (conversationId == null || block == null) {
+            return;
+        }
+        if (block.getConversationId() == null) {
+            block.setConversationId(conversationId);
+        }
+        get(conversationId).ifPresent(sink -> sink.tryEmitNext(block));
+    }
 }

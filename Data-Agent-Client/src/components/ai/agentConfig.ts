@@ -1,9 +1,9 @@
-import { Infinity, ListTodo } from 'lucide-react';
+import { GitBranch, Infinity, ListTodo } from 'lucide-react';
 import type { AgentType } from './agentTypes';
 
 export interface AgentOption {
   type: AgentType;
-  icon: typeof Infinity | typeof ListTodo;
+  icon: typeof Infinity | typeof ListTodo | typeof GitBranch;
   i18nKey: string;
 }
 
@@ -16,5 +16,9 @@ export const AGENT_CONFIG: Record<AgentType, Omit<AgentOption, 'type'>> = {
   Plan: {
     icon: ListTodo,
     i18nKey: 'ai.plan',
+  },
+  'Multi-Agent': {
+    icon: GitBranch,
+    i18nKey: 'ai.multiAgent',
   },
 };

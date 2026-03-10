@@ -104,8 +104,10 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
 
   const executionStartTime = executeResult?.executionInfo?.startTime ?? null;
   const durationMs = executeResult?.executionInfo?.durationMs ?? executeResult?.executionTimeMs ?? 0;
-  const executionMs = executeResult?.executionInfo?.executionMs ?? null;
   const fetchingMs = executeResult?.executionInfo?.fetchingMs ?? null;
+  const executionMs =
+    executeResult?.executionInfo?.executionMs ??
+    (durationMs != null ? Math.max(0, durationMs - (fetchingMs ?? 0)) : null);
   const dbPrefix = executeResult?.databaseName
     ? `${executeResult.databaseName}${executeResult.schemaName ? `.${executeResult.schemaName}` : ''}`
     : '';
@@ -321,4 +323,3 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
     </PanelGroup>
   );
 }
-

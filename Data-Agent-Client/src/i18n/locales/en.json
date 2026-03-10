@@ -147,6 +147,7 @@
     "mention_error_load": "Load failed. Please connect this data source in Explorer first.",
     "agent": "Agent",
     "plan": "Plan",
+    "multiAgent": "Multi-Agent",
     "plan.executeBtn": "Execute Plan",
     "plan.exitBtn": "Exit",
     "plan.continueBtn": "Continue Planning",

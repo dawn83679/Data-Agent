@@ -25,6 +25,16 @@ public class ChatResponseBlock {
     public static final String DATA_KEY_ERROR = "error";
     /** True when tool arguments are still streaming (partial), false when complete */
     public static final String DATA_KEY_STREAMING = "streaming";
+    public static final String DATA_KEY_RUN_ID = "runId";
+    public static final String DATA_KEY_TASK_ID = "taskId";
+    public static final String DATA_KEY_TASKS = "tasks";
+    public static final String DATA_KEY_AGENT_ROLE = "agentRole";
+    public static final String DATA_KEY_TITLE = "title";
+    public static final String DATA_KEY_STATUS = "status";
+    public static final String DATA_KEY_SUMMARY = "summary";
+    public static final String DATA_KEY_DETAILS = "details";
+    public static final String DATA_KEY_REQUIRES_APPROVAL = "requiresApproval";
+    public static final String DATA_KEY_CONTENT = "content";
 
     private static final String EMPTY = "";
 
@@ -63,7 +73,7 @@ public class ChatResponseBlock {
      * id is optional (from LangChain4j ToolExecutionRequest / PartialToolCall); used to merge streaming chunks and pair with TOOL_RESULT.
      */
     public static ChatResponseBlock toolCall(String id, String toolName, String arguments) {
-        return toolCall(id, toolName, arguments, null);
+        return toolCall(id, toolName, arguments, null, null, null, null);
     }
 
     /**
@@ -71,6 +81,17 @@ public class ChatResponseBlock {
      * data is JSON {"id":"...", "toolName":"...", "arguments":"...", "streaming": true|false}.
      */
     public static ChatResponseBlock toolCall(String id, String toolName, String arguments, Boolean streaming) {
+        return toolCall(id, toolName, arguments, streaming, null, null, null);
+    }
+
+    public static ChatResponseBlock toolCall(
+            String id,
+            String toolName,
+            String arguments,
+            Boolean streaming,
+            Long runId,
+            Long taskId,
+            String agentRole) {
         Map<String, Object> map = new java.util.LinkedHashMap<>();
         if (id != null && !id.isEmpty()) {
             map.put(DATA_KEY_ID, id);
@@ -79,6 +100,15 @@ public class ChatResponseBlock {
         map.put(DATA_KEY_ARGUMENTS, arguments != null ? arguments : EMPTY);
         if (streaming != null) {
             map.put(DATA_KEY_STREAMING, streaming);
+        }
+        if (runId != null) {
+            map.put(DATA_KEY_RUN_ID, runId);
+        }
+        if (taskId != null) {
+            map.put(DATA_KEY_TASK_ID, taskId);
+        }
+        if (agentRole != null && !agentRole.isEmpty()) {
+            map.put(DATA_KEY_AGENT_ROLE, agentRole);
         }
         String data = JsonUtil.object2json(map);
         return ChatResponseBlock.builder()
@@ -105,6 +135,17 @@ public class ChatResponseBlock {
      * id matches the tool call id for pairing. error is true when tool execution failed (ToolExecution.hasFailed()).
      */
     public static ChatResponseBlock toolResult(String id, String toolName, String result, boolean isError) {
+        return toolResult(id, toolName, result, isError, null, null, null);
+    }
+
+    public static ChatResponseBlock toolResult(
+            String id,
+            String toolName,
+            String result,
+            boolean isError,
+            Long runId,
+            Long taskId,
+            String agentRole) {
         Map<String, Object> map = new LinkedHashMap<>();
         if (id != null && !id.isEmpty()) {
             map.put(DATA_KEY_ID, id);
@@ -112,9 +153,121 @@ public class ChatResponseBlock {
         map.put(DATA_KEY_TOOL_NAME, toolName != null ? toolName : EMPTY);
         map.put(DATA_KEY_RESULT, result != null ? result : EMPTY);
         map.put(DATA_KEY_ERROR, isError);
+        if (runId != null) {
+            map.put(DATA_KEY_RUN_ID, runId);
+        }
+        if (taskId != null) {
+            map.put(DATA_KEY_TASK_ID, taskId);
+        }
+        if (agentRole != null && !agentRole.isEmpty()) {
+            map.put(DATA_KEY_AGENT_ROLE, agentRole);
+        }
         String data = JsonUtil.object2json(map);
         return ChatResponseBlock.builder()
                 .type(MessageBlockEnum.TOOL_RESULT.name())
+                .data(data)
+                .done(false)
+                .build();
+    }
+
+    public static ChatResponseBlock taskPlan(Long runId, String title, java.util.List<Map<String, Object>> tasks) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put(DATA_KEY_RUN_ID, runId);
+        map.put(DATA_KEY_TITLE, title != null ? title : EMPTY);
+        map.put(DATA_KEY_TASKS, tasks != null ? tasks : java.util.List.of());
+        return block(MessageBlockEnum.TASK_PLAN.name(), JsonUtil.object2json(map));
+    }
+
+    public static ChatResponseBlock taskStart(
+            Long runId,
+            Long taskId,
+            String agentRole,
+            String title,
+            String summary) {
+        return taskBlock(MessageBlockEnum.TASK_START.name(), runId, taskId, agentRole, title, "running", summary, null, false);
+    }
+
+    public static ChatResponseBlock taskStatus(
+            Long runId,
+            Long taskId,
+            String agentRole,
+            String title,
+            String status,
+            String summary) {
+        return taskBlock(MessageBlockEnum.TASK_STATUS.name(), runId, taskId, agentRole, title, status, summary, null, false);
+    }
+
+    public static ChatResponseBlock taskResult(
+            Long runId,
+            Long taskId,
+            String agentRole,
+            String title,
+            String status,
+            String summary,
+            String details) {
+        return taskBlock(MessageBlockEnum.TASK_RESULT.name(), runId, taskId, agentRole, title, status, summary, details, false);
+    }
+
+    public static ChatResponseBlock taskApproval(
+            Long runId,
+            Long taskId,
+            String agentRole,
+            String title,
+            String summary,
+            String details) {
+        return taskBlock(MessageBlockEnum.TASK_APPROVAL.name(), runId, taskId, agentRole, title, "waiting_approval", summary, details, true);
+    }
+
+    public static ChatResponseBlock taskText(
+            Long runId,
+            Long taskId,
+            String agentRole,
+            String content,
+            boolean streaming) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        if (runId != null) {
+            map.put(DATA_KEY_RUN_ID, runId);
+        }
+        if (taskId != null) {
+            map.put(DATA_KEY_TASK_ID, taskId);
+        }
+        map.put(DATA_KEY_AGENT_ROLE, agentRole != null ? agentRole : EMPTY);
+        map.put(DATA_KEY_CONTENT, content != null ? content : EMPTY);
+        map.put(DATA_KEY_STREAMING, streaming);
+        return block(MessageBlockEnum.TASK_TEXT.name(), JsonUtil.object2json(map));
+    }
+
+    private static ChatResponseBlock taskBlock(
+            String type,
+            Long runId,
+            Long taskId,
+            String agentRole,
+            String title,
+            String status,
+            String summary,
+            String details,
+            boolean requiresApproval) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        if (runId != null) {
+            map.put(DATA_KEY_RUN_ID, runId);
+        }
+        if (taskId != null) {
+            map.put(DATA_KEY_TASK_ID, taskId);
+        }
+        map.put(DATA_KEY_AGENT_ROLE, agentRole != null ? agentRole : EMPTY);
+        map.put(DATA_KEY_TITLE, title != null ? title : EMPTY);
+        map.put(DATA_KEY_STATUS, status != null ? status : EMPTY);
+        map.put(DATA_KEY_SUMMARY, summary != null ? summary : EMPTY);
+        if (details != null && !details.isEmpty()) {
+            map.put(DATA_KEY_DETAILS, details);
+        }
+        map.put(DATA_KEY_REQUIRES_APPROVAL, requiresApproval);
+        return block(type, JsonUtil.object2json(map));
+    }
+
+    private static ChatResponseBlock block(String type, String data) {
+        return ChatResponseBlock.builder()
+                .type(type)
                 .data(data)
                 .done(false)
                 .build();

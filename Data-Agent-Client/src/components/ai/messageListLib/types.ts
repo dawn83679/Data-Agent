@@ -7,6 +7,7 @@ export enum SegmentKind {
   THOUGHT = 'THOUGHT',
   TOOL_RUN = 'TOOL_RUN',
   STATUS = 'STATUS',
+  SUB_AGENT = 'SUB_AGENT',
 }
 
 export enum ToolExecutionState {
@@ -23,10 +24,40 @@ export interface Message {
   blocks?: ChatResponseBlock[];
 }
 
+export interface SubAgentTextEntry {
+  kind: 'text';
+  data: string;
+  streaming?: boolean;
+}
+
+export interface SubAgentToolEntry {
+  kind: 'tool';
+  toolName: string;
+  parametersData: string;
+  responseData: string;
+  responseError?: boolean;
+  pending?: boolean;
+  executionState?: ToolExecutionState;
+  toolCallId?: string;
+}
+
+export interface SubAgentBlockModel {
+  key: string;
+  toolCallId?: string;
+  runId?: number;
+  taskId?: number;
+  agentRole?: string;
+  title?: string;
+  status?: string;
+  summary?: string;
+  entries: Array<SubAgentTextEntry | SubAgentToolEntry>;
+}
+
 export type Segment =
   | { kind: SegmentKind.TEXT; data: string }
   | { kind: SegmentKind.THOUGHT; data: string }
   | { kind: SegmentKind.STATUS; statusKey: string }
+  | { kind: SegmentKind.SUB_AGENT; block: SubAgentBlockModel }
   | {
       kind: SegmentKind.TOOL_RUN;
       toolName: string;
