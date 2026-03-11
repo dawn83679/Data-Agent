@@ -23,13 +23,10 @@ public enum ToolNameEnum {
     ASK_USER_QUESTION("askUserQuestion"),
     ASK_USER_CONFIRM("askUserConfirm"),
 
-    // ── Database objects ──
-    GET_CONNECTIONS("getConnections"),
-    GET_CATALOG_NAMES("getCatalogNames"),
-    GET_OBJECT_NAMES("getObjectNames"),
-    COUNT_OBJECT_ROWS("countObjectRows"),
-    GET_OBJECT_DDL("getObjectDdl"),
-    GET_INDEXES("getIndexes"),
+    // ── Discovery (database objects) ──
+    GET_ENVIRONMENT_OVERVIEW("getEnvironmentOverview"),
+    SEARCH_OBJECTS("searchObjects"),
+    GET_OBJECT_DETAIL("getObjectDetail"),
 
     // ── Thinking ──
     THINKING("thinking"),

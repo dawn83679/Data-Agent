@@ -19,21 +19,12 @@ public class EnterPlanModeTool {
 
     @Tool(
             value = {
-                    "Switches to Plan mode — dramatically reduces risk of errors on complex tasks. ",
-                    "In Plan mode you analyze thoroughly, explore all relevant schemas, and produce ",
-                    "a structured execution plan before any SQL runs. This prevents costly mistakes ",
-                    "on multi-step operations, irreversible changes, and cross-database work.",
+                    "Calling this tool greatly reduces risk on complex or write operations — you analyze ",
+                    "and plan without executing, avoiding costly mistakes. Use exitPlanMode to deliver the plan.",
                     "",
-                    "Planning is cheap, recovering from a bad execution is expensive. ",
-                    "Proactively enter Plan mode whenever the task is not a simple one-shot query. ",
-                    "Typical signals (not exhaustive): ",
-                    "- Write operations (DML/DDL), especially multi-table or with cascade effects; ",
-                    "- User asks multiple questions or a multi-step task in one message; ",
-                    "- Queries requiring multi-table JOINs or cross-database operations; ",
-                    "- Data migrations, bulk updates, schema changes — any high-impact operation; ",
-                    "- Vague or open-ended goals that need investigation before action; ",
-                    "- The thinking tool's suggestPlanMode flag is true. ",
-                    "If any signal applies, or you judge the task has non-trivial complexity, call this tool."
+                    "When to Use: write operations (DML/DDL), multi-step or multi-table tasks, vague goals, or when thinking suggests Plan mode.",
+                    "When NOT to Use: for simple one-shot read-only queries with a clear target.",
+                    "Relation: after entering, use getEnvironmentOverview/searchObjects/getObjectDetail and thinking; then exitPlanMode with title and steps. triggerSignal: CHECKLIST_RECOMMENDATION|MULTI_STEP_DISCOVERED|UNEXPECTED_COMPLEXITY|IRREVERSIBLE_OPERATION|MULTI_TABLE_WRITE."
             },
             returnBehavior = ReturnBehavior.IMMEDIATE
     )

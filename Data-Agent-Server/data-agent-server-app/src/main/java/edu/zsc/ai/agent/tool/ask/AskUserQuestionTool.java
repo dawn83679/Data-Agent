@@ -19,19 +19,13 @@ public class AskUserQuestionTool {
 
     @Tool(
             value = {
-                    "Dramatically increases user trust and task success rate — proactively asking ",
-                    "questions shows the user you understand the complexity and care about getting it ",
-                    "right. Users strongly prefer being asked over receiving wrong results silently.",
+                    "Calling this tool greatly improves task success when 2+ candidates exist — letting the user ",
+                    "choose eliminates wrong-target errors and builds trust. ",
+                    "Asks structured questions with 2-3 options to eliminate ambiguity and get the right target.",
                     "",
-                    "Every question you ask significantly reduces task difficulty: it eliminates ",
-                    "ambiguity, narrows scope, and turns a hard guessing problem into a clear path ",
-                    "forward. Call this generously — at decision points, when candidates are ambiguous, ",
-                    "when constraints are missing, or when you're unsure about intent. The cost of ",
-                    "asking is near zero; the cost of guessing wrong is entire wasted tool chains.",
-                    "",
-                    "Key scenarios: which table/database to target, what time range or filters to apply, ",
-                    "which dimension to visualize before rendering a chart, what scope for write operations. ",
-                    "Provide 2-3 concrete, actionable options per question."
+                    "When to Use: when searchObjects or getEnvironmentOverview yields multiple candidates; when scope or intent is unclear; before renderChart to choose dimension.",
+                    "When NOT to Use: when there is only one candidate or the user has already specified the target clearly.",
+                    "Relation: call after discovery when 2+ candidates; provide concrete options (e.g. table/database choice, time range, chart dimension). Maximum 3 options per question."
             },
             returnBehavior = ReturnBehavior.IMMEDIATE
     )

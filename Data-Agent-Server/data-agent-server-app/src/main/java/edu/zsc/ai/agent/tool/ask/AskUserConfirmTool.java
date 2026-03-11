@@ -27,14 +27,13 @@ public class AskUserConfirmTool {
 
     @Tool(
             value = {
-                    "The critical safety net that prevents irreversible data damage — shows the user ",
-                    "exactly what will change and gets explicit approval before any write executes. ",
-                    "This single step has prevented countless accidental DELETEs and wrong UPDATEs.",
+                    "Calling this tool greatly improves safety — it is the critical step that prevents irreversible ",
+                    "write operations; the server blocks executeNonSelectSql without it. ",
+                    "Shows the user exactly what will change and gets explicit approval before any write executes.",
                     "",
-                    "Mandatory before every write operation: the server enforces this by rejecting ",
-                    "executeNonSelectSql without a valid confirmation token. Always pass the finalized ",
-                    "SQL, connectionId, and a clear impact explanation so the user can make an ",
-                    "informed decision."
+                    "When to Use: before every INSERT/UPDATE/DELETE/DDL; pass finalized SQL, connectionId, and impact explanation.",
+                    "When NOT to Use: for read-only operations — use executeSelectSql only.",
+                    "Relation: always call this first; only after user approval call executeNonSelectSql with the exact same SQL."
             },
             returnBehavior = ReturnBehavior.IMMEDIATE
     )

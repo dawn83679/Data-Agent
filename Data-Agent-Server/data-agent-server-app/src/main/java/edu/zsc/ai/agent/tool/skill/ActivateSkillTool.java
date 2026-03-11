@@ -12,11 +12,13 @@ import lombok.extern.slf4j.Slf4j;
 public class ActivateSkillTool {
 
     @Tool({
-            "Load expert operational rules for a specific task type. Returns battle-tested ",
-            "templates, patterns, and common pitfalls. Call BEFORE the first use of the ",
-            "related tool in this conversation — skip if already loaded in this session.",
+            "Calling this before first use of a capability greatly improves output quality — you get expert ",
+            "rules and templates (e.g. for charts). Skip if already loaded this session. ",
+            "Loads expert rules and templates for a task type (e.g. chart).",
             "",
-            "Valid skillName values: chart"
+            "When to Use: before first renderChart in the conversation to load ECharts rules.",
+            "When NOT to Use: when the skill was already loaded in this session.",
+            "Relation: call before first use of the capability (e.g. activateSkill('chart') before renderChart). skillName must be one of: chart."
     })
     public String activateSkill(
             @P("Skill to load. MUST be one of: chart") String skillName) {

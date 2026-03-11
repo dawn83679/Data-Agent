@@ -20,19 +20,13 @@ import java.util.stream.Collectors;
 public class ThinkingTool {
 
     @Tool({
-            "Your reasoning engine — calling this tool significantly improves task accuracy ",
-            "and reduces errors. It helps you: (1) understand what the user really needs, ",
-            "(2) break complex tasks into clear steps, (3) manage your candidate list to track ",
-            "which tables/connections you've discovered, and (4) decide when to ask the user vs. ",
-            "when to proceed vs. when to enter Plan mode.",
+            "Calling this tool significantly improves task accuracy and reduces wrong-target or skip-step ",
+            "errors; experts spend most of their time thinking before acting. ",
+            "Reasoning engine: understand the goal, break down tasks, get checklist (SURVEY → DISAMBIGUATE → EXPLORE) and next-step advice.",
             "",
-            "Pass your current candidates list (tables/views discovered so far) and the tool ",
-            "returns: what phase you're in (SURVEY → DISAMBIGUATE → EXPLORE), what to do next, ",
-            "risks to watch for, and whether Plan mode is recommended.",
-            "",
-            "Call this tool generously — every call makes your next action more accurate. ",
-            "Especially valuable at the start of new requests, before write operations, ",
-            "when results surprise you, or when you're unsure what to do next."
+            "When to Use: at the start of new requests; before write operations; when results are surprising or you are unsure what to do next.",
+            "When NOT to Use: for trivial single-step queries when target is already clear and no write is involved.",
+            "Relation: call first when task is non-trivial; follow the returned toolToCall and checklist; then proceed with getEnvironmentOverview/searchObjects/getObjectDetail or enterPlanMode as recommended."
     })
     public AgentToolResult thinking(
             @P("Thinking request: goal, analysis, isWrite flag, and candidates list (objects discovered so far)")
@@ -77,12 +71,12 @@ public class ThinkingTool {
         if (noCandidates) {
             // Phase: SURVEY — nothing discovered yet
             required.add(ChecklistItem.builder()
-                    .action("Survey data landscape — scan all connections and databases, "
+                    .action("Survey data landscape — scan ALL connections and databases, "
                             + "collect candidate tables, then confirm target with user if ambiguous")
-                    .toolToCall("getConnections → getCatalogNames (all) → getObjectNames (all candidate DBs)")
-                    .reason("No candidates identified yet. Scan ALL available connections and databases "
+                    .toolToCall("getEnvironmentOverview then searchObjects to collect candidate tables")
+                    .reason("No candidates identified yet. You MUST scan ALL connections and databases "
                             + "to build a complete candidate set before narrowing down. "
-                            + "Do NOT deep-dive into any single connection before surveying all options.")
+                            + "Do NOT deep-dive on the first match — stopping at the first match causes wrong-database/wrong-table operations. Only after full survey, use askUserQuestion if 2+ candidates.")
                     .build());
         } else if (candidateCount > 1) {
             // Phase: DISAMBIGUATE — multiple candidates, need user to choose
@@ -100,7 +94,7 @@ public class ThinkingTool {
             CandidateObject target = candidates.get(0);
             required.add(ChecklistItem.builder()
                     .action("Explore confirmed target: " + formatCandidate(target))
-                    .toolToCall("getObjectDdl")
+                    .toolToCall("getObjectDetail")
                     .reason("Target confirmed — retrieve structure (columns, types, constraints) "
                             + "before generating SQL.")
                     .build());
@@ -113,7 +107,7 @@ public class ThinkingTool {
             if (!noCandidates) {
                 recommended.add(ChecklistItem.builder()
                         .action("Verify write impact: check row counts and indexes on target tables")
-                        .toolToCall("countObjectRows, getIndexes")
+                        .toolToCall("getObjectDetail (returns row count and indexes)")
                         .reason("Write operation — understand impact scope before proceeding")
                         .build());
             }

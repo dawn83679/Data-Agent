@@ -12,10 +12,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ChecklistItem {
 
-    @JsonPropertyDescription("Action to take, e.g. 'Call getConnections to resolve connectionId'")
+    @JsonPropertyDescription("Action to take, e.g. 'Call getEnvironmentOverview to resolve connectionId'")
     private String action;
 
-    @JsonPropertyDescription("Tool to call, e.g. 'getConnections'")
+    @JsonPropertyDescription("Tool to call, e.g. 'getEnvironmentOverview'")
     private String toolToCall;
 
     @JsonPropertyDescription("Why this step is needed")

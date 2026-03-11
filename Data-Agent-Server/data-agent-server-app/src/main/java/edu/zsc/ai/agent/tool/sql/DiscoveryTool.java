@@ -28,16 +28,16 @@ public class DiscoveryTool {
     private final DiscoveryService discoveryService;
 
     @Tool({
-            "Returns the complete environment overview: all connections with their databases (catalogs) ",
-            "and schemas in a single nested structure. This replaces the need to call getConnections and ",
-            "getCatalogNames separately — one call gives you the full landscape.",
+            "Calling this tool greatly improves target accuracy — you get the full connection/catalog/schema ",
+            "landscape in one shot and avoid wrong-database or wrong-table operations. ",
+            "Returns the complete environment overview in a single nested structure.",
             "",
-            "Call this at the start of every new request to understand the user's data environment. ",
+            "When to Use: at the start of a new request when the environment is unknown.",
+            "When NOT to Use: when you already have full connection/catalog/schema context from this conversation.",
+            "Relation: call first before searchObjects when scanning; then use searchObjects to find objects, getObjectDetail for structure.",
+            "",
             "For PostgreSQL, schemas (excluding system schemas) are included under each catalog. ",
-            "For MySQL, schemas will be empty arrays since MySQL has no schema layer.",
-            "",
-            "Response includes elapsedMs — if > 2000ms, the user has many connections or slow networks; ",
-            "keep this in mind when choosing how broadly to search with subsequent calls."
+            "For MySQL, schemas will be empty arrays. Response includes elapsedMs — if > 2000ms, narrow scope in later calls."
     })
     public AgentToolResult getEnvironmentOverview(InvocationParameters parameters) {
         try (var ctx = ToolContext.from(parameters)) {
@@ -57,17 +57,15 @@ public class DiscoveryTool {
     }
 
     @Tool({
-            "Global search for database objects (tables, views, functions, procedures, triggers) across ",
-            "all connections and databases. Returns a flat list with full location path for each match.",
+            "Using this tool significantly improves discovery — it does pattern (fuzzy) search across all connections. ",
+            "You do NOT need the exact object name: pass a pattern with SQL wildcards (e.g. %order% finds any name containing 'order', %user_% finds names starting with 'user_'). ",
+            "When the user mentions a keyword like '订单' or 'order' or 'user table', call this with objectNamePattern like '%order%' or '%user%' to find all matching tables/views, then getObjectDetail or askUserQuestion as needed.",
             "",
-            "Use SQL wildcards in the pattern: '%order%' finds any object containing 'order', ",
-            "'user_%' finds objects starting with 'user_'. Optional filters narrow the search scope: ",
-            "connectionId → specific connection, databaseName → specific database (requires connectionId), ",
-            "schemaName → specific schema (requires connectionId + databaseName). ",
-            "Results are capped at 100. If not specifying objectType, searches TABLE + VIEW by default.",
+            "When to Use: when you have only a keyword or partial name from the user — use pattern search (e.g. %keyword%); after getEnvironmentOverview when narrowing scope.",
+            "When NOT to Use: only when you already have exact object identity from a previous result (e.g. user chose one from a list) — then use getObjectDetail directly with that list.",
+            "Relation: use after getEnvironmentOverview when env unknown; use before getObjectDetail to get candidates. Always use wildcards for discovery; exact names only when re-querying a known object.",
             "",
-            "Response includes elapsedMs. If a call took > 2000ms, narrow scope next time by passing ",
-            "connectionId/databaseName from previous results to avoid repeating the cost."
+            "Required: only objectNamePattern (use % and _, e.g. '%order%', 'user_%'). All others optional: connectionId, databaseName, schemaName (omit to search all connections/databases/schemas). If narrowing: databaseName requires connectionId; schemaName requires connectionId + databaseName. Results capped at 100. objectType omitted = TABLE + VIEW. Response includes elapsedMs."
     })
     public AgentToolResult searchObjects(
             @P("Search query parameters") ObjectSearchQuery query,
@@ -112,16 +110,15 @@ public class DiscoveryTool {
     }
 
     @Tool({
-            "Returns complete details for one or more database objects in a single call: DDL (structure), ",
-            "row count, and index information. Accepts a list of objects — pass multiple objects to ",
-            "retrieve all their details at once and save LLM reasoning rounds.",
+            "Calling this tool greatly improves SQL correctness — you get real DDL, row counts, and indexes ",
+            "instead of guessing column names or types; pass multiple objects in one call to save rounds. ",
+            "Returns complete details: DDL (structure), row count, and index information per object.",
             "",
-            "For TABLE: returns DDL + rowCount + indexes. For VIEW: returns DDL + rowCount (no indexes). ",
-            "For FUNCTION/PROCEDURE/TRIGGER: returns DDL only. Call this for EVERY table you plan to ",
-            "reference in SQL — the DDL is your ground truth for column names, types, and constraints.",
+            "When to Use: before writing any SQL that references tables; after searchObjects or when target is confirmed.",
+            "When NOT to Use: when you only need object names (searchObjects is enough); do not call repeatedly for the same object in one turn.",
+            "Relation: after getEnvironmentOverview/searchObjects for targets; pass all tables involved in a JOIN in one getObjectDetail call.",
             "",
-            "Each object in the result includes success/error fields — a single object's failure does ",
-            "not affect the others. Response includes elapsedMs."
+            "TABLE: DDL + rowCount + indexes. VIEW: DDL + rowCount. FUNCTION/PROCEDURE/TRIGGER: DDL only. Each object has success/error; one failure does not affect others. Response includes elapsedMs."
     })
     public AgentToolResult getObjectDetail(
             @P("List of objects to retrieve details for") List<ObjectQueryItem> objects,

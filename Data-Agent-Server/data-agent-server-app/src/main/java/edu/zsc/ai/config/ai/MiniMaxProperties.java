@@ -22,7 +22,7 @@ public class MiniMaxProperties {
     @Data
     public static class Parameters {
 
-        private double temperature = 0.7;
+        private double temperature = 0.1;
 
         private int maxToken = 4096;
     }

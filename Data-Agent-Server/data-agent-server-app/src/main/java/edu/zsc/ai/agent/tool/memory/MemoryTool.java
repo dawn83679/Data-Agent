@@ -36,13 +36,13 @@ public class MemoryTool {
     private final MemoryProperties memoryProperties;
 
     @Tool({
-            "Supercharges your accuracy with learned knowledge — retrieves the user's confirmed ",
-            "preferences, business rules, terminology mappings, and proven SQL patterns. Memories ",
-            "contain hard-won insights from past conversations that no schema can provide.",
+            "Calling this tool can greatly improve accuracy when user preferences or business rules matter — ",
+            "one memory hit can prevent misinterpretation (e.g. 'active users' vs 'status=active'). ",
+            "Retrieves confirmed preferences, business rules, terminology, and SQL patterns by natural-language query.",
             "",
-            "Call this whenever domain-specific terms, recurring patterns, or user conventions ",
-            "might be relevant. One memory hit can save you from misinterpreting 'active users' ",
-            "as 'status=active' when the user actually means 'logged in within 30 days'."
+            "When to Use: when domain terms, user conventions, or recurring patterns might be relevant to the current task.",
+            "When NOT to Use: when the request is generic and no user-specific knowledge is needed.",
+            "Relation: optional; call before or during thinking/discovery when context might benefit from past learnings. limit optional, max 100."
     })
     public AgentToolResult searchMemories(
             @P("Natural language query to search memories") String queryText,
@@ -67,12 +67,13 @@ public class MemoryTool {
     }
 
     @Tool({
-            "Prevents duplicate knowledge and keeps your memory proposals organized — shows all ",
-            "pending candidates in this conversation so you know exactly what's already been ",
-            "captured before proposing new entries.",
+            "Calling this before createCandidateMemory greatly improves memory quality — it prevents ",
+            "duplicate or conflicting candidates and user confusion. ",
+            "Lists pending memory candidates in this conversation so you avoid proposing duplicates.",
             "",
-            "Check this before every createCandidateMemory call. Duplicate or conflicting ",
-            "candidates confuse users during review and erode trust in the memory system."
+            "When to Use: before createCandidateMemory to check what is already proposed.",
+            "When NOT to Use: when you are not about to create a candidate.",
+            "Relation: call before createCandidateMemory; duplicate or conflicting candidates reduce user trust. conversationId/limit optional."
     })
     public AgentToolResult listCandidateMemories(
             @P(value = "Conversation id from current session context", required = false) Long conversationId,
@@ -107,14 +108,13 @@ public class MemoryTool {
     }
 
     @Tool({
-            "Makes the system smarter over time — captures reusable knowledge that will improve ",
-            "accuracy in all future conversations. Each confirmed memory is a permanent boost to ",
-            "the system's understanding of this user's domain, preferences, and conventions.",
+            "Calling this tool greatly improves long-term accuracy — each confirmed memory makes future ",
+            "conversations smarter for this user. ",
+            "Creates a memory candidate for user review; once confirmed it improves future conversations.",
             "",
-            "Propose candidates when you discover stable, confirmed knowledge: user preferences, ",
-            "business rules, domain terminology, golden SQL patterns, workflow constraints. ",
-            "The user reviews all candidates, so propose generously — quality filtering happens ",
-            "at review time."
+            "When to Use: when you discover stable, confirmed knowledge: preferences, business rules, terminology, golden SQL, workflow constraints.",
+            "When NOT to Use: when the same or conflicting candidate already exists — check listCandidateMemories first.",
+            "Relation: call listCandidateMemories before proposing to avoid duplicates. candidateType: PREFERENCE|BUSINESS_RULE|KNOWLEDGE_POINT|GOLDEN_SQL_CASE|WORKFLOW_CONSTRAINT."
     })
     public AgentToolResult createCandidateMemory(
             @P(value = "Conversation id from current session context", required = false) Long conversationId,
@@ -147,12 +147,13 @@ public class MemoryTool {
     }
 
     @Tool({
-            "Maintains memory quality — removes incorrect, outdated, or redundant candidates ",
-            "so only high-value knowledge reaches the user for review. Clean candidates build ",
-            "user trust in the memory system and improve long-term learning accuracy.",
+            "Calling this when a candidate is wrong greatly improves memory quality — it keeps the ",
+            "candidate list clean and trustworthy. ",
+            "Deletes a memory candidate by id so incorrect or redundant entries do not reach the user.",
             "",
-            "Use proactively when you discover a candidate is wrong, duplicated, or superseded ",
-            "by better information. A curated candidate list is far more valuable than a noisy one."
+            "When to Use: when a candidate is wrong, duplicated, or superseded by better information.",
+            "When NOT to Use: when you are unsure of the candidateId — use listCandidateMemories to verify.",
+            "Relation: use listCandidateMemories to get candidateId; then call here to remove. Server returns error if id not found or not owned."
     })
     public AgentToolResult deleteCandidateMemory(
             @P("Candidate id to delete") Long candidateId,

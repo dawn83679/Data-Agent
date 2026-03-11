@@ -32,17 +32,13 @@ public class ExecuteSqlTool {
     private final WriteConfirmationStore writeConfirmationStore;
 
     @Tool({
-        "The payoff of all your preparation — executes read-only SQL and delivers results ",
-        "directly to the user. The quality of results depends entirely on the discovery work ",
-        "you did before: correct connection, correct database, correct column names.",
+        "Calling this tool is the only way to deliver real query results to the user — it greatly improves ",
+        "trust; text claims of 'queried' or 'result is' mean nothing without it. ",
+        "Executes read-only SQL; pass multiple statements in one call — results in 'results' array.",
         "",
-        "Accepts a list of SQL statements. Pass multiple related queries in one call to reduce ",
-        "round-trips — results are returned in a 'results' array, one entry per statement.",
-        "",
-        "For maximum accuracy: call thinking first, resolve the data source via getConnections ",
-        "and getCatalogNames, then verify every referenced table with getObjectDdl. SQL built ",
-        "on verified DDL almost never fails. For large tables (>10000 rows), always include ",
-        "WHERE/LIMIT — full-table scans frustrate users and waste resources."
+        "When to Use: after you have verified connection, database, and table structure via getObjectDetail.",
+        "When NOT to Use: for INSERT/UPDATE/DELETE/DDL — use askUserConfirm then executeNonSelectSql instead.",
+        "Relation: call getEnvironmentOverview and searchObjects to resolve target; getObjectDetail for every referenced table; then build SQL and call here. For large tables (>10000 rows) always include WHERE/LIMIT."
     })
     public AgentSqlResult executeSelectSql(
             @P("Connection id from current session context") Long connectionId,
@@ -72,17 +68,13 @@ public class ExecuteSqlTool {
     }
 
     @Tool({
-        "Executes write SQL (INSERT, UPDATE, DELETE, DDL) with full safety enforcement — ",
-        "requires a valid confirmation token from askUserConfirm. This two-step flow has ",
-        "prevented countless accidental data modifications and is non-negotiable.",
+        "Calling this after askUserConfirm greatly improves safety — it is the only way to execute writes; ",
+        "the server rejects writes without prior confirmation. ",
+        "Executes write SQL (INSERT, UPDATE, DELETE, DDL); requires askUserConfirm first.",
         "",
-        "Accepts a list of SQL statements. Pass multiple related statements in one call — ",
-        "results are returned in a 'results' array, one entry per statement.",
-        "",
-        "The server automatically rejects any write without prior user confirmation. Always: ",
-        "(1) finalize your SQL, (2) call askUserConfirm with impact explanation, (3) wait for ",
-        "approval, (4) execute here with the exact same SQL. For read-only queries, use ",
-        "executeSelectSql instead — it's faster and doesn't require confirmation."
+        "When to Use: only after askUserConfirm has been called and the user approved the same SQL.",
+        "When NOT to Use: never call without calling askUserConfirm first; for read-only use executeSelectSql.",
+        "Relation: (1) finalize SQL, (2) call askUserConfirm with impact explanation, (3) after approval call here with the exact same SQL. Accepts a list; results in 'results' array."
     })
     public AgentSqlResult executeNonSelectSql(
             @P("Connection id from current session context") Long connectionId,
