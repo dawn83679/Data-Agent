@@ -14,11 +14,11 @@ public class MultiAgentTask {
 
     private Long taskId;
     private Long runId;
-    private Long parentTaskId;
     private AgentRoleEnum agentRole;
     private String title;
     private String goal;
     private String status;
     private Integer sequence;
     private String summary;
+    private String details;
 }

@@ -353,6 +353,11 @@ export const I18N_KEYS = {
       PARAMETERS: 'ai.toolRun.parameters',
       STREAMING_ARGUMENTS: 'ai.toolRun.streamingArguments',
     },
+    AGENT_ROLE: {
+      SCHEMA_EXPLORER: 'ai.agentRole.schema_explorer',
+      DATA_ANALYST: 'ai.agentRole.data_analyst',
+      DATA_WRITER: 'ai.agentRole.data_writer',
+    },
     CHART_TYPE: {
       LINE: 'ai.chartType.line',
       BAR: 'ai.chartType.bar',

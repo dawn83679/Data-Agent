@@ -8,10 +8,9 @@ import lombok.RequiredArgsConstructor;
 public enum AgentRoleEnum {
 
     ORCHESTRATOR("orchestrator"),
-    SCHEMA_ANALYST("schema_analyst"),
-    SQL_PLANNER("sql_planner"),
-    SQL_EXECUTOR("sql_executor"),
-    RESULT_ANALYST("result_analyst");
+    SCHEMA_EXPLORER("schema_explorer"),
+    DATA_ANALYST("data_analyst"),
+    DATA_WRITER("data_writer");
 
     private final String code;
 }

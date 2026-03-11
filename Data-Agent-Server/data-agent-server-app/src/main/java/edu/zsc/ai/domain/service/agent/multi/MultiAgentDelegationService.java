@@ -57,7 +57,6 @@ public class MultiAgentDelegationService {
 
         MultiAgentTask task = multiAgentRunStore.createTask(
                 parent.getRunId(),
-                parent.getTaskId(),
                 role,
                 defaultTitle(role, title),
                 StringUtils.defaultIfBlank(instructions, "(no instructions supplied)"));
@@ -92,7 +91,7 @@ public class MultiAgentDelegationService {
                     outcome.summary(),
                     outcome.details()));
 
-            multiAgentRunStore.markTask(task.getRunId(), task.getTaskId(), outcome.status().toUpperCase(), outcome.summary());
+            multiAgentRunStore.markTask(task.getRunId(), task.getTaskId(), outcome.status().toUpperCase(), outcome.summary(), outcome.details());
 
             return SubAgentDelegationResult.builder()
                     .runId(task.getRunId())
@@ -115,7 +114,7 @@ public class MultiAgentDelegationService {
                     "failed",
                     message,
                     null));
-            multiAgentRunStore.markTask(task.getRunId(), task.getTaskId(), "FAILED", message);
+            multiAgentRunStore.markTask(task.getRunId(), task.getTaskId(), "FAILED", message, null);
             return SubAgentDelegationResult.builder()
                     .runId(task.getRunId())
                     .taskId(task.getTaskId())
@@ -136,7 +135,7 @@ public class MultiAgentDelegationService {
         String modelName = StringUtils.defaultIfBlank(parent.getModelName(), "qwen3-max");
         String language = StringUtils.defaultIfBlank(parent.getLanguage(), "en");
         TokenStream tokenStream = multiAgentWorkerFactory.getWorker(modelName, language, task.getAgentRole())
-                .run(buildSubAgentMessage(parent, task), buildChildParameters(parent, task));
+                .run(buildSubAgentMessage(task), buildChildParameters(parent, task));
 
         List<ChatResponseBlock> emittedBlocks = new ArrayList<>();
         StringBuilder textBuffer = new StringBuilder();
@@ -263,27 +262,12 @@ public class MultiAgentDelegationService {
         return InvocationParameters.from(map);
     }
 
-    private String buildSubAgentMessage(RequestContextInfo parent, MultiAgentTask task) {
-        return """
-                Task title:
-                %s
-
-                Delegated instructions:
-                %s
-
-                Workspace context:
-                - connectionId: %s
-                - database: %s
-                - schema: %s
-
-                Return a concrete completion result for the orchestrator.
-                """
-                .formatted(
-                        task.getTitle(),
-                        task.getGoal(),
-                        nullable(parent.getConnectionId()),
-                        nullable(parent.getCatalog()),
-                        nullable(parent.getSchema()));
+    private String buildSubAgentMessage(MultiAgentTask task) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Task title:\n").append(task.getTitle());
+        sb.append("\n\nDelegated instructions:\n").append(task.getGoal());
+        sb.append("\n\nReturn a concrete completion result for the orchestrator.");
+        return sb.toString();
     }
 
     private TaskOutcome summarizeOutcome(MultiAgentTask task, List<ChatResponseBlock> blocks) {
@@ -292,7 +276,7 @@ public class MultiAgentDelegationService {
         boolean requestedApproval = requestedApproval(blocks);
         boolean executedWrite = usedTool(blocks, ToolNameEnum.EXECUTE_NON_SELECT_SQL.getToolName());
 
-        if (task.getAgentRole() == AgentRoleEnum.SQL_EXECUTOR && requestedApproval && !executedWrite) {
+        if (task.getAgentRole() == AgentRoleEnum.DATA_WRITER && requestedApproval && !executedWrite) {
             return new TaskOutcome(
                     "waiting_approval",
                     summarize(StringUtils.defaultIfBlank(details, "Execution is waiting for write approval.")),
@@ -472,10 +456,9 @@ public class MultiAgentDelegationService {
             return title.trim();
         }
         return switch (role) {
-            case SCHEMA_ANALYST -> "Schema Analysis";
-            case SQL_PLANNER -> "SQL Planning";
-            case SQL_EXECUTOR -> "SQL Execution";
-            case RESULT_ANALYST -> "Result Analysis";
+            case SCHEMA_EXPLORER -> "Schema Exploration";
+            case DATA_ANALYST -> "Data Analysis";
+            case DATA_WRITER -> "Data Write";
             case ORCHESTRATOR -> "Orchestration";
         };
     }
@@ -485,10 +468,6 @@ public class MultiAgentDelegationService {
             return "";
         }
         return raw.replace('\n', ' ').replaceAll("\\s+", " ").trim();
-    }
-
-    private String nullable(Object value) {
-        return value == null ? "(none)" : String.valueOf(value);
     }
 
     private void emit(Long conversationId, ChatResponseBlock block) {

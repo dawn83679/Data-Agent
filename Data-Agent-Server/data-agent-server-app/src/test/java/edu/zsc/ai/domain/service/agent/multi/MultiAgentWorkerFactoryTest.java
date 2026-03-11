@@ -15,17 +15,16 @@ class MultiAgentWorkerFactoryTest {
 
     @Test
     void shouldResolveWorkerFromExplicitRoleMap() {
-        MultiAgentWorker schemaWorker = mock(MultiAgentWorker.class);
-        MultiAgentWorker plannerWorker = mock(MultiAgentWorker.class);
+        MultiAgentWorker explorerWorker = mock(MultiAgentWorker.class);
+        MultiAgentWorker analystWorker = mock(MultiAgentWorker.class);
 
         MultiAgentWorkerFactory factory = new MultiAgentWorkerFactory(
-                Map.of("qwen3-max", schemaWorker),
-                Map.of("qwen3-max", plannerWorker),
-                Map.of(),
+                Map.of("qwen3-max", explorerWorker),
+                Map.of("qwen3-max", analystWorker),
                 Map.of());
 
-        assertSame(schemaWorker, factory.getWorker("qwen3-max", "zh", AgentRoleEnum.SCHEMA_ANALYST));
-        assertSame(plannerWorker, factory.getWorker("qwen3-max", "zh", AgentRoleEnum.SQL_PLANNER));
+        assertSame(explorerWorker, factory.getWorker("qwen3-max", "zh", AgentRoleEnum.SCHEMA_EXPLORER));
+        assertSame(analystWorker, factory.getWorker("qwen3-max", "zh", AgentRoleEnum.DATA_ANALYST));
     }
 
     @Test
@@ -33,11 +32,10 @@ class MultiAgentWorkerFactoryTest {
         MultiAgentWorkerFactory factory = new MultiAgentWorkerFactory(
                 Map.of("qwen-plus", mock(MultiAgentWorker.class)),
                 Map.of(),
-                Map.of(),
                 Map.of());
 
         IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
-                () -> factory.getWorker("qwen3-max", "zh", AgentRoleEnum.SCHEMA_ANALYST));
+                () -> factory.getWorker("qwen3-max", "zh", AgentRoleEnum.SCHEMA_EXPLORER));
 
         assertTrue(error.getMessage().contains("qwen-plus"));
     }

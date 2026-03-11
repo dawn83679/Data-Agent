@@ -44,10 +44,7 @@ public enum ToolNameEnum {
     TODO_WRITE("todoWrite"),
 
     // ── Multi-agent delegation ──
-    DELEGATE_TO_SCHEMA_ANALYST("delegateToSchemaAnalyst"),
-    DELEGATE_TO_SQL_PLANNER("delegateToSqlPlanner"),
-    DELEGATE_TO_SQL_EXECUTOR("delegateToSqlExecutor"),
-    DELEGATE_TO_RESULT_ANALYST("delegateToResultAnalyst"),
+    DELEGATE("delegate"),
 
     // ── Skill ──
     ACTIVATE_SKILL("activateSkill"),

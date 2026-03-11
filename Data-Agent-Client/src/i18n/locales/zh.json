@@ -189,6 +189,11 @@
       "executing": "正在执行...",
       "parameters": "参数"
     },
+    "agentRole": {
+      "schema_explorer": "结构探索",
+      "data_analyst": "数据分析",
+      "data_writer": "数据写入"
+    },
     "chartType": {
       "line": "折线图",
       "bar": "柱状图",

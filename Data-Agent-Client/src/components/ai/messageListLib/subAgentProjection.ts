@@ -9,15 +9,10 @@ import type {
 import type { SubAgentBlockModel, SubAgentTextEntry, SubAgentToolEntry } from './types';
 import { ToolExecutionState } from './types';
 
-const DELEGATION_TOOL_TO_ROLE: Record<string, string> = {
-  delegateToSchemaAnalyst: 'schema_analyst',
-  delegateToSqlPlanner: 'sql_planner',
-  delegateToSqlExecutor: 'sql_executor',
-  delegateToResultAnalyst: 'result_analyst',
-};
+const DELEGATION_TOOL_NAME = 'delegate';
 
 function isDelegationToolName(toolName: string | undefined): boolean {
-  return !!toolName && toolName in DELEGATION_TOOL_TO_ROLE;
+  return toolName === DELEGATION_TOOL_NAME;
 }
 
 function parseToolCall(block: ChatResponseBlock): ToolCallData | null {
@@ -138,8 +133,10 @@ function parseDelegationResult(resultData: string | undefined): Record<string, u
   return nested && typeof nested === 'object' ? nested as Record<string, unknown> : null;
 }
 
-function roleLabelFromTool(toolName: string | undefined): string | undefined {
-  return toolName ? DELEGATION_TOOL_TO_ROLE[toolName] : undefined;
+function roleLabelFromDelegateArgs(parametersData: string | undefined): string | undefined {
+  const parsed = parseJsonObject(parametersData);
+  const role = parsed?.role;
+  return typeof role === 'string' && role.trim() !== '' ? role : undefined;
 }
 
 function roleTitle(role: string | undefined): string | undefined {
@@ -199,13 +196,13 @@ function appendToolEntry(target: SubAgentBlockModel, entry: SubAgentToolEntry) {
   target.entries.push(entry);
 }
 
-function createAnchor(toolCallId: string | undefined, toolName: string | undefined, parametersData: string | undefined): SubAgentBlockModel {
-  const role = roleLabelFromTool(toolName);
+function createAnchor(toolCallId: string | undefined, parametersData: string | undefined): SubAgentBlockModel {
+  const role = roleLabelFromDelegateArgs(parametersData);
   return {
     key: toolCallId || `sub-agent-${Math.random().toString(36).slice(2)}`,
     toolCallId,
     agentRole: role,
-    title: parseDelegationTitle(parametersData) ?? roleTitle(role) ?? 'Sub Agent',
+    title: parseDelegationTitle(parametersData) ?? roleTitle(role) ?? 'Calling Sub Agent',
     status: 'running',
     entries: [],
   };
@@ -215,13 +212,12 @@ function ensureAnchor(
   anchors: SubAgentBlockModel[],
   anchorByToolCallId: Map<string, SubAgentBlockModel>,
   toolCallId: string | undefined,
-  toolName: string | undefined,
   parametersData: string | undefined
 ): SubAgentBlockModel {
   const key = toolCallId ?? `synthetic-${anchors.length}`;
   const existing = anchorByToolCallId.get(key);
   if (existing) return existing;
-  const anchor = createAnchor(toolCallId, toolName, parametersData);
+  const anchor = createAnchor(toolCallId, parametersData);
   anchor.key = key;
   anchors.push(anchor);
   anchorByToolCallId.set(key, anchor);
@@ -280,13 +276,18 @@ export function projectSubAgentBlocks(blocks: ChatResponseBlock[]): {
       const resultPayload = resultInfo?.block ? parseToolResult(resultInfo.block) : null;
 
       if (isDelegationToolName(lastCall.toolName) && (lastCall.taskId == null && resultPayload?.taskId == null)) {
-        const anchor = ensureAnchor(anchors, anchorByToolCallId, lastCall.id, lastCall.toolName, parametersData);
+        const anchor = ensureAnchor(anchors, anchorByToolCallId, lastCall.id, parametersData);
         anchor.status = isStreaming ? 'running' : (anchor.status ?? 'running');
         anchor.summary = anchor.summary ?? 'Delegated by orchestrator.';
 
         const nestedResult = parseDelegationResult(resultPayload?.result);
         if (nestedResult) {
           assignTaskToAnchor(anchor, nestedResult);
+          // For history: show the sub-agent's report as a text entry
+          const details = nestedResult.details;
+          if (typeof details === 'string' && details.trim() !== '') {
+            appendTextEntry(anchor, details, false);
+          }
           if (typeof anchor.taskId === 'number') {
             anchorByTaskId.set(anchor.taskId, anchor);
             const pendingIndex = pendingAnchors.indexOf(anchor);

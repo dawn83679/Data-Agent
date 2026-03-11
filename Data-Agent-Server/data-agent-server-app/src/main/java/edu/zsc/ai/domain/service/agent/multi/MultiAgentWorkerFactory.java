@@ -17,20 +17,17 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MultiAgentWorkerFactory {
 
-    private final Map<String, MultiAgentWorker> schemaAnalystWorkers;
-    private final Map<String, MultiAgentWorker> sqlPlannerWorkers;
-    private final Map<String, MultiAgentWorker> sqlExecutorWorkers;
-    private final Map<String, MultiAgentWorker> resultAnalystWorkers;
+    private final Map<String, MultiAgentWorker> schemaExplorerWorkers;
+    private final Map<String, MultiAgentWorker> dataAnalystWorkers;
+    private final Map<String, MultiAgentWorker> dataWriterWorkers;
 
     public MultiAgentWorkerFactory(
-            @Qualifier("schemaAnalystWorkers") Map<String, MultiAgentWorker> schemaAnalystWorkers,
-            @Qualifier("sqlPlannerWorkers") Map<String, MultiAgentWorker> sqlPlannerWorkers,
-            @Qualifier("sqlExecutorWorkers") Map<String, MultiAgentWorker> sqlExecutorWorkers,
-            @Qualifier("resultAnalystWorkers") Map<String, MultiAgentWorker> resultAnalystWorkers) {
-        this.schemaAnalystWorkers = schemaAnalystWorkers;
-        this.sqlPlannerWorkers = sqlPlannerWorkers;
-        this.sqlExecutorWorkers = sqlExecutorWorkers;
-        this.resultAnalystWorkers = resultAnalystWorkers;
+            @Qualifier("schemaExplorerWorkers") Map<String, MultiAgentWorker> schemaExplorerWorkers,
+            @Qualifier("dataAnalystWorkers") Map<String, MultiAgentWorker> dataAnalystWorkers,
+            @Qualifier("dataWriterWorkers") Map<String, MultiAgentWorker> dataWriterWorkers) {
+        this.schemaExplorerWorkers = schemaExplorerWorkers;
+        this.dataAnalystWorkers = dataAnalystWorkers;
+        this.dataWriterWorkers = dataWriterWorkers;
     }
 
     public MultiAgentWorker getWorker(String modelName, String language, AgentRoleEnum role) {
@@ -54,10 +51,9 @@ public class MultiAgentWorkerFactory {
             throw new IllegalArgumentException("Agent role is required for multi-agent worker resolution.");
         }
         return switch (role) {
-            case SCHEMA_ANALYST -> schemaAnalystWorkers;
-            case SQL_PLANNER -> sqlPlannerWorkers;
-            case SQL_EXECUTOR -> sqlExecutorWorkers;
-            case RESULT_ANALYST -> resultAnalystWorkers;
+            case SCHEMA_EXPLORER -> schemaExplorerWorkers;
+            case DATA_ANALYST -> dataAnalystWorkers;
+            case DATA_WRITER -> dataWriterWorkers;
             default -> throw new IllegalArgumentException("Unsupported sub-agent role=" + role.getCode()
                     + " for " + AgentModeEnum.MULTI_AGENT.getCode());
         };

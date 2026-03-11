@@ -52,12 +52,11 @@ public class MultiAgentRunStore {
         return task;
     }
 
-    public MultiAgentTask createTask(Long runId, Long parentTaskId, AgentRoleEnum role, String title, String goal) {
+    public MultiAgentTask createTask(Long runId, AgentRoleEnum role, String title, String goal) {
         MultiAgentRun run = runs.computeIfAbsent(runId, ignored -> MultiAgentRun.builder().build());
         MultiAgentTask task = MultiAgentTask.builder()
                 .taskId(taskSequence.incrementAndGet())
                 .runId(runId)
-                .parentTaskId(parentTaskId)
                 .agentRole(role)
                 .title(title)
                 .goal(goal)
@@ -70,6 +69,10 @@ public class MultiAgentRunStore {
     }
 
     public void markTask(Long runId, Long taskId, String status, String summary) {
+        markTask(runId, taskId, status, summary, null);
+    }
+
+    public void markTask(Long runId, Long taskId, String status, String summary, String details) {
         MultiAgentRun run = runs.get(runId);
         if (run == null) {
             return;
@@ -80,6 +83,9 @@ public class MultiAgentRunStore {
                 .ifPresent(task -> {
                     task.setStatus(status);
                     task.setSummary(summary);
+                    if (details != null) {
+                        task.setDetails(details);
+                    }
                 });
     }
 

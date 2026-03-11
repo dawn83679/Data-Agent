@@ -9,7 +9,9 @@ import edu.zsc.ai.agent.tool.multi.MultiAgentDelegationTool;
 import edu.zsc.ai.agent.tool.plan.ExitPlanModeTool;
 import edu.zsc.ai.agent.tool.skill.ActivateSkillTool;
 import edu.zsc.ai.agent.tool.sql.DiscoveryTool;
-import edu.zsc.ai.agent.tool.sql.ExecuteSqlTool;
+import edu.zsc.ai.agent.tool.sql.SchemaDetailTool;
+import edu.zsc.ai.agent.tool.sql.SelectSqlTool;
+import edu.zsc.ai.agent.tool.sql.WriteSqlTool;
 import edu.zsc.ai.agent.tool.think.ThinkingTool;
 import edu.zsc.ai.agent.tool.todo.TodoTool;
 import edu.zsc.ai.common.enums.ai.AgentModeEnum;
@@ -26,14 +28,16 @@ import java.util.Set;
 @Configuration
 public class AgentToolConfig {
 
-    private static final Set<Class<?>> PLAN_MODE_DISABLED = Set.of(
-            ExecuteSqlTool.class,
-            ChartTool.class,
-            AskUserConfirmTool.class
+    private static final Set<Class<?>> AGENT_MODE_DISABLED = Set.of(
+            ExitPlanModeTool.class,
+            MultiAgentDelegationTool.class
     );
 
-    private static final Set<Class<?>> AGENT_MODE_DISABLED = Set.of(
-            ExitPlanModeTool.class
+    private static final Set<Class<?>> PLAN_MODE_DISABLED = Set.of(
+            WriteSqlTool.class,
+            ChartTool.class,
+            AskUserConfirmTool.class,
+            MultiAgentDelegationTool.class
     );
 
     private static final Set<Class<?>> MULTI_AGENT_ORCHESTRATOR_ALLOWED = Set.of(
@@ -41,27 +45,28 @@ public class AgentToolConfig {
             ThinkingTool.class,
             AskUserQuestionTool.class,
             MemoryTool.class,
+            ChartTool.class,
+            ActivateSkillTool.class,
             TodoTool.class
     );
 
     private static final Map<AgentRoleEnum, Set<Class<?>>> ROLE_ALLOWED_TOOLS = Map.of(
-            AgentRoleEnum.SCHEMA_ANALYST, Set.of(
+            AgentRoleEnum.SCHEMA_EXPLORER, Set.of(
                     DiscoveryTool.class,
-                    ThinkingTool.class,
-                    MemoryTool.class
+                    SchemaDetailTool.class,
+                    ThinkingTool.class
             ),
-            AgentRoleEnum.SQL_PLANNER, Set.of(
-                    DiscoveryTool.class,
-                    ThinkingTool.class,
-                    MemoryTool.class,
-                    TodoTool.class,
-                    ActivateSkillTool.class
+            AgentRoleEnum.DATA_ANALYST, Set.of(
+                    SelectSqlTool.class,
+                    SchemaDetailTool.class,
+                    ThinkingTool.class
             ),
-            AgentRoleEnum.SQL_EXECUTOR, Set.of(
-                    ExecuteSqlTool.class,
-                    AskUserConfirmTool.class
-            ),
-            AgentRoleEnum.RESULT_ANALYST, Set.of()
+            AgentRoleEnum.DATA_WRITER, Set.of(
+                    SchemaDetailTool.class,
+                    WriteSqlTool.class,
+                    AskUserConfirmTool.class,
+                    ThinkingTool.class
+            )
     );
 
     @Bean

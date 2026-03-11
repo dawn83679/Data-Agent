@@ -189,6 +189,11 @@
       "executing": "Executing...",
       "parameters": "Parameters"
     },
+    "agentRole": {
+      "schema_explorer": "Schema Explorer",
+      "data_analyst": "Data Analyst",
+      "data_writer": "Data Writer"
+    },
     "chartType": {
       "line": "Line Chart",
       "bar": "Bar Chart",

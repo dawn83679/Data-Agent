@@ -10,7 +10,7 @@ import lombok.experimental.SuperBuilder;
 
 /**
  * SQL Execution Request for AI Agent Tool
- * Used by ExecuteSqlTool for Agent/LLM calls.
+ * Used by SelectSqlTool/WriteSqlTool for Agent/LLM calls.
  * userId is obtained from RequestContext (set by ToolContext or SaTokenConfigure interceptor).
  */
 @Data

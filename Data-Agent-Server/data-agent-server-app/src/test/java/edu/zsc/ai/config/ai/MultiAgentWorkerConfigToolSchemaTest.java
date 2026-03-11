@@ -9,21 +9,16 @@ import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import edu.zsc.ai.agent.MultiAgentWorker;
 import edu.zsc.ai.agent.tool.ask.AskUserConfirmTool;
-import edu.zsc.ai.agent.tool.memory.MemoryTool;
-import edu.zsc.ai.agent.tool.skill.ActivateSkillTool;
 import edu.zsc.ai.agent.tool.sql.DiscoveryTool;
-import edu.zsc.ai.agent.tool.sql.ExecuteSqlTool;
+import edu.zsc.ai.agent.tool.sql.SchemaDetailTool;
+import edu.zsc.ai.agent.tool.sql.SelectSqlTool;
+import edu.zsc.ai.agent.tool.sql.WriteSqlTool;
 import edu.zsc.ai.agent.tool.think.ThinkingTool;
-import edu.zsc.ai.agent.tool.todo.TodoTool;
 import edu.zsc.ai.agent.tool.ask.confirm.WriteConfirmationStore;
-import edu.zsc.ai.config.ai.MemoryProperties;
-import edu.zsc.ai.domain.service.ai.MemoryCandidateService;
-import edu.zsc.ai.domain.service.ai.MemoryService;
 import edu.zsc.ai.domain.service.db.DiscoveryService;
 import edu.zsc.ai.domain.service.db.SqlExecutionService;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -39,9 +34,9 @@ import static org.mockito.Mockito.mock;
 class MultiAgentWorkerConfigToolSchemaTest {
 
     @Test
-    void schemaAnalystWorkerShouldExposeDiscoveryToolsToModel() {
+    void schemaExplorerWorkerShouldExposeDiscoveryToolsToModel() {
         CapturingStreamingChatModel model = new CapturingStreamingChatModel();
-        MultiAgentWorker worker = buildConfig(model).schemaAnalystWorkers()
+        MultiAgentWorker worker = buildConfig(model).schemaExplorerWorkers()
                 .get(MultiAgentWorkerConfig.workerKey("qwen3-max"));
 
         run(worker);
@@ -56,21 +51,37 @@ class MultiAgentWorkerConfigToolSchemaTest {
     }
 
     @Test
-    void sqlExecutorWorkerShouldExposeOnlyExecutionToolsToModel() {
+    void dataAnalystWorkerShouldExposeSelectSqlToolToModel() {
         CapturingStreamingChatModel model = new CapturingStreamingChatModel();
-        MultiAgentWorker worker = buildConfig(model).sqlExecutorWorkers()
+        MultiAgentWorker worker = buildConfig(model).dataAnalystWorkers()
                 .get(MultiAgentWorkerConfig.workerKey("qwen3-max"));
 
         run(worker);
 
         Set<String> toolNames = capturedToolNames(model);
         assertTrue(toolNames.contains("executeSelectSql"), toolNames.toString());
-        assertTrue(toolNames.contains("executeNonSelectSql"), toolNames.toString());
-        assertTrue(toolNames.contains("askUserConfirm"), toolNames.toString());
+        assertTrue(toolNames.contains("thinking"), toolNames.toString());
+        assertFalse(toolNames.contains("executeNonSelectSql"));
         assertFalse(toolNames.contains("getEnvironmentOverview"));
         assertFalse(toolNames.contains("searchObjects"));
-        assertFalse(toolNames.contains("getObjectDetail"));
-        assertFalse(toolNames.contains("thinking"));
+    }
+
+    @Test
+    void dataWriterWorkerShouldExposeWriteToolsToModel() {
+        CapturingStreamingChatModel model = new CapturingStreamingChatModel();
+        MultiAgentWorker worker = buildConfig(model).dataWriterWorkers()
+                .get(MultiAgentWorkerConfig.workerKey("qwen3-max"));
+
+        run(worker);
+
+        Set<String> toolNames = capturedToolNames(model);
+        assertTrue(toolNames.contains("getObjectDetail"), toolNames.toString());
+        assertTrue(toolNames.contains("executeNonSelectSql"), toolNames.toString());
+        assertTrue(toolNames.contains("askUserConfirm"), toolNames.toString());
+        assertTrue(toolNames.contains("thinking"), toolNames.toString());
+        assertFalse(toolNames.contains("executeSelectSql"));
+        assertFalse(toolNames.contains("getEnvironmentOverview"));
+        assertFalse(toolNames.contains("searchObjects"));
     }
 
     private MultiAgentWorkerConfig buildConfig(CapturingStreamingChatModel model) {
@@ -79,13 +90,9 @@ class MultiAgentWorkerConfigToolSchemaTest {
                 new MultiAgentPromptConfig(),
                 new DiscoveryTool(mock(DiscoveryService.class)),
                 new ThinkingTool(),
-                new MemoryTool(
-                        mock(MemoryCandidateService.class),
-                        mock(MemoryService.class),
-                        new MemoryProperties()),
-                new TodoTool(),
-                new ActivateSkillTool(),
-                new ExecuteSqlTool(mock(SqlExecutionService.class), mock(WriteConfirmationStore.class)),
+                new SelectSqlTool(mock(SqlExecutionService.class)),
+                new WriteSqlTool(mock(SqlExecutionService.class), mock(WriteConfirmationStore.class)),
+                new SchemaDetailTool(mock(DiscoveryService.class)),
                 new AskUserConfirmTool(mock(WriteConfirmationStore.class)));
     }
 

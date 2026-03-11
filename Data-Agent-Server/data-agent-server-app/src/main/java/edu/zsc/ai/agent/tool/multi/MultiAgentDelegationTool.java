@@ -13,55 +13,47 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @Component
 @AgentTool
 @RequiredArgsConstructor
 public class MultiAgentDelegationTool {
 
+    private static final Set<String> VALID_ROLES = Arrays.stream(AgentRoleEnum.values())
+            .filter(r -> r != AgentRoleEnum.ORCHESTRATOR)
+            .map(AgentRoleEnum::getCode)
+            .collect(Collectors.toSet());
+
     private final MultiAgentDelegationService delegationService;
 
-    @Tool("Delegate schema discovery and object verification to the schema analyst. Use this when the relevant tables, views, or fields are still unclear.")
-    public AgentToolResult delegateToSchemaAnalyst(
+    @Tool("Delegate a task to a specialized sub-agent. Available roles: schema_explorer (discovers database structure), data_analyst (designs and executes read-only SQL), data_writer (executes write operations with safety checks).")
+    public AgentToolResult delegate(
+            @P("Target role: schema_explorer | data_analyst | data_writer") String role,
             @P("Short title for this delegated task") String title,
-            @P("Concrete instructions for the schema analyst") String instructions,
+            @P("Concrete instructions for the sub-agent. Include all necessary context (schema reports, connection details) directly in the instructions.") String instructions,
             InvocationParameters parameters) {
         try (var ctx = ToolContext.from(parameters)) {
+            AgentRoleEnum roleEnum = resolveRole(role);
+            if (roleEnum == null) {
+                return AgentToolResult.fail("Invalid role '" + role + "'. Valid roles: " + VALID_ROLES);
+            }
             return ctx.timed(toToolResult(
-                    delegationService.delegate(AgentRoleEnum.SCHEMA_ANALYST, title, instructions, parameters)));
+                    delegationService.delegate(roleEnum, title, instructions, parameters)));
         }
     }
 
-    @Tool("Delegate SQL design and execution planning to the SQL planner. Use this after schema discovery or when a precise SQL plan is required.")
-    public AgentToolResult delegateToSqlPlanner(
-            @P("Short title for this delegated task") String title,
-            @P("Concrete instructions for the SQL planner") String instructions,
-            InvocationParameters parameters) {
-        try (var ctx = ToolContext.from(parameters)) {
-            return ctx.timed(toToolResult(
-                    delegationService.delegate(AgentRoleEnum.SQL_PLANNER, title, instructions, parameters)));
+    private AgentRoleEnum resolveRole(String role) {
+        if (StringUtils.isBlank(role)) return null;
+        String normalized = role.trim().toLowerCase();
+        for (AgentRoleEnum r : AgentRoleEnum.values()) {
+            if (r.getCode().equals(normalized) && r != AgentRoleEnum.ORCHESTRATOR) {
+                return r;
+            }
         }
-    }
-
-    @Tool("Delegate query execution or write approval flow to the SQL executor. Use this only when execution-ready SQL or precise execution steps already exist.")
-    public AgentToolResult delegateToSqlExecutor(
-            @P("Short title for this delegated task") String title,
-            @P("Concrete instructions for the SQL executor") String instructions,
-            InvocationParameters parameters) {
-        try (var ctx = ToolContext.from(parameters)) {
-            return ctx.timed(toToolResult(
-                    delegationService.delegate(AgentRoleEnum.SQL_EXECUTOR, title, instructions, parameters)));
-        }
-    }
-
-    @Tool("Delegate final interpretation and user-facing synthesis to the result analyst. Use this when you want a concise final summary of what happened.")
-    public AgentToolResult delegateToResultAnalyst(
-            @P("Short title for this delegated task") String title,
-            @P("Concrete instructions for the result analyst") String instructions,
-            InvocationParameters parameters) {
-        try (var ctx = ToolContext.from(parameters)) {
-            return ctx.timed(toToolResult(
-                    delegationService.delegate(AgentRoleEnum.RESULT_ANALYST, title, instructions, parameters)));
-        }
+        return null;
     }
 
     private AgentToolResult toToolResult(SubAgentDelegationResult result) {

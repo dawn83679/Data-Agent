@@ -4,12 +4,11 @@ import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
 import edu.zsc.ai.agent.MultiAgentWorker;
 import edu.zsc.ai.agent.tool.ask.AskUserConfirmTool;
-import edu.zsc.ai.agent.tool.memory.MemoryTool;
-import edu.zsc.ai.agent.tool.skill.ActivateSkillTool;
 import edu.zsc.ai.agent.tool.sql.DiscoveryTool;
-import edu.zsc.ai.agent.tool.sql.ExecuteSqlTool;
+import edu.zsc.ai.agent.tool.sql.SchemaDetailTool;
+import edu.zsc.ai.agent.tool.sql.SelectSqlTool;
+import edu.zsc.ai.agent.tool.sql.WriteSqlTool;
 import edu.zsc.ai.agent.tool.think.ThinkingTool;
-import edu.zsc.ai.agent.tool.todo.TodoTool;
 import edu.zsc.ai.common.enums.ai.AgentRoleEnum;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,10 +25,9 @@ public class MultiAgentWorkerConfig {
     private final MultiAgentPromptConfig multiAgentPromptConfig;
     private final DiscoveryTool discoveryTool;
     private final ThinkingTool thinkingTool;
-    private final MemoryTool memoryTool;
-    private final TodoTool todoTool;
-    private final ActivateSkillTool activateSkillTool;
-    private final ExecuteSqlTool executeSqlTool;
+    private final SelectSqlTool selectSqlTool;
+    private final WriteSqlTool writeSqlTool;
+    private final SchemaDetailTool schemaDetailTool;
     private final AskUserConfirmTool askUserConfirmTool;
 
     public MultiAgentWorkerConfig(
@@ -37,40 +35,33 @@ public class MultiAgentWorkerConfig {
             MultiAgentPromptConfig multiAgentPromptConfig,
             DiscoveryTool discoveryTool,
             ThinkingTool thinkingTool,
-            MemoryTool memoryTool,
-            TodoTool todoTool,
-            ActivateSkillTool activateSkillTool,
-            ExecuteSqlTool executeSqlTool,
+            SelectSqlTool selectSqlTool,
+            WriteSqlTool writeSqlTool,
+            SchemaDetailTool schemaDetailTool,
             AskUserConfirmTool askUserConfirmTool) {
         this.modelsByName = modelsByName;
         this.multiAgentPromptConfig = multiAgentPromptConfig;
         this.discoveryTool = discoveryTool;
         this.thinkingTool = thinkingTool;
-        this.memoryTool = memoryTool;
-        this.todoTool = todoTool;
-        this.activateSkillTool = activateSkillTool;
-        this.executeSqlTool = executeSqlTool;
+        this.selectSqlTool = selectSqlTool;
+        this.writeSqlTool = writeSqlTool;
+        this.schemaDetailTool = schemaDetailTool;
         this.askUserConfirmTool = askUserConfirmTool;
     }
 
-    @Bean("schemaAnalystWorkers")
-    public Map<String, MultiAgentWorker> schemaAnalystWorkers() {
-        return buildWorkers(AgentRoleEnum.SCHEMA_ANALYST);
+    @Bean("schemaExplorerWorkers")
+    public Map<String, MultiAgentWorker> schemaExplorerWorkers() {
+        return buildWorkers(AgentRoleEnum.SCHEMA_EXPLORER);
     }
 
-    @Bean("sqlPlannerWorkers")
-    public Map<String, MultiAgentWorker> sqlPlannerWorkers() {
-        return buildWorkers(AgentRoleEnum.SQL_PLANNER);
+    @Bean("dataAnalystWorkers")
+    public Map<String, MultiAgentWorker> dataAnalystWorkers() {
+        return buildWorkers(AgentRoleEnum.DATA_ANALYST);
     }
 
-    @Bean("sqlExecutorWorkers")
-    public Map<String, MultiAgentWorker> sqlExecutorWorkers() {
-        return buildWorkers(AgentRoleEnum.SQL_EXECUTOR);
-    }
-
-    @Bean("resultAnalystWorkers")
-    public Map<String, MultiAgentWorker> resultAnalystWorkers() {
-        return buildWorkers(AgentRoleEnum.RESULT_ANALYST);
+    @Bean("dataWriterWorkers")
+    public Map<String, MultiAgentWorker> dataWriterWorkers() {
+        return buildWorkers(AgentRoleEnum.DATA_WRITER);
     }
 
     private Map<String, MultiAgentWorker> buildWorkers(AgentRoleEnum role) {
@@ -93,10 +84,9 @@ public class MultiAgentWorkerConfig {
 
     private List<Object> roleTools(AgentRoleEnum role) {
         return switch (role) {
-            case SCHEMA_ANALYST -> List.of(discoveryTool, thinkingTool, memoryTool);
-            case SQL_PLANNER -> List.of(thinkingTool, memoryTool, todoTool, activateSkillTool);
-            case SQL_EXECUTOR -> List.of(executeSqlTool, askUserConfirmTool);
-            case RESULT_ANALYST -> List.of();
+            case SCHEMA_EXPLORER -> List.of(discoveryTool, schemaDetailTool, thinkingTool);
+            case DATA_ANALYST -> List.of(selectSqlTool, thinkingTool);
+            case DATA_WRITER -> List.of(schemaDetailTool, writeSqlTool, askUserConfirmTool, thinkingTool);
             default -> List.of();
         };
     }

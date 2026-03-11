@@ -29,7 +29,8 @@ class MultiAgentDelegationToolTest {
         when(delegationService.delegate(any(), eq("title"), eq("instructions"), any()))
                 .thenReturn(failedResult);
 
-        var result = tool.delegateToSchemaAnalyst(
+        var result = tool.delegate(
+                "schema_explorer",
                 "title",
                 "instructions",
                 InvocationParameters.from(Map.of()));
@@ -50,12 +51,28 @@ class MultiAgentDelegationToolTest {
         when(delegationService.delegate(any(), eq("title"), eq("instructions"), any()))
                 .thenReturn(completedResult);
 
-        var result = tool.delegateToSchemaAnalyst(
+        var result = tool.delegate(
+                "schema_explorer",
                 "title",
                 "instructions",
                 InvocationParameters.from(Map.of()));
 
         assertTrue(result.isSuccess());
         assertSame(completedResult, result.getResult());
+    }
+
+    @Test
+    void shouldRejectInvalidRole() {
+        MultiAgentDelegationService delegationService = mock(MultiAgentDelegationService.class);
+        MultiAgentDelegationTool tool = new MultiAgentDelegationTool(delegationService);
+
+        var result = tool.delegate(
+                "invalid_role",
+                "title",
+                "instructions",
+                InvocationParameters.from(Map.of()));
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getMessage().contains("Invalid role"));
     }
 }

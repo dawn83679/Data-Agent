@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import type { SubAgentBlockModel, SubAgentTextEntry, SubAgentToolEntry } from '../messageListLib/types';
@@ -43,7 +44,7 @@ function statusTone(status?: string): string {
   }
 }
 
-function roleLabel(role?: string): string {
+function roleFallbackLabel(role?: string): string {
   return (role ?? 'sub_agent')
     .split('_')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
@@ -89,8 +90,13 @@ function renderToolEntry(entry: SubAgentToolEntry, index: number) {
 }
 
 export function SubAgentBlock({ block }: SubAgentBlockProps) {
+  const { t } = useTranslation();
   const isRunning = (block.status ?? '').toLowerCase() === 'running';
   const [expanded, setExpanded] = useState(isRunning);
+
+  const roleLabel = block.agentRole
+    ? t(`ai.agentRole.${block.agentRole}`, { defaultValue: roleFallbackLabel(block.agentRole) })
+    : undefined;
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -131,8 +137,15 @@ export function SubAgentBlock({ block }: SubAgentBlockProps) {
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-3">
-            <span className="truncate font-normal theme-text-primary">
-              {block.title || roleLabel(block.agentRole)}
+            <span className="min-w-0 flex items-center gap-1.5">
+              {roleLabel && (
+                <span className="shrink-0 rounded px-1 py-0.5 text-[10px] font-medium leading-none theme-bg-secondary theme-text-secondary">
+                  {roleLabel}
+                </span>
+              )}
+              <span className="truncate font-normal theme-text-primary">
+                {block.title || roleLabel || 'Calling Sub Agent'}
+              </span>
             </span>
             <span className={cn('shrink-0 uppercase tracking-wide', statusTone(block.status))}>
               {statusLabel(block.status)}
