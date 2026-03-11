@@ -2,6 +2,7 @@ package edu.zsc.ai.domain.service.agent.multi;
 
 import edu.zsc.ai.agent.MultiAgentWorker;
 import edu.zsc.ai.common.enums.ai.AgentRoleEnum;
+import edu.zsc.ai.config.ai.MultiAgentWorkerConfig;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -18,9 +19,10 @@ class MultiAgentWorkerFactoryTest {
         MultiAgentWorker explorerWorker = mock(MultiAgentWorker.class);
         MultiAgentWorker analystWorker = mock(MultiAgentWorker.class);
 
+        String zhKey = MultiAgentWorkerConfig.workerKey("qwen3-max", "zh");
         MultiAgentWorkerFactory factory = new MultiAgentWorkerFactory(
-                Map.of("qwen3-max", explorerWorker),
-                Map.of("qwen3-max", analystWorker),
+                Map.of(zhKey, explorerWorker),
+                Map.of(zhKey, analystWorker),
                 Map.of());
 
         assertSame(explorerWorker, factory.getWorker("qwen3-max", "zh", AgentRoleEnum.SCHEMA_EXPLORER));
@@ -29,8 +31,9 @@ class MultiAgentWorkerFactoryTest {
 
     @Test
     void shouldShowAvailableModelsWhenRequestedModelMissing() {
+        String enKey = MultiAgentWorkerConfig.workerKey("qwen-plus", "en");
         MultiAgentWorkerFactory factory = new MultiAgentWorkerFactory(
-                Map.of("qwen-plus", mock(MultiAgentWorker.class)),
+                Map.of(enKey, mock(MultiAgentWorker.class)),
                 Map.of(),
                 Map.of());
 

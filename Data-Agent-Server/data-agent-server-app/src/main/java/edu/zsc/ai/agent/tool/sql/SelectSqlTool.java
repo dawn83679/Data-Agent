@@ -29,22 +29,18 @@ public class SelectSqlTool {
     private final SqlExecutionService sqlExecutionService;
 
     @Tool({
-        "The payoff of all your preparation — executes read-only SQL and delivers results ",
-        "directly to the user. The quality of results depends entirely on the discovery work ",
-        "you did before: correct connection, correct database, correct column names.",
+        "Executes read-only SQL (SELECT, WITH, SHOW, EXPLAIN). Accepts a list of statements — ",
+        "pass multiple related queries in one call to reduce round-trips.",
         "",
-        "Accepts a list of SQL statements. Pass multiple related queries in one call to reduce ",
-        "round-trips — results are returned in a 'results' array, one entry per statement.",
+        "Use when: executing SELECT queries after verifying schema.",
+        "Skip when: task requires writes (use executeNonSelectSql instead).",
         "",
-        "For maximum accuracy: call thinking first, resolve the data source via getEnvironmentOverview ",
-        "or searchObjects, then verify every referenced table with getObjectDetail. SQL built ",
-        "on verified DDL almost never fails. For large tables (>10000 rows), always include ",
-        "WHERE/LIMIT — full-table scans frustrate users and waste resources."
+        "IMPORTANT: For tables >10k rows, always include WHERE/LIMIT."
     })
     public AgentSqlResult executeSelectSql(
-            @P("Connection id from current session context") Long connectionId,
-            @P("Database (catalog) name from current session context") String databaseName,
-            @P(value = "Schema name from current session context; omit if not used", required = false) String schemaName,
+            @P("Connection id") Long connectionId,
+            @P("Database (catalog) name") String databaseName,
+            @P(value = "Schema name; omit if N/A", required = false) String schemaName,
             @P("List of read-only SQL statements to execute.")
             List<String> sqls,
             InvocationParameters parameters) {

@@ -24,6 +24,20 @@ public class PromptConfig {
         return cache;
     }
 
+    /**
+     * Compose multiple classpath resources into a single prompt string.
+     */
+    public static String composePrompt(String... resourcePaths) {
+        StringBuilder sb = new StringBuilder();
+        for (String path : resourcePaths) {
+            if (sb.length() > 0) {
+                sb.append("\n\n");
+            }
+            sb.append(loadClassPathResource(path));
+        }
+        return sb.toString();
+    }
+
     @SneakyThrows
     public static String loadClassPathResource(String path) {
         return new ClassPathResource(path).getContentAsString(StandardCharsets.UTF_8);

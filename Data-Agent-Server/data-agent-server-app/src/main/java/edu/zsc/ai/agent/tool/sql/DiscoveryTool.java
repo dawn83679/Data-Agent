@@ -26,16 +26,13 @@ public class DiscoveryTool {
     private final DiscoveryService discoveryService;
 
     @Tool({
-            "Returns the complete environment overview: all connections with their databases (catalogs) ",
-            "and schemas in a single nested structure. Use this as the first discovery step when ",
-            "the target data source is still unclear — one call gives you the full landscape.",
+            "Returns the complete environment overview: all connections with their databases and schemas ",
+            "in a single nested structure.",
             "",
-            "Call this at the start of every new request to understand the user's data environment. ",
-            "For PostgreSQL, schemas (excluding system schemas) are included under each catalog. ",
-            "For MySQL, schemas will be empty arrays since MySQL has no schema layer.",
+            "Use when: target data source is unclear, need to discover available connections/databases.",
+            "Skip when: connectionId and database are already confirmed in this conversation.",
             "",
-            "Response includes elapsedMs — if > 2000ms, the user has many connections or slow networks; ",
-            "keep this in mind when choosing how broadly to search with subsequent calls."
+            "Response includes elapsedMs. If >2000ms, narrow scope in subsequent calls."
     })
     public AgentToolResult getEnvironmentOverview(InvocationParameters parameters) {
         try (var ctx = ToolContext.from(parameters)) {
@@ -55,17 +52,17 @@ public class DiscoveryTool {
     }
 
     @Tool({
-            "Global search for database objects (tables, views, functions, procedures, triggers) across ",
-            "all connections and databases. Returns a flat list with full location path for each match.",
+            "Searches database objects (tables, views, functions, procedures, triggers) across all connections. ",
+            "Returns flat list with full location path per match, capped at 100.",
             "",
-            "Use SQL wildcards in the pattern: '%order%' finds any object containing 'order', ",
-            "'user_%' finds objects starting with 'user_'. Optional filters narrow the search scope: ",
-            "connectionId → specific connection, databaseName → specific database (requires connectionId), ",
-            "schemaName → specific schema (requires connectionId + databaseName). ",
-            "Results are capped at 100. If not specifying objectType, searches TABLE + VIEW by default.",
+            "Use SQL wildcards: '%order%' for fuzzy match, 'user_%' for prefix match.",
+            "Optional filters: connectionId, databaseName, schemaName to narrow scope.",
+            "Default objectType: TABLE + VIEW.",
             "",
-            "Response includes elapsedMs. If a call took > 2000ms, narrow scope next time by passing ",
-            "connectionId/databaseName from previous results to avoid repeating the cost."
+            "Use when: finding candidate objects by name pattern.",
+            "Skip when: exact object names and locations already known.",
+            "",
+            "Response includes elapsedMs. If >2000ms, pass connectionId/databaseName next time."
     })
     public AgentToolResult searchObjects(
             @P("Search query parameters") ObjectSearchQuery query,

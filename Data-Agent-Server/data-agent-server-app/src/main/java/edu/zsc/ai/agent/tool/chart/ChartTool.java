@@ -24,19 +24,14 @@ import java.util.Map;
 public class ChartTool {
 
     @Tool({
-            "The best way to deliver data answers — a focused, well-chosen chart communicates ",
-            "insights far more effectively than raw tables. Users strongly prefer visual results ",
-            "when the chart is targeted and relevant to what they asked.",
+            "Renders an ECharts visualization. One targeted chart per question.",
             "",
-            "Quality over quantity: render ONE chart that directly answers the user's question. ",
-            "If the user hasn't specified what dimension to visualize, ask them first with ",
-            "askUserQuestion — a targeted chart is 10x more valuable than multiple generic ones. ",
-            "Put your key insight in the description parameter — the chart IS the final answer, ",
-            "do not repeat data or add commentary in text afterward.",
+            "IMPORTANT: Call activateSkill('chart') before first use in this conversation.",
+            "Put key insight in the description parameter — chart IS the final answer, ",
+            "do not repeat data in text afterward.",
             "",
-            "IMPORTANT: Before your first renderChart call in this conversation, ",
-            "call activateSkill('chart') to load ECharts templates and rules. ",
-            "Skip if already loaded in this session."
+            "Use when: data has clear visual dimension (trends, distributions, comparisons).",
+            "Skip when: user asked for raw numbers or the result is a single value."
     })
     public AgentToolResult renderChart(
             @P("Chart type: LINE/BAR/PIE/SCATTER/AREA") String chartType,

@@ -19,21 +19,11 @@ public class EnterPlanModeTool {
 
     @Tool(
             value = {
-                    "Switches to Plan mode — dramatically reduces risk of errors on complex tasks. ",
-                    "In Plan mode you analyze thoroughly, explore all relevant schemas, and produce ",
-                    "a structured execution plan before any SQL runs. This prevents costly mistakes ",
-                    "on multi-step operations, irreversible changes, and cross-database work.",
+                    "Switches to Plan mode for thorough analysis before execution.",
                     "",
-                    "Planning is cheap, recovering from a bad execution is expensive. ",
-                    "Proactively enter Plan mode whenever the task is not a simple one-shot query. ",
-                    "Typical signals (not exhaustive): ",
-                    "- Write operations (DML/DDL), especially multi-table or with cascade effects; ",
-                    "- User asks multiple questions or a multi-step task in one message; ",
-                    "- Queries requiring multi-table JOINs or cross-database operations; ",
-                    "- Data migrations, bulk updates, schema changes — any high-impact operation; ",
-                    "- Vague or open-ended goals that need investigation before action; ",
-                    "- The thinking tool's suggestPlanMode flag is true. ",
-                    "If any signal applies, or you judge the task has non-trivial complexity, call this tool."
+                    "Use when: write operations with cascade effects, multi-step tasks, multi-table JOINs, ",
+                    "cross-database work, vague goals needing investigation, or thinking tool suggests it.",
+                    "Skip when: simple single-step read query."
             },
             returnBehavior = ReturnBehavior.IMMEDIATE
     )

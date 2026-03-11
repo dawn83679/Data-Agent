@@ -32,7 +32,7 @@ public class MultiAgentWorkerFactory {
 
     public MultiAgentWorker getWorker(String modelName, String language, AgentRoleEnum role) {
         String requestedModelName = StringUtils.defaultIfBlank(modelName, "qwen3-max");
-        String workerKey = MultiAgentWorkerConfig.workerKey(requestedModelName);
+        String workerKey = MultiAgentWorkerConfig.workerKey(requestedModelName, language);
         Map<String, MultiAgentWorker> workers = roleWorkers(role);
         MultiAgentWorker worker = workers.get(workerKey);
         if (worker == null) {

@@ -27,25 +27,24 @@ public class AskUserConfirmTool {
 
     @Tool(
             value = {
-                    "The critical safety net that prevents irreversible data damage — shows the user ",
-                    "exactly what will change and gets explicit approval before any write executes. ",
-                    "This single step has prevented countless accidental DELETEs and wrong UPDATEs.",
+                    "Shows the user exactly what a write operation will do and gets explicit approval. ",
+                    "Server enforces this — executeNonSelectSql rejects writes without a valid token.",
                     "",
-                    "Mandatory before every write operation: the server enforces this by rejecting ",
-                    "executeNonSelectSql without a valid confirmation token. Always pass the finalized ",
-                    "SQL, connectionId, and a clear impact explanation so the user can make an ",
-                    "informed decision."
+                    "Always pass: finalized SQL, connectionId, and a clear impact explanation ",
+                    "(what changes, estimated affected rows, cascade effects).",
+                    "",
+                    "CRITICAL: Mandatory before every write operation. No exceptions."
             },
             returnBehavior = ReturnBehavior.IMMEDIATE
     )
     public WriteConfirmationResult askUserConfirm(
             @P("The exact SQL statement to be executed (INSERT, UPDATE, DELETE, or DDL)")
             String sql,
-            @P("Connection id from current session context")
+            @P("Connection id")
             Long connectionId,
-            @P(value = "Database (catalog) name from current session context; omit or null for operations not bound to a specific database (e.g. CREATE DATABASE)", required = false)
+            @P(value = "Database name; omit for server-level operations", required = false)
             String databaseName,
-            @P(value = "Schema name from current session context; omit or null if not applicable", required = false)
+            @P(value = "Schema name; omit if N/A", required = false)
             String schemaName,
             @P("Brief explanation of what this operation does and its potential impact")
             String explanation,

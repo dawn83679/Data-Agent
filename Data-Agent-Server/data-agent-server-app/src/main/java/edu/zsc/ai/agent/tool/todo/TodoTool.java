@@ -17,13 +17,11 @@ import java.util.Map;
 public class TodoTool {
 
     @Tool({
-        "Creates a visible progress tracker for the user — greatly improves transparency ",
-        "and user trust during multi-step tasks. Users can see exactly what you're doing, ",
-        "what's done, and what's left. This reduces anxiety on long-running operations ",
-        "and helps you stay organized on complex workflows.",
+        "Creates a visible progress tracker for multi-step tasks.",
+        "Actions: CREATE (start tracking), UPDATE (sync progress), DELETE (clean up after completion).",
         "",
-        "Actions: CREATE (start tracking), UPDATE (sync progress at milestones), ",
-        "DELETE (clean up after completion). Use generously for any task with multiple steps."
+        "Use when: task has 3+ steps.",
+        "Skip when: simple single-step query."
     })
     public AgentToolResult todoWrite(
             @P("Action type: CREATE, UPDATE, DELETE.")

@@ -20,19 +20,12 @@ import java.util.stream.Collectors;
 public class ThinkingTool {
 
     @Tool({
-            "Your reasoning engine — calling this tool significantly improves task accuracy ",
-            "and reduces errors. It helps you: (1) understand what the user really needs, ",
-            "(2) break complex tasks into clear steps, (3) manage your candidate list to track ",
-            "which tables/connections you've discovered, and (4) decide when to ask the user vs. ",
-            "when to proceed vs. when to enter Plan mode.",
+            "Structured reasoning engine. Pass your current analysis state (goal, candidates discovered, ",
+            "isWrite flag) and receive: current phase (SURVEY/DISAMBIGUATE/EXPLORE), recommended next action, ",
+            "risks, and whether Plan mode is recommended.",
             "",
-            "Pass your current candidates list (tables/views discovered so far) and the tool ",
-            "returns: what phase you're in (SURVEY → DISAMBIGUATE → EXPLORE), what to do next, ",
-            "risks to watch for, and whether Plan mode is recommended.",
-            "",
-            "Call this tool generously — every call makes your next action more accurate. ",
-            "Especially valuable at the start of new requests, before write operations, ",
-            "when results surprise you, or when you're unsure what to do next."
+            "Use when: starting new requests, before write operations, when results are unexpected, ",
+            "or when unsure what to do next."
     })
     public AgentToolResult thinking(
             @P("Thinking request: goal, analysis, isWrite flag, and candidates list (objects discovered so far)")

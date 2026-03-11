@@ -29,22 +29,18 @@ public class WriteSqlTool {
     private final WriteConfirmationStore writeConfirmationStore;
 
     @Tool({
-        "Executes write SQL (INSERT, UPDATE, DELETE, DDL) with full safety enforcement — ",
-        "requires a valid confirmation token from askUserConfirm. This two-step flow has ",
-        "prevented countless accidental data modifications and is non-negotiable.",
+        "Executes write SQL (INSERT, UPDATE, DELETE, DDL). Requires a valid confirmation token ",
+        "from askUserConfirm — server rejects writes without prior confirmation.",
         "",
-        "Accepts a list of SQL statements. Pass multiple related statements in one call — ",
-        "results are returned in a 'results' array, one entry per statement.",
+        "Accepts a list of statements. Results returned per statement.",
         "",
-        "The server automatically rejects any write without prior user confirmation. Always: ",
-        "(1) finalize your SQL, (2) call askUserConfirm with impact explanation, (3) wait for ",
-        "approval, (4) execute here with the exact same SQL. For read-only queries, use ",
-        "executeSelectSql instead — it's faster and doesn't require confirmation."
+        "Use when: executing approved write operations.",
+        "NEVER: call without prior askUserConfirm approval."
     })
     public AgentSqlResult executeNonSelectSql(
-            @P("Connection id from current session context") Long connectionId,
-            @P("Database (catalog) name from current session context") String databaseName,
-            @P(value = "Schema name from current session context; omit if not used", required = false) String schemaName,
+            @P("Connection id") Long connectionId,
+            @P("Database (catalog) name") String databaseName,
+            @P(value = "Schema name; omit if N/A", required = false) String schemaName,
             @P("List of non-SELECT SQL statements to execute (INSERT, UPDATE, DELETE, DDL, etc.).")
             List<String> sqls,
             InvocationParameters parameters) {

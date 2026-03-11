@@ -24,16 +24,14 @@ public class SchemaDetailTool {
     private final DiscoveryService discoveryService;
 
     @Tool({
-            "Returns complete details for one or more database objects in a single call: DDL (structure), ",
-            "row count, and index information. Accepts a list of objects — pass multiple objects to ",
-            "retrieve all their details at once and save LLM reasoning rounds.",
+            "Returns DDL, row count, and indexes for one or more database objects in a single call. ",
+            "Pass multiple objects to batch-retrieve and save LLM rounds.",
             "",
-            "For TABLE: returns DDL + rowCount + indexes. For VIEW: returns DDL + rowCount (no indexes). ",
-            "For FUNCTION/PROCEDURE/TRIGGER: returns DDL only. Call this for EVERY table you plan to ",
-            "reference in SQL — the DDL is your ground truth for column names, types, and constraints.",
+            "TABLE: DDL + rowCount + indexes. VIEW: DDL + rowCount. FUNCTION/PROCEDURE/TRIGGER: DDL only.",
+            "Each object has independent success/error — one failure doesn't affect others.",
             "",
-            "Each object in the result includes success/error fields — a single object's failure does ",
-            "not affect the others. Response includes elapsedMs."
+            "Use when: need DDL, column types, constraints, or row counts before writing SQL.",
+            "Skip when: instructions already provide complete DDL for all target tables."
     })
     public AgentToolResult getObjectDetail(
             @P("List of objects to retrieve details for") List<ObjectQueryItem> objects,

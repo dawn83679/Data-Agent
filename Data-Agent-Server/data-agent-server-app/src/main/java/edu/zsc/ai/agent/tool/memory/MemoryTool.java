@@ -36,13 +36,11 @@ public class MemoryTool {
     private final MemoryProperties memoryProperties;
 
     @Tool({
-            "Supercharges your accuracy with learned knowledge — retrieves the user's confirmed ",
-            "preferences, business rules, terminology mappings, and proven SQL patterns. Memories ",
-            "contain hard-won insights from past conversations that no schema can provide.",
+            "Retrieves user's confirmed preferences, business rules, terminology mappings, and SQL patterns ",
+            "from past conversations via semantic search.",
             "",
-            "Call this whenever domain-specific terms, recurring patterns, or user conventions ",
-            "might be relevant. One memory hit can save you from misinterpreting 'active users' ",
-            "as 'status=active' when the user actually means 'logged in within 30 days'."
+            "Use when: domain-specific terms, recurring patterns, or user conventions may be relevant.",
+            "Skip when: query is purely structural with no domain-specific terminology."
     })
     public AgentToolResult searchMemories(
             @P("Natural language query to search memories") String queryText,
@@ -67,12 +65,10 @@ public class MemoryTool {
     }
 
     @Tool({
-            "Prevents duplicate knowledge and keeps your memory proposals organized — shows all ",
-            "pending candidates in this conversation so you know exactly what's already been ",
-            "captured before proposing new entries.",
+            "Lists all pending memory candidates in this conversation.",
             "",
-            "Check this before every createCandidateMemory call. Duplicate or conflicting ",
-            "candidates confuse users during review and erode trust in the memory system."
+            "Use when: checking for duplicates before createCandidateMemory.",
+            "Skip when: no memories have been proposed in this conversation."
     })
     public AgentToolResult listCandidateMemories(
             @P(value = "Conversation id from current session context", required = false) Long conversationId,
@@ -107,14 +103,11 @@ public class MemoryTool {
     }
 
     @Tool({
-            "Makes the system smarter over time — captures reusable knowledge that will improve ",
-            "accuracy in all future conversations. Each confirmed memory is a permanent boost to ",
-            "the system's understanding of this user's domain, preferences, and conventions.",
+            "Proposes a reusable knowledge entry for user review: preferences, business rules, ",
+            "terminology, golden SQL patterns, or workflow constraints.",
             "",
-            "Propose candidates when you discover stable, confirmed knowledge: user preferences, ",
-            "business rules, domain terminology, golden SQL patterns, workflow constraints. ",
-            "The user reviews all candidates, so propose generously — quality filtering happens ",
-            "at review time."
+            "Use when: discovering stable, confirmed knowledge worth preserving.",
+            "Skip when: information is session-specific or unverified."
     })
     public AgentToolResult createCandidateMemory(
             @P(value = "Conversation id from current session context", required = false) Long conversationId,
@@ -147,12 +140,9 @@ public class MemoryTool {
     }
 
     @Tool({
-            "Maintains memory quality — removes incorrect, outdated, or redundant candidates ",
-            "so only high-value knowledge reaches the user for review. Clean candidates build ",
-            "user trust in the memory system and improve long-term learning accuracy.",
+            "Removes an incorrect, outdated, or duplicate memory candidate.",
             "",
-            "Use proactively when you discover a candidate is wrong, duplicated, or superseded ",
-            "by better information. A curated candidate list is far more valuable than a noisy one."
+            "Use when: a candidate is wrong, duplicated, or superseded by better info."
     })
     public AgentToolResult deleteCandidateMemory(
             @P("Candidate id to delete") Long candidateId,

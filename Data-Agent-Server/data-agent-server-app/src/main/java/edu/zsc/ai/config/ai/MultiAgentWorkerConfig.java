@@ -21,6 +21,8 @@ import java.util.Map;
 @Configuration
 public class MultiAgentWorkerConfig {
 
+    private static final List<String> SUPPORTED_LANGUAGES = List.of("en", "zh");
+
     private final Map<String, StreamingChatModel> modelsByName;
     private final MultiAgentPromptConfig multiAgentPromptConfig;
     private final DiscoveryTool discoveryTool;
@@ -71,12 +73,14 @@ public class MultiAgentWorkerConfig {
         for (Map.Entry<String, StreamingChatModel> entry : modelsByName.entrySet()) {
             String modelName = entry.getKey();
             StreamingChatModel model = entry.getValue();
-            String key = workerKey(modelName);
-            workers.put(key, AiServices.builder(MultiAgentWorker.class)
-                    .streamingChatModel(model)
-                    .systemMessage(multiAgentPromptConfig.getPrompt(role, "en"))
-                    .tools(roleTools)
-                    .build());
+            for (String language : SUPPORTED_LANGUAGES) {
+                String key = workerKey(modelName, language);
+                workers.put(key, AiServices.builder(MultiAgentWorker.class)
+                        .streamingChatModel(model)
+                        .systemMessage(multiAgentPromptConfig.getPrompt(role, language))
+                        .tools(roleTools)
+                        .build());
+            }
         }
 
         return Collections.unmodifiableMap(workers);
@@ -91,7 +95,16 @@ public class MultiAgentWorkerConfig {
         };
     }
 
+    public static String workerKey(String modelName, String language) {
+        String lang = (language != null && language.trim().toLowerCase().startsWith("zh")) ? "zh" : "en";
+        return modelName + "::" + lang;
+    }
+
+    /**
+     * @deprecated Use {@link #workerKey(String, String)} with language parameter instead.
+     */
+    @Deprecated
     public static String workerKey(String modelName) {
-        return modelName;
+        return workerKey(modelName, "en");
     }
 }
