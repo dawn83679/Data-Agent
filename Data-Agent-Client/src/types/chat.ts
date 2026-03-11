@@ -6,7 +6,7 @@ export interface ChatContext {
 
 export interface ChatRequest {
   message: string;
-  /** Model name for chat (e.g. qwen3-max, qwen3-max-thinking). */
+  /** Model name for chat (e.g. qwen3.5-plus, qwen3-max, qwen3-max-thinking). */
   model?: string;
   /** Prompt language for backend system prompt routing (e.g. en, zh). */
   language?: string;

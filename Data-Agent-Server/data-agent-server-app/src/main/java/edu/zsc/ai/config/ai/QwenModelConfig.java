@@ -38,16 +38,10 @@ public class QwenModelConfig implements ChatModelProvider {
     }
 
     private StreamingChatModel buildModel(ModelEnum model, boolean enableThinking) {
-        QwenChatRequestParameters.Builder params = QwenChatRequestParameters.builder()
-                .enableThinking(enableThinking)
-                .enableSanitizeMessages(false);
-        if (enableThinking) {
-            params.thinkingBudget(qwenProperties.getParameters().getThinkingBudget());
-        }
         return QwenStreamingChatModel.builder()
                 .apiKey(qwenProperties.getApiKey())
                 .modelName(model.getModelName())
-                .defaultRequestParameters(params.build())
+                .defaultRequestParameters(buildRequestParameters(enableThinking))
                 .build();
     }
 
@@ -55,6 +49,17 @@ public class QwenModelConfig implements ChatModelProvider {
         return QwenChatModel.builder()
                 .apiKey(qwenProperties.getApiKey())
                 .modelName(model.getModelName())
+                .defaultRequestParameters(buildRequestParameters(false))
                 .build();
+    }
+
+    private QwenChatRequestParameters buildRequestParameters(boolean enableThinking) {
+        QwenChatRequestParameters.Builder params = QwenChatRequestParameters.builder()
+                .enableThinking(enableThinking)
+                .enableSanitizeMessages(false);
+        if (enableThinking) {
+            params.thinkingBudget(qwenProperties.getParameters().getThinkingBudget());
+        }
+        return params.build();
     }
 }

@@ -5,6 +5,7 @@ import lombok.Getter;
 @Getter
 public enum ModelEnum {
 
+    QWEN3_5_PLUS("qwen3.5-plus", 131072, 120000, false),
     QWEN3_MAX("qwen3-max", 256000, 230000, false),
     QWEN3_MAX_THINKING("qwen3-max-thinking", 256000, 230000, true),
     QWEN_PLUS("qwen-plus", 1048576, 900000, false),
@@ -33,12 +34,12 @@ public enum ModelEnum {
     }
 
     /**
-     * Resolves a model name to a valid ModelEnum, falling back to QWEN3_MAX if blank.
+     * Resolves a model name to a valid ModelEnum, falling back to QWEN3_5_PLUS if blank.
      *
      * @throws IllegalArgumentException if the model name is not supported
      */
     public static ModelEnum resolve(String modelName) {
-        String name = (modelName == null || modelName.isBlank()) ? QWEN3_MAX.modelName : modelName.trim();
+        String name = (modelName == null || modelName.isBlank()) ? QWEN3_5_PLUS.modelName : modelName.trim();
         return fromModelName(name);
     }
 }

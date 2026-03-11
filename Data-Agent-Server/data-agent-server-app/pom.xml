@@ -106,7 +106,7 @@
             <artifactId>langchain4j-community-zhipu-ai</artifactId>
         </dependency>
 
-        <!-- OpenAI-Compatible (MiniMax 等) -->
+        <!-- OpenAI-Compatible (MiniMax Qwen3.5-plus等) -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-open-ai</artifactId>
