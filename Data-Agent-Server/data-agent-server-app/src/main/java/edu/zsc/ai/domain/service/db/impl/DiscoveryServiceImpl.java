@@ -7,6 +7,8 @@ import edu.zsc.ai.agent.tool.sql.model.ObjectDetail;
 import edu.zsc.ai.agent.tool.sql.model.ObjectQueryItem;
 import edu.zsc.ai.agent.tool.sql.model.ObjectSearchResponse;
 import edu.zsc.ai.agent.tool.sql.model.ObjectSearchResult;
+import edu.zsc.ai.context.RequestContext;
+import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.response.db.ConnectionResponse;
 import edu.zsc.ai.domain.service.db.DatabaseObjectService;
@@ -17,10 +19,10 @@ import edu.zsc.ai.domain.service.db.IndexService;
 import edu.zsc.ai.domain.service.db.SchemaService;
 import edu.zsc.ai.plugin.constant.DatabaseObjectTypeEnum;
 import edu.zsc.ai.plugin.model.metadata.IndexMetadata;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -28,10 +30,13 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+
+import static edu.zsc.ai.config.ExecutorConfig.SHARED_EXECUTOR_BEAN_NAME;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class DiscoveryServiceImpl implements DiscoveryService {
 
     // TODO OOM 风险：SEARCH_RESULT_LIMIT 只截断了最终返回给 Tool 的结果数量，
@@ -49,11 +54,27 @@ public class DiscoveryServiceImpl implements DiscoveryService {
             DatabaseObjectTypeEnum.VIEW
     );
 
+    private final Executor sharedExecutor;
     private final DbConnectionService dbConnectionService;
     private final DatabaseService databaseService;
     private final SchemaService schemaService;
     private final DatabaseObjectService databaseObjectService;
     private final IndexService indexService;
+
+    public DiscoveryServiceImpl(
+            @Qualifier(SHARED_EXECUTOR_BEAN_NAME) Executor sharedExecutor,
+            DbConnectionService dbConnectionService,
+            DatabaseService databaseService,
+            SchemaService schemaService,
+            DatabaseObjectService databaseObjectService,
+            IndexService indexService) {
+        this.sharedExecutor = sharedExecutor;
+        this.dbConnectionService = dbConnectionService;
+        this.databaseService = databaseService;
+        this.schemaService = schemaService;
+        this.databaseObjectService = databaseObjectService;
+        this.indexService = indexService;
+    }
 
     // ==================== getEnvironmentOverview ====================
 
@@ -63,22 +84,39 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         if (CollectionUtils.isEmpty(connections)) {
             return Collections.emptyList();
         }
-        return connections.stream().map(this::buildConnectionOverview).toList();
+        RequestContextInfo contextSnapshot = RequestContext.get();
+        List<CompletableFuture<ConnectionOverview>> futures = connections.stream()
+                .map(conn -> CompletableFuture.supplyAsync(() -> {
+                    if (contextSnapshot != null) {
+                        RequestContext.set(contextSnapshot);
+                    }
+                    try {
+                        return buildConnectionOverview(conn);
+                    } finally {
+                        if (contextSnapshot != null) {
+                            RequestContext.clear();
+                        }
+                    }
+                }, sharedExecutor))
+                .toList();
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        return futures.stream().map(CompletableFuture::join).toList();
     }
 
     private ConnectionOverview buildConnectionOverview(ConnectionResponse conn) {
-        List<CatalogInfo> catalogs;
         try {
             List<String> databases = databaseService.getDatabases(conn.getId());
-            catalogs = databases.stream()
+            List<CatalogInfo> catalogs = databases.stream()
                     .map(db -> new CatalogInfo(db, getSchemas(conn.getId(), db)))
                     .toList();
+            return new ConnectionOverview(conn.getId(), conn.getName(), conn.getDbType(), catalogs, null);
         } catch (Exception e) {
             log.warn("Failed to get catalogs for connection {} ({}): {}",
                     conn.getName(), conn.getId(), e.getMessage());
-            catalogs = Collections.emptyList();
+            String msg = StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getSimpleName());
+            return new ConnectionOverview(conn.getId(), conn.getName(), conn.getDbType(),
+                    Collections.emptyList(), "Connection unreachable or error: " + msg);
         }
-        return new ConnectionOverview(conn.getId(), conn.getName(), conn.getDbType(), catalogs);
     }
 
     // ==================== searchObjects ====================
@@ -89,20 +127,91 @@ public class DiscoveryServiceImpl implements DiscoveryService {
                                               String schema) {
         List<ConnectionResponse> connections = resolveConnections(connectionId);
         List<DatabaseObjectTypeEnum> typesToSearch = Objects.nonNull(type) ? List.of(type) : DEFAULT_SEARCH_TYPES;
-        List<ObjectSearchResult> results = new ArrayList<>();
 
-        for (ConnectionResponse conn : connections) {
-            for (String db : resolveDatabases(conn, catalog)) {
-                for (String s : resolveSchemas(conn.getId(), db, schema)) {
-                    collectSearchResults(conn, db, s, pattern, typesToSearch, results);
-                    if (results.size() >= SEARCH_RESULT_LIMIT) {
-                        List<ObjectSearchResult> truncated = results.subList(0, SEARCH_RESULT_LIMIT);
-                        return new ObjectSearchResponse(truncated, truncated.size(), true);
+        if (connections.isEmpty()) {
+            return new ObjectSearchResponse(List.of(), 0, false, null);
+        }
+        if (connections.size() == 1) {
+            return searchConnectionAcrossDatabases(connections.get(0), pattern, typesToSearch, catalog, schema);
+        }
+
+        RequestContextInfo contextSnapshot = RequestContext.get();
+        List<CompletableFuture<ObjectSearchResponse>> futures = connections.stream()
+                .map(conn -> CompletableFuture.supplyAsync(() -> {
+                    if (contextSnapshot != null) {
+                        RequestContext.set(contextSnapshot);
                     }
+                    try {
+                        return searchConnectionAcrossDatabases(conn, pattern, typesToSearch, catalog, schema);
+                    } finally {
+                        if (contextSnapshot != null) {
+                            RequestContext.clear();
+                        }
+                    }
+                }, sharedExecutor))
+                .toList();
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        List<ObjectSearchResult> merged = new ArrayList<>();
+        List<String> allErrors = new ArrayList<>();
+        boolean truncated = false;
+        for (CompletableFuture<ObjectSearchResponse> f : futures) {
+            if (merged.size() >= SEARCH_RESULT_LIMIT) {
+                truncated = true;
+                break;
+            }
+            ObjectSearchResponse r = f.join();
+            merged.addAll(r.results());
+            if (r.errors() != null) {
+                allErrors.addAll(r.errors());
+            }
+            if (r.truncated()) {
+                truncated = true;
+            }
+            if (merged.size() > SEARCH_RESULT_LIMIT) {
+                merged = new ArrayList<>(merged.subList(0, SEARCH_RESULT_LIMIT));
+                truncated = true;
+            }
+        }
+        return new ObjectSearchResponse(merged, merged.size(), truncated,
+                allErrors.isEmpty() ? null : allErrors);
+    }
+
+    private ObjectSearchResponse searchConnectionAcrossDatabases(ConnectionResponse conn, String pattern,
+                                                                 List<DatabaseObjectTypeEnum> typesToSearch,
+                                                                 String catalog, String schema) {
+        try {
+            return searchConnectionAcrossDatabasesOrThrow(conn, pattern, typesToSearch, catalog, schema);
+        } catch (Exception e) {
+            log.warn("Search failed for connection {} ({}): {}", conn.getName(), conn.getId(), e.getMessage());
+            String msg = StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getSimpleName());
+            return new ObjectSearchResponse(
+                    List.of(), 0, false,
+                    List.of("Connection '" + conn.getName() + "' (id=" + conn.getId() + "): " + msg));
+        }
+    }
+
+    private ObjectSearchResponse searchConnectionAcrossDatabasesOrThrow(ConnectionResponse conn, String pattern,
+                                                                        List<DatabaseObjectTypeEnum> typesToSearch,
+                                                                        String catalog, String schema) {
+        List<ObjectSearchResult> results = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+        for (String db : resolveDatabases(conn, catalog)) {
+            for (String s : resolveSchemas(conn.getId(), db, schema)) {
+                try {
+                    collectSearchResults(conn, db, s, pattern, typesToSearch, results);
+                } catch (Exception e) {
+                    log.warn("Search failed for {} {}/{}: {}", conn.getName(), db, s, e.getMessage());
+                    errors.add("[" + conn.getName() + "] " + db + "/" + s + ": " + StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getSimpleName()));
+                }
+                if (results.size() >= SEARCH_RESULT_LIMIT) {
+                    return new ObjectSearchResponse(
+                            results.subList(0, SEARCH_RESULT_LIMIT), SEARCH_RESULT_LIMIT, true,
+                            errors.isEmpty() ? null : errors);
                 }
             }
         }
-        return new ObjectSearchResponse(results, results.size(), false);
+        return new ObjectSearchResponse(results, results.size(), false, errors.isEmpty() ? null : errors);
     }
 
     private List<ConnectionResponse> resolveConnections(Long connectionId) {
@@ -117,14 +226,8 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         if (StringUtils.isNotBlank(catalog)) {
             return List.of(catalog);
         }
-        try {
-            List<String> dbs = databaseService.getDatabases(conn.getId());
-            return CollectionUtils.isEmpty(dbs) ? Collections.emptyList() : dbs;
-        } catch (Exception e) {
-            log.warn("Failed to list databases for connection {} ({}): {}",
-                    conn.getName(), conn.getId(), e.getMessage());
-            return Collections.emptyList();
-        }
+        List<String> dbs = databaseService.getDatabases(conn.getId());
+        return CollectionUtils.isEmpty(dbs) ? Collections.emptyList() : dbs;
     }
 
     private List<String> resolveSchemas(Long connectionId, String database, String schema) {
@@ -144,20 +247,14 @@ public class DiscoveryServiceImpl implements DiscoveryService {
             if (searchType == DatabaseObjectTypeEnum.TRIGGER) {
                 continue;
             }
-            try {
-                List<String> names = databaseObjectService.searchObjects(
-                        searchType, pattern, db, null);
-                for (String name : names) {
-                    results.add(new ObjectSearchResult(
-                            conn.getId(), conn.getName(), conn.getDbType(),
-                            database, schema, name, searchType.name()));
-                    if (results.size() >= SEARCH_RESULT_LIMIT) {
-                        return;
-                    }
+            List<String> names = databaseObjectService.searchObjects(searchType, pattern, db, null);
+            for (String name : names) {
+                results.add(new ObjectSearchResult(
+                        conn.getId(), conn.getName(), conn.getDbType(),
+                        database, schema, name, searchType.name()));
+                if (results.size() >= SEARCH_RESULT_LIMIT) {
+                    return;
                 }
-            } catch (Exception e) {
-                log.warn("Search failed for {} in {}/{}/{}: {}",
-                        searchType, conn.getName(), database, schema, e.getMessage());
             }
         }
     }
@@ -205,13 +302,7 @@ public class DiscoveryServiceImpl implements DiscoveryService {
     // ==================== helpers ====================
 
     private List<String> getSchemas(Long connectionId, String catalog) {
-        try {
-            List<String> schemas = schemaService.listSchemas(connectionId, catalog);
-            return CollectionUtils.isEmpty(schemas) ? Collections.emptyList() : schemas;
-        } catch (Exception e) {
-            log.debug("Schema listing not supported for connection {}, catalog {}: {}",
-                    connectionId, catalog, e.getMessage());
-            return Collections.emptyList();
-        }
+        List<String> schemas = schemaService.listSchemas(connectionId, catalog);
+        return CollectionUtils.isEmpty(schemas) ? Collections.emptyList() : schemas;
     }
 }

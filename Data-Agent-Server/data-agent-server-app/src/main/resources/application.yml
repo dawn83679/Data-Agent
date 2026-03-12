@@ -97,6 +97,11 @@ ai:
       temperature: 0.7
       max-token: 4096
 
+# 全局通用线程池（发现、异步任务等共用）
+app:
+  executor:
+    pool-size: 20
+
 memory:
   enabled: true
   embedding:

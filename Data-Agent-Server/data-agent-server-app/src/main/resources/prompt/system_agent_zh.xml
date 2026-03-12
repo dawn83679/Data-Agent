@@ -79,6 +79,7 @@
 发现类：getEnvironmentOverview、searchObjects、getObjectDetail。
 - 环境未知或目标不明确时：必须先 getEnvironmentOverview 扫全量连接/库/schema，再 searchObjects 全局找候选；严禁在第一个匹配上就深入（易导致操作错库/错表）。多候选时必须 askUserQuestion 让用户选，再对确认目标用 getObjectDetail；多对象一次传入，不要逐表多次调用。
 - 参数层级：connectionId → databaseName → schemaName（后两者可选，但依赖前者）；searchObjects 的 objectNamePattern 使用 SQL 通配符如 %order%。
+- 发现结果即唯一事实：以最近一次 getEnvironmentOverview 或 searchObjects 的工具返回为当前环境的唯一依据。在基于该结果完成目标选择（如 askUserQuestion 确定表/库）或执行决策（如选定 connectionId 并写 SQL）之前，不得再次调用 getEnvironmentOverview、searchObjects；仅当用户明确切换环境或要求「重新扫描」时可再调。若对话已超过 3 轮且尚未基于最近一次发现结果做决策，应先基于当前发现结果做决策，或仅在此时代用户确认后重新调用发现工具。
 </discovery>
 
 <execution>
