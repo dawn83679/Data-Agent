@@ -21,13 +21,15 @@ import { chatMessagesToMessages } from './MessageList';
 import { extractPlansFromMessages } from './blocks/exitPlanModeTypes';
 import { planTabId } from './blocks/ToolRunBlock';
 
+const DEFAULT_AGENT: AgentType = 'Agent';
+
 export function AIAssistant() {
   const { t, i18n } = useTranslation();
   const accessToken = useAuthStore((s) => s.accessToken);
 
-  const [agent, setAgent] = useState<AgentType>('Agent');
+  const [agent, setAgentState] = useState<AgentType>(DEFAULT_AGENT);
   const [modelOptions, setModelOptions] = useState<ModelOption[]>(FALLBACK_MODELS);
-  const [model, setModel] = useState<string>(DEFAULT_MODEL);
+  const [model, setModelState] = useState<string>(DEFAULT_MODEL);
   const [chatContext, setChatContext] = useState<ChatContext>({});
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -48,6 +50,8 @@ export function AIAssistant() {
     conversationTabs,
     closeConversationTab,
     setConversationTabTitle,
+    getActivePrefs,
+    setActivePrefs,
   } = useConversationRuntime({
     api: ChatPaths.STREAM,
     body: {
@@ -63,12 +67,40 @@ export function AIAssistant() {
     },
   });
 
+  // Restore mode/model when active conversation changes
+  const prevActiveConversationIdRef = useRef<number | null | undefined>(undefined);
+  useEffect(() => {
+    if (prevActiveConversationIdRef.current === activeConversationId) return;
+    prevActiveConversationIdRef.current = activeConversationId;
+
+    const prefs = getActivePrefs();
+    if (prefs) {
+      setAgentState(prefs.agent as AgentType);
+      setModelState(prefs.model);
+    } else {
+      setAgentState(DEFAULT_AGENT);
+      setModelState(DEFAULT_MODEL);
+    }
+  }, [activeConversationId, getActivePrefs]);
+
+  // Setters that also persist the choice into the active runtime
+  const setAgent = useCallback((value: AgentType) => {
+    setAgentState(value);
+    const current = getActivePrefs() ?? { agent: DEFAULT_AGENT, model: DEFAULT_MODEL };
+    setActivePrefs({ ...current, agent: value });
+  }, [getActivePrefs, setActivePrefs]);
+
+  const setModel = useCallback((value: string) => {
+    setModelState(value);
+    const current = getActivePrefs() ?? { agent: DEFAULT_AGENT, model: DEFAULT_MODEL };
+    setActivePrefs({ ...current, model: value });
+  }, [getActivePrefs, setActivePrefs]);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatInputAnchorRef = useRef<HTMLDivElement>(null);
   const userHasScrolledUpRef = useRef(false);
   const SCROLL_NEAR_BOTTOM_PX = 100;
 
-  // Track when user manually scrolls up; only auto-scroll when they are near bottom
   useEffect(() => {
     const anchor = messagesEndRef.current;
     const scrollEl = anchor?.parentElement;
@@ -80,7 +112,7 @@ export function AIAssistant() {
     };
     scrollEl.addEventListener('scroll', checkNearBottom, { passive: true });
     return () => scrollEl.removeEventListener('scroll', checkNearBottom);
-  }, []); // Attach once when scroll container is available
+  }, []);
 
   useEffect(() => {
     if (userHasScrolledUpRef.current) return;
@@ -93,7 +125,7 @@ export function AIAssistant() {
     aiService.getModels().then((list) => {
       if (list.length > 0) {
         setModelOptions(list);
-        setModel((current) => {
+        setModelState((current) => {
           const exists = list.some((m) => m.modelName === current);
           return exists ? current : list[0].modelName;
         });
@@ -105,19 +137,20 @@ export function AIAssistant() {
     if (!input.trim()) return;
     const messageText = input.trim();
     setInput('');
-    userHasScrolledUpRef.current = false; // Reset so new response auto-scrolls
+    userHasScrolledUpRef.current = false;
     submitMessage(messageText);
   }, [input, setInput, submitMessage]);
 
   const chatMessages = chatMessagesToMessages(messages);
-  
-  // Refresh memory candidates only after the full assistant response is done
+  const persistedConversationId =
+    activeConversationId != null && activeConversationId > 0 ? activeConversationId : null;
+
   const completedAssistantCount = messages.reduce((count, message) => {
     if (message.role !== 'assistant') return count;
     const hasDoneBlock = message.blocks?.some((block) => block.done) ?? false;
     return hasDoneBlock ? count + 1 : count;
   }, 0);
-  const candidateRefreshKey = `${activeConversationId ?? 'none'}:${isLoading ? 'loading' : completedAssistantCount}`;
+  const candidateRefreshKey = `${persistedConversationId ?? 'none'}:${isLoading ? 'loading' : completedAssistantCount}`;
 
   const conversationPlans = useMemo(() => extractPlansFromMessages(messages), [messages]);
   const latestPlanTabId_ = useMemo(() => {
@@ -125,15 +158,20 @@ export function AIAssistant() {
     return planTabId(conversationPlans[conversationPlans.length - 1].title);
   }, [conversationPlans]);
 
+  const resetToDefaults = useCallback(() => {
+    setAgentState(DEFAULT_AGENT);
+    setModelState(DEFAULT_MODEL);
+  }, []);
+
   const contextValue = {
     input,
     setInput,
     onSend: handleSend,
     onStop: stop,
     submitMessage,
-    enqueueMessage: submitMessage, // Queue is now handled internally
+    enqueueMessage: submitMessage,
     isLoading,
-    conversationId: activeConversationId,
+    conversationId: persistedConversationId,
     modelState: { model, setModel, modelOptions },
     agentState: { agent, setAgent },
     chatContextState: { chatContext, setChatContext },
@@ -141,6 +179,7 @@ export function AIAssistant() {
     latestPlanTabId: latestPlanTabId_,
     onCommand: (id: string) => {
       if (id === SLASH_COMMAND_IDS.NEW) {
+        resetToDefaults();
         setActiveConversation(null);
         loadMessages(null, []);
       } else if (id === SLASH_COMMAND_IDS.HISTORY) {
@@ -171,6 +210,7 @@ export function AIAssistant() {
               return;
             }
             setActiveConversation(id);
+            if (id <= 0) return;
 
             const tab = conversationTabs.find((t) => t.id === id);
             if (tab && tab.messageCount > 0) return;
@@ -196,6 +236,7 @@ export function AIAssistant() {
             }
           }}
           onNewChat={() => {
+            resetToDefaults();
             setActiveConversation(null);
             loadMessages(null, []);
           }}
@@ -212,7 +253,7 @@ export function AIAssistant() {
         />
 
         <MemoryCandidateDock
-          conversationId={activeConversationId}
+          conversationId={persistedConversationId}
           refreshKey={candidateRefreshKey}
         />
 
