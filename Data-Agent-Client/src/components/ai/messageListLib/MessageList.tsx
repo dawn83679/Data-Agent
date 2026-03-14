@@ -11,6 +11,7 @@ import { useTodoInMessages } from './useTodoInMessages';
 import { PlanningIndicator } from '../blocks';
 import { getToolType, ToolType } from '../blocks/toolTypes';
 import type { Message, Segment, TodoBoxSpec } from './types';
+import { isTodoCompleted } from '../blocks/todoTypes';
 import { SegmentKind } from './types';
 
 export type { Message } from './types';
@@ -168,13 +169,13 @@ function getSegmentSignature(segments: Segment[]): string {
 
 function getTodoBoxesSignature(todoBoxes: TodoBoxSpec[]): string {
   return todoBoxes
-    .map((box) => `${box.todoId}:${box.items.map((item) => `${item.id}:${item.content}:${item.completed ? '1' : '0'}`).join(',')}`)
+    .map((box) => `${box.todoId}:${box.items.map((item) => `${item.title}:${item.status ?? ''}:${isTodoCompleted(item.status) ? '1' : '0'}`).join(',')}`)
     .join('|');
 }
 
 function getTodoItemsSignature(items: NonNullable<React.ComponentProps<typeof MessageListItem>['latestTodoItemsForPrompt']>): string {
   return items
-    .map((item) => `${item.id}:${item.content}:${item.completed ? '1' : '0'}`)
+    .map((item) => `${item.title}:${item.status ?? ''}:${isTodoCompleted(item.status) ? '1' : '0'}`)
     .join('|');
 }
 
