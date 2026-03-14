@@ -10,7 +10,8 @@ import { segmentsHaveTodo } from './segmentTodoUtils';
 import { useTodoInMessages } from './useTodoInMessages';
 import { PlanningIndicator } from '../blocks';
 import { getToolType, ToolType } from '../blocks/toolTypes';
-import type { Message, TodoBoxSpec } from './types';
+import type { Message, Segment, TodoBoxSpec } from './types';
+import { isTodoCompleted } from '../blocks/todoTypes';
 import { SegmentKind } from './types';
 
 export type { Message } from './types';
@@ -134,23 +135,102 @@ export function MessageList({
   );
 }
 
+function getBlockSignature(msg: Message): string {
+  if (!msg.blocks?.length) return '';
+  return msg.blocks
+    .map((block) => `${block.type ?? ''}:${block.done ? '1' : '0'}:${block.data ?? ''}`)
+    .join('|');
+}
+
+function getSegmentSignature(segments: Segment[]): string {
+  return segments
+    .map((seg) => {
+      switch (seg.kind) {
+        case SegmentKind.TEXT:
+        case SegmentKind.THOUGHT:
+          return `${seg.kind}:${seg.data}`;
+        case SegmentKind.STATUS:
+          return `${seg.kind}:${seg.statusKey}`;
+        case SegmentKind.TOOL_RUN:
+          return [
+            seg.kind,
+            seg.toolName,
+            seg.parametersData,
+            seg.responseData,
+            seg.responseError ? '1' : '0',
+            seg.pending ? '1' : '0',
+            seg.executionState ?? '',
+            seg.toolCallId ?? '',
+          ].join(':');
+      }
+    })
+    .join('|');
+}
+
+function getTodoBoxesSignature(todoBoxes: TodoBoxSpec[]): string {
+  return todoBoxes
+    .map((box) => `${box.todoId}:${box.items.map((item) => `${item.title}:${item.status ?? ''}:${isTodoCompleted(item.status) ? '1' : '0'}`).join(',')}`)
+    .join('|');
+}
+
+function getTodoItemsSignature(items: NonNullable<React.ComponentProps<typeof MessageListItem>['latestTodoItemsForPrompt']>): string {
+  return items
+    .map((item) => `${item.title}:${item.status ?? ''}:${isTodoCompleted(item.status) ? '1' : '0'}`)
+    .join('|');
+}
+
 // 优化: 使用 React.memo 避免历史消息不必要的重新渲染
 const MemoizedMessageListItem = React.memo(
   MessageListItem,
   (prevProps, nextProps) => {
-    // 如果不是最后一条消息且内容没变，跳过重新渲染
-    if (!nextProps.isLastAssistantStreaming && prevProps.msg.id === nextProps.msg.id) {
-      // 检查关键属性是否变化
-      const contentSame = prevProps.msg.content === nextProps.msg.content;
-      const blocksSame = prevProps.msg.blocks?.length === nextProps.msg.blocks?.length;
-      const segmentsSame = prevProps.segments.length === nextProps.segments.length;
-      
-      if (contentSame && blocksSame && segmentsSame) {
-        return true; // 返回 true 表示不重新渲染
-      }
+    if (prevProps.msg.id !== nextProps.msg.id) {
+      return false;
     }
-    
-    // 最后一条流式消息需要实时更新
-    return false;
+
+    if (prevProps.isLastAssistantStreaming || nextProps.isLastAssistantStreaming) {
+      return false;
+    }
+
+    if (
+      prevProps.isWaiting !== nextProps.isWaiting ||
+      prevProps.hideTodoInThisMessage !== nextProps.hideTodoInThisMessage ||
+      prevProps.showAllCompletedPrompt !== nextProps.showAllCompletedPrompt
+    ) {
+      return false;
+    }
+
+    if (prevProps.msg.content !== nextProps.msg.content) {
+      return false;
+    }
+
+    if (getBlockSignature(prevProps.msg) !== getBlockSignature(nextProps.msg)) {
+      return false;
+    }
+
+    if (getSegmentSignature(prevProps.segments) !== getSegmentSignature(nextProps.segments)) {
+      return false;
+    }
+
+    if (
+      getTodoBoxesSignature(prevProps.overrideTodoBoxes) !==
+      getTodoBoxesSignature(nextProps.overrideTodoBoxes)
+    ) {
+      return false;
+    }
+
+    const prevTodoItems = prevProps.latestTodoItemsForPrompt;
+    const nextTodoItems = nextProps.latestTodoItemsForPrompt;
+    if ((prevTodoItems == null) !== (nextTodoItems == null)) {
+      return false;
+    }
+    if (
+      prevTodoItems != null &&
+      nextTodoItems != null &&
+      getTodoItemsSignature(prevTodoItems) !== getTodoItemsSignature(nextTodoItems)
+    ) {
+      return false;
+    }
+
+    return true;
   }
 );

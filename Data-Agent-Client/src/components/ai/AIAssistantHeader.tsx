@@ -32,7 +32,7 @@ function formatTabTitle(tab: ConversationTabSummary): { display: string; full: s
     : tab.titleCandidate
       ? normalizeTabTitle(tab.titleCandidate)
       : '';
-  const fallback = tab.id == null ? 'New chat' : `Conversation ${tab.id}`;
+  const fallback = tab.id == null || tab.id <= 0 ? 'New chat' : `Conversation ${tab.id}`;
   const full = candidate || fallback;
   const maxLen = 28;
   const display = full.length > maxLen ? `${full.slice(0, maxLen)}…` : full;
