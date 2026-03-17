@@ -1,6 +1,6 @@
 import { MessageBlockType } from '../../../types/chat';
 import type { ChatResponseBlock, SubAgentEventData } from '../../../types/chat';
-import type { SubAgentProgressEvent } from '../blocks/subAgentTypes';
+import { normalizeSubAgentType, type SubAgentProgressEvent } from '../blocks/subAgentTypes';
 import { getToolType, ToolType } from '../blocks/toolTypes';
 import { parseToolCall, parseToolResult, idStr } from './blockParsing';
 import type { Segment } from './types';
@@ -348,7 +348,7 @@ export class MessageAccumulator {
 
     const event: SubAgentProgressEvent = {
       phase: this.blockTypeToPhase(block.type),
-      agentType: (eventData?.agentType === 'sql_planner' ? 'sql_planner' : 'explorer'),
+      agentType: normalizeSubAgentType(eventData?.agentType) ?? 'explorer',
       message: eventData?.message,
       toolCount: eventData?.toolCount,
       toolCounts: eventData?.toolCounts,

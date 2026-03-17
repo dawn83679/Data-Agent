@@ -44,8 +44,8 @@ export const STATUS_LABELS: Record<string, string> = {
 export const SUB_AGENT_LABELS: Record<string, string> = {
   explorer: 'Explorer',
   EXPLORER: 'Explorer',
-  sql_planner: 'SQL Planner',
-  SQL_PLANNER: 'SQL Planner',
+  planner: 'SQL Planner',
+  PLANNER: 'SQL Planner',
 };
 
 /** SubAgent phase → display label mapping. */

@@ -121,13 +121,30 @@ export function ToolRunBlock({
 
   // 1. Handle Execution Lifecycle States
   if (executionState === ToolExecutionState.STREAMING_ARGUMENTS) {
-    if (isInteractive) return <ToolRunExecuting toolName={toolName} parametersData={parametersData} />;
-    return <ToolRunStreaming toolName={toolName} partialArguments={parametersData} />;
+    if (isInteractive) {
+      return (
+        <ToolRunExecuting
+          toolName={toolName}
+          parametersData={parametersData}
+        />
+      );
+    }
+    return (
+      <ToolRunStreaming
+        toolName={toolName}
+        partialArguments={parametersData}
+      />
+    );
   }
 
   if (executionState === ToolExecutionState.EXECUTING || (pending && !executionState)) {
     // Both interactive and non-interactive tools should just pulse while executing/pending
-    return <ToolRunExecuting toolName={toolName} parametersData={parametersData} />;
+    return (
+      <ToolRunExecuting
+        toolName={toolName}
+        parametersData={parametersData}
+      />
+    );
   }
 
   // 2. Error fallback for non-chart tools.

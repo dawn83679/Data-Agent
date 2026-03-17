@@ -6,8 +6,12 @@ import edu.zsc.ai.agent.subagent.planner.PlannerSubAgent;
 import edu.zsc.ai.agent.tool.error.AgentToolExecuteException;
 import edu.zsc.ai.config.ai.SubAgentManager;
 import edu.zsc.ai.config.ai.SubAgentProperties;
+import edu.zsc.ai.context.AgentExecutionContext;
+import edu.zsc.ai.context.RequestContext;
+import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.util.JsonUtil;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,6 +33,12 @@ class CallingPlannerToolTest {
         SubAgentProperties properties = new SubAgentProperties();
         SubAgentManager subAgentManager = new SubAgentManager(mockExplorer, mockPlanner, properties);
         tool = new CallingPlannerTool(subAgentManager);
+    }
+
+    @AfterEach
+    void tearDown() {
+        AgentExecutionContext.clear();
+        RequestContext.clear();
     }
 
     private SchemaSummary buildTestSchema() {
@@ -220,6 +230,43 @@ class CallingPlannerToolTest {
                 null);
 
         assertTrue(result.isSuccess());
+        verify(mockPlanner).invoke(any(PlannerRequest.class));
+    }
+
+    @Test
+    void plannerInvocation_setsTaskIdInExecutionContext() {
+        RequestContext.set(RequestContextInfo.builder()
+                .conversationId(42L)
+                .userId(7L)
+                .build());
+
+        SqlPlan plan = SqlPlan.builder()
+                .summaryText("Query users.")
+                .sqlBlocks(List.of(
+                        SqlPlanBlock.builder()
+                                .title("Final SQL")
+                                .sql("SELECT * FROM users")
+                                .kind(SqlPlanBlockKind.FINAL)
+                                .build()
+                ))
+                .rawResponse("Use the users table directly.")
+                .build();
+
+        when(mockPlanner.invoke(any(PlannerRequest.class))).thenAnswer(invocation -> {
+            String taskId = AgentExecutionContext.getTaskId();
+            assertNotNull(taskId);
+            assertTrue(taskId.startsWith("plan-42-"));
+            return plan;
+        });
+
+        String schemaJson = JsonUtil.object2json(buildTestSchema());
+        AgentToolResult result = tool.callingPlannerSubAgent(
+                "generate query",
+                schemaJson,
+                null);
+
+        assertTrue(result.isSuccess());
+        assertNull(AgentExecutionContext.getTaskId());
         verify(mockPlanner).invoke(any(PlannerRequest.class));
     }
 }

@@ -7,6 +7,7 @@ import edu.zsc.ai.agent.subagent.SubAgentObservabilityListener;
 import edu.zsc.ai.agent.subagent.SubAgentPromptBuilder;
 import edu.zsc.ai.agent.subagent.SubAgentRequest;
 import edu.zsc.ai.agent.subagent.SubAgentStreamBridge;
+import edu.zsc.ai.agent.subagent.contract.ExploreObject;
 import edu.zsc.ai.agent.subagent.contract.SchemaSummary;
 import edu.zsc.ai.common.constant.InvocationContextConstant;
 import edu.zsc.ai.config.ai.SubAgentFactory;
@@ -17,10 +18,12 @@ import edu.zsc.ai.config.ai.SubAgentProperties;
 import edu.zsc.ai.context.AgentExecutionContext;
 import edu.zsc.ai.context.AgentRequestContext;
 import edu.zsc.ai.context.RequestContext;
+import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.model.dto.response.agent.ChatResponseBlock;
 import edu.zsc.ai.domain.service.agent.SseEmitterRegistry;
 import edu.zsc.ai.util.ConnectionIdUtil;
 import edu.zsc.ai.util.JsonUtil;
+import edu.zsc.ai.util.SubAgentDebugWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -29,6 +32,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Sinks;
 
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -57,16 +61,34 @@ public class ExplorerSubAgent implements SubAgent<SubAgentRequest, SchemaSummary
 
     @Override
     public SchemaSummary invoke(SubAgentRequest request) {
+        long startTime = System.currentTimeMillis();
         Long conversationId = parseConversationId();
-
+        RequestContextInfo requestContextSnapshot = RequestContext.snapshot();
         String taskId = AgentExecutionContext.getTaskId();
-        log.info("Explorer invoke started: instruction='{}', connectionIds={}, hasContext={}, taskId={}",
-                request.instruction(),
-                request.connectionIds(),
-                StringUtils.isNotBlank(request.context()),
-                taskId);
-
         String parentToolCallId = AgentExecutionContext.getParentToolCallId();
+        String modelName = resolveModelName();
+        log.info("[Explorer] invoke start, conversationId={}, taskId={}, parentToolCallId={}, modelName={}, connectionIds={}, hasRequestContext={}, hasAgentContext={}, hasContext={}, instructionLength={}, contextLength={}, instructionPreview={}, contextPreview={}",
+                requestContextSnapshot != null ? requestContextSnapshot.getConversationId() : conversationId,
+                taskId,
+                parentToolCallId,
+                modelName,
+                request.connectionIds(),
+                requestContextSnapshot != null,
+                AgentRequestContext.hasContext(),
+                StringUtils.isNotBlank(request.context()),
+                StringUtils.length(request.instruction()),
+                StringUtils.length(request.context()),
+                preview(request.instruction()),
+                preview(request.context()));
+        SubAgentDebugWriter.append("ExplorerSubAgent", "invoke_start", SubAgentDebugWriter.fields(
+                "conversationId", requestContextSnapshot != null ? requestContextSnapshot.getConversationId() : conversationId,
+                "taskId", taskId,
+                "parentToolCallId", parentToolCallId,
+                "modelName", modelName,
+                "connectionIds", request.connectionIds(),
+                "instructionPreview", preview(request.instruction()),
+                "contextPreview", preview(request.context())
+        ));
 
         // SSE progress emitter (replaces AgentListener-based observability)
         SubAgentObservabilityListener observer = new SubAgentObservabilityListener(
@@ -77,41 +99,143 @@ public class ExplorerSubAgent implements SubAgent<SubAgentRequest, SchemaSummary
 
         try {
             String message = buildMessage(request);
+            log.info("[Explorer] message built, taskId={}, messageLength={}, messagePreview={}",
+                    taskId,
+                    StringUtils.length(message),
+                    preview(message));
             String systemPrompt = PromptConfig.getPrompt(PromptEnum.EXPLORER);
 
             ExplorerAgentService agentService = subAgentFactory.buildExplorerAgent(
-                    resolveModelName(), systemPrompt);
+                    modelName, systemPrompt);
 
-            InvocationParameters invocationParams = InvocationParameters.from(buildInvocationContext(request));
+            Map<String, Object> invocationContext = buildInvocationContext(request);
+            log.info("[Explorer] invocation context built, taskId={}, defaultConnectionId={}, allowedConnectionIds={}, invocationKeys={}",
+                    taskId,
+                    CollectionUtils.isNotEmpty(request.connectionIds()) ? request.connectionIds().get(0) : null,
+                    request.connectionIds(),
+                    invocationContext.keySet());
+            SubAgentDebugWriter.append("ExplorerSubAgent", "model_request_ready", SubAgentDebugWriter.fields(
+                    "taskId", taskId,
+                    "conversationId", conversationId,
+                    "parentToolCallId", parentToolCallId,
+                    "modelName", modelName,
+                    "systemPromptLength", StringUtils.length(systemPrompt),
+                    "systemPromptPreview", preview(systemPrompt),
+                    "messageLength", StringUtils.length(message),
+                    "messagePreview", preview(message),
+                    "defaultConnectionId", CollectionUtils.isNotEmpty(request.connectionIds()) ? request.connectionIds().get(0) : null,
+                    "allowedConnectionIds", request.connectionIds(),
+                    "invocationKeys", invocationContext.keySet(),
+                    "messageProtocolHint", "agentService API does not expose raw tool-call messages before dispatch"
+            ));
+            InvocationParameters invocationParams = InvocationParameters.from(invocationContext);
             TokenStream tokenStream = agentService.explore(message, invocationParams);
 
             StringBuilder fullResponse = new StringBuilder();
-            String parentId = AgentExecutionContext.getParentToolCallId();
+            String parentId = parentToolCallId;
             Sinks.Many<ChatResponseBlock> sink = sseEmitterRegistry.get(conversationId).orElse(null);
             streamBridge.bridge(tokenStream, sink, parentId, null, fullResponse::append);
 
             CompletableFuture<String> future = new CompletableFuture<>();
             tokenStream.onCompleteResponse(response -> future.complete(fullResponse.toString()));
             tokenStream.onError(error -> future.completeExceptionally(error));
-            log.info("[Explorer] starting TokenStream, conversationId={}, parentToolCallId={}", conversationId, parentId);
+            log.info("[Explorer] token stream start, conversationId={}, taskId={}, parentToolCallId={}, timeoutSeconds={}",
+                    conversationId,
+                    taskId,
+                    parentId,
+                    properties.getExplorer().getTimeoutSeconds());
+            SubAgentDebugWriter.append("ExplorerSubAgent", "token_stream_start", SubAgentDebugWriter.fields(
+                    "taskId", taskId,
+                    "conversationId", conversationId,
+                    "parentToolCallId", parentId,
+                    "timeoutSeconds", properties.getExplorer().getTimeoutSeconds()
+            ));
             tokenStream.start();
 
             String responseText;
             try {
                 responseText = future.get(properties.getExplorer().getTimeoutSeconds(), TimeUnit.SECONDS);
             } catch (TimeoutException te) {
-                log.warn("[Explorer] timed out after {}s waiting for completion", properties.getExplorer().getTimeoutSeconds());
+                log.warn("[Explorer] timeout, conversationId={}, taskId={}, timeoutSeconds={}, partialResponseLength={}, partialResponsePreview={}, elapsedMs={}",
+                        conversationId,
+                        taskId,
+                        properties.getExplorer().getTimeoutSeconds(),
+                        fullResponse.length(),
+                        preview(fullResponse.toString()),
+                        System.currentTimeMillis() - startTime,
+                        te);
+                SubAgentDebugWriter.append("ExplorerSubAgent", "timeout", SubAgentDebugWriter.fields(
+                        "taskId", taskId,
+                        "conversationId", conversationId,
+                        "timeoutSeconds", properties.getExplorer().getTimeoutSeconds(),
+                        "partialResponseLength", fullResponse.length(),
+                        "partialResponsePreview", preview(fullResponse.toString()),
+                        "elapsedMs", System.currentTimeMillis() - startTime
+                ));
                 throw te;
             }
 
+            log.info("[Explorer] response received, taskId={}, responseLength={}, responsePreview={}",
+                    taskId,
+                    StringUtils.length(responseText),
+                    preview(responseText));
+            SubAgentDebugWriter.append("ExplorerSubAgent", "response_received", SubAgentDebugWriter.fields(
+                    "taskId", taskId,
+                    "conversationId", conversationId,
+                    "responseLength", StringUtils.length(responseText),
+                    "responsePreview", preview(responseText)
+            ));
             SchemaSummary summary = ExplorerResponseParser.parse(responseText);
             observer.emitComplete(summary.getSummaryText(), JsonUtil.object2json(summary));
-            log.info("Explorer completed: {} object(s) found", CollectionUtils.size(summary.getObjects()));
+            log.info("[Explorer] parse success, taskId={}, objectCount={}, summaryLength={}, rawResponseLength={}, summaryPreview={}, objectPreview={}, elapsedMs={}",
+                    taskId,
+                    CollectionUtils.size(summary.getObjects()),
+                    StringUtils.length(summary.getSummaryText()),
+                    StringUtils.length(summary.getRawResponse()),
+                    preview(summary.getSummaryText()),
+                    summarizeObjects(summary.getObjects()),
+                    System.currentTimeMillis() - startTime);
+            SubAgentDebugWriter.append("ExplorerSubAgent", "parse_success", SubAgentDebugWriter.fields(
+                    "taskId", taskId,
+                    "conversationId", conversationId,
+                    "objectCount", CollectionUtils.size(summary.getObjects()),
+                    "summaryLength", StringUtils.length(summary.getSummaryText()),
+                    "rawResponseLength", StringUtils.length(summary.getRawResponse()),
+                    "summaryPreview", preview(summary.getSummaryText()),
+                    "objectPreview", summarizeObjects(summary.getObjects()),
+                    "elapsedMs", System.currentTimeMillis() - startTime
+            ));
             return summary;
 
         } catch (Exception e) {
             observer.emitError(e.getMessage());
-            log.error("Explorer SubAgent failed", e);
+            log.error("[Explorer] invoke failed, conversationId={}, taskId={}, parentToolCallId={}, elapsedMs={}, rootCauseClass={}, rootCauseMessage={}",
+                    conversationId,
+                    taskId,
+                    parentToolCallId,
+                    System.currentTimeMillis() - startTime,
+                    rootCause(e).getClass().getSimpleName(),
+                    rootCauseMessage(e),
+                    e);
+            SubAgentDebugWriter.append("ExplorerSubAgent", "invoke_failed", SubAgentDebugWriter.fields(
+                    "conversationId", conversationId,
+                    "taskId", taskId,
+                    "parentToolCallId", parentToolCallId,
+                    "elapsedMs", System.currentTimeMillis() - startTime,
+                    "rootCauseClass", rootCause(e).getClass().getSimpleName(),
+                    "rootCauseMessage", rootCauseMessage(e),
+                    "instructionPreview", preview(request.instruction()),
+                    "contextPreview", preview(request.context())
+            ));
+            if (StringUtils.containsIgnoreCase(rootCauseMessage(e), "tool_calls")
+                    && StringUtils.containsIgnoreCase(rootCauseMessage(e), "tool_call_id")) {
+                SubAgentDebugWriter.append("ExplorerSubAgent", "protocol_error_hint", SubAgentDebugWriter.fields(
+                        "taskId", taskId,
+                        "conversationId", conversationId,
+                        "hint", "assistant tool_calls were emitted but matching tool messages were not present in the next model request",
+                        "nextCheck", "inspect message assembly around streamBridge/tool-result replay for this task"
+                ));
+            }
             throw new RuntimeException("Explorer SubAgent failed: " + e.getMessage(), e);
         }
     }
@@ -159,5 +283,50 @@ public class ExplorerSubAgent implements SubAgent<SubAgentRequest, SchemaSummary
         }
         log.warn("No modelName in AgentRequestContext, falling back to default");
         return "qwen3-max";
+    }
+
+    private String summarizeObjects(List<ExploreObject> objects) {
+        if (CollectionUtils.isEmpty(objects)) {
+            return "[]";
+        }
+        List<String> names = new ArrayList<>();
+        for (ExploreObject object : objects.stream().limit(3).toList()) {
+            names.add(qualifiedName(object));
+        }
+        return names.toString();
+    }
+
+    private String qualifiedName(ExploreObject object) {
+        List<String> parts = new ArrayList<>();
+        if (StringUtils.isNotBlank(object.getCatalog())) {
+            parts.add(object.getCatalog());
+        }
+        if (StringUtils.isNotBlank(object.getSchema())) {
+            parts.add(object.getSchema());
+        }
+        if (StringUtils.isNotBlank(object.getObjectName())) {
+            parts.add(object.getObjectName());
+        }
+        return String.join(".", parts);
+    }
+
+    private String preview(String value) {
+        if (StringUtils.isBlank(value)) {
+            return null;
+        }
+        return StringUtils.abbreviate(StringUtils.normalizeSpace(value), 160);
+    }
+
+    private Throwable rootCause(Throwable throwable) {
+        Throwable current = throwable;
+        while (current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+        }
+        return current;
+    }
+
+    private String rootCauseMessage(Throwable throwable) {
+        Throwable cause = rootCause(throwable);
+        return StringUtils.defaultIfBlank(cause.getMessage(), cause.getClass().getSimpleName());
     }
 }

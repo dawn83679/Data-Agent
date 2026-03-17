@@ -42,7 +42,7 @@ export interface SubAgentParamsSummary {
  */
 export interface SubAgentConsoleTabMetadata {
   conversationId: number | null;
-  agentType: 'explorer' | 'sql_planner';
+  agentType: import('../components/ai/blocks/subAgentTypes').SubAgentType;
   status: 'running' | 'complete' | 'error';
   startedAt: number;
   completedAt?: number;
@@ -62,7 +62,7 @@ export interface NestedToolCall {
 export interface SubAgentInvocation {
   id: string;
   taskLabel: string;
-  agentType: 'explorer' | 'sql_planner';
+  agentType: import('../components/ai/blocks/subAgentTypes').SubAgentType;
   status: 'running' | 'complete' | 'error';
   errorMessage?: string;
   params: SubAgentParamsSummary;

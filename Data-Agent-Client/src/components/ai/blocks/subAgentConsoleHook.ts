@@ -2,13 +2,14 @@ import { useEffect, useRef } from 'react';
 import { useWorkspaceStore } from '../../../store/workspaceStore';
 import type { SubAgentConsoleTabMetadata, SubAgentInvocation } from '../../../types/tab';
 import { subAgentConsoleTabId } from './subAgentDataHelpers';
+import type { SubAgentType } from './subAgentTypes';
 
 export interface UseSubAgentConsoleTabOptions {
   enabled?: boolean;
   toolCallId?: string;
   taskKey?: string;
   conversationId: number | null;
-  agentType: 'explorer' | 'sql_planner';
+  agentType: SubAgentType;
   taskLabel: string;
   status: 'running' | 'complete' | 'error';
   startedAt: number;
@@ -42,22 +43,21 @@ export function useSubAgentConsoleTab(options: UseSubAgentConsoleTabOptions) {
   const tabId = subAgentConsoleTabId(stableToolCallId, taskKey);
   const metadataRef = useRef<SubAgentConsoleTabMetadata | null>(null);
   const autoOpenedRef = useRef(false);
+  const metadata: SubAgentConsoleTabMetadata = {
+    conversationId,
+    agentType,
+    status,
+    startedAt,
+    completedAt,
+    params,
+    summary,
+    resultJson,
+    invocations,
+  };
 
   useEffect(() => {
     if (!enabled) return;
     const ws = useWorkspaceStore.getState();
-
-    const metadata: SubAgentConsoleTabMetadata = {
-      conversationId,
-      agentType,
-      status,
-      startedAt,
-      completedAt,
-      params,
-      summary,
-      resultJson,
-      invocations,
-    };
     metadataRef.current = metadata;
 
     const metadataKey = [
@@ -105,11 +105,11 @@ export function useSubAgentConsoleTab(options: UseSubAgentConsoleTabOptions) {
   }, [agentType, completedAt, conversationId, enabled, invocations, params, resultJson, stableToolCallId, startedAt, status, summary, tabId, taskKey, taskLabel]);
 
   const handleOpenConsole = () => {
-    if (!enabled || !metadataRef.current) return;
+    if (!enabled) return;
     const ws = useWorkspaceStore.getState();
     const existingTab = ws.tabs.find((tab) => tab.id === tabId);
     if (existingTab) {
-      ws.updateSubAgentConsole(tabId, metadataRef.current);
+      ws.updateSubAgentConsole(tabId, metadata);
       ws.switchTab(tabId);
       return;
     }
@@ -117,7 +117,7 @@ export function useSubAgentConsoleTab(options: UseSubAgentConsoleTabOptions) {
       id: tabId,
       name: `${taskLabel} Console`,
       type: 'subagent-console',
-      metadata: metadataRef.current,
+      metadata,
     });
   };
 

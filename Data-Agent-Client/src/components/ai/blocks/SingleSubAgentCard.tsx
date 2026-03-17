@@ -23,6 +23,7 @@ export function SingleSubAgentCard({
 }: SingleSubAgentCardProps) {
   const { isExplorer, borderColor, bgColor, iconColor } = getAgentTheming(agentType, isError);
   const AgentIcon = isExplorer ? Database : Braces;
+  const shouldShowStatusText = !isComplete || isError;
   const content = (
     <>
       <div className="px-3 py-2 flex items-center gap-2">
@@ -39,11 +40,13 @@ export function SingleSubAgentCard({
           {elapsedText && <span>{elapsedText}</span>}
         </span>
       </div>
-      <div className="px-3 pb-2 -mt-0.5">
-        <p className={cn('text-[11px] truncate pl-5', isComplete ? 'theme-text-primary' : 'theme-text-secondary')}>
-          {statusText}
-        </p>
-      </div>
+      {shouldShowStatusText && (
+        <div className="px-3 pb-2 -mt-0.5">
+          <p className={cn('text-[11px] truncate pl-5', isComplete ? 'theme-text-primary' : 'theme-text-secondary')}>
+            {statusText}
+          </p>
+        </div>
+      )}
     </>
   );
 

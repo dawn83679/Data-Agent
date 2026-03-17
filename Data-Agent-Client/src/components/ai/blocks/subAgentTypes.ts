@@ -1,5 +1,14 @@
+import { resolveToolCallPreview } from './toolCallPreview';
+
+export const SUB_AGENT_TYPES = {
+  EXPLORER: 'explorer',
+  PLANNER: 'planner',
+} as const;
+
+export type SubAgentType = typeof SUB_AGENT_TYPES[keyof typeof SUB_AGENT_TYPES];
+
 export interface SubAgentProgressEvent {
-  agentType: 'explorer' | 'sql_planner';
+  agentType: SubAgentType;
   phase: 'start' | 'progress' | 'complete' | 'error';
   message?: string;
   /** Tool usage stats (present on 'complete' phase). */
@@ -13,6 +22,12 @@ export interface SubAgentProgressEvent {
   summaryText?: string;
   /** Real task-scoped result payload from backend SUB_AGENT_COMPLETE. */
   resultJson?: string;
+}
+
+export function normalizeSubAgentType(agentType: unknown): SubAgentType | null {
+  if (agentType === SUB_AGENT_TYPES.EXPLORER) return SUB_AGENT_TYPES.EXPLORER;
+  if (agentType === SUB_AGENT_TYPES.PLANNER) return SUB_AGENT_TYPES.PLANNER;
+  return null;
 }
 
 export interface ResolvedSubAgentResult {
@@ -57,7 +72,6 @@ function buildPlannerPayload(raw: Record<string, unknown>): string | undefined {
   return Object.keys(payload).length > 0 ? JSON.stringify(payload) : undefined;
 }
 
-const VALID_AGENT_TYPES = new Set(['explorer', 'sql_planner']);
 const VALID_PHASES = new Set(['start', 'progress', 'complete', 'error']);
 const SUB_AGENT_TOOL_NAMES = new Set(['callingExplorerSubAgent', 'callingPlannerSubAgent']);
 
@@ -65,10 +79,10 @@ export function isCallingSubAgentTool(name: string): boolean {
   return SUB_AGENT_TOOL_NAMES.has(name);
 }
 
-/** Derive agentType from tool name (exploreSchema → explorer, generateSqlPlan → sql_planner). */
-export function agentTypeFromToolName(toolName: string): 'explorer' | 'sql_planner' | null {
-  if (toolName === 'callingExplorerSubAgent') return 'explorer';
-  if (toolName === 'callingPlannerSubAgent') return 'sql_planner';
+/** Derive agentType from tool name (exploreSchema → explorer, generateSqlPlan → planner). */
+export function agentTypeFromToolName(toolName: string): SubAgentType | null {
+  if (toolName === 'callingExplorerSubAgent') return SUB_AGENT_TYPES.EXPLORER;
+  if (toolName === 'callingPlannerSubAgent') return SUB_AGENT_TYPES.PLANNER;
   return null;
 }
 
@@ -80,14 +94,14 @@ export function tryParseSubAgentProgress(data: string | undefined): SubAgentProg
   if (!data) return null;
   try {
     const parsed = JSON.parse(data) as Record<string, unknown>;
+    const normalizedAgentType = normalizeSubAgentType(parsed.agentType);
     if (
-      typeof parsed.agentType === 'string' &&
-      VALID_AGENT_TYPES.has(parsed.agentType) &&
+      normalizedAgentType &&
       typeof parsed.phase === 'string' &&
       VALID_PHASES.has(parsed.phase)
     ) {
       return {
-        agentType: parsed.agentType as SubAgentProgressEvent['agentType'],
+        agentType: normalizedAgentType,
         phase: parsed.phase as SubAgentProgressEvent['phase'],
         message: typeof parsed.message === 'string' ? parsed.message : undefined,
         toolCount: typeof parsed.toolCount === 'number' ? parsed.toolCount : undefined,
@@ -107,10 +121,11 @@ export function tryParseSubAgentProgress(data: string | undefined): SubAgentProg
 }
 
 export interface CallingSubAgentArgs {
-  agentType: string;
+  agentType: SubAgentType;
   userQuestion?: string;
   connectionIds?: number[];
   taskCount?: number;
+  taskInstructions?: string[];
 }
 
 /**
@@ -125,6 +140,7 @@ export function parseCallingSubAgentArgs(
   toolName?: string
 ): CallingSubAgentArgs | null {
   const derivedAgentType = toolName ? agentTypeFromToolName(toolName) : null;
+  const preview = resolveToolCallPreview(toolName ?? '', args, 'streaming');
   if (!args && !derivedAgentType) return null;
 
   try {
@@ -135,14 +151,15 @@ export function parseCallingSubAgentArgs(
     }
     const obj = parsed as Record<string, unknown>;
 
-    const agentType =
-      typeof obj.agentType === 'string'
-        ? obj.agentType
-        : derivedAgentType ?? 'unknown';
+    const agentType = normalizeSubAgentType(obj.agentType) ?? derivedAgentType;
+    if (!agentType) {
+      return null;
+    }
 
     // Extract connectionIds from tasksJson (Explorer new format)
     let connectionIds: number[] | undefined;
     let taskCount: number | undefined;
+    let taskInstructions: string[] | undefined;
     if (typeof obj.tasksJson === 'string') {
       try {
         const tasks = JSON.parse(obj.tasksJson) as unknown[];
@@ -151,24 +168,50 @@ export function parseCallingSubAgentArgs(
           connectionIds = tasks
             .map((t) => (t && typeof t === 'object' && 'connectionId' in t) ? (t as Record<string, unknown>).connectionId : null)
             .filter((id): id is number => typeof id === 'number');
+          taskInstructions = tasks
+            .map((t) => (t && typeof t === 'object' && 'instruction' in t) ? (t as Record<string, unknown>).instruction : null)
+            .filter((instruction): instruction is string => typeof instruction === 'string' && instruction.trim().length > 0);
         }
       } catch { /* tasksJson not yet complete */ }
     }
+
+    const directInstruction = typeof obj.instruction === 'string' ? obj.instruction : undefined;
+    if ((!taskInstructions || taskInstructions.length === 0) && preview?.taskInstructions?.length) {
+      taskInstructions = preview.taskInstructions;
+    }
+    const userQuestion = directInstruction
+      ?? preview?.instruction
+      ?? (taskInstructions?.length === 1 ? taskInstructions[0] : undefined);
 
     // Fallback: legacy connectionIds field
     if (!connectionIds && Array.isArray(obj.connectionIds)) {
       connectionIds = (obj.connectionIds as unknown[]).filter((r): r is number => typeof r === 'number');
     }
+    if ((!connectionIds || connectionIds.length === 0) && preview?.connectionIds?.length) {
+      connectionIds = preview.connectionIds;
+    }
+    if (!taskCount) {
+      taskCount = preview?.taskInstructions?.length ?? preview?.connectionIds?.length;
+    }
 
     return {
       agentType,
-      userQuestion: typeof obj.instruction === 'string' ? obj.instruction : undefined,
+      userQuestion,
       connectionIds: connectionIds?.length ? connectionIds : undefined,
       taskCount,
+      taskInstructions: taskInstructions?.length ? taskInstructions : (directInstruction ? [directInstruction] : undefined),
     };
   } catch {
     // Streaming: args arrive as partial JSON — silently fall back
-    if (derivedAgentType) return { agentType: derivedAgentType };
+    if (derivedAgentType) {
+      return {
+        agentType: derivedAgentType,
+        userQuestion: preview?.instruction ?? preview?.userQuestion,
+        connectionIds: preview?.connectionIds,
+        taskCount: preview?.taskInstructions?.length ?? preview?.connectionIds?.length,
+        taskInstructions: preview?.taskInstructions,
+      };
+    }
   }
   return null;
 }
@@ -246,7 +289,7 @@ export function resolveSubAgentResult(
       };
     }
 
-    if (normalized === 'SQL_PLANNER' || agentType === 'sql_planner') {
+    if (normalized === 'PLANNER' || agentType === SUB_AGENT_TYPES.PLANNER) {
       if (
         typeof inner.summaryText === 'string'
         || Array.isArray(inner.planSteps)

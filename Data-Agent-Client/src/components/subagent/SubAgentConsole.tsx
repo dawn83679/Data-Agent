@@ -8,6 +8,7 @@ import { SUB_AGENT_LABELS } from '../../constants/chat';
 import type { SubAgentConsoleTabMetadata, SubAgentInvocation } from '../../types/tab';
 import { ToolRunBlock, markdownRemarkPlugins, useMarkdownComponents } from '../ai/blocks';
 import { SegmentKind, ToolExecutionState } from '../ai/messageListLib/types';
+import { isTodoTool, parseTodoListResponse } from '../ai/blocks/todoTypes';
 import { SqlCodeBlock } from '../common/SqlCodeBlock';
 import { connectionService } from '../../services/connection.service';
 import { QUERY_KEY_CONNECTIONS } from '../../constants/explorer';
@@ -49,7 +50,22 @@ function getInvocationStatusText(invocation: SubAgentInvocation): string {
 }
 
 function ToolCalls({ invocation }: { invocation?: SubAgentInvocation }) {
-  const toolRuns = invocation?.nestedToolRuns?.filter((segment) => segment.kind === SegmentKind.TOOL_RUN) ?? [];
+  const rawToolRuns = invocation?.nestedToolRuns?.filter((segment) => segment.kind === SegmentKind.TOOL_RUN) ?? [];
+  const latestTodoIndexById = new Map<string, number>();
+
+  rawToolRuns.forEach((toolRun, index) => {
+    if (!isTodoTool(toolRun.toolName)) return;
+    const todoId = parseTodoListResponse(toolRun.responseData)?.todoId ?? '';
+    if (!todoId) return;
+    latestTodoIndexById.set(todoId, index);
+  });
+
+  const toolRuns = rawToolRuns.filter((toolRun, index) => {
+    if (!isTodoTool(toolRun.toolName)) return true;
+    const todoId = parseTodoListResponse(toolRun.responseData)?.todoId ?? '';
+    if (!todoId) return true;
+    return latestTodoIndexById.get(todoId) === index;
+  });
   if (toolRuns.length === 0) {
     return <p className="text-[11px] theme-text-secondary">No tool calls yet.</p>;
   }
@@ -420,10 +436,14 @@ export function SubAgentConsole({ metadata }: SubAgentConsoleProps) {
     : title;
   const status = invocation?.status ?? metadata.status;
   const statusText = invocation ? getInvocationStatusText(invocation) : 'Starting Agent...';
+  const inlineStatusText = status === 'complete' ? null : statusText;
+  const toolRunCount = invocation?.nestedToolRuns?.filter((segment) => segment.kind === SegmentKind.TOOL_RUN).length ?? 0;
+  const shouldShowToolCalls = status === 'running' || toolRunCount > 0;
   const resultJson = invocation?.resultJson ?? metadata.resultJson;
   const explorerResult = isExplorer ? parseExplorerResult(resultJson) : null;
   const plannerResult = isExplorer ? null : parsePlannerResult(resultJson);
   const errorMessage = invocation?.errorMessage ?? explorerResult?.errorMessage;
+  const instruction = invocation?.params.userQuestion ?? metadata.params?.userQuestion;
   const resultSummary = invocation?.resultSummary
     ?? metadata.summary
     ?? (isExplorer ? explorerResult?.summaryText : plannerResult?.summaryText);
@@ -435,18 +455,34 @@ export function SubAgentConsole({ metadata }: SubAgentConsoleProps) {
           <div className="flex items-start gap-3">
             <AgentIcon className={cn('w-5 h-5 mt-0.5', accentColor)} />
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3">
                 <span className="text-[15px] font-semibold theme-text-primary">{displayTitle}</span>
+                {inlineStatusText && (
+                  <span className="text-[12px] theme-text-secondary">
+                    {inlineStatusText}
+                  </span>
+                )}
                 {getStatusIcon(status)}
               </div>
-              <p className="mt-2 text-[12px] theme-text-primary">{statusText}</p>
+              {instruction && (
+                <div className="mt-3 rounded-md theme-bg-tertiary px-3 py-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] theme-text-secondary">
+                    Instruction
+                  </p>
+                  <p className="mt-1 whitespace-pre-wrap break-words text-[12px] theme-text-primary">
+                    {instruction}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </Section>
 
-        <Section title="Tool Calls">
-          <ToolCalls invocation={invocation} />
-        </Section>
+        {shouldShowToolCalls && (
+          <Section title="Tool Calls">
+            <ToolCalls invocation={invocation} />
+          </Section>
+        )}
 
         {(resultSummary || resultJson || (status === 'error' && errorMessage)) && (
           <Section title="Result">
@@ -479,14 +515,13 @@ export function SubAgentConsole({ metadata }: SubAgentConsoleProps) {
                 resultJson={resultJson}
                 markdownComponents={markdownComponents}
                 rawResponseNode={plannerResult?.rawResponse ? (
-                  <details className="mt-3 rounded-md theme-bg-tertiary px-3 py-2">
-                    <summary className="cursor-pointer text-[11px] theme-text-secondary">Show Full Response</summary>
-                    <div className="mt-2 text-[12px] theme-text-primary">
+                  <div className="mt-3 rounded-md theme-bg-tertiary px-3 py-2">
+                    <div className="text-[12px] theme-text-primary">
                       <ReactMarkdown components={markdownComponents} remarkPlugins={markdownRemarkPlugins}>
                         {plannerResult.rawResponse}
                       </ReactMarkdown>
                     </div>
-                  </details>
+                  </div>
                 ) : undefined}
               />
             )}

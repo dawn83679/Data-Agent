@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { parseCallingSubAgentArgs, resolveSubAgentResult } from './subAgentTypes';
-import type { SubAgentProgressEvent } from './subAgentTypes';
+import { parseCallingSubAgentArgs, resolveSubAgentResult, SUB_AGENT_TYPES } from './subAgentTypes';
+import type { SubAgentProgressEvent, SubAgentType } from './subAgentTypes';
 import { SUB_AGENT_LABELS } from '../../../constants/chat';
 import type { Segment } from '../messageListLib/types';
 import { SegmentKind } from '../messageListLib/types';
@@ -29,7 +29,7 @@ type ToolRunSegment = Extract<Segment, { kind: typeof SegmentKind.TOOL_RUN }>;
 interface TaskViewModel {
   taskKey: string;
   label: string;
-  agentType: 'explorer' | 'sql_planner';
+  agentType: SubAgentType;
   consoleTaskKey?: string;
   consoleTabId?: string;
   isConsoleReady: boolean;
@@ -47,17 +47,16 @@ interface TaskViewModel {
 function getStableTaskKey(options: {
   taskId?: string;
   taskCount: number;
-  hasRenderableContent: boolean;
 }): string | undefined {
-  const { taskId, taskCount, hasRenderableContent } = options;
+  const { taskId, taskCount } = options;
   if (taskId) return `task-${taskId}`;
-  if (taskCount === 1 && hasRenderableContent) return 'single';
+  if (taskCount <= 1) return 'single';
   return undefined;
 }
 
 function buildTaskViewModels(options: {
   toolCallId: string;
-  agentType: 'explorer' | 'sql_planner';
+  agentType: SubAgentType;
   agentLabel: string;
   connectionNameById: Map<number, string>;
   args: ReturnType<typeof parseCallingSubAgentArgs>;
@@ -185,6 +184,11 @@ function buildTaskViewModels(options: {
       : orderedKeys.length > 1
         ? `${agentLabel} #${index + 1}${connectionId != null ? ` (connId: ${connectionId})` : ''}`
         : agentLabel;
+    const taskInstruction = taskId
+      ? args?.taskInstructions?.[orderedTaskIds.indexOf(taskId)]
+      : orderedKeys.length === 1
+        ? (args?.userQuestion ?? args?.taskInstructions?.[0])
+        : args?.taskInstructions?.[index];
     const taskErrorEvent = [...taskProgress].reverse().find((event) => event.phase === 'error');
     const taskErrorMessage = taskErrorEvent?.message;
     const taskError = (orderedKeys.length === 1 && isError)
@@ -199,16 +203,11 @@ function buildTaskViewModels(options: {
       || (orderedKeys.length === 1 && !taskError && isComplete);
     const taskResultSummary = completionEvent?.summaryText ?? fallbackResult.summaryText;
     const taskResultJson = completionEvent?.resultJson ?? fallbackResult.resultJson;
-    const hasRenderableConsoleContent = (taskNested?.length ?? 0) > 0
-      || !!taskResultSummary
-      || !!taskResultJson
-      || !!taskErrorMessage;
     const consoleTaskKey = getStableTaskKey({
       taskId,
       taskCount,
-      hasRenderableContent: hasRenderableConsoleContent,
     });
-    const isConsoleReady = !!consoleTaskKey && hasRenderableConsoleContent;
+    const isConsoleReady = !!consoleTaskKey;
     const timingKey = consoleTaskKey ?? taskKey;
     const startedAtForTask = taskStartedAt.get(timingKey) ?? startedAt;
     const completedAtForTask = taskComplete || taskError
@@ -229,7 +228,11 @@ function buildTaskViewModels(options: {
       agentType,
       status: taskError ? 'error' : taskComplete ? 'complete' : 'running',
       errorMessage: taskErrorMessage,
-      params: connectionId != null ? { connectionIds: [connectionId], taskCount: 1 } : {},
+      params: {
+        ...(connectionId != null ? { connectionIds: [connectionId] } : {}),
+        ...(taskInstruction ? { userQuestion: taskInstruction } : {}),
+        taskCount: 1,
+      },
       progressEvents: taskProgress,
       nestedToolCalls: buildNestedToolCalls(taskNested),
       nestedToolRuns: taskNested,
@@ -317,7 +320,7 @@ export function SubAgentRunBlock({
   const [elapsed, setElapsed] = useState(0);
 
   const args = parseCallingSubAgentArgs(parametersData, toolName);
-  const agentType = (args?.agentType ?? 'explorer') as 'explorer' | 'sql_planner';
+  const agentType = (args?.agentType ?? SUB_AGENT_TYPES.EXPLORER) as SubAgentType;
   const agentLabel = SUB_AGENT_LABELS[agentType] ?? agentType;
   const stableToolCallId = toolCallId ?? fallbackToolCallIdRef.current;
   const hasResult = responseData != null && responseData !== '';
@@ -346,11 +349,6 @@ export function SubAgentRunBlock({
       const taskKey = getStableTaskKey({
         taskId: event.taskId,
         taskCount: args?.taskCount ?? 0,
-        hasRenderableContent:
-          event.phase === 'complete'
-          || event.phase === 'error'
-          || !!event.summaryText
-          || !!event.resultJson,
       }) ?? (event.connectionId != null ? `conn-${event.connectionId}` : 'single');
 
       if (!taskStartedAtRef.current.has(taskKey)) {
