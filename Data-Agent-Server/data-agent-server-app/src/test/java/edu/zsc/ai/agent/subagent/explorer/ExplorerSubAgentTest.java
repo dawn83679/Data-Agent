@@ -41,7 +41,7 @@ class ExplorerSubAgentTest {
                       "objectName": "orders",
                       "objectType": "TABLE",
                       "objectDdl": "CREATE TABLE orders (id int8)",
-                      "relevance": "HIGH"
+                      "relevanceScore": 92
                     }
                   ],
                   "rawResponse": "orders is the core fact table"
@@ -52,6 +52,7 @@ class ExplorerSubAgentTest {
         assertEquals("Found relevant order objects.", summary.getSummaryText());
         assertEquals(1, summary.getObjects().size());
         assertEquals("orders", summary.getObjects().get(0).getObjectName());
+        assertEquals(92, summary.getObjects().get(0).getRelevanceScore());
         assertEquals("orders is the core fact table", summary.getRawResponse());
     }
 

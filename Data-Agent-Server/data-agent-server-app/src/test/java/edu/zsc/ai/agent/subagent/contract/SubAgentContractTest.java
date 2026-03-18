@@ -65,7 +65,7 @@ class SubAgentContractTest {
                     .objectName("orders")
                     .objectType("TABLE")
                     .objectDdl("CREATE TABLE orders (id int8, customer_id int8, total numeric)")
-                    .relevance("HIGH")
+                    .relevanceScore(92)
                     .build();
 
             SchemaSummary summary = SchemaSummary.builder()
@@ -89,7 +89,7 @@ class SubAgentContractTest {
                                     .objectName("users")
                                     .objectType("TABLE")
                                     .objectDdl("CREATE TABLE users (id int8)")
-                                    .relevance("HIGH")
+                                    .relevanceScore(88)
                                     .build()
                     ))
                     .rawResponse("users object found")
@@ -97,6 +97,7 @@ class SubAgentContractTest {
 
             String json = JsonUtil.object2json(summary);
             assertTrue(json.contains("users"));
+            assertTrue(json.contains("relevanceScore"));
             assertTrue(json.contains("rawResponse"));
         }
     }

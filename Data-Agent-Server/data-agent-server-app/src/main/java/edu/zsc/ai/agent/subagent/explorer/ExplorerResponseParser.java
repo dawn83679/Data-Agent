@@ -1,6 +1,7 @@
 package edu.zsc.ai.agent.subagent.explorer;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import edu.zsc.ai.agent.subagent.contract.ExploreObjectScoreSupport;
 import edu.zsc.ai.agent.subagent.contract.SchemaSummary;
 import edu.zsc.ai.util.JsonUtil;
 import org.apache.commons.collections4.CollectionUtils;
@@ -32,6 +33,7 @@ public final class ExplorerResponseParser {
                 && StringUtils.isBlank(summary.getRawResponse())) {
             throw new IllegalArgumentException("Explorer response JSON does not contain summaryText, objects, or rawResponse");
         }
+        ExploreObjectScoreSupport.normalizeAndSort(summary.getObjects());
         return summary;
     }
 

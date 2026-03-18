@@ -13,6 +13,7 @@ import edu.zsc.ai.agent.subagent.contract.SchemaSummary;
 import edu.zsc.ai.agent.tool.error.AgentToolExecuteException;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.common.enums.ai.ToolNameEnum;
+import edu.zsc.ai.config.ai.ExplorerSubAgentExecutorConfig;
 import edu.zsc.ai.config.ai.SubAgentManager;
 import edu.zsc.ai.context.AgentExecutionContext;
 import edu.zsc.ai.context.AgentRequestContext;
@@ -21,15 +22,15 @@ import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.util.JsonUtil;
 import edu.zsc.ai.util.SubAgentDebugWriter;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
@@ -41,32 +42,40 @@ import java.util.stream.IntStream;
  */
 @AgentTool
 @Slf4j
-@RequiredArgsConstructor
 public class CallingExplorerTool extends SubAgentToolSupport {
 
     private final SubAgentManager subAgentManager;
+    private final Executor explorerExecutor;
+
+    public CallingExplorerTool(
+            SubAgentManager subAgentManager,
+            @Qualifier(ExplorerSubAgentExecutorConfig.EXPLORER_SUB_AGENT_EXECUTOR_BEAN) Executor explorerExecutor) {
+        this.subAgentManager = subAgentManager;
+        this.explorerExecutor = explorerExecutor;
+    }
 
     @Tool({
             "Delegates schema exploration to Explorer SubAgent(s).",
             "Use when: you need to understand database structure before generating SQL.",
-            "Accepts a JSON array of tasks. Each task has: connectionId (required), instruction (required), context (optional).",
+            "Accepts a structured tasks array. Each task has: connectionId (required), instruction (required), context (optional), timeoutSeconds (optional).",
+            "Top-level timeoutSeconds is an optional default applied only to tasks that do not set their own timeoutSeconds.",
             "Each task spawns one Explorer SubAgent. Multiple tasks run concurrently.",
             "Returns: JSON object with taskResults[]. Each taskResult includes taskId, summaryText, objects, rawResponse.",
             "connectionId from getEnvironmentOverview.",
             "Flow: callingExplorerSubAgent -> confirm with user -> callingPlannerSubAgent -> confirm -> execute."
     })
     public AgentToolResult callingExplorerSubAgent(
-            @P("JSON array of explorer tasks. Each element: {connectionId: number, instruction: string, context?: string}") String tasksJson,
-            @P(value = "Optional timeout in seconds for each SubAgent. Defaults to configured timeout if not provided.", required = false) Long timeoutSeconds,
+            @P("Explorer task list. Each item: {connectionId: number, instruction: string, context?: string, timeoutSeconds?: number}") List<ExplorerTask> tasks,
+            @P(value = "Optional default timeout in seconds for explorer tasks that do not provide their own timeoutSeconds.", required = false) Long timeoutSeconds,
             InvocationParameters parameters) {
         RequestContextInfo requestContextSnapshot = RequestContext.snapshot();
-        List<ExplorerTask> tasks = parseTasks(tasksJson);
         if (CollectionUtils.isEmpty(tasks)) {
             throw AgentToolExecuteException.invalidInput(
                     ToolNameEnum.CALLING_EXPLORER_SUB_AGENT,
-                    "tasks is required. Provide a JSON array of {connectionId, instruction, context?}."
+                    "tasks is required. Provide a list of {connectionId, instruction, context?}."
             );
         }
+        validateTasks(tasks);
 
         log.info("[Tool] callingExplorerSubAgent start, conversationId={}, parentToolCallId={}, taskCount={}, timeoutSeconds={}, tasks={}",
                 requestContextSnapshot != null ? requestContextSnapshot.getConversationId() : null,
@@ -89,31 +98,18 @@ public class CallingExplorerTool extends SubAgentToolSupport {
         return invokeConcurrent(tasks, timeoutSeconds);
     }
 
-    private List<ExplorerTask> parseTasks(String tasksJson) {
-        if (StringUtils.isBlank(tasksJson)) {
-            return null;
-        }
-        try {
-            return JsonUtil.json2List(tasksJson, ExplorerTask.class);
-        } catch (Exception e) {
-            throw AgentToolExecuteException.invalidInput(
-                    ToolNameEnum.CALLING_EXPLORER_SUB_AGENT,
-                    "tasksJson must be a valid JSON array of {connectionId, instruction, context?}."
-            );
-        }
-    }
-
     private AgentToolResult invokeSingle(ExplorerTask task, Long timeoutSeconds) {
         long startTime = System.currentTimeMillis();
+        long effectiveTimeoutSeconds = resolveTaskTimeoutSeconds(task, timeoutSeconds);
         RequestContextInfo requestContextSnapshot = RequestContext.snapshot();
         AgentRequestContextInfo agentRequestContextSnapshot = AgentRequestContext.snapshot();
         ExplorerTaskResult result = executeTask(
                 task,
-                timeoutSeconds,
+                effectiveTimeoutSeconds,
                 requestContextSnapshot,
                 agentRequestContextSnapshot,
                 AgentExecutionContext.getParentToolCallId(),
-                buildTaskId(requestContextSnapshot)
+                buildTaskId("explore", requestContextSnapshot)
         );
         int objectCount = CollectionUtils.size(result.getObjects());
         log.info("[Tool done] callingExplorerSubAgent single, taskId={}, connectionId={}, status={}, objectCount={}, summaryLength={}, rawResponseLength={}, elapsedMs={}",
@@ -144,9 +140,7 @@ public class CallingExplorerTool extends SubAgentToolSupport {
         RequestContextInfo requestContextSnapshot = RequestContext.snapshot();
         AgentRequestContextInfo agentRequestContextSnapshot = AgentRequestContext.snapshot();
         String parentToolCallId = AgentExecutionContext.getParentToolCallId();
-        long timeout = timeoutSeconds != null && timeoutSeconds > 0
-                ? timeoutSeconds
-                : subAgentManager.getProperties().getExplorer().getTimeoutSeconds();
+        long timeout = resolveConcurrentTimeoutSeconds(tasks, timeoutSeconds);
 
         log.info("[Tool] callingExplorerSubAgent concurrent dispatch, parentToolCallId={}, timeoutSeconds={}, taskCount={}",
                 parentToolCallId,
@@ -162,9 +156,9 @@ public class CallingExplorerTool extends SubAgentToolSupport {
         List<CompletableFuture<ExplorerTaskResult>> futures = IntStream.range(0, tasks.size())
                 .mapToObj(i -> {
                     ExplorerTask task = tasks.get(i);
-                    String taskId = buildTaskId(requestContextSnapshot);
+                    String taskId = buildTaskId("explore", requestContextSnapshot);
                     return CompletableFuture.supplyAsync(() -> executeTask(
-                            task, timeoutSeconds, requestContextSnapshot, agentRequestContextSnapshot, parentToolCallId, taskId));
+                            task, resolveTaskTimeoutSeconds(task, timeoutSeconds), requestContextSnapshot, agentRequestContextSnapshot, parentToolCallId, taskId), explorerExecutor);
                 })
                 .toList();
 
@@ -234,6 +228,49 @@ public class CallingExplorerTool extends SubAgentToolSupport {
         }
     }
 
+    private long resolveTaskTimeoutSeconds(ExplorerTask task, Long defaultTimeoutSeconds) {
+        Long taskTimeoutSeconds = task != null ? task.getTimeoutSeconds() : null;
+        return resolveTimeoutSeconds(taskTimeoutSeconds,
+                resolveTimeoutSeconds(defaultTimeoutSeconds, subAgentManager.getProperties().getExplorer().getTimeoutSeconds()));
+    }
+
+    private long resolveConcurrentTimeoutSeconds(List<ExplorerTask> tasks, Long defaultTimeoutSeconds) {
+        return tasks.stream()
+                .mapToLong(task -> resolveTaskTimeoutSeconds(task, defaultTimeoutSeconds))
+                .max()
+                .orElse(subAgentManager.getProperties().getExplorer().getTimeoutSeconds());
+    }
+
+    private void validateTasks(List<ExplorerTask> tasks) {
+        for (int index = 0; index < tasks.size(); index++) {
+            ExplorerTask task = tasks.get(index);
+            if (task == null) {
+                throw AgentToolExecuteException.invalidInput(
+                        ToolNameEnum.CALLING_EXPLORER_SUB_AGENT,
+                        "tasks[" + index + "] is required."
+                );
+            }
+            if (task.getConnectionId() == null || task.getConnectionId() <= 0) {
+                throw AgentToolExecuteException.invalidInput(
+                        ToolNameEnum.CALLING_EXPLORER_SUB_AGENT,
+                        "tasks[" + index + "].connectionId must be a positive number."
+                );
+            }
+            if (StringUtils.isBlank(task.getInstruction())) {
+                throw AgentToolExecuteException.invalidInput(
+                        ToolNameEnum.CALLING_EXPLORER_SUB_AGENT,
+                        "tasks[" + index + "].instruction is required."
+                );
+            }
+            if (task.getTimeoutSeconds() != null && task.getTimeoutSeconds() <= 0) {
+                throw AgentToolExecuteException.invalidInput(
+                        ToolNameEnum.CALLING_EXPLORER_SUB_AGENT,
+                        "tasks[" + index + "].timeoutSeconds must be a positive number."
+                );
+            }
+        }
+    }
+
     private ExplorerTaskResult executeTask(ExplorerTask task, Long timeoutSeconds,
                                            RequestContextInfo requestContextSnapshot,
                                            AgentRequestContextInfo agentRequestContextSnapshot,
@@ -278,7 +315,8 @@ public class CallingExplorerTool extends SubAgentToolSupport {
             SubAgentRequest request = new SubAgentRequest(
                     task.getInstruction(),
                     List.of(task.getConnectionId()),
-                    task.getContext());
+                    task.getContext(),
+                    timeoutSeconds);
             SchemaSummary summary = subAgentManager.getExplorerSubAgent().invoke(request);
             log.info("[Explorer] task success, taskId={}, connectionId={}, objectCount={}, summaryLength={}, rawResponseLength={}, summaryPreview={}, elapsedMs={}",
                     taskId,
@@ -345,11 +383,6 @@ public class CallingExplorerTool extends SubAgentToolSupport {
         }
     }
 
-    private String buildTaskId(RequestContextInfo requestContextSnapshot) {
-        return "explore-" + (requestContextSnapshot != null ? requestContextSnapshot.getConversationId() : "0")
-                + "-" + UUID.randomUUID().toString().substring(0, 8);
-    }
-
     private String summarizeTasks(List<ExplorerTask> tasks) {
         List<String> summaries = new ArrayList<>();
         for (ExplorerTask task : tasks) {
@@ -373,7 +406,6 @@ public class CallingExplorerTool extends SubAgentToolSupport {
         }
         return summaries.toString();
     }
-
 
     private AgentToolResult buildExplorerAgentResult(List<ExplorerTask> tasks, ExplorerResultEnvelope envelope) {
         String resultJson = JsonUtil.object2json(envelope);
@@ -406,26 +438,9 @@ public class CallingExplorerTool extends SubAgentToolSupport {
         if (failedTasks.isEmpty()) {
             return null;
         }
-        return "Explorer failed for: " + String.join("; ", failedTasks) + ". Ask the user whether to switch connections, narrow the scope, or retry later. Do not continue object discovery until the user replies.";
+        return "Explorer failed for: "
+                + String.join("; ", failedTasks)
+                + ". Ask the user whether to switch connections, narrow the scope, or retry later. Do not continue object discovery until the user replies.";
     }
 
-    private String preview(String value) {
-        if (StringUtils.isBlank(value)) {
-            return null;
-        }
-        return StringUtils.abbreviate(StringUtils.normalizeSpace(value), 160);
-    }
-
-    private Throwable rootCause(Throwable throwable) {
-        Throwable current = throwable;
-        while (current.getCause() != null && current.getCause() != current) {
-            current = current.getCause();
-        }
-        return current;
-    }
-
-    private String rootCauseMessage(Throwable throwable) {
-        Throwable cause = rootCause(throwable);
-        return StringUtils.defaultIfBlank(cause.getMessage(), cause.getClass().getSimpleName());
-    }
 }

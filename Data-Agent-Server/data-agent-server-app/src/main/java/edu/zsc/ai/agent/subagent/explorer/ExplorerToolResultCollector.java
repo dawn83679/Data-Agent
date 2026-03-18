@@ -3,6 +3,7 @@ package edu.zsc.ai.agent.subagent.explorer;
 import com.fasterxml.jackson.core.type.TypeReference;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import edu.zsc.ai.agent.subagent.contract.ExploreObject;
+import edu.zsc.ai.agent.subagent.contract.ExploreObjectScoreSupport;
 import edu.zsc.ai.agent.subagent.contract.SchemaSummary;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.agent.tool.sql.model.NamedObjectDetail;
@@ -20,8 +21,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 @Slf4j
 public class ExplorerToolResultCollector {
-
-    private static final String DEFAULT_RELEVANCE = "HIGH";
 
     private final List<ExploreObject> objects = new CopyOnWriteArrayList<>();
 
@@ -63,6 +62,7 @@ public class ExplorerToolResultCollector {
      */
     public SchemaSummary buildAndClear(String rawResponse) {
         List<ExploreObject> copy = new ArrayList<>(objects);
+        ExploreObjectScoreSupport.normalizeAndSort(copy);
         log.info("[Collector] built SchemaSummary: {} object(s)", copy.size());
         objects.clear();
         return SchemaSummary.builder()
@@ -125,7 +125,7 @@ public class ExplorerToolResultCollector {
                 .objectName(detail.objectName())
                 .objectType(detail.objectType())
                 .objectDdl(detail.detail() != null ? detail.detail().ddl() : null)
-                .relevance(DEFAULT_RELEVANCE)
+                .relevanceScore(ExploreObjectScoreSupport.DEFAULT_RELEVANCE_SCORE)
                 .build();
     }
 

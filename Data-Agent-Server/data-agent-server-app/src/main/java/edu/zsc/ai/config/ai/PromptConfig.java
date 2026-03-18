@@ -23,11 +23,14 @@ public class PromptConfig {
 
     private static Map<String, String> buildPromptCache() {
         Map<String, String> cache = new ConcurrentHashMap<>();
-        String callingRule = loadCallingRule();
+        String callingRule = null;
 
         for (PromptEnum prompt : PromptEnum.values()) {
             String content = loadClassPathResource(prompt.getSystemPromptResource());
             if (content.contains(CALLING_RULE_PLACEHOLDER)) {
+                if (callingRule == null) {
+                    callingRule = loadCallingRule();
+                }
                 content = content.replace(CALLING_RULE_PLACEHOLDER, callingRule);
                 log.info("Injected calling-rule into prompt: {}", prompt.getCode());
             }
@@ -37,12 +40,7 @@ public class PromptConfig {
     }
 
     private static String loadCallingRule() {
-        try {
-            return loadClassPathResource(CALLING_RULE_RESOURCE);
-        } catch (Exception e) {
-            log.warn("calling-rule.md not found, placeholder will remain unresolved");
-            return "";
-        }
+        return loadClassPathResource(CALLING_RULE_RESOURCE);
     }
 
     @SneakyThrows

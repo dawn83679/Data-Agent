@@ -10,9 +10,13 @@ import edu.zsc.ai.config.ai.SubAgentProperties;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.util.JsonUtil;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -22,6 +26,8 @@ class CallingExplorerToolTest {
 
     private ExplorerSubAgent mockExplorer;
     private CallingExplorerTool tool;
+    private ExecutorService executorService;
+    private Executor explorerExecutor;
 
     @BeforeEach
     void setUp() {
@@ -29,7 +35,14 @@ class CallingExplorerToolTest {
         PlannerSubAgent mockPlanner = mock(PlannerSubAgent.class);
         SubAgentProperties properties = new SubAgentProperties();
         SubAgentManager subAgentManager = new SubAgentManager(mockExplorer, mockPlanner, properties);
-        tool = new CallingExplorerTool(subAgentManager);
+        executorService = Executors.newFixedThreadPool(3);
+        explorerExecutor = executorService;
+        tool = new CallingExplorerTool(subAgentManager, explorerExecutor);
+    }
+
+    @AfterEach
+    void tearDown() {
+        executorService.shutdownNow();
     }
 
     private SchemaSummary buildTestSchema(String tableName) {
@@ -42,7 +55,7 @@ class CallingExplorerToolTest {
                                 .objectName(tableName)
                                 .objectType("TABLE")
                                 .objectDdl("CREATE TABLE " + tableName + " (id int8)")
-                                .relevance("HIGH")
+                                .relevanceScore(90)
                                 .build()
                 ))
                 .rawResponse("explored " + tableName)
@@ -53,8 +66,8 @@ class CallingExplorerToolTest {
     void singleTask_invokesExplorer() {
         when(mockExplorer.invoke(any(SubAgentRequest.class))).thenReturn(buildTestSchema("users"));
 
-        String tasksJson = "[{\"connectionId\":1,\"instruction\":\"explore all tables\"}]";
-        AgentToolResult result = tool.callingExplorerSubAgent(tasksJson, null, null);
+        List<ExplorerTask> tasks = List.of(new ExplorerTask(1L, "explore all tables", null, null));
+        AgentToolResult result = tool.callingExplorerSubAgent(tasks, null, null);
 
         assertTrue(result.isSuccess());
         assertEquals("ok", result.getMessage());
@@ -77,9 +90,18 @@ class CallingExplorerToolTest {
     void emptyArray_fails() {
         AgentToolExecuteException exception = assertThrows(
                 AgentToolExecuteException.class,
-                () -> tool.callingExplorerSubAgent("[]", null, null)
+                () -> tool.callingExplorerSubAgent(List.of(), null, null)
         );
         assertTrue(exception.getMessageForModel().contains("tasks is required"));
+    }
+
+    @Test
+    void invalidTask_failsFast() {
+        AgentToolExecuteException exception = assertThrows(
+                AgentToolExecuteException.class,
+                () -> tool.callingExplorerSubAgent(List.of(new ExplorerTask(null, "explore", null, null)), null, null)
+        );
+        assertTrue(exception.getMessageForModel().contains("connectionId"));
     }
 
     @Test
@@ -88,8 +110,11 @@ class CallingExplorerToolTest {
                 .thenReturn(buildTestSchema("users"))
                 .thenReturn(buildTestSchema("orders"));
 
-        String tasksJson = "[{\"connectionId\":1,\"instruction\":\"explore users\"},{\"connectionId\":2,\"instruction\":\"explore orders\"}]";
-        AgentToolResult result = tool.callingExplorerSubAgent(tasksJson, null, null);
+        List<ExplorerTask> tasks = List.of(
+                new ExplorerTask(1L, "explore users", null, null),
+                new ExplorerTask(2L, "explore orders", null, null)
+        );
+        AgentToolResult result = tool.callingExplorerSubAgent(tasks, null, null);
 
         assertTrue(result.isSuccess());
         verify(mockExplorer, times(2)).invoke(any(SubAgentRequest.class));
@@ -101,8 +126,11 @@ class CallingExplorerToolTest {
                 .thenReturn(buildTestSchema("users"))
                 .thenReturn(buildTestSchema("orders"));
 
-        String tasksJson = "[{\"connectionId\":1,\"instruction\":\"explore users\"},{\"connectionId\":2,\"instruction\":\"explore orders\"}]";
-        AgentToolResult result = tool.callingExplorerSubAgent(tasksJson, null, null);
+        List<ExplorerTask> tasks = List.of(
+                new ExplorerTask(1L, "explore users", null, null),
+                new ExplorerTask(2L, "explore orders", null, null)
+        );
+        AgentToolResult result = tool.callingExplorerSubAgent(tasks, null, null);
 
         assertTrue(result.isSuccess());
         ExplorerResultEnvelope envelope = JsonUtil.json2Object((String) result.getResult(), ExplorerResultEnvelope.class);
@@ -120,8 +148,11 @@ class CallingExplorerToolTest {
                 .thenReturn(buildTestSchema("users"))
                 .thenThrow(new RuntimeException("connection timeout"));
 
-        String tasksJson = "[{\"connectionId\":1,\"instruction\":\"explore users\"},{\"connectionId\":2,\"instruction\":\"explore orders\"}]";
-        AgentToolResult result = tool.callingExplorerSubAgent(tasksJson, null, null);
+        List<ExplorerTask> tasks = List.of(
+                new ExplorerTask(1L, "explore users", null, null),
+                new ExplorerTask(2L, "explore orders", null, null)
+        );
+        AgentToolResult result = tool.callingExplorerSubAgent(tasks, null, null);
 
         assertTrue(result.isSuccess());
         assertTrue(result.getMessage().contains("Explorer failed for: connectionId=2 (connection timeout)"));
@@ -138,8 +169,8 @@ class CallingExplorerToolTest {
     void singleTask_failure_returnsBlockingMessage() {
         when(mockExplorer.invoke(any(SubAgentRequest.class))).thenThrow(new RuntimeException("connection timeout"));
 
-        String tasksJson = "[{\"connectionId\":2,\"instruction\":\"explore orders\"}]";
-        AgentToolResult result = tool.callingExplorerSubAgent(tasksJson, null, null);
+        List<ExplorerTask> tasks = List.of(new ExplorerTask(2L, "explore orders", null, null));
+        AgentToolResult result = tool.callingExplorerSubAgent(tasks, null, null);
 
         assertTrue(result.isSuccess());
         assertTrue(result.getMessage().contains("Explorer failed for: connectionId=2 (connection timeout)"));
@@ -157,9 +188,24 @@ class CallingExplorerToolTest {
             return buildTestSchema("users");
         });
 
-        String tasksJson = "[{\"connectionId\":1,\"instruction\":\"retry\",\"context\":\"previous error\"}]";
-        tool.callingExplorerSubAgent(tasksJson, null, null);
+        List<ExplorerTask> tasks = List.of(new ExplorerTask(1L, "retry", "previous error", null));
+        tool.callingExplorerSubAgent(tasks, null, null);
 
+        verify(mockExplorer).invoke(any(SubAgentRequest.class));
+    }
+
+    @Test
+    void taskTimeoutOverridesDefaultTimeout() {
+        when(mockExplorer.invoke(any(SubAgentRequest.class))).thenAnswer(invocation -> {
+            SubAgentRequest request = invocation.getArgument(0);
+            assertEquals(45L, request.timeoutSeconds());
+            return buildTestSchema("users");
+        });
+
+        List<ExplorerTask> tasks = List.of(new ExplorerTask(1L, "retry", null, 45L));
+        AgentToolResult result = tool.callingExplorerSubAgent(tasks, 120L, null);
+
+        assertTrue(result.isSuccess());
         verify(mockExplorer).invoke(any(SubAgentRequest.class));
     }
 }

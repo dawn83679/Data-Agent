@@ -2,6 +2,7 @@ package edu.zsc.ai.agent.subagent.planner;
 
 import dev.langchain4j.invocation.InvocationParameters;
 import dev.langchain4j.service.TokenStream;
+import edu.zsc.ai.agent.subagent.AbstractSubAgent;
 import edu.zsc.ai.agent.subagent.SubAgent;
 import edu.zsc.ai.agent.subagent.SubAgentObservabilityListener;
 import edu.zsc.ai.agent.subagent.SubAgentStreamBridge;
@@ -9,7 +10,6 @@ import edu.zsc.ai.agent.subagent.contract.ExploreObject;
 import edu.zsc.ai.agent.subagent.contract.PlannerRequest;
 import edu.zsc.ai.agent.subagent.contract.SchemaSummary;
 import edu.zsc.ai.agent.subagent.contract.SqlPlan;
-import edu.zsc.ai.common.constant.InvocationContextConstant;
 import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
 import edu.zsc.ai.common.enums.ai.PromptEnum;
 import edu.zsc.ai.config.ai.SubAgentFactory;
@@ -30,9 +30,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Sinks;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -46,7 +43,7 @@ import java.util.concurrent.TimeoutException;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class PlannerSubAgent implements SubAgent<PlannerRequest, SqlPlan> {
+public class PlannerSubAgent extends AbstractSubAgent<PlannerRequest, SqlPlan> implements SubAgent<PlannerRequest, SqlPlan> {
 
     private final SubAgentFactory subAgentFactory;
     private final SubAgentProperties properties;
@@ -61,16 +58,17 @@ public class PlannerSubAgent implements SubAgent<PlannerRequest, SqlPlan> {
     @Override
     public SqlPlan invoke(PlannerRequest request) {
         long startTime = System.currentTimeMillis();
+        long timeoutSeconds = resolveTimeoutSeconds(request.getTimeoutSeconds(), properties.getPlanner().getTimeoutSeconds());
         Long conversationId = resolveConversationId();
         RequestContextInfo requestContextSnapshot = RequestContext.snapshot();
         String parentToolCallId = AgentExecutionContext.getParentToolCallId();
         String taskId = AgentExecutionContext.getTaskId();
-        String modelName = resolveModelName();
+        String modelName = resolveModelName(log);
         SchemaSummary schemaSummary = request.getSchemaSummary();
 
         // SSE progress emitter (replaces AgentListener-based observability)
         SubAgentObservabilityListener observer = new SubAgentObservabilityListener(
-                AgentTypeEnum.PLANNER, conversationId, sseEmitterRegistry, null, taskId, parentToolCallId);
+                AgentTypeEnum.PLANNER, conversationId, sseEmitterRegistry, null, taskId, parentToolCallId, null, timeoutSeconds);
         log.info("[Planner] invoke start, conversationId={}, taskId={}, parentToolCallId={}, modelName={}, hasRequestContext={}, hasAgentContext={}, instructionLength={}, objectCount={}, rawResponsePresent={}, instructionPreview={}, objectPreview={}",
                 requestContextSnapshot != null ? requestContextSnapshot.getConversationId() : conversationId,
                 taskId,
@@ -107,9 +105,7 @@ public class PlannerSubAgent implements SubAgent<PlannerRequest, SqlPlan> {
             PlannerAgentService agentService = subAgentFactory.buildPlannerAgent(
                     modelName, systemPrompt);
 
-            HashMap<String, Object> invocationContext = new HashMap<>(RequestContext.toMap());
-            invocationContext.putAll(AgentRequestContext.toMap());
-            invocationContext.put(InvocationContextConstant.AGENT_TYPE, AgentTypeEnum.PLANNER.getCode());
+            java.util.Map<String, Object> invocationContext = createInvocationContext(AgentTypeEnum.PLANNER);
             log.info("[Planner] schema summary serialized, taskId={}, objectCount={}, ddlObjectCount={}, summaryLength={}, rawResponseLength={}, objectPreview={}",
                     taskId,
                     schemaSummary != null ? CollectionUtils.size(schemaSummary.getObjects()) : 0,
@@ -140,12 +136,12 @@ public class PlannerSubAgent implements SubAgent<PlannerRequest, SqlPlan> {
                     conversationId,
                     taskId,
                     parentToolCallId,
-                    properties.getPlanner().getTimeoutSeconds());
+                    timeoutSeconds);
             SubAgentDebugWriter.append("PlannerSubAgent", "token_stream_start", SubAgentDebugWriter.fields(
                     "taskId", taskId,
                     "conversationId", conversationId,
                     "parentToolCallId", parentToolCallId,
-                    "timeoutSeconds", properties.getPlanner().getTimeoutSeconds()
+                    "timeoutSeconds", timeoutSeconds
             ));
 
             StringBuilder fullResponse = new StringBuilder();
@@ -160,12 +156,12 @@ public class PlannerSubAgent implements SubAgent<PlannerRequest, SqlPlan> {
 
             String responseText;
             try {
-                responseText = future.get(properties.getPlanner().getTimeoutSeconds(), TimeUnit.SECONDS);
+                responseText = future.get(timeoutSeconds, TimeUnit.SECONDS);
             } catch (TimeoutException e) {
                 log.warn("[Planner] timeout, conversationId={}, taskId={}, timeoutSeconds={}, partialResponseLength={}, partialResponsePreview={}, elapsedMs={}",
                         conversationId,
                         taskId,
-                        properties.getPlanner().getTimeoutSeconds(),
+                        timeoutSeconds,
                         fullResponse.length(),
                         preview(fullResponse.toString()),
                         System.currentTimeMillis() - startTime,
@@ -173,7 +169,7 @@ public class PlannerSubAgent implements SubAgent<PlannerRequest, SqlPlan> {
                 SubAgentDebugWriter.append("PlannerSubAgent", "timeout", SubAgentDebugWriter.fields(
                         "taskId", taskId,
                         "conversationId", conversationId,
-                        "timeoutSeconds", properties.getPlanner().getTimeoutSeconds(),
+                        "timeoutSeconds", timeoutSeconds,
                         "partialResponseLength", fullResponse.length(),
                         "partialResponsePreview", preview(fullResponse.toString()),
                         "elapsedMs", System.currentTimeMillis() - startTime
@@ -284,8 +280,8 @@ public class PlannerSubAgent implements SubAgent<PlannerRequest, SqlPlan> {
                 if (StringUtils.isNotBlank(object.getObjectType())) {
                     sb.append(" [").append(object.getObjectType()).append("]");
                 }
-                if (StringUtils.isNotBlank(object.getRelevance())) {
-                    sb.append(" {relevance=").append(object.getRelevance()).append("}");
+                if (object.getRelevanceScore() != null) {
+                    sb.append(" {relevanceScore=").append(object.getRelevanceScore()).append("}");
                 }
                 sb.append("\n");
 
@@ -312,24 +308,6 @@ public class PlannerSubAgent implements SubAgent<PlannerRequest, SqlPlan> {
         return sb.toString();
     }
 
-    private Long resolveConversationId() {
-        try {
-            Long id = RequestContext.getConversationId();
-            return id != null ? id : 0L;
-        } catch (Exception e) {
-            return 0L;
-        }
-    }
-
-    private String resolveModelName() {
-        String modelName = AgentRequestContext.getModelName();
-        if (StringUtils.isNotBlank(modelName)) {
-            return modelName;
-        }
-        log.warn("No modelName in AgentRequestContext, falling back to default");
-        return "qwen3-max";
-    }
-
     private int countDdlObjects(SchemaSummary summary) {
         if (summary == null || CollectionUtils.isEmpty(summary.getObjects())) {
             return 0;
@@ -337,50 +315,5 @@ public class PlannerSubAgent implements SubAgent<PlannerRequest, SqlPlan> {
         return (int) summary.getObjects().stream()
                 .filter(object -> StringUtils.isNotBlank(object.getObjectDdl()))
                 .count();
-    }
-
-    private String summarizeObjects(List<ExploreObject> objects) {
-        if (CollectionUtils.isEmpty(objects)) {
-            return "[]";
-        }
-        List<String> names = new ArrayList<>();
-        for (ExploreObject object : objects.stream().limit(3).toList()) {
-            names.add(qualifiedName(object));
-        }
-        return names.toString();
-    }
-
-    private String qualifiedName(ExploreObject object) {
-        List<String> parts = new ArrayList<>();
-        if (StringUtils.isNotBlank(object.getCatalog())) {
-            parts.add(object.getCatalog());
-        }
-        if (StringUtils.isNotBlank(object.getSchema())) {
-            parts.add(object.getSchema());
-        }
-        if (StringUtils.isNotBlank(object.getObjectName())) {
-            parts.add(object.getObjectName());
-        }
-        return String.join(".", parts);
-    }
-
-    private String preview(String value) {
-        if (StringUtils.isBlank(value)) {
-            return null;
-        }
-        return StringUtils.abbreviate(StringUtils.normalizeSpace(value), 160);
-    }
-
-    private Throwable rootCause(Throwable throwable) {
-        Throwable current = throwable;
-        while (current.getCause() != null && current.getCause() != current) {
-            current = current.getCause();
-        }
-        return current;
-    }
-
-    private String rootCauseMessage(Throwable throwable) {
-        Throwable cause = rootCause(throwable);
-        return StringUtils.defaultIfBlank(cause.getMessage(), cause.getClass().getSimpleName());
     }
 }

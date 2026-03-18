@@ -6,7 +6,8 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Externalized configuration for SubAgents.
- * Each SubAgent (Explorer, Planner) can have its own model, timeout, and loop limits.
+ * Explorer and Planner have independent timeout settings.
+ * Explorer dispatch additionally exposes bounded concurrency settings.
  *
  * Example application.yml:
  * <pre>
@@ -14,10 +15,12 @@ import org.springframework.context.annotation.Configuration;
  *   sub-agent:
  *     explorer:
  *       timeout-seconds: 120
+ *       dispatch:
+ *         max-concurrency: 3
+ *         queue-capacity: 9
  *     planner:
  *       timeout-seconds: 180
  *     max-explorer-loop: 3
- *     concurrent-timeout-seconds: 300
  * </pre>
  */
 @Data
@@ -25,30 +28,35 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "agent.sub-agent")
 public class SubAgentProperties {
 
-    private AgentConfig explorer = new AgentConfig(120, 8000);
-    private AgentConfig planner = new AgentConfig(180, 16000);
+    private ExplorerConfig explorer = new ExplorerConfig();
+    private AgentConfig planner = new AgentConfig(180);
     private int maxExplorerLoop = 3;
-    /** Total token budget across all SubAgent calls within a single request */
-    private int totalMaxTokens = 50000;
+
+    @Data
+    public static class ExplorerConfig extends AgentConfig {
+        private DispatchConfig dispatch = new DispatchConfig();
+
+        public ExplorerConfig() {
+            super(120);
+        }
+    }
 
     @Data
     public static class AgentConfig {
         private long timeoutSeconds;
-        /** Per-SubAgent token budget (estimated tokens); 0 = unlimited */
-        private int maxTokens;
 
         public AgentConfig() {
             this.timeoutSeconds = 120;
-            this.maxTokens = 8000;
         }
 
         public AgentConfig(long timeoutSeconds) {
-            this(timeoutSeconds, 8000);
-        }
-
-        public AgentConfig(long timeoutSeconds, int maxTokens) {
             this.timeoutSeconds = timeoutSeconds;
-            this.maxTokens = maxTokens;
         }
+    }
+
+    @Data
+    public static class DispatchConfig {
+        private int maxConcurrency = 3;
+        private int queueCapacity = 9;
     }
 }

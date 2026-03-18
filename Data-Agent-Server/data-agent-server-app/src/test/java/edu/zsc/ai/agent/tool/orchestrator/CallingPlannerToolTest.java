@@ -32,7 +32,7 @@ class CallingPlannerToolTest {
         mockPlanner = mock(PlannerSubAgent.class);
         SubAgentProperties properties = new SubAgentProperties();
         SubAgentManager subAgentManager = new SubAgentManager(mockExplorer, mockPlanner, properties);
-        tool = new CallingPlannerTool(subAgentManager);
+        tool = new CallingPlannerTool(subAgentManager, new DefaultSchemaSummaryResolver());
     }
 
     @AfterEach
@@ -50,7 +50,7 @@ class CallingPlannerToolTest {
                                 .objectName("users")
                                 .objectType("TABLE")
                                 .objectDdl("CREATE TABLE users (id int8)")
-                                .relevance("HIGH")
+                                .relevanceScore(90)
                                 .build()
                 ))
                 .rawResponse("users object found")
@@ -74,7 +74,7 @@ class CallingPlannerToolTest {
 
         String schemaJson = JsonUtil.object2json(buildTestSchema());
         AgentToolResult result = tool.callingPlannerSubAgent(
-                "generate revenue query", schemaJson, null);
+                "generate revenue query", schemaJson, null, null);
 
         assertTrue(result.isSuccess());
         verify(mockPlanner).invoke(any(PlannerRequest.class));
@@ -84,7 +84,7 @@ class CallingPlannerToolTest {
     void missingSchemaSummary_fails() {
         AgentToolExecuteException exception = assertThrows(
                 AgentToolExecuteException.class,
-                () -> tool.callingPlannerSubAgent("generate query", null, null)
+                () -> tool.callingPlannerSubAgent("generate query", null, null, null)
         );
         assertTrue(exception.getMessageForModel().contains("schemaSummaryJson"));
     }
@@ -93,7 +93,7 @@ class CallingPlannerToolTest {
     void invalidSchemaJson_fails() {
         AgentToolExecuteException exception = assertThrows(
                 AgentToolExecuteException.class,
-                () -> tool.callingPlannerSubAgent("generate query", "invalid json{{{", null)
+                () -> tool.callingPlannerSubAgent("generate query", "invalid json{{{", null, null)
         );
         assertTrue(exception.getMessageForModel().contains("parse"));
     }
@@ -115,7 +115,7 @@ class CallingPlannerToolTest {
 
         String schemaJson = JsonUtil.object2json(buildTestSchema());
         AgentToolResult result = tool.callingPlannerSubAgent(
-                "calculate total revenue", schemaJson, null);
+                "calculate total revenue", schemaJson, null, null);
 
         assertTrue(result.isSuccess());
         String resultText = (String) result.getResult();
@@ -145,7 +145,7 @@ class CallingPlannerToolTest {
         String schemaJson = JsonUtil.object2json(buildTestSchema());
         tool.callingPlannerSubAgent(
                 "optimize: SELECT * FROM old. DDL: CREATE TABLE old (id int). Index: idx_old_id",
-                schemaJson, null);
+                schemaJson, null, null);
 
         verify(mockPlanner).invoke(any(PlannerRequest.class));
     }
@@ -179,6 +179,7 @@ class CallingPlannerToolTest {
         AgentToolResult result = tool.callingPlannerSubAgent(
                 "generate query",
                 JsonUtil.object2json(envelope),
+                null,
                 null);
 
         assertTrue(result.isSuccess());
@@ -227,6 +228,7 @@ class CallingPlannerToolTest {
         AgentToolResult result = tool.callingPlannerSubAgent(
                 "generate query",
                 JsonUtil.object2json(envelope),
+                null,
                 null);
 
         assertTrue(result.isSuccess());
@@ -263,10 +265,41 @@ class CallingPlannerToolTest {
         AgentToolResult result = tool.callingPlannerSubAgent(
                 "generate query",
                 schemaJson,
+                null,
                 null);
 
         assertTrue(result.isSuccess());
         assertNull(AgentExecutionContext.getTaskId());
+        verify(mockPlanner).invoke(any(PlannerRequest.class));
+    }
+
+    @Test
+    void plannerTimeout_isPassedToRequest() {
+        SqlPlan plan = SqlPlan.builder()
+                .summaryText("Query users.")
+                .sqlBlocks(List.of(
+                        SqlPlanBlock.builder()
+                                .title("Final SQL")
+                                .sql("SELECT * FROM users")
+                                .kind(SqlPlanBlockKind.FINAL)
+                                .build()
+                ))
+                .rawResponse("Use the users table directly.")
+                .build();
+        when(mockPlanner.invoke(any(PlannerRequest.class))).thenAnswer(invocation -> {
+            PlannerRequest request = invocation.getArgument(0);
+            assertEquals(75L, request.getTimeoutSeconds());
+            return plan;
+        });
+
+        String schemaJson = JsonUtil.object2json(buildTestSchema());
+        AgentToolResult result = tool.callingPlannerSubAgent(
+                "generate query",
+                schemaJson,
+                75L,
+                null);
+
+        assertTrue(result.isSuccess());
         verify(mockPlanner).invoke(any(PlannerRequest.class));
     }
 }

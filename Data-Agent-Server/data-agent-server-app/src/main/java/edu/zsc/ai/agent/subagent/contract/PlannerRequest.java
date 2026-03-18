@@ -12,4 +12,5 @@ import lombok.Data;
 public class PlannerRequest {
     private String instruction;
     private SchemaSummary schemaSummary;
+    private Long timeoutSeconds;
 }

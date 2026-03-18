@@ -32,4 +32,14 @@ class PromptConfigTest {
         assertFalse(content.contains("{{CALLING_RULE}}"),
                 "Planner prompt should not have unreplaced placeholders");
     }
+
+    @Test
+    void explorerPrompt_mentionsRelevanceScoreThresholds() {
+        String content = PromptConfig.getPrompt(PromptEnum.EXPLORER);
+        assertTrue(content.contains("relevanceScore"));
+        assertTrue(content.contains("0-100"));
+        assertTrue(content.contains("80-100"));
+        assertTrue(content.contains("50-79"));
+        assertTrue(content.contains("0-49"));
+    }
 }

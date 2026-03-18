@@ -28,6 +28,7 @@ public class SubAgentObservabilityListener {
     private final String taskId;
     private final String parentToolCallId;
     private final Long connectionId;
+    private final Long timeoutSeconds;
 
     // Tool usage tracking
     private final AgentToolTracker toolTracker = new AgentToolTracker();
@@ -85,6 +86,17 @@ public class SubAgentObservabilityListener {
                                          String taskId,
                                          String parentToolCallId,
                                          Long connectionId) {
+        this(agentType, conversationId, sseEmitterRegistry, onToolExecutedCallback, taskId, parentToolCallId, connectionId, null);
+    }
+
+    public SubAgentObservabilityListener(AgentTypeEnum agentType,
+                                         Long conversationId,
+                                         SseEmitterRegistry sseEmitterRegistry,
+                                         BiConsumer<String, Object> onToolExecutedCallback,
+                                         String taskId,
+                                         String parentToolCallId,
+                                         Long connectionId,
+                                         Long timeoutSeconds) {
         this.agentType = agentType;
         this.conversationId = conversationId;
         this.sseEmitterRegistry = sseEmitterRegistry;
@@ -92,6 +104,7 @@ public class SubAgentObservabilityListener {
         this.taskId = taskId;
         this.parentToolCallId = parentToolCallId;
         this.connectionId = connectionId;
+        this.timeoutSeconds = timeoutSeconds;
         this.traceId = "conv-" + conversationId + "-" + System.currentTimeMillis();
     }
 
@@ -100,7 +113,7 @@ public class SubAgentObservabilityListener {
      */
     public void emitStart() {
         invocationStartMs = System.currentTimeMillis();
-        emitSubAgentBlock(ChatResponseBlock.subAgentStart(agentType.getCode(), parentToolCallId, taskId, connectionId));
+        emitSubAgentBlock(ChatResponseBlock.subAgentStart(agentType.getCode(), parentToolCallId, taskId, connectionId, timeoutSeconds));
         log.debug("SubAgent [{}] invocation started, traceId={}", agentType.getCode(), traceId);
     }
 
@@ -130,7 +143,7 @@ public class SubAgentObservabilityListener {
 
         emitSubAgentBlock(ChatResponseBlock.subAgentComplete(
                 agentType.getCode(), parentToolCallId, taskId,
-                toolTracker.getTotalCount(), toolTracker.getToolCounts(), summaryText, resultJson, connectionId));
+                toolTracker.getTotalCount(), toolTracker.getToolCounts(), summaryText, resultJson, connectionId, timeoutSeconds));
         log.info("SubAgent [{}] completed: duration={}ms, {} tool calls, traceId={}, spanId={}",
                 agentType.getCode(), durationMs, toolTracker.getTotalCount(), traceId, span.spanId());
     }
@@ -156,7 +169,7 @@ public class SubAgentObservabilityListener {
         );
         spans.add(span);
 
-        emitSubAgentBlock(ChatResponseBlock.subAgentError(agentType.getCode(), errorMsg, parentToolCallId, taskId, connectionId));
+        emitSubAgentBlock(ChatResponseBlock.subAgentError(agentType.getCode(), errorMsg, parentToolCallId, taskId, connectionId, timeoutSeconds));
         log.error("SubAgent [{}] failed: duration={}ms, error={}, traceId={}",
                 agentType.getCode(), durationMs, errorMsg, traceId);
     }

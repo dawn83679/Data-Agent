@@ -44,7 +44,6 @@ public class MiniMaxModelConfig implements ChatModelProvider {
                 .modelName(miniMaxProperties.getModelName())
                 .defaultRequestParameters(OpenAiChatRequestParameters.builder()
                         .temperature(params.getTemperature())
-                        .maxOutputTokens(params.getMaxToken())
                         .build())
                 .build();
     }
@@ -57,7 +56,6 @@ public class MiniMaxModelConfig implements ChatModelProvider {
                 .modelName(miniMaxProperties.getModelName())
                 .defaultRequestParameters(OpenAiChatRequestParameters.builder()
                         .temperature(params.getTemperature())
-                        .maxOutputTokens(params.getMaxToken())
                         .build())
                 .build();
     }

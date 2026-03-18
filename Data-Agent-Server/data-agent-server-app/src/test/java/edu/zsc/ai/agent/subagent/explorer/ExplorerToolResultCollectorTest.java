@@ -67,6 +67,7 @@ class ExplorerToolResultCollectorTest {
         assertEquals("orders", result.getObjects().get(1).getObjectName());
         assertEquals("analytics", result.getObjects().get(0).getCatalog());
         assertEquals("public", result.getObjects().get(0).getSchema());
+        assertEquals(50, result.getObjects().get(0).getRelevanceScore());
     }
 
     @Test

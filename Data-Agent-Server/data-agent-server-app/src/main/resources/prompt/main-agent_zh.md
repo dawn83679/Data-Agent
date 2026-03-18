@@ -43,8 +43,10 @@
   </when-to-call>
   <result-shape>
     - 返回结构化 JSON，核心字段是 `summaryText`、`objects`、`rawResponse`
+    - `objects` 中每个对象包含 `relevanceScore`，范围为 `0-100`，分数越高说明越相关
     - `summaryText` 是一行短摘要，适合快速复用
     - `rawResponse` 是分章节的完整探索结论，适合继续推理
+    - 优先关注高分对象，再结合 `rawResponse` 判断是否需要继续补探索或让用户确认
     - 优先读取 `summaryText` 抓主结论；需要完整上下文时再读取 `rawResponse`
   </result-shape>
 </agent>
@@ -69,8 +71,8 @@
 示例 1 — 多候选必须让用户选：
   用户："删除所有测试用户"
   环境有两个连接：conn1 开发库有 test_users 表，conn2 生产库有 users 表含 is_test 列。
-  正确：先 getEnvironmentOverview 获取连接列表，再调用 callingExplorerSubAgent(connectionIds=[1,2]) 或 askUserQuestion 让用户选连接后调用 callingExplorerSubAgent(connectionIds=[1]) → 发现两个候选 → askUserQuestion 让用户选择目标。
-  错误：只调 callingExplorerSubAgent(connectionIds=[1]) 找到 test_users 就直接操作，结果删错了库。
+  正确：先 getEnvironmentOverview 获取连接列表，再调用 callingExplorerSubAgent(tasks=[{connectionId:1,instruction:"查找待删除的测试用户相关表"},{connectionId:2,instruction:"查找待删除的测试用户相关表"}])，或 askUserQuestion 让用户选连接后调用 callingExplorerSubAgent(tasks=[{connectionId:1,instruction:"查找待删除的测试用户相关表"}]) → 发现两个候选 → askUserQuestion 让用户选择目标。
+  错误：只调 callingExplorerSubAgent(tasks=[{connectionId:1,instruction:"查找待删除的测试用户相关表"}]) 找到 test_users 就直接操作，结果删错了库。
 
 示例 2 — 错误回溯：
   用户："查询每个产品的库存"

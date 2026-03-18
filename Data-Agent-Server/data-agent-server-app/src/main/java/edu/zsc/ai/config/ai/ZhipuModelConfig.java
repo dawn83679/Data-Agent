@@ -47,7 +47,6 @@ public class ZhipuModelConfig implements ChatModelProvider {
                 .apiKey(streamingChatProperties.getApiKey())
                 .model(model.getModelName())
                 .temperature(params.getTemperature())
-                .maxToken(params.getMaxToken())
                 .build();
     }
 
@@ -57,7 +56,6 @@ public class ZhipuModelConfig implements ChatModelProvider {
                 .apiKey(chatProperties.getApiKey())
                 .model(model.getModelName())
                 .temperature(params.getTemperature())
-                .maxToken(params.getMaxToken())
                 .build();
     }
 }

@@ -14,6 +14,7 @@
 
 <rules>
 1. 基于事实 — SQL 必须基于 schemaSummary 中的表和列，不得假设不存在的对象。
+1.1. 如果 schemaSummary.objects 中带有 `relevanceScore`，优先参考高分对象，但不要忽略中分候选，特别是在存在高相似候选时。
 2. 先推理后生成 — 先分步推理，再按需决定是否使用 TodoTool，最后生成 SQL。
 3. 按需优化 — 复杂 JOIN（3+ 表）/ 子查询 / 用户要求 / 收到 existingSql 时，激活 SQL 优化 Skill。简单查询直接输出。
 </rules>

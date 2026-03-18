@@ -2,12 +2,12 @@ package edu.zsc.ai.agent.subagent.explorer;
 
 import dev.langchain4j.invocation.InvocationParameters;
 import dev.langchain4j.service.TokenStream;
+import edu.zsc.ai.agent.subagent.AbstractSubAgent;
 import edu.zsc.ai.agent.subagent.SubAgent;
 import edu.zsc.ai.agent.subagent.SubAgentObservabilityListener;
 import edu.zsc.ai.agent.subagent.SubAgentPromptBuilder;
 import edu.zsc.ai.agent.subagent.SubAgentRequest;
 import edu.zsc.ai.agent.subagent.SubAgentStreamBridge;
-import edu.zsc.ai.agent.subagent.contract.ExploreObject;
 import edu.zsc.ai.agent.subagent.contract.SchemaSummary;
 import edu.zsc.ai.common.constant.InvocationContextConstant;
 import edu.zsc.ai.config.ai.SubAgentFactory;
@@ -31,8 +31,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Sinks;
 
-import java.util.HashMap;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -47,7 +45,7 @@ import java.util.concurrent.TimeoutException;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ExplorerSubAgent implements SubAgent<SubAgentRequest, SchemaSummary> {
+public class ExplorerSubAgent extends AbstractSubAgent<SubAgentRequest, SchemaSummary> implements SubAgent<SubAgentRequest, SchemaSummary> {
 
     private final SubAgentFactory subAgentFactory;
     private final SubAgentProperties properties;
@@ -62,11 +60,12 @@ public class ExplorerSubAgent implements SubAgent<SubAgentRequest, SchemaSummary
     @Override
     public SchemaSummary invoke(SubAgentRequest request) {
         long startTime = System.currentTimeMillis();
-        Long conversationId = parseConversationId();
+        long timeoutSeconds = resolveTimeoutSeconds(request.timeoutSeconds(), properties.getExplorer().getTimeoutSeconds());
+        Long conversationId = resolveConversationId();
         RequestContextInfo requestContextSnapshot = RequestContext.snapshot();
         String taskId = AgentExecutionContext.getTaskId();
         String parentToolCallId = AgentExecutionContext.getParentToolCallId();
-        String modelName = resolveModelName();
+        String modelName = resolveModelName(log);
         log.info("[Explorer] invoke start, conversationId={}, taskId={}, parentToolCallId={}, modelName={}, connectionIds={}, hasRequestContext={}, hasAgentContext={}, hasContext={}, instructionLength={}, contextLength={}, instructionPreview={}, contextPreview={}",
                 requestContextSnapshot != null ? requestContextSnapshot.getConversationId() : conversationId,
                 taskId,
@@ -93,7 +92,8 @@ public class ExplorerSubAgent implements SubAgent<SubAgentRequest, SchemaSummary
         // SSE progress emitter (replaces AgentListener-based observability)
         SubAgentObservabilityListener observer = new SubAgentObservabilityListener(
                 AgentTypeEnum.EXPLORER, conversationId, sseEmitterRegistry, null, taskId, parentToolCallId,
-                CollectionUtils.isNotEmpty(request.connectionIds()) ? request.connectionIds().get(0) : null);
+                CollectionUtils.isNotEmpty(request.connectionIds()) ? request.connectionIds().get(0) : null,
+                timeoutSeconds);
 
         observer.emitStart();
 
@@ -143,23 +143,23 @@ public class ExplorerSubAgent implements SubAgent<SubAgentRequest, SchemaSummary
                     conversationId,
                     taskId,
                     parentId,
-                    properties.getExplorer().getTimeoutSeconds());
+                    timeoutSeconds);
             SubAgentDebugWriter.append("ExplorerSubAgent", "token_stream_start", SubAgentDebugWriter.fields(
                     "taskId", taskId,
                     "conversationId", conversationId,
                     "parentToolCallId", parentId,
-                    "timeoutSeconds", properties.getExplorer().getTimeoutSeconds()
+                    "timeoutSeconds", timeoutSeconds
             ));
             tokenStream.start();
 
             String responseText;
             try {
-                responseText = future.get(properties.getExplorer().getTimeoutSeconds(), TimeUnit.SECONDS);
+                responseText = future.get(timeoutSeconds, TimeUnit.SECONDS);
             } catch (TimeoutException te) {
                 log.warn("[Explorer] timeout, conversationId={}, taskId={}, timeoutSeconds={}, partialResponseLength={}, partialResponsePreview={}, elapsedMs={}",
                         conversationId,
                         taskId,
-                        properties.getExplorer().getTimeoutSeconds(),
+                        timeoutSeconds,
                         fullResponse.length(),
                         preview(fullResponse.toString()),
                         System.currentTimeMillis() - startTime,
@@ -167,7 +167,7 @@ public class ExplorerSubAgent implements SubAgent<SubAgentRequest, SchemaSummary
                 SubAgentDebugWriter.append("ExplorerSubAgent", "timeout", SubAgentDebugWriter.fields(
                         "taskId", taskId,
                         "conversationId", conversationId,
-                        "timeoutSeconds", properties.getExplorer().getTimeoutSeconds(),
+                        "timeoutSeconds", timeoutSeconds,
                         "partialResponseLength", fullResponse.length(),
                         "partialResponsePreview", preview(fullResponse.toString()),
                         "elapsedMs", System.currentTimeMillis() - startTime
@@ -251,12 +251,10 @@ public class ExplorerSubAgent implements SubAgent<SubAgentRequest, SchemaSummary
     }
 
     private Map<String, Object> buildInvocationContext(SubAgentRequest request) {
-        Map<String, Object> invocationContext = new HashMap<>(RequestContext.toMap());
-        invocationContext.putAll(AgentRequestContext.toMap());
+        Map<String, Object> invocationContext = createInvocationContext(AgentTypeEnum.EXPLORER);
         List<Long> allowedConnectionIds = request.connectionIds();
         Long defaultConnectionId = CollectionUtils.isNotEmpty(allowedConnectionIds) ? allowedConnectionIds.get(0) : null;
 
-        invocationContext.put(InvocationContextConstant.AGENT_TYPE, AgentTypeEnum.EXPLORER.getCode());
         if (CollectionUtils.isNotEmpty(allowedConnectionIds)) {
             invocationContext.put(InvocationContextConstant.ALLOWED_CONNECTION_IDS, ConnectionIdUtil.toCsv(allowedConnectionIds));
             invocationContext.put(InvocationContextConstant.CONNECTION_ID, defaultConnectionId);
@@ -267,66 +265,4 @@ public class ExplorerSubAgent implements SubAgent<SubAgentRequest, SchemaSummary
         return invocationContext;
     }
 
-    private Long parseConversationId() {
-        try {
-            Long id = RequestContext.getConversationId();
-            return id != null ? id : 0L;
-        } catch (Exception e) {
-            return 0L;
-        }
-    }
-
-    private String resolveModelName() {
-        String modelName = AgentRequestContext.getModelName();
-        if (StringUtils.isNotBlank(modelName)) {
-            return modelName;
-        }
-        log.warn("No modelName in AgentRequestContext, falling back to default");
-        return "qwen3-max";
-    }
-
-    private String summarizeObjects(List<ExploreObject> objects) {
-        if (CollectionUtils.isEmpty(objects)) {
-            return "[]";
-        }
-        List<String> names = new ArrayList<>();
-        for (ExploreObject object : objects.stream().limit(3).toList()) {
-            names.add(qualifiedName(object));
-        }
-        return names.toString();
-    }
-
-    private String qualifiedName(ExploreObject object) {
-        List<String> parts = new ArrayList<>();
-        if (StringUtils.isNotBlank(object.getCatalog())) {
-            parts.add(object.getCatalog());
-        }
-        if (StringUtils.isNotBlank(object.getSchema())) {
-            parts.add(object.getSchema());
-        }
-        if (StringUtils.isNotBlank(object.getObjectName())) {
-            parts.add(object.getObjectName());
-        }
-        return String.join(".", parts);
-    }
-
-    private String preview(String value) {
-        if (StringUtils.isBlank(value)) {
-            return null;
-        }
-        return StringUtils.abbreviate(StringUtils.normalizeSpace(value), 160);
-    }
-
-    private Throwable rootCause(Throwable throwable) {
-        Throwable current = throwable;
-        while (current.getCause() != null && current.getCause() != current) {
-            current = current.getCause();
-        }
-        return current;
-    }
-
-    private String rootCauseMessage(Throwable throwable) {
-        Throwable cause = rootCause(throwable);
-        return StringUtils.defaultIfBlank(cause.getMessage(), cause.getClass().getSimpleName());
-    }
 }

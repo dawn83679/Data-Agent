@@ -12,6 +12,10 @@ import java.util.List;
 public record SubAgentRequest(
         String instruction,
         List<Long> connectionIds,
-        String context
+        String context,
+        Long timeoutSeconds
 ) {
+    public SubAgentRequest(String instruction, List<Long> connectionIds, String context) {
+        this(instruction, connectionIds, context, null);
+    }
 }

@@ -65,7 +65,7 @@ class PlannerSubAgentTest {
                                     .objectName("orders")
                                     .objectType("TABLE")
                                     .objectDdl("CREATE TABLE orders (id int8 NOT NULL, total numeric)")
-                                    .relevance("HIGH")
+                                    .relevanceScore(93)
                                     .build()
                     ))
                     .rawResponse("orders is the main fact table")
@@ -129,13 +129,13 @@ class PlannerSubAgentTest {
         }
 
         @Test
-        void messageWithRelevance_serializesObjectRelevance() throws Exception {
+        void messageWithRelevanceScore_serializesObjectScore() throws Exception {
             SchemaSummary schema = SchemaSummary.builder()
                     .objects(List.of(
                             ExploreObject.builder()
                                     .objectName("users")
                                     .objectType("TABLE")
-                                    .relevance("MEDIUM")
+                                    .relevanceScore(64)
                                     .build()
                     ))
                     .build();
@@ -147,7 +147,7 @@ class PlannerSubAgentTest {
 
             String message = invokeBuildMessage(request);
 
-            assertTrue(message.contains("relevance=MEDIUM"), "Should contain relevance marker");
+            assertTrue(message.contains("relevanceScore=64"), "Should contain relevance score marker");
         }
     }
 

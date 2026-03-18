@@ -21,5 +21,5 @@ public class ExploreObject {
 
     private String objectDdl;
 
-    private String relevance;
+    private Integer relevanceScore;
 }

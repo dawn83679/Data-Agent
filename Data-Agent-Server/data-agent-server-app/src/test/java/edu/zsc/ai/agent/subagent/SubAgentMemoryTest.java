@@ -21,30 +21,16 @@ class SubAgentMemoryTest {
     }
 
     @Test
-    void createTemporaryMemory_respectsMaxMessages() {
-        ChatMemory memory = SubAgentMemoryFactory.createTemporary(3);
-
-        memory.add(UserMessage.from("msg1"));
-        memory.add(UserMessage.from("msg2"));
-        memory.add(UserMessage.from("msg3"));
-        memory.add(UserMessage.from("msg4"));
-
-        // Window should keep only the last 3
-        assertEquals(3, memory.messages().size());
-        assertEquals("msg2", ((UserMessage) memory.messages().get(0)).singleText());
-    }
-
-    @Test
-    void createTemporaryMemory_defaultWindowSize() {
+    void createTemporaryMemory_keepsAllMessages() {
         ChatMemory memory = SubAgentMemoryFactory.createTemporary();
 
-        // Add more messages than the default window — excess should be evicted
-        for (int i = 0; i < SubAgentMemoryFactory.DEFAULT_WINDOW_SIZE + 20; i++) {
+        for (int i = 0; i < 240; i++) {
             memory.add(UserMessage.from("msg" + i));
         }
 
-        // Should be capped at default window size
-        assertEquals(SubAgentMemoryFactory.DEFAULT_WINDOW_SIZE, memory.messages().size());
+        assertEquals(240, memory.messages().size());
+        assertEquals("msg0", ((UserMessage) memory.messages().get(0)).singleText());
+        assertEquals("msg239", ((UserMessage) memory.messages().get(239)).singleText());
     }
 
     @Test

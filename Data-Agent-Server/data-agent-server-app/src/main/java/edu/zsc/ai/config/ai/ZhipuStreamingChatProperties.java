@@ -21,7 +21,5 @@ public class ZhipuStreamingChatProperties {
     public static class Parameters {
 
         private double temperature = 0.7;
-
-        private int maxToken = 4096;
     }
 }

@@ -16,6 +16,13 @@ class SubAgentPropertiesTest {
     }
 
     @Test
+    void defaultValues_explorerDispatch() {
+        SubAgentProperties props = new SubAgentProperties();
+        assertEquals(3, props.getExplorer().getDispatch().getMaxConcurrency());
+        assertEquals(9, props.getExplorer().getDispatch().getQueueCapacity());
+    }
+
+    @Test
     void defaultValues_plannerTimeout() {
         SubAgentProperties props = new SubAgentProperties();
         assertEquals(180, props.getPlanner().getTimeoutSeconds());

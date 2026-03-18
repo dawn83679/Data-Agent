@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import edu.zsc.ai.common.constant.ChatResponseDataKey;
+import edu.zsc.ai.common.enums.ai.ChatStreamEventType;
 import edu.zsc.ai.domain.model.dto.response.agent.ChatResponseBlock;
 import lombok.extern.slf4j.Slf4j;
 
@@ -61,13 +63,13 @@ public final class SseLogWriter {
     public static void append(ChatResponseBlock block, Long conversationId) {
         try {
             ConversationLog cl = ACTIVE.computeIfAbsent(conversationId, SseLogWriter::initConversation);
-            String type = resolveType(block);
+            ChatStreamEventType type = resolveType(block);
 
             ObjectNode line = buildLine(type, conversationId, block, cl);
             writeLine(cl.file, MAPPER.writeValueAsString(line));
 
             // on DONE, write summary and remove from active map
-            if ("DONE".equals(type)) {
+            if (type == ChatStreamEventType.DONE) {
                 writeSummary(cl, conversationId);
                 ACTIVE.remove(conversationId);
             }
@@ -115,19 +117,19 @@ public final class SseLogWriter {
 
     // ─── line builders ───────────────────────────────────────────────────
 
-    private static ObjectNode buildLine(String type, Long conversationId, ChatResponseBlock block, ConversationLog cl) {
+    private static ObjectNode buildLine(ChatStreamEventType type, Long conversationId, ChatResponseBlock block, ConversationLog cl) {
         return switch (type) {
-            case "TOOL_CALL" -> buildToolCallLine(conversationId, block, cl);
-            case "TOOL_RESULT" -> buildToolResultLine(conversationId, block, cl);
-            case "STATUS" -> buildStatusLine(conversationId, block);
-            case "SUB_AGENT_START", "SUB_AGENT_PROGRESS", "SUB_AGENT_COMPLETE", "SUB_AGENT_ERROR" ->
+            case TOOL_CALL -> buildToolCallLine(conversationId, block, cl);
+            case TOOL_RESULT -> buildToolResultLine(conversationId, block, cl);
+            case STATUS -> buildStatusLine(conversationId, block);
+            case SUB_AGENT_START, SUB_AGENT_PROGRESS, SUB_AGENT_COMPLETE, SUB_AGENT_ERROR ->
                     buildSubAgentLine(type, conversationId, block);
             default -> buildGenericLine(type, conversationId, block);
         };
     }
 
     private static ObjectNode buildToolCallLine(Long conversationId, ChatResponseBlock block, ConversationLog cl) {
-        ObjectNode line = baseNode("TOOL_CALL", conversationId);
+        ObjectNode line = baseNode(ChatStreamEventType.TOOL_CALL, conversationId);
         JsonNode parsed = parseData(block.getData());
         if (parsed != null && parsed.isObject()) {
             copyIfPresent(line, parsed, ChatResponseBlock.DATA_KEY_ID, "toolCallId");
@@ -170,7 +172,7 @@ public final class SseLogWriter {
     }
 
     private static ObjectNode buildToolResultLine(Long conversationId, ChatResponseBlock block, ConversationLog cl) {
-        ObjectNode line = baseNode("TOOL_RESULT", conversationId);
+        ObjectNode line = baseNode(ChatStreamEventType.TOOL_RESULT, conversationId);
         JsonNode parsed = parseData(block.getData());
         if (parsed != null && parsed.isObject()) {
             copyIfPresent(line, parsed, ChatResponseBlock.DATA_KEY_ID, "toolCallId");
@@ -192,7 +194,7 @@ public final class SseLogWriter {
     }
 
     private static ObjectNode buildStatusLine(Long conversationId, ChatResponseBlock block) {
-        ObjectNode line = baseNode("STATUS", conversationId);
+        ObjectNode line = baseNode(ChatStreamEventType.STATUS, conversationId);
         JsonNode parsed = parseData(block.getData());
         if (parsed != null && parsed.isObject()) {
             line.set("data", parsed);
@@ -202,7 +204,7 @@ public final class SseLogWriter {
         return line;
     }
 
-    private static ObjectNode buildSubAgentLine(String type, Long conversationId, ChatResponseBlock block) {
+    private static ObjectNode buildSubAgentLine(ChatStreamEventType type, Long conversationId, ChatResponseBlock block) {
         ObjectNode line = baseNode(type, conversationId);
         JsonNode parsed = parseData(block.getData());
         if (parsed != null && parsed.isObject()) {
@@ -219,7 +221,7 @@ public final class SseLogWriter {
         return line;
     }
 
-    private static ObjectNode buildGenericLine(String type, Long conversationId, ChatResponseBlock block) {
+    private static ObjectNode buildGenericLine(ChatStreamEventType type, Long conversationId, ChatResponseBlock block) {
         ObjectNode line = baseNode(type, conversationId);
         line.put("data", block.getData() != null ? block.getData() : "");
         return line;
@@ -231,10 +233,10 @@ public final class SseLogWriter {
         try {
             long durationMs = Instant.now().toEpochMilli() - cl.startTime.toEpochMilli();
 
-            ObjectNode line = baseNode("DONE", conversationId);
+            ObjectNode line = baseNode(ChatStreamEventType.DONE, conversationId);
             ObjectNode data = MAPPER.createObjectNode();
-            data.put("toolCount", cl.toolCount);
-            data.set("toolCounts", MAPPER.valueToTree(cl.toolCounts));
+            data.put(ChatResponseDataKey.TOOL_COUNT, cl.toolCount);
+            data.set(ChatResponseDataKey.TOOL_COUNTS, MAPPER.valueToTree(cl.toolCounts));
 
             // try to extract token info from the DONE block data if available
             // (already written as the main DONE line; this is the summary)
@@ -249,19 +251,16 @@ public final class SseLogWriter {
 
     // ─── helpers ─────────────────────────────────────────────────────────
 
-    private static ObjectNode baseNode(String type, Long conversationId) {
+    private static ObjectNode baseNode(ChatStreamEventType type, Long conversationId) {
         ObjectNode node = MAPPER.createObjectNode();
         node.put("ts", now());
-        node.put("type", type);
+        node.put("type", type.name());
         node.put("conv", conversationId);
         return node;
     }
 
-    private static String resolveType(ChatResponseBlock block) {
-        if (block.getType() != null) {
-            return block.getType();
-        }
-        return block.isDone() ? "DONE" : "UNKNOWN";
+    private static ChatStreamEventType resolveType(ChatResponseBlock block) {
+        return ChatStreamEventType.resolve(block);
     }
 
     private static String now() {

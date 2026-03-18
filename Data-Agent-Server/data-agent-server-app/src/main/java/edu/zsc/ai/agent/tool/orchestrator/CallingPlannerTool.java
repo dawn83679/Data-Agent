@@ -4,10 +4,6 @@ import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.agent.annotation.AgentTool;
-import edu.zsc.ai.agent.subagent.contract.ExplorerResultEnvelope;
-import edu.zsc.ai.agent.subagent.contract.ExplorerTaskResult;
-import edu.zsc.ai.agent.subagent.contract.ExplorerTaskStatus;
-import edu.zsc.ai.agent.subagent.contract.ExploreObject;
 import edu.zsc.ai.agent.subagent.contract.PlannerRequest;
 import edu.zsc.ai.agent.subagent.contract.SchemaSummary;
 import edu.zsc.ai.agent.subagent.contract.SqlPlan;
@@ -25,10 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
 /**
  * Delegates SQL plan generation to Planner SubAgent.
  * Trace/span management is handled by SubAgentObservabilityListener (AgentListener).
@@ -39,20 +31,23 @@ import java.util.UUID;
 public class CallingPlannerTool extends SubAgentToolSupport {
 
     private final SubAgentManager subAgentManager;
+    private final SchemaSummaryResolver schemaSummaryResolver;
 
     @Tool({
             "Delegates SQL plan generation to Planner SubAgent.",
             "Use when: you already have schema context from callingExplorerSubAgent and need to produce SQL.",
             "Accepts either a SchemaSummary JSON or callingExplorerSubAgent taskResults envelope JSON.",
             "Returns: SqlPlan JSON with summaryText, planSteps, sqlBlocks, and rawResponse.",
-            "Include optimization context (existing SQL, DDLs, indexes) in instruction if needed."
+            "Include optimization context (existing SQL, DDLs, indexes) in instruction if needed.",
+            "Optional timeoutSeconds overrides the planner sub-agent timeout for this invocation."
     })
     public AgentToolResult callingPlannerSubAgent(
             @P("Task instruction - describe what SQL to generate, include optimization context if needed") String instruction,
             @P("SchemaSummary JSON from a previous callingExplorerSubAgent result") String schemaSummaryJson,
+            @P(value = "Optional timeout in seconds for this planner sub-agent invocation.", required = false) Long timeoutSeconds,
             InvocationParameters parameters) {
         RequestContextInfo requestContextSnapshot = RequestContext.snapshot();
-        String taskId = buildTaskId(requestContextSnapshot);
+        String taskId = buildTaskId("plan", requestContextSnapshot);
         log.info("[Tool] callingPlannerSubAgent start, conversationId={}, parentToolCallId={}, instructionLength={}, schemaSummaryJsonLength={}, instructionPreview={}, schemaSummaryPreview={}",
                 requestContextSnapshot != null ? requestContextSnapshot.getConversationId() : null,
                 AgentExecutionContext.getParentToolCallId(),
@@ -68,10 +63,10 @@ public class CallingPlannerTool extends SubAgentToolSupport {
                 "schemaSummaryJsonLength", StringUtils.length(schemaSummaryJson),
                 "schemaSummaryPreview", preview(schemaSummaryJson)
         ));
-        return invokePlanner(instruction, schemaSummaryJson, taskId);
+        return invokePlanner(instruction, schemaSummaryJson, timeoutSeconds, taskId);
     }
 
-    private AgentToolResult invokePlanner(String instruction, String schemaSummaryJson, String taskId) {
+    private AgentToolResult invokePlanner(String instruction, String schemaSummaryJson, Long timeoutSeconds, String taskId) {
         long startTime = System.currentTimeMillis();
         if (StringUtils.isBlank(schemaSummaryJson)) {
             throw AgentToolExecuteException.preconditionFailed(
@@ -82,7 +77,7 @@ public class CallingPlannerTool extends SubAgentToolSupport {
 
         SchemaSummary schemaSummary;
         try {
-            schemaSummary = parseSchemaSummary(schemaSummaryJson);
+            schemaSummary = schemaSummaryResolver.resolve(schemaSummaryJson);
         } catch (Exception e) {
             throw AgentToolExecuteException.invalidInput(
                     ToolNameEnum.CALLING_PLANNER_SUB_AGENT,
@@ -113,6 +108,7 @@ public class CallingPlannerTool extends SubAgentToolSupport {
         PlannerRequest request = PlannerRequest.builder()
                 .instruction(instruction)
                 .schemaSummary(schemaSummary)
+                .timeoutSeconds(resolveTimeoutSeconds(timeoutSeconds, subAgentManager.getProperties().getPlanner().getTimeoutSeconds()))
                 .build();
 
         log.info("[Planner] request built, instructionLength={}, objectCount={}, summaryPreview={}",
@@ -175,88 +171,4 @@ public class CallingPlannerTool extends SubAgentToolSupport {
         return AgentToolResult.success(JsonUtil.object2json(plan));
     }
 
-    private SchemaSummary parseSchemaSummary(String schemaSummaryJson) {
-        try {
-            ExplorerResultEnvelope envelope = JsonUtil.json2Object(schemaSummaryJson, ExplorerResultEnvelope.class);
-            if (envelope != null && CollectionUtils.isNotEmpty(envelope.getTaskResults())) {
-                List<ExploreObject> mergedObjects = new ArrayList<>();
-                StringBuilder summaryText = new StringBuilder();
-                StringBuilder rawResponse = new StringBuilder();
-                for (ExplorerTaskResult taskResult : envelope.getTaskResults()) {
-                    if (taskResult.getStatus() == ExplorerTaskStatus.ERROR) {
-                        continue;
-                    }
-                    if (CollectionUtils.isNotEmpty(taskResult.getObjects())) {
-                        mergedObjects.addAll(taskResult.getObjects());
-                    }
-                    if (StringUtils.isNotBlank(taskResult.getSummaryText())) {
-                        if (summaryText.length() > 0) summaryText.append("\n");
-                        summaryText.append(taskResult.getSummaryText());
-                    }
-                    if (StringUtils.isNotBlank(taskResult.getRawResponse())) {
-                        if (rawResponse.length() > 0) rawResponse.append("\n\n");
-                        rawResponse.append(taskResult.getRawResponse());
-                    }
-                }
-                return SchemaSummary.builder()
-                        .summaryText(summaryText.toString())
-                        .rawResponse(rawResponse.toString())
-                        .objects(mergedObjects)
-                        .build();
-            }
-        } catch (Exception ignored) {
-            // Fall through to plain SchemaSummary parsing.
-        }
-        return JsonUtil.json2Object(schemaSummaryJson, SchemaSummary.class);
-    }
-
-    private String summarizeObjects(List<ExploreObject> objects) {
-        if (CollectionUtils.isEmpty(objects)) {
-            return "[]";
-        }
-        List<String> names = new ArrayList<>();
-        for (ExploreObject object : objects.stream().limit(3).toList()) {
-            names.add(qualifiedName(object));
-        }
-        return names.toString();
-    }
-
-    private String qualifiedName(ExploreObject object) {
-        List<String> parts = new ArrayList<>();
-        if (StringUtils.isNotBlank(object.getCatalog())) {
-            parts.add(object.getCatalog());
-        }
-        if (StringUtils.isNotBlank(object.getSchema())) {
-            parts.add(object.getSchema());
-        }
-        if (StringUtils.isNotBlank(object.getObjectName())) {
-            parts.add(object.getObjectName());
-        }
-        return String.join(".", parts);
-    }
-
-    private String preview(String value) {
-        if (StringUtils.isBlank(value)) {
-            return null;
-        }
-        return StringUtils.abbreviate(StringUtils.normalizeSpace(value), 160);
-    }
-
-    private Throwable rootCause(Throwable throwable) {
-        Throwable current = throwable;
-        while (current.getCause() != null && current.getCause() != current) {
-            current = current.getCause();
-        }
-        return current;
-    }
-
-    private String rootCauseMessage(Throwable throwable) {
-        Throwable cause = rootCause(throwable);
-        return StringUtils.defaultIfBlank(cause.getMessage(), cause.getClass().getSimpleName());
-    }
-
-    private String buildTaskId(RequestContextInfo requestContextSnapshot) {
-        return "plan-" + (requestContextSnapshot != null ? requestContextSnapshot.getConversationId() : "0")
-                + "-" + UUID.randomUUID().toString().substring(0, 8);
-    }
 }

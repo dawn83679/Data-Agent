@@ -22,4 +22,7 @@ public class ExplorerTask {
 
     /** Optional context: conversation summary, previous errors, etc. */
     private String context;
+
+    /** Optional timeout override for this specific exploration task. */
+    private Long timeoutSeconds;
 }

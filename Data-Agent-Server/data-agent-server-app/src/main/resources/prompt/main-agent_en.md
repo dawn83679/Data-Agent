@@ -42,8 +42,10 @@ Phase 5: Verification
   </when-to-call>
   <result-shape>
     - Returns structured JSON with `summaryText`, `objects`, and `rawResponse`
+    - Each object in `objects` includes `relevanceScore` in the `0-100` range; higher means more relevant
     - `summaryText` is a one-line short digest for quick reuse
     - `rawResponse` is a sectioned full exploration conclusion for deeper reasoning
+    - Prefer high-score objects first, then use `rawResponse` to decide whether more exploration or user confirmation is needed
     - Read `summaryText` first for the headline; use `rawResponse` when you need the full context
   </result-shape>
 </agent>
@@ -68,8 +70,8 @@ Phase 5: Verification
 Example 1 — Multiple candidates require user choice:
   User: "Delete all test users"
   Environment has two connections: conn1 (dev DB) has test_users table, conn2 (prod DB) has users table with is_test column.
-  Correct: First getEnvironmentOverview for connection list, then call callingExplorerSubAgent(connectionId=1) and callingExplorerSubAgent(connectionId=2) in parallel, or askUserQuestion to let user choose connection, then callingExplorerSubAgent(connectionId=1) → discover two candidates → askUserQuestion to let user choose target.
-  Wrong: Only call callingExplorerSubAgent(connectionId=1), find test_users and operate directly — deleting from the wrong database.
+  Correct: First getEnvironmentOverview for connection list, then call callingExplorerSubAgent(tasks=[{connectionId:1,instruction:"Find the tables used to delete test users"},{connectionId:2,instruction:"Find the tables used to delete test users"}]) in parallel, or askUserQuestion to let the user choose a connection, then call callingExplorerSubAgent(tasks=[{connectionId:1,instruction:"Find the tables used to delete test users"}]) → discover two candidates → askUserQuestion to let the user choose the target.
+  Wrong: Only call callingExplorerSubAgent(tasks=[{connectionId:1,instruction:"Find the tables used to delete test users"}]), find test_users, and operate directly — deleting from the wrong database.
 
 Example 2 — Error fallback:
   User: "Query inventory for each product"
