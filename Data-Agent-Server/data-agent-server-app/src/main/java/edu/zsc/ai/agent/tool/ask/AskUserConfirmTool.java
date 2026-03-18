@@ -27,12 +27,13 @@ public class AskUserConfirmTool {
 
     @Tool(
             value = {
-                    "Calling this tool greatly improves safety — it is the critical step that prevents irreversible ",
-                    "write operations; the server blocks executeNonSelectSql without it. ",
-                    "Shows the user exactly what will change and gets explicit approval before any write executes.",
-                    "",
-                    "When to Use: before every INSERT/UPDATE/DELETE/DDL; pass finalized SQL, connectionId, and impact explanation.",
-                    "Relation: always call this first; only after user approval call executeNonSelectSql with the exact same SQL."
+                    "Value: gets explicit user approval for irreversible or risky SQL and is required before any write can execute.",
+                    "Use When: call before every INSERT, UPDATE, DELETE, or DDL statement, after the SQL and impact explanation are finalized.",
+                    "Preconditions: pass the exact SQL to execute, the target connection or database context, and a clear explanation of the impact.",
+                    "After Success: wait for the user's approval or rejection. Only if approved should you call executeNonSelectSql with the exact same SQL.",
+                    "After Failure: finalize the SQL or impact explanation and ask again. Do not execute the write without a valid confirmation.",
+                    "Wait For User: do not execute writes, revise the approved SQL, or broaden the scope before the user responds.",
+                    "Relation: always immediately before executeNonSelectSql. If the SQL changes, call askUserConfirm again."
             },
             returnBehavior = ReturnBehavior.IMMEDIATE
     )

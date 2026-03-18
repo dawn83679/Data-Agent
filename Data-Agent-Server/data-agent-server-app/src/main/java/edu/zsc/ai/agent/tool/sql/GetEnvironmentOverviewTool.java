@@ -29,10 +29,13 @@ public class GetEnvironmentOverviewTool {
     private final DiscoveryService discoveryService;
 
     @Tool({
-            "Returns the complete environment overview: all connections, catalogs, and schemas in one shot.",
-            "Use at the start when the environment is unknown, or to list available connections for the user.",
-            "For PostgreSQL, schemas (excluding system) are included. For MySQL, schemas are empty arrays.",
-            "Response includes elapsedMs — if > 2000ms, narrow scope in later calls."
+            "Value: maps the available connections, catalogs, and schemas in one call so you can choose a valid discovery scope.",
+            "Use When: call at the start when the environment is unknown or when the user needs to choose a target connection.",
+            "After Success: compare the returned connections, narrow to the most likely target, and askUserQuestion if multiple connections remain plausible.",
+            "After Partial Success: continue only with connections that returned metadata; do not assume failed connections are usable.",
+            "After Failure: do not continue discovery, planning, or execution until a usable connection is available.",
+            "Relation: usually before searchObjects or callingExplorerSubAgent; use the returned connectionId as downstream scope.",
+            "PostgreSQL includes non-system schemas. MySQL returns empty schema arrays. If elapsedMs is high, narrow scope in later discovery."
     })
     public AgentToolResult getEnvironmentOverview(InvocationParameters parameters) {
         log.info("[Tool] getEnvironmentOverview");

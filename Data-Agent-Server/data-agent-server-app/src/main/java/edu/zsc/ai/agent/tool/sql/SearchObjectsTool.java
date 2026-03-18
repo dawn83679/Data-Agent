@@ -37,10 +37,13 @@ public class SearchObjectsTool {
     private final DiscoveryService discoveryService;
 
     @Tool({
-            "Pattern search across all connections. Use SQL wildcards: %order%, %user_%.",
-            "Required: objectNamePattern. Optional: connectionId, databaseName, schemaName.",
-            "databaseName requires connectionId; schemaName requires connectionId + databaseName.",
-            "Results capped at 100. objectType omitted = TABLE + VIEW."
+            "Value: narrows candidate tables, views, and other database objects by name pattern so later steps work from likely targets instead of guesses.",
+            "Use When: call when you know an approximate object name but not its exact connection, database, or schema. Use SQL wildcards such as %order% or %user_%.",
+            "Preconditions: objectNamePattern is required. databaseName requires connectionId. schemaName requires connectionId plus databaseName.",
+            "After Success: use the returned candidates to pick the target object. If one candidate clearly matches, call getObjectDetail. If multiple remain plausible, askUserQuestion before planning or execution.",
+            "After Partial Success: continue only with matches from successful scopes; do not assume failed scopes contain no matches.",
+            "After Failure: refine the pattern or scope, or ask the user to clarify the target. Do not invent object existence.",
+            "Relation: often after getEnvironmentOverview and before getObjectDetail or callingExplorerSubAgent. Results are capped at 100. If objectType is omitted, TABLE and VIEW are searched."
     })
     public AgentToolResult searchObjects(
             @P("Search query parameters") ObjectSearchQuery query,

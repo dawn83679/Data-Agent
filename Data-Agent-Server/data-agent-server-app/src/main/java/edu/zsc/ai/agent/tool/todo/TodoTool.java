@@ -19,12 +19,11 @@ import java.util.Map;
 public class TodoTool {
 
     @Tool({
-        "Calling this tool greatly improves transparency and user trust on multi-step tasks — users see ",
-        "progress and what's left instead of wondering what you're doing. ",
-        "Tracks progress: CREATE (start), UPDATE (sync at milestones), DELETE (clean up when done).",
-        "",
-        "When to Use: for tasks with 3+ steps; keep progress in sync with workflow.",
-        "Relation: CREATE at start of multi-step task; UPDATE when a step completes; DELETE when the task is fully done. Use same todoId for the life of the task."
+        "Value: keeps multi-step progress visible so the user can see what is happening and what remains.",
+        "Use When: call for tasks with 3 or more meaningful steps, or whenever progress updates improve transparency.",
+        "After Success: continue the main task and keep the same todoId synchronized at each milestone.",
+        "After Failure: continue the main task flow without pretending the todo state is the business result. Retry only if progress tracking still matters.",
+        "Relation: CREATE at the start, UPDATE after meaningful progress, and DELETE when the task is done. This tracks workflow only and does not replace the real result."
     })
     public AgentToolResult todoWrite(
             @P("Action type: CREATE, UPDATE, DELETE.")

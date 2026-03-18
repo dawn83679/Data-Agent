@@ -24,12 +24,13 @@ import java.util.Map;
 public class ChartTool {
 
     @Tool({
-            "Calling this tool greatly improves how users understand data — one clear chart is far more ",
-            "effective than raw tables for many questions. ",
-            "Renders one chart; put key insight in description — the chart IS the final answer; do not add text afterward.",
-            "",
-            "When to Use: when you have query results and the user wants a visual; after executeSelectSql (or equivalent) with data ready.",
-            "Relation: call activateSkill('chart') before first use in the session; if dimension unspecified, askUserQuestion then render one targeted chart."
+            "Value: turns verified query results into a visual answer that users can understand faster than raw rows.",
+            "Use When: call when the data is already available and the user wants a chart, trend, comparison, or distribution.",
+            "Preconditions: chartType must be supported and optionJson must be valid ECharts JSON. If the chart dimension is unclear, askUserQuestion first.",
+            "After Success: treat the rendered chart as the final visual answer and keep any narrative consistent with it.",
+            "After Failure: fix chartType, optionJson, or the missing chart dimension and retry. Do not invent chart conclusions without a rendered chart.",
+            "Do Not Use When: query results are not ready or the user only asked for raw tabular output.",
+            "Relation: usually after executeSelectSql. Call activateSkill('chart') before first use in the session."
     })
     @DisallowInPlanMode(ToolNameEnum.RENDER_CHART)
     public AgentToolResult renderChart(

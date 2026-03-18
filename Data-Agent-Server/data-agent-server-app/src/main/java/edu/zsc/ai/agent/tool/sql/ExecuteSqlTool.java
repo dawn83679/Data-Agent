@@ -34,12 +34,13 @@ public class ExecuteSqlTool {
     private final WriteConfirmationStore writeConfirmationStore;
 
     @Tool({
-        "Calling this tool is the only way to deliver real query results to the user — it greatly improves ",
-        "trust; text claims of 'queried' or 'result is' mean nothing without it. ",
-        "Executes read-only SQL; pass multiple statements in one call — results in 'results' array.",
-        "",
-        "When to Use: after you have verified connection, database, and table structure via getObjectDetail.",
-        "Relation: call getEnvironmentOverview and searchObjects to resolve target; getObjectDetail for every referenced table; then build SQL and call here. For large tables (>10000 rows) always include WHERE/LIMIT."
+        "Value: runs read-only SQL and returns real database results. This is the reliable basis for any user-facing query answer.",
+        "Use When: call after the target connection, database, schema, and referenced objects have been verified.",
+        "Preconditions: sqls is required and every statement must be read-only. For large tables, include WHERE or LIMIT before executing.",
+        "After Success: base the answer strictly on the returned results. If the user needs a visualization, pass the verified result set into renderChart.",
+        "After Failure: inspect the statement-level errors, fix the SQL or scope, and retry only when the query is valid. Do not claim the query succeeded or fabricate results.",
+        "Do Not Use When: the statement writes data or the referenced objects are still unverified.",
+        "Relation: typically after getEnvironmentOverview, searchObjects, and getObjectDetail, or after callingPlannerSubAgent for a read plan. Results are returned in the results array."
     })
     @DisallowInPlanMode(ToolNameEnum.EXECUTE_SELECT_SQL)
     public AgentSqlResult executeSelectSql(
@@ -72,12 +73,13 @@ public class ExecuteSqlTool {
     }
 
     @Tool({
-        "Calling this after askUserConfirm greatly improves safety — it is the only way to execute writes; ",
-        "the server rejects writes without prior confirmation. ",
-        "Executes write SQL (INSERT, UPDATE, DELETE, DDL); requires askUserConfirm first.",
-        "",
-        "When to Use: only after askUserConfirm has been called and the user approved the same SQL.",
-        "Relation: (1) finalize SQL, (2) call askUserConfirm with impact explanation, (3) after approval call here with the exact same SQL. Accepts a list; results in 'results' array."
+        "Value: executes approved write SQL and turns user approval into the actual database change.",
+        "Use When: call only after the SQL is finalized and askUserConfirm approved the exact same SQL for the same database context.",
+        "Preconditions: sqls is required. The confirmation must already exist for the exact SQL text and current connection, database, and schema.",
+        "After Success: report only the actual write outcome from the returned results. If the user needs verification, follow with executeSelectSql.",
+        "After Failure: inspect the statement-level errors, explain that the write did not complete as intended, and do not assume database state beyond the returned results.",
+        "Do Not Use When: confirmation is missing, the SQL changed after confirmation, or the statements are read-only queries.",
+        "Relation: finalize SQL, call askUserConfirm, then call executeNonSelectSql with the exact same SQL. Results are returned in the results array."
     })
     @DisallowInPlanMode(ToolNameEnum.EXECUTE_NON_SELECT_SQL)
     public AgentSqlResult executeNonSelectSql(

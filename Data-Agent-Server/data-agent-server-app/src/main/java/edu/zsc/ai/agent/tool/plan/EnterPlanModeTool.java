@@ -20,11 +20,12 @@ public class EnterPlanModeTool {
 
     @Tool(
             value = {
-                    "Internal mode-switch tool for handing a complex request from execution flow into planning flow.",
-                    "Use only when the runtime explicitly exposes this tool for a plan handoff.",
-                    "",
-                    "When to Use: write operations (DML/DDL), multi-step or multi-table tasks, vague goals, or when analysis suggests a dedicated planning pass.",
-                    "Trigger signal: CHECKLIST_RECOMMENDATION|MULTI_STEP_DISCOVERED|UNEXPECTED_COMPLEXITY|IRREVERSIBLE_OPERATION|MULTI_TABLE_WRITE."
+                    "Value: hands a complex or risky task from execution flow into structured planning so the next response becomes a decision-ready plan.",
+                    "Use When: call only when the runtime explicitly exposes this tool for a plan handoff, especially for writes, vague scope, multi-step work, or unexpected complexity.",
+                    "After Success: stop direct execution and continue in planning mode.",
+                    "After Failure: stay in the current flow, explain the blocked handoff if needed, and do not force direct execution of risky work.",
+                    "Relation: this opens a plan flow that is later closed by exitPlanMode.",
+                    "Trigger signal: CHECKLIST_RECOMMENDATION | MULTI_STEP_DISCOVERED | UNEXPECTED_COMPLEXITY | IRREVERSIBLE_OPERATION | MULTI_TABLE_WRITE."
             },
             returnBehavior = ReturnBehavior.IMMEDIATE
     )

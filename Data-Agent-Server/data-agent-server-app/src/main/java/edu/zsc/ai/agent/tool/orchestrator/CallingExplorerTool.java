@@ -61,15 +61,14 @@ public class CallingExplorerTool extends SubAgentToolSupport {
     }
 
     @Tool({
-            "Delegates schema exploration to Explorer SubAgent(s).",
-            "Use when: you need to understand database structure before generating SQL.",
-            "Accepts a structured tasks array. Each task has: connectionId (required), instruction (required), context (optional), timeoutSeconds (optional, in seconds).",
-            "Top-level timeoutSeconds is an optional default applied only to tasks that do not set their own timeoutSeconds.",
-            "Explorer default timeout is 120 seconds. If timeoutSeconds is provided, it must be at least 120 seconds; smaller values are automatically raised to 120.",
-            "Each task spawns one Explorer SubAgent. Multiple tasks run concurrently.",
-            "Returns: JSON object with taskResults[]. Each taskResult includes taskId, summaryText, objects, rawResponse.",
-            "connectionId from getEnvironmentOverview.",
-            "Flow: callingExplorerSubAgent -> confirm with user -> callingPlannerSubAgent -> confirm -> execute."
+            "Value: delegates schema exploration to one or more Explorer sub-agents and returns structured findings you can plan against.",
+            "Use When: call when you need verified schema context before generating SQL, or when discovery spans multiple candidate connections or scopes.",
+            "Preconditions: each task needs connectionId and instruction. Use connectionId from getEnvironmentOverview. Each task may include context and timeoutSeconds. Top-level timeoutSeconds applies only to tasks that do not set their own timeout.",
+            "After Success: review taskResults, keep the objects and summaries that match the user goal, and then call callingPlannerSubAgent or askUserQuestion if ambiguity remains.",
+            "After Partial Success: continue only with successful taskResults. Do not assume failed tasks found nothing; retry or ask the user before dropping those scopes.",
+            "After Failure: narrow the task scope, correct the connectionId or instruction, or retry later. Do not proceed to SQL planning without usable explorer output.",
+            "Result Consumption: each taskResult includes taskId, summaryText, objects, and rawResponse. Consume them task by task instead of blindly merging all tasks.",
+            "Relation: usually after getEnvironmentOverview or focused discovery and before callingPlannerSubAgent. Multiple tasks run concurrently. Explorer timeout defaults to 120 seconds, and lower values are raised to 120."
     })
     public AgentToolResult callingExplorerSubAgent(
             @P("Explorer task list. Each item: {connectionId: number, instruction: string, context?: string, timeoutSeconds?: number}. timeoutSeconds uses seconds and values below 120 are automatically raised to 120.") List<ExplorerTask> tasks,

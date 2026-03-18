@@ -21,12 +21,12 @@ public class AskUserQuestionTool {
 
     @Tool(
             value = {
-                    "Calling this tool greatly improves task success when 2+ candidates exist — letting the user ",
-                    "choose eliminates wrong-target errors and builds trust. ",
-                    "Asks structured questions with 2-3 options to eliminate ambiguity and get the right target.",
-                    "",
-                    "When to Use: when searchObjects or getEnvironmentOverview yields multiple candidates; when scope or intent is unclear; before renderChart to choose dimension.",
-                    "Relation: call after discovery when 2+ candidates; provide concrete options (e.g. table/database choice, time range, chart dimension). Maximum 3 options per question."
+                    "Value: resolves ambiguity by letting the user choose among concrete options instead of letting the model guess.",
+                    "Use When: call when discovery or planning leaves multiple plausible targets, or when a missing preference materially changes the outcome.",
+                    "After Success: wait for the user's reply, use the answer to narrow scope, and then continue with the next tool.",
+                    "After Failure: if you cannot frame concrete options yet, do more discovery first. Do not ask vague questions or decide on the user's behalf.",
+                    "Wait For User: do not continue discovery, planning, execution, or chart selection until the user answers.",
+                    "Relation: often after getEnvironmentOverview or searchObjects, and sometimes before renderChart or callingPlannerSubAgent. Maximum 3 options per question."
             },
             returnBehavior = ReturnBehavior.IMMEDIATE
     )

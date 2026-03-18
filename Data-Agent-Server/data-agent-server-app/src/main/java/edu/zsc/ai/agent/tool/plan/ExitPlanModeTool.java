@@ -24,10 +24,13 @@ public class ExitPlanModeTool {
 
     @Tool(
             value = {
-                    "Internal plan-delivery tool that emits the final structured plan payload.",
-                    "Use only when the runtime explicitly exposes this tool while finishing a planning flow. Title + steps (order, description, SQL, objectName).",
-                    "",
-                    "When to Use: when analysis is complete and you have a clear, step-by-step plan with production-ready SQL."
+                    "Value: delivers the final structured plan payload to the user at the end of a planning flow.",
+                    "Use When: call only when planning is complete and the plan is specific enough to execute without new design work.",
+                    "After Success: wait for the user's decision before executing the plan or changing its scope.",
+                    "After Failure: keep refining the plan in planning mode. Do not switch back to execution with an incomplete plan.",
+                    "Wait For User: once the plan is presented, do not execute or broaden the scope until the user responds.",
+                    "Result Consumption: the tool arguments carry the plan title and ordered steps that the frontend presents to the user.",
+                    "Relation: this closes a plan flow started by enterPlanMode."
             },
             returnBehavior = ReturnBehavior.IMMEDIATE
     )

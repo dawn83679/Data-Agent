@@ -13,14 +13,12 @@ import lombok.extern.slf4j.Slf4j;
 public class ActivateSkillTool {
 
     @Tool({
-            "Loads expert rules and templates for a capability, greatly improving output quality. ",
-            "Skip if already loaded this session.",
-            "",
-            "When to Use:",
-            "  - 'chart': before first renderChart call, loads ECharts rules and templates.",
-            "  - 'sql-optimization': when optimizing complex SQL (3+ table JOIN, subqueries, or user requests optimization), ",
-            "    loads index analysis, execution plan, and rewrite strategies.",
-            "skillName must be one of: chart, sql-optimization."
+            "Value: loads capability-specific guidance and templates that improve later tool use.",
+            "Use When: call before the first renderChart in a session, or before complex SQL optimization work that needs specialized guidance.",
+            "After Success: immediately apply the loaded rules in later tool calls. Do not present skill activation itself as the user-facing result.",
+            "After Failure: choose a valid skill name or continue without the skill only if the quality tradeoff is acceptable.",
+            "Relation: use chart before renderChart. Use sql-optimization before planner or SQL optimization work when joins, subqueries, or performance tuning are central.",
+            "skillName must be one of: chart, sql-optimization. Skip if the skill is already loaded in this session."
     })
     public String activateSkill(
             @P("Skill to load. MUST be one of: chart, sql-optimization") String skillName) {
