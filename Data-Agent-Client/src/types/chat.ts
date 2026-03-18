@@ -93,6 +93,7 @@ export interface SubAgentEventData {
   toolCounts?: Record<string, number>;
   taskId?: string;
   connectionId?: number;
+  timeoutSeconds?: number;
   summaryText?: string;
   resultJson?: string;
 }

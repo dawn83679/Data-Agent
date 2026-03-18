@@ -188,15 +188,6 @@ function extractAllStringFields(input: string, key: string): string[] {
   return uniqueStrings(values);
 }
 
-function extractNumberArrayField(input: string, key: string): number[] | undefined {
-  const regex = new RegExp(`"${escapeRegExp(key)}"\\s*:\\s*\\[([^\\]]*)`, 'm');
-  const match = regex.exec(input);
-  if (!match) return undefined;
-  const values = match[1].match(/-?\d+/g)?.map((value) => Number(value)) ?? [];
-  const numbers = uniqueNumbers(values);
-  return numbers.length > 0 ? numbers : undefined;
-}
-
 function extractAllNumberFields(input: string, key: string): number[] {
   const regex = new RegExp(`"${escapeRegExp(key)}"\\s*:\\s*(-?\\d+)`, 'g');
   const values = Array.from(input.matchAll(regex)).map((match) => Number(match[1]));
@@ -235,16 +226,16 @@ function extractTasksFromValue(value: unknown): ExtractedTaskPreview {
   };
 }
 
-function extractTasksFromPartialString(tasksJson: string | undefined): ExtractedTaskPreview {
-  if (!tasksJson) return {};
+function extractTasksFromPartialPayload(raw: string | undefined): ExtractedTaskPreview {
+  if (!raw) return {};
 
   return {
     connectionIds: (() => {
-      const values = extractAllNumberFields(tasksJson, 'connectionId');
+      const values = extractAllNumberFields(raw, 'connectionId');
       return values.length > 0 ? values : undefined;
     })(),
     taskInstructions: (() => {
-      const values = extractAllStringFields(tasksJson, 'instruction');
+      const values = extractAllStringFields(raw, 'instruction');
       return values.length > 0 ? values : undefined;
     })(),
   };
@@ -326,12 +317,8 @@ export function resolveToolCallPreview(
   const config = getToolCallPreviewConfig(toolName);
 
   const parsed = normalizeParsedArgs(parametersData);
-  const parsedTasks = extractTasksFromValue(parsed?.tasksJson);
-  const partialTasks = extractTasksFromPartialString(
-    typeof parsed?.tasksJson === 'string'
-      ? parsed.tasksJson
-      : extractFirstStringField(parametersData, 'tasksJson')
-  );
+  const parsedTasks = extractTasksFromValue(parsed?.tasks);
+  const partialTasks = extractTasksFromPartialPayload(parametersData);
 
   const directInstruction = typeof parsed?.instruction === 'string'
     ? parsed.instruction.trim()
@@ -346,11 +333,6 @@ export function resolveToolCallPreview(
   const connectionIds = uniqueNumbers([
     ...(parsedTasks.connectionIds ?? []),
     ...(partialTasks.connectionIds ?? []),
-    ...(Array.isArray(parsed?.connectionIds)
-      ? parsed.connectionIds.filter((value): value is number => typeof value === 'number')
-      : []),
-    ...(extractNumberArrayField(parametersData, 'connectionIds') ?? []),
-    (typeof parsed?.connectionId === 'number' ? parsed.connectionId : undefined),
     ...extractAllNumberFields(parametersData, 'connectionId'),
   ]);
   const databaseName = typeof parsed?.databaseName === 'string'

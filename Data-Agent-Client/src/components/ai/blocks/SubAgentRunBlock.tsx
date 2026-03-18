@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { parseCallingSubAgentArgs, resolveSubAgentResult, SUB_AGENT_TYPES } from './subAgentTypes';
-import type { SubAgentProgressEvent, SubAgentType } from './subAgentTypes';
+import type { CallingSubAgentArgs, SubAgentProgressEvent, SubAgentType } from './subAgentTypes';
 import { SUB_AGENT_LABELS } from '../../../constants/chat';
 import type { Segment } from '../messageListLib/types';
 import { SegmentKind } from '../messageListLib/types';
@@ -26,6 +26,14 @@ export interface SubAgentRunBlockProps {
 
 type ToolRunSegment = Extract<Segment, { kind: typeof SegmentKind.TOOL_RUN }>;
 
+interface RequestTaskSlot {
+  taskKey: string;
+  slotIndex: number;
+  connectionId?: number;
+  instruction?: string;
+  timeoutSeconds?: number;
+}
+
 interface TaskViewModel {
   taskKey: string;
   label: string;
@@ -44,13 +52,105 @@ interface TaskViewModel {
   invocation: SubAgentInvocation;
 }
 
-function getStableTaskKey(options: {
+function parseStableExplorerArgs(parametersData: string, toolName?: string): CallingSubAgentArgs | null {
+  if (toolName !== 'callingExplorerSubAgent' || !parametersData.trim()) {
+    return null;
+  }
+
+  try {
+    let parsed: unknown = JSON.parse(parametersData);
+    if (typeof parsed === 'string') {
+      parsed = JSON.parse(parsed) as unknown;
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return null;
+    }
+
+    const obj = parsed as Record<string, unknown>;
+    if (!Array.isArray(obj.tasks) || obj.tasks.length === 0) {
+      return null;
+    }
+
+    const hasCompleteTasks = obj.tasks.every((task) => (
+      !!task
+      && typeof task === 'object'
+      && typeof (task as Record<string, unknown>).connectionId === 'number'
+      && typeof (task as Record<string, unknown>).instruction === 'string'
+      && ((task as Record<string, unknown>).instruction as string).trim().length > 0
+    ));
+
+    if (!hasCompleteTasks) {
+      return null;
+    }
+
+  return parseCallingSubAgentArgs(parametersData, toolName);
+  } catch {
+    return null;
+  }
+}
+
+function buildRequestTaskSlots(args: CallingSubAgentArgs | null): RequestTaskSlot[] {
+  const connectionIds = args?.connectionIds ?? [];
+  const taskInstructions = args?.taskInstructions ?? [];
+  const taskTimeoutSeconds = args?.taskTimeoutSeconds ?? [];
+  const taskCount = Math.max(
+    args?.taskCount ?? 0,
+    connectionIds.length,
+    taskInstructions.length,
+    taskTimeoutSeconds.length,
+    1,
+  );
+
+  if (taskCount <= 1) {
+    return [{
+      taskKey: 'single',
+      slotIndex: 0,
+      connectionId: connectionIds[0],
+      instruction: args?.userQuestion ?? taskInstructions[0],
+      timeoutSeconds: taskTimeoutSeconds[0] ?? args?.timeoutSeconds,
+    }];
+  }
+
+  return Array.from({ length: taskCount }, (_, index) => ({
+    taskKey: `slot-${index + 1}`,
+    slotIndex: index,
+    connectionId: connectionIds[index],
+    instruction: taskInstructions[index],
+    timeoutSeconds: taskTimeoutSeconds[index] ?? args?.timeoutSeconds,
+  }));
+}
+
+function resolveSlotKey(options: {
   taskId?: string;
-  taskCount: number;
+  connectionId?: number;
+  slots: RequestTaskSlot[];
+  taskIdToKey: Map<string, string>;
 }): string | undefined {
-  const { taskId, taskCount } = options;
-  if (taskId) return `task-${taskId}`;
-  if (taskCount <= 1) return 'single';
+  const { taskId, connectionId, slots, taskIdToKey } = options;
+  if (taskId && taskIdToKey.has(taskId)) {
+    return taskIdToKey.get(taskId);
+  }
+
+  if (connectionId != null) {
+    const matchingSlots = slots.filter((slot) => slot.connectionId === connectionId);
+    if (matchingSlots.length === 1) {
+      return matchingSlots[0].taskKey;
+    }
+    if (matchingSlots.length > 1) {
+      const usedKeys = new Set(taskIdToKey.values());
+      return matchingSlots.find((slot) => !usedKeys.has(slot.taskKey))?.taskKey ?? matchingSlots[0].taskKey;
+    }
+  }
+
+  if (slots.length === 1) {
+    return slots[0].taskKey;
+  }
+
+  if (taskId) {
+    const usedKeys = new Set(taskIdToKey.values());
+    return slots.find((slot) => !usedKeys.has(slot.taskKey))?.taskKey;
+  }
+
   return undefined;
 }
 
@@ -89,124 +189,86 @@ function buildTaskViewModels(options: {
     taskCompletedAt,
   } = options;
 
-  const connectionIds = args?.connectionIds ?? [];
-  const taskCount = Math.max(args?.taskCount ?? 0, connectionIds.length);
-  const orderedTaskIds: string[] = [];
-  const seenTaskIds = new Set<string>();
+  const requestSlots = buildRequestTaskSlots(args);
   const toolSegments = nestedToolRuns?.filter((segment): segment is ToolRunSegment => segment.kind === SegmentKind.TOOL_RUN) ?? [];
-
-  for (const event of progressEvents ?? []) {
-    if (!event.taskId || seenTaskIds.has(event.taskId)) continue;
-    seenTaskIds.add(event.taskId);
-    orderedTaskIds.push(event.taskId);
-  }
-  for (const segment of toolSegments) {
-    if (!segment.subAgentTaskId || seenTaskIds.has(segment.subAgentTaskId)) continue;
-    seenTaskIds.add(segment.subAgentTaskId);
-    orderedTaskIds.push(segment.subAgentTaskId);
-  }
-
-  const taskIdToKey = new Map<string, string>();
-  const taskIdToConnectionId = new Map<string, number | undefined>();
-  orderedTaskIds.forEach((taskId, index) => {
-    const eventConnectionId = (progressEvents ?? [])
-      .find((event) => event.taskId === taskId && event.connectionId != null)
-      ?.connectionId;
-    const connectionId = eventConnectionId ?? (taskCount <= 1 ? connectionIds[index] : undefined);
-    const taskKey = connectionId != null ? `conn-${connectionId}` : `task-${taskId}`;
-    taskIdToKey.set(taskId, taskKey);
-    taskIdToConnectionId.set(taskId, connectionId);
-  });
-
-  const orderedKeys: string[] = [];
-  const keySet = new Set<string>();
-  const ensureKeyOrder = (taskKey: string) => {
-    if (!keySet.has(taskKey)) {
-      keySet.add(taskKey);
-      orderedKeys.push(taskKey);
-    }
-  };
-
-  if (orderedTaskIds.length === 0 && taskCount > 1) {
-    const fallbackCount = taskCount;
-    for (let index = 0; index < fallbackCount; index += 1) {
-      const connectionId = connectionIds[index];
-      const taskKey = connectionId != null ? `conn-${connectionId}` : `slot-${index + 1}`;
-      ensureKeyOrder(taskKey);
-    }
-  }
-
-  orderedTaskIds.forEach((taskId) => {
-    ensureKeyOrder(taskIdToKey.get(taskId) ?? `task-${taskId}`);
-  });
-
-  if (orderedKeys.length === 0) {
-    orderedKeys.push('single');
-  }
-
   const progressByKey = new Map<string, SubAgentProgressEvent[]>();
   const nestedByKey = new Map<string, Segment[]>();
+  const taskIdToKey = new Map<string, string>();
 
   for (const event of progressEvents ?? []) {
-    if (!event.taskId && taskCount > 1) continue;
-    const taskKey = event.taskId ? (taskIdToKey.get(event.taskId) ?? `task-${event.taskId}`) : orderedKeys[0];
+    const taskKey = resolveSlotKey({
+      taskId: event.taskId,
+      connectionId: event.connectionId,
+      slots: requestSlots,
+      taskIdToKey,
+    });
+    if (!taskKey) {
+      continue;
+    }
+    if (event.taskId) {
+      taskIdToKey.set(event.taskId, taskKey);
+    }
     const current = progressByKey.get(taskKey) ?? [];
     current.push(event);
     progressByKey.set(taskKey, current);
-    ensureKeyOrder(taskKey);
   }
 
   for (const segment of toolSegments) {
-    if (!segment.subAgentTaskId && taskCount > 1) continue;
-    const taskKey = segment.subAgentTaskId
-      ? (taskIdToKey.get(segment.subAgentTaskId) ?? `task-${segment.subAgentTaskId}`)
-      : orderedKeys[0];
+    const taskKey = resolveSlotKey({
+      taskId: segment.subAgentTaskId,
+      slots: requestSlots,
+      taskIdToKey,
+    });
+    if (!taskKey) {
+      continue;
+    }
+    if (segment.subAgentTaskId) {
+      taskIdToKey.set(segment.subAgentTaskId, taskKey);
+    }
     const current = nestedByKey.get(taskKey) ?? [];
     current.push(segment);
     nestedByKey.set(taskKey, current);
-    ensureKeyOrder(taskKey);
   }
 
-  return orderedKeys.map((taskKey, index) => {
+  return requestSlots.map((slot, index) => {
+    const taskKey = slot.taskKey;
     const taskProgress = progressByKey.get(taskKey) ?? [];
     const taskNested = nestedByKey.get(taskKey);
-    const taskId = orderedTaskIds.find((candidateTaskId) => (taskIdToKey.get(candidateTaskId) ?? `task-${candidateTaskId}`) === taskKey);
-    const connectionId = (() => {
-      if (taskKey.startsWith('conn-')) {
-        const parsed = Number(taskKey.slice(5));
-        return Number.isFinite(parsed) ? parsed : undefined;
-      }
-      return taskIdToConnectionId.get(taskId ?? orderedTaskIds[index] ?? '') ?? connectionIds[index];
-    })();
+    const taskId = [...taskIdToKey.entries()].find(([, mappedTaskKey]) => mappedTaskKey === taskKey)?.[0];
+    const connectionId = slot.connectionId
+      ?? [...taskProgress].reverse().find((event) => event.connectionId != null)?.connectionId;
     const connectionName = connectionId != null ? connectionNameById.get(connectionId) : undefined;
     const taskLabel = connectionName
       ? `${agentLabel} ${connectionName}`
-      : orderedKeys.length > 1
+      : requestSlots.length > 1
         ? `${agentLabel} #${index + 1}${connectionId != null ? ` (connId: ${connectionId})` : ''}`
         : agentLabel;
-    const taskInstruction = taskId
-      ? args?.taskInstructions?.[orderedTaskIds.indexOf(taskId)]
-      : orderedKeys.length === 1
-        ? (args?.userQuestion ?? args?.taskInstructions?.[0])
-        : args?.taskInstructions?.[index];
+    const taskInstruction = slot.instruction ?? (requestSlots.length === 1 ? args?.userQuestion : undefined);
     const taskErrorEvent = [...taskProgress].reverse().find((event) => event.phase === 'error');
     const taskErrorMessage = taskErrorEvent?.message;
-    const taskError = (orderedKeys.length === 1 && isError)
+    const taskError = (requestSlots.length === 1 && isError)
       || !!taskErrorEvent
       || (taskNested?.some((segment) => segment.kind === SegmentKind.TOOL_RUN && !!segment.responseError) ?? false);
     const completionEvent = [...taskProgress].reverse().find((event) => event.phase === 'complete');
-    const fallbackResult = responseData && (taskId || orderedKeys.length === 1)
+    const fallbackResult = responseData && (taskId || requestSlots.length === 1)
       ? resolveSubAgentResult(agentType, responseData, taskId)
       : {};
     const taskComplete = !!completionEvent
       || (!!fallbackResult.resultJson && !taskError && isComplete)
-      || (orderedKeys.length === 1 && !taskError && isComplete);
+      || (requestSlots.length === 1 && !taskError && isComplete);
     const taskResultSummary = completionEvent?.summaryText ?? fallbackResult.summaryText;
     const taskResultJson = completionEvent?.resultJson ?? fallbackResult.resultJson;
-    const consoleTaskKey = getStableTaskKey({
-      taskId,
-      taskCount,
-    });
+    const taskTimeoutSeconds = (() => {
+      const eventTimeoutSeconds = [...taskProgress]
+        .reverse()
+        .find((event) => typeof event.timeoutSeconds === 'number' && event.timeoutSeconds > 0)
+        ?.timeoutSeconds;
+      if (typeof eventTimeoutSeconds === 'number' && eventTimeoutSeconds > 0) {
+        return eventTimeoutSeconds;
+      }
+      return slot.timeoutSeconds;
+    })();
+    const consoleTaskKey = taskKey;
     const isConsoleReady = !!consoleTaskKey;
     const timingKey = consoleTaskKey ?? taskKey;
     const startedAtForTask = taskStartedAt.get(timingKey) ?? startedAt;
@@ -220,7 +282,9 @@ function buildTaskViewModels(options: {
       resultSummary: taskResultSummary,
     });
     const elapsedSeconds = ((completedAtForTask ?? nowMs) - startedAtForTask) / 1000;
-    const elapsedText = elapsedSeconds > 0 ? `${elapsedSeconds.toFixed(1)}s` : undefined;
+    const elapsedText = elapsedSeconds > 0
+      ? formatElapsedText(elapsedSeconds, taskTimeoutSeconds)
+      : undefined;
 
     const invocation: SubAgentInvocation = {
       id: `${toolCallId}-${consoleTaskKey ?? taskKey}`,
@@ -232,6 +296,7 @@ function buildTaskViewModels(options: {
         ...(connectionId != null ? { connectionIds: [connectionId] } : {}),
         ...(taskInstruction ? { userQuestion: taskInstruction } : {}),
         taskCount: 1,
+        ...(taskTimeoutSeconds ? { timeoutSeconds: taskTimeoutSeconds } : {}),
       },
       progressEvents: taskProgress,
       nestedToolCalls: buildNestedToolCalls(taskNested),
@@ -259,6 +324,18 @@ function buildTaskViewModels(options: {
       invocation,
     };
   });
+}
+
+function formatElapsedText(elapsedSeconds: number, timeoutSeconds?: number): string {
+  const elapsedText = `${elapsedSeconds.toFixed(1)}s`;
+  if (!timeoutSeconds || timeoutSeconds <= 0) {
+    return elapsedText;
+  }
+  return `${elapsedText} (timeout ${formatTimeoutText(timeoutSeconds)})`;
+}
+
+function formatTimeoutText(timeoutSeconds: number): string {
+  return `${timeoutSeconds}s`;
 }
 
 function TaskSubAgentCard({
@@ -310,7 +387,6 @@ export function SubAgentRunBlock({
 }: SubAgentRunBlockProps) {
   const { conversationId } = useAIAssistantContext();
   const tabs = useWorkspaceStore((state) => state.tabs);
-  const closeTab = useWorkspaceStore((state) => state.closeTab);
   const reorderTabs = useWorkspaceStore((state) => state.reorderTabs);
   const startTimeRef = useRef(Date.now());
   const completedAtRef = useRef<number | undefined>(undefined);
@@ -319,12 +395,22 @@ export function SubAgentRunBlock({
   const fallbackToolCallIdRef = useRef(`subagent-${Date.now()}`);
   const [elapsed, setElapsed] = useState(0);
 
-  const args = parseCallingSubAgentArgs(parametersData, toolName);
-  const agentType = (args?.agentType ?? SUB_AGENT_TYPES.EXPLORER) as SubAgentType;
+  const previewArgs = parseCallingSubAgentArgs(parametersData, toolName);
+  const stableExplorerArgs = useMemo(
+    () => parseStableExplorerArgs(parametersData, toolName),
+    [parametersData, toolName]
+  );
+  const args = toolName === 'callingExplorerSubAgent'
+    ? stableExplorerArgs
+    : previewArgs;
+  const agentType = (previewArgs?.agentType ?? SUB_AGENT_TYPES.EXPLORER) as SubAgentType;
   const agentLabel = SUB_AGENT_LABELS[agentType] ?? agentType;
   const stableToolCallId = toolCallId ?? fallbackToolCallIdRef.current;
   const hasResult = responseData != null && responseData !== '';
   const isComplete = hasResult || responseError;
+  const shouldDelayExplorerRendering = toolName === 'callingExplorerSubAgent'
+    && !stableExplorerArgs
+    && !isComplete;
   const { data: connections = [] } = useQuery({
     queryKey: QUERY_KEY_CONNECTIONS,
     queryFn: () => connectionService.getConnections(),
@@ -337,28 +423,11 @@ export function SubAgentRunBlock({
 
   useEffect(() => {
     if (isComplete) return;
-    const interval = setInterval(() => {
+      const interval = setInterval(() => {
       setElapsed((Date.now() - startTimeRef.current) / 1000);
     }, 100);
     return () => clearInterval(interval);
   }, [isComplete]);
-
-  useEffect(() => {
-    const now = Date.now();
-    for (const event of progressEvents ?? []) {
-      const taskKey = getStableTaskKey({
-        taskId: event.taskId,
-        taskCount: args?.taskCount ?? 0,
-      }) ?? (event.connectionId != null ? `conn-${event.connectionId}` : 'single');
-
-      if (!taskStartedAtRef.current.has(taskKey)) {
-        taskStartedAtRef.current.set(taskKey, now);
-      }
-      if ((event.phase === 'complete' || event.phase === 'error') && !taskCompletedAtRef.current.has(taskKey)) {
-        taskCompletedAtRef.current.set(taskKey, now);
-      }
-    }
-  }, [args?.taskCount, progressEvents]);
 
   const connectionNameById = useMemo(
     () => new Map(connections.map((connection) => [connection.id, connection.name])),
@@ -387,25 +456,24 @@ export function SubAgentRunBlock({
   );
 
   useEffect(() => {
-    const aggregateTabId = `subagent-console-${stableToolCallId}`;
-    const expectedTaskConsoleIds = new Set(
-      tasks
-        .map((task) => task.consoleTabId)
-        .filter((tabId): tabId is string => !!tabId)
-    );
-
-    for (const tab of tabs) {
-      if (tab.id === aggregateTabId) {
-        closeTab(tab.id);
-        continue;
-      }
-      if (!tab.id.startsWith(`${aggregateTabId}-`)) continue;
-      if (expectedTaskConsoleIds.has(tab.id)) continue;
-      closeTab(tab.id);
+    if (shouldDelayExplorerRendering) {
+      return;
     }
-  }, [closeTab, stableToolCallId, tabs, tasks]);
+    const now = Date.now();
+    for (const task of tasks) {
+      if (!taskStartedAtRef.current.has(task.taskKey)) {
+        taskStartedAtRef.current.set(task.taskKey, startTimeRef.current);
+      }
+      if ((task.isComplete || task.isError) && !taskCompletedAtRef.current.has(task.taskKey)) {
+        taskCompletedAtRef.current.set(task.taskKey, now);
+      }
+    }
+  }, [shouldDelayExplorerRendering, tasks]);
 
   useEffect(() => {
+    if (shouldDelayExplorerRendering) {
+      return;
+    }
     const desiredOrder = tasks
       .map((task) => task.consoleTabId)
       .filter((tabId): tabId is string => !!tabId && tabs.some((tab) => tab.id === tabId));
@@ -429,7 +497,22 @@ export function SubAgentRunBlock({
       reorderTabs(desiredOrder[index], currentOrder[index]);
       return;
     }
-  }, [reorderTabs, tabs, tasks]);
+  }, [reorderTabs, shouldDelayExplorerRendering, tabs, tasks]);
+
+  if (shouldDelayExplorerRendering) {
+    return (
+      <div className="flex flex-col">
+        <SingleSubAgentCard
+          agentType={agentType}
+          label={agentLabel}
+          statusText="Starting Agent..."
+          isComplete={false}
+          isError={false}
+          elapsedText={elapsed > 0 ? formatElapsedText(elapsed) : undefined}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col">

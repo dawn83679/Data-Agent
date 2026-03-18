@@ -42,7 +42,7 @@ export function SingleSubAgentCard({
       </div>
       {shouldShowStatusText && (
         <div className="px-3 pb-2 -mt-0.5">
-          <p className={cn('text-[11px] truncate pl-5', isComplete ? 'theme-text-primary' : 'theme-text-secondary')}>
+          <p className={cn('text-[11px] pl-5 whitespace-normal break-words', isComplete ? 'theme-text-primary' : 'theme-text-secondary')}>
             {statusText}
           </p>
         </div>

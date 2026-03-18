@@ -20,7 +20,14 @@ export interface TableTabMetadata extends ConsoleTabMetadata {
   objectType: 'table' | 'view';
   catalog?: string;
   schema?: string;
+  currentPage?: number;
+  pageSize?: number;
+  whereClause?: string;
+  orderBy?: string;
+  highlightColumn?: string;
 }
+
+export type TableDataTabMetadata = TableTabMetadata;
 
 /**
  * Plan Tab Metadata
@@ -34,6 +41,7 @@ export interface SubAgentParamsSummary {
   userQuestion?: string;
   connectionIds?: number[];
   taskCount?: number;
+  timeoutSeconds?: number;
 }
 
 /**

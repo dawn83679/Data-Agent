@@ -18,6 +18,8 @@ export interface SubAgentProgressEvent {
   taskId?: string;
   /** Stable connection identity from backend lifecycle events. */
   connectionId?: number;
+  /** Effective timeout for this sub-agent/task. */
+  timeoutSeconds?: number;
   /** Real task-scoped result summary from backend SUB_AGENT_COMPLETE. */
   summaryText?: string;
   /** Real task-scoped result payload from backend SUB_AGENT_COMPLETE. */
@@ -110,6 +112,7 @@ export function tryParseSubAgentProgress(data: string | undefined): SubAgentProg
           : undefined,
         taskId: typeof parsed.taskId === 'string' ? parsed.taskId : undefined,
         connectionId: typeof parsed.connectionId === 'number' ? parsed.connectionId : undefined,
+        timeoutSeconds: typeof parsed.timeoutSeconds === 'number' ? parsed.timeoutSeconds : undefined,
         summaryText: typeof parsed.summaryText === 'string' ? parsed.summaryText : undefined,
         resultJson: typeof parsed.resultJson === 'string' ? parsed.resultJson : undefined,
       };
@@ -126,14 +129,16 @@ export interface CallingSubAgentArgs {
   connectionIds?: number[];
   taskCount?: number;
   taskInstructions?: string[];
+  timeoutSeconds?: number;
+  taskTimeoutSeconds?: Array<number | undefined>;
 }
 
 /**
  * Parse the arguments of callingExplorerSubAgent / callingPlannerSubAgent TOOL_CALL.
  * agentType is derived from toolName.
  *
- * Explorer new format: { tasksJson: "[{connectionId:1, instruction:...}, ...]", timeoutSeconds?: N }
- * Planner format: { instruction: "...", schemaSummaryJson: "..." }
+ * Explorer format: { tasks: [{connectionId:1, instruction:..., timeoutSeconds?: N}, ...], timeoutSeconds?: N }
+ * Planner format: { instruction: "...", schemaSummaryJson: "...", timeoutSeconds?: N }
  */
 export function parseCallingSubAgentArgs(
   args: string,
@@ -156,26 +161,34 @@ export function parseCallingSubAgentArgs(
       return null;
     }
 
-    // Extract connectionIds from tasksJson (Explorer new format)
+    // Extract connectionIds from tasks (Explorer format).
     let connectionIds: number[] | undefined;
     let taskCount: number | undefined;
     let taskInstructions: string[] | undefined;
-    if (typeof obj.tasksJson === 'string') {
-      try {
-        const tasks = JSON.parse(obj.tasksJson) as unknown[];
-        if (Array.isArray(tasks)) {
-          taskCount = tasks.length;
-          connectionIds = tasks
-            .map((t) => (t && typeof t === 'object' && 'connectionId' in t) ? (t as Record<string, unknown>).connectionId : null)
-            .filter((id): id is number => typeof id === 'number');
-          taskInstructions = tasks
-            .map((t) => (t && typeof t === 'object' && 'instruction' in t) ? (t as Record<string, unknown>).instruction : null)
-            .filter((instruction): instruction is string => typeof instruction === 'string' && instruction.trim().length > 0);
-        }
-      } catch { /* tasksJson not yet complete */ }
+    let taskTimeoutSeconds: Array<number | undefined> | undefined;
+    if (Array.isArray(obj.tasks)) {
+      const tasks = obj.tasks;
+      taskCount = tasks.length;
+      connectionIds = tasks
+        .map((t) => (t && typeof t === 'object' && 'connectionId' in t) ? (t as Record<string, unknown>).connectionId : null)
+        .filter((id): id is number => typeof id === 'number');
+      taskInstructions = tasks
+        .map((t) => (t && typeof t === 'object' && 'instruction' in t) ? (t as Record<string, unknown>).instruction : null)
+        .filter((instruction): instruction is string => typeof instruction === 'string' && instruction.trim().length > 0);
+      taskTimeoutSeconds = tasks
+        .map((t) => {
+          if (!t || typeof t !== 'object' || !('timeoutSeconds' in t)) {
+            return undefined;
+          }
+          const timeoutSeconds = (t as Record<string, unknown>).timeoutSeconds;
+          return typeof timeoutSeconds === 'number' && timeoutSeconds > 0 ? timeoutSeconds : undefined;
+        });
     }
 
     const directInstruction = typeof obj.instruction === 'string' ? obj.instruction : undefined;
+    const timeoutSeconds = typeof obj.timeoutSeconds === 'number' && obj.timeoutSeconds > 0
+      ? obj.timeoutSeconds
+      : undefined;
     if ((!taskInstructions || taskInstructions.length === 0) && preview?.taskInstructions?.length) {
       taskInstructions = preview.taskInstructions;
     }
@@ -183,10 +196,6 @@ export function parseCallingSubAgentArgs(
       ?? preview?.instruction
       ?? (taskInstructions?.length === 1 ? taskInstructions[0] : undefined);
 
-    // Fallback: legacy connectionIds field
-    if (!connectionIds && Array.isArray(obj.connectionIds)) {
-      connectionIds = (obj.connectionIds as unknown[]).filter((r): r is number => typeof r === 'number');
-    }
     if ((!connectionIds || connectionIds.length === 0) && preview?.connectionIds?.length) {
       connectionIds = preview.connectionIds;
     }
@@ -200,6 +209,8 @@ export function parseCallingSubAgentArgs(
       connectionIds: connectionIds?.length ? connectionIds : undefined,
       taskCount,
       taskInstructions: taskInstructions?.length ? taskInstructions : (directInstruction ? [directInstruction] : undefined),
+      timeoutSeconds,
+      taskTimeoutSeconds: taskTimeoutSeconds?.some((value) => value != null) ? taskTimeoutSeconds : undefined,
     };
   } catch {
     // Streaming: args arrive as partial JSON — silently fall back
@@ -210,6 +221,8 @@ export function parseCallingSubAgentArgs(
         connectionIds: preview?.connectionIds,
         taskCount: preview?.taskInstructions?.length ?? preview?.connectionIds?.length,
         taskInstructions: preview?.taskInstructions,
+        timeoutSeconds: undefined,
+        taskTimeoutSeconds: undefined,
       };
     }
   }

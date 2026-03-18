@@ -354,6 +354,7 @@ export class MessageAccumulator {
       toolCounts: eventData?.toolCounts,
       taskId: eventData?.taskId ?? block.subAgentTaskId,
       connectionId: eventData?.connectionId,
+      timeoutSeconds: eventData?.timeoutSeconds,
       summaryText: eventData?.summaryText,
       resultJson: eventData?.resultJson,
     };
