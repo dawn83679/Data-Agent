@@ -12,6 +12,37 @@ import {
     SESSION_EXPIRED_MESSAGE,
 } from '../constants/chat';
 
+export interface ConversationPrefs {
+    agent: string;
+    model: string;
+}
+
+const PREFS_STORAGE_KEY = 'conversation_prefs';
+
+function loadAllPrefsFromStorage(): Record<string, ConversationPrefs> {
+    try {
+        const raw = localStorage.getItem(PREFS_STORAGE_KEY);
+        return raw ? (JSON.parse(raw) as Record<string, ConversationPrefs>) : {};
+    } catch {
+        return {};
+    }
+}
+
+function savePrefsToStorage(conversationId: number, prefs: ConversationPrefs): void {
+    try {
+        const all = loadAllPrefsFromStorage();
+        all[String(conversationId)] = prefs;
+        localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(all));
+    } catch {
+        // localStorage unavailable, silently ignore
+    }
+}
+
+function readPrefsFromStorage(conversationId: number): ConversationPrefs | null {
+    const all = loadAllPrefsFromStorage();
+    return all[String(conversationId)] ?? null;
+}
+
 interface ConversationRuntime {
     conversationId: number | null;
     messages: ChatMessage[];
@@ -25,6 +56,8 @@ interface ConversationRuntime {
     createdAt: number;
     lastTouchedAt: number;
     titleOverride: string | null;
+    /** Persisted agent/model selection for this conversation. */
+    prefs: ConversationPrefs | null;
 }
 
 interface UseConversationRuntimeOptions {
@@ -64,6 +97,10 @@ interface UseConversationRuntimeReturn {
     loadMessages: (id: number | null, messages: ChatMessage[]) => void;
     closeConversationTab: (id: number | null) => void;
     setConversationTabTitle: (id: number, title: string | null) => void;
+    /** Read the prefs of the currently active conversation. */
+    getActivePrefs: () => ConversationPrefs | null;
+    /** Write prefs for the currently active conversation. */
+    setActivePrefs: (prefs: ConversationPrefs) => void;
 
     // Current conversation ID
     activeConversationId: number | null;
@@ -73,6 +110,10 @@ interface UseConversationRuntimeReturn {
 }
 
 const GAP_THRESHOLD_MS = 800;
+
+function isPersistedConversationId(id: number | null): id is number {
+    return Number.isFinite(id) && (id as number) > 0;
+}
 
 async function refreshAccessToken(): Promise<TokenPairResponse | null> {
     const { refreshToken } = useAuthStore.getState();
@@ -140,6 +181,7 @@ export function useConversationRuntime(
     const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
     const activeConversationIdRef = useRef<number | null>(null);
     const previousActiveConversationIdRef = useRef<number | null>(null);
+    const tempConversationIdRef = useRef(-1);
 
     useEffect(() => {
         activeConversationIdRef.current = activeConversationId;
@@ -167,6 +209,12 @@ export function useConversationRuntime(
         return id === null ? '__new__' : String(id);
     }, []);
 
+    const allocateTempConversationId = useCallback((): number => {
+        const next = tempConversationIdRef.current;
+        tempConversationIdRef.current -= 1;
+        return next;
+    }, []);
+
     const getOrCreateRuntime = useCallback((id: number | null): ConversationRuntime => {
         const key = getRuntimeKey(id);
         let runtime = runtimesRef.current.get(key);
@@ -186,6 +234,7 @@ export function useConversationRuntime(
                 createdAt: now,
                 lastTouchedAt: now,
                 titleOverride: null,
+                prefs: null,
             };
             runtimesRef.current.set(key, runtime);
         }
@@ -286,8 +335,9 @@ export function useConversationRuntime(
                     updateCounter++;
 
                     // 重要 block 立即更新，普通文本使用 RAF 批量更新
-                    const isImportantBlock = 
+                    const isImportantBlock =
                         block.done ||
+                        block.type === 'THOUGHT' ||
                         block.type === 'TOOL_CALL' ||
                         block.type === 'TOOL_RESULT';
                     
@@ -349,6 +399,22 @@ export function useConversationRuntime(
             const trimmed = text.trim();
             if (!trimmed || runtime.submitting) return;
 
+            if (runtime.conversationId === null) {
+                const tempConversationId = allocateTempConversationId();
+                const oldKey = getRuntimeKey(null);
+                const newKey = getRuntimeKey(tempConversationId);
+                if (runtimesRef.current.get(oldKey) === runtime) {
+                    runtimesRef.current.delete(oldKey);
+                }
+                runtime.conversationId = tempConversationId;
+                runtimesRef.current.set(newKey, runtime);
+                touchRuntime(runtime);
+                if (activeConversationIdRef.current === null) {
+                    activeConversationIdRef.current = tempConversationId;
+                    setActiveConversationId(tempConversationId);
+                }
+            }
+
             runtime.submitting = true;
             runtime.isLoading = true;
             runtime.isWaiting = true;
@@ -367,7 +433,7 @@ export function useConversationRuntime(
             const request: ChatRequest = {
                 message: trimmed,
                 ...baseBody,
-                ...(runtime.conversationId != null && { conversationId: runtime.conversationId }),
+                ...(isPersistedConversationId(runtime.conversationId) && { conversationId: runtime.conversationId }),
             };
 
             runtime.abortController = new AbortController();
@@ -387,18 +453,24 @@ export function useConversationRuntime(
 
                 // If backend already assigned a conversationId in headers, adopt it ASAP to avoid UI flicker.
                 const headerConversationId = response.headers.get('X-Conversation-Id');
-                if (runtime.conversationId === null && headerConversationId) {
+                if (!isPersistedConversationId(runtime.conversationId) && headerConversationId) {
                     const parsed = Number(headerConversationId);
                     if (Number.isFinite(parsed) && parsed > 0) {
-                        const oldKey = getRuntimeKey(null);
+                        const previousConversationId = runtime.conversationId;
+                        const oldKey = getRuntimeKey(previousConversationId);
                         const newKey = getRuntimeKey(parsed);
-                        runtimesRef.current.delete(oldKey);
+                        if (oldKey !== newKey) {
+                            runtimesRef.current.delete(oldKey);
+                        }
                         runtime.conversationId = parsed;
                         runtimesRef.current.set(newKey, runtime);
                         touchRuntime(runtime);
+                        // Persist prefs that were set before the real ID was known
+                        if (runtime.prefs) savePrefsToStorage(parsed, runtime.prefs);
 
-                        // Only auto-switch if user is still on the new-chat runtime.
-                        if (activeConversationIdRef.current === null) {
+                        // Only auto-switch if user is still on this runtime.
+                        if (activeConversationIdRef.current === previousConversationId) {
+                            activeConversationIdRef.current = parsed;
                             setActiveConversationId(parsed);
                         }
                     }
@@ -419,19 +491,29 @@ export function useConversationRuntime(
                 runtime.lastStreamEventAt = Date.now();
 
                 await consumeStreamIntoRuntime(response, runtime, (newConversationId) => {
+                    if (!Number.isFinite(newConversationId) || newConversationId <= 0) {
+                        return;
+                    }
+
                     // Update runtime's conversation ID
-                    if (runtime.conversationId === null && newConversationId) {
-                        const oldKey = getRuntimeKey(null);
+                    if (!isPersistedConversationId(runtime.conversationId)) {
+                        const previousConversationId = runtime.conversationId;
+                        const oldKey = getRuntimeKey(previousConversationId);
                         const newKey = getRuntimeKey(newConversationId);
 
                         // Migrate runtime to new key
-                        runtimesRef.current.delete(oldKey);
+                        if (oldKey !== newKey) {
+                            runtimesRef.current.delete(oldKey);
+                        }
                         runtime.conversationId = newConversationId;
                         runtimesRef.current.set(newKey, runtime);
                         touchRuntime(runtime);
+                        // Persist prefs that were set before the real ID was known
+                        if (runtime.prefs) savePrefsToStorage(newConversationId, runtime.prefs);
 
-                        // Update active conversation ID if this was the active one
-                        if (activeConversationId === null) {
+                        // Update active conversation ID if this runtime is still active
+                        if (activeConversationIdRef.current === previousConversationId) {
+                            activeConversationIdRef.current = newConversationId;
                             setActiveConversationId(newConversationId);
                         }
                     }
@@ -461,7 +543,7 @@ export function useConversationRuntime(
             }
         },
         [api, baseBody, onResponse, onError, updateRuntimeMessages, consumeStreamIntoRuntime,
-            cancelWaiting, getRuntimeKey, activeConversationId, touchRuntime, forceUpdate]
+            cancelWaiting, getRuntimeKey, touchRuntime, forceUpdate, allocateTempConversationId]
     );
 
     const submitMessage = useCallback(
@@ -578,6 +660,28 @@ export function useConversationRuntime(
         return list;
     }, [renderTick, getFirstValidUserMessage]);
 
+    const getActivePrefs = useCallback((): ConversationPrefs | null => {
+        const id = activeConversationIdRef.current;
+        const runtime = getOrCreateRuntime(id);
+        // Return from runtime cache first; fall back to localStorage for persisted conversations
+        if (runtime.prefs) return runtime.prefs;
+        if (isPersistedConversationId(id)) {
+            const stored = readPrefsFromStorage(id);
+            if (stored) runtime.prefs = stored; // back-fill cache
+            return stored;
+        }
+        return null;
+    }, [getOrCreateRuntime]);
+
+    const setActivePrefs = useCallback((prefs: ConversationPrefs) => {
+        const id = activeConversationIdRef.current;
+        getOrCreateRuntime(id).prefs = prefs;
+        // Only persist for real server-assigned conversation IDs
+        if (isPersistedConversationId(id)) {
+            savePrefsToStorage(id, prefs);
+        }
+    }, [getOrCreateRuntime]);
+
     return {
         messages: activeRuntime.messages,
         isLoading: activeRuntime.isLoading,
@@ -590,6 +694,8 @@ export function useConversationRuntime(
         loadMessages,
         closeConversationTab,
         setConversationTabTitle,
+        getActivePrefs,
+        setActivePrefs,
         activeConversationId,
         conversationTabs,
     };
