@@ -8,7 +8,7 @@ import type { Segment } from './types';
 import { SegmentKind } from './types';
 
 export interface SegmentListProps {
-  /** Segments to render in order (from blocksToSegments). Same pipeline for streaming and history. */
+  /** Segments to render in order (from MessageAccumulator). Same pipeline for streaming and history. */
   segments: Segment[];
   /** Fallback when segments are empty (e.g. markdown content). */
   fallbackContent?: string;

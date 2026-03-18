@@ -13,9 +13,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 /**
- * Embedding 模型统一配置
- * 根据 ai.embedding.provider 选择千问或智谱向量模型，避免多模型接入时 Bean 冲突。
- * 优先于 DashScope 自动配置执行，确保只注册一个 EmbeddingModel Bean。
+ * Unified embedding model configuration.
+ * Routes to Qwen or Zhipu embedding model based on ai.embedding.provider, avoiding bean conflicts.
+ * Runs before DashScope auto-configuration to ensure only one EmbeddingModel bean is registered.
  */
 @Slf4j
 @Configuration

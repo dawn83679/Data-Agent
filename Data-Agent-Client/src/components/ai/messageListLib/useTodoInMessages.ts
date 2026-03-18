@@ -1,5 +1,5 @@
 import { MessageRole } from '../../../types/chat';
-import { blocksToSegments } from './blocksToSegments';
+import { MessageAccumulator } from './MessageAccumulator';
 import { isTodoCompleted, isTodoTool, parseTodoListResponse } from '../blocks';
 import type { TodoItem, TodoListResponse } from '../blocks';
 import { segmentsHaveTodo } from './segmentTodoUtils';
@@ -37,7 +37,13 @@ export function useTodoInMessages(displayMessages: Message[]): TodoInMessagesSta
   displayMessages.forEach((msg, msgIndex) => {
     if (msg.role !== MessageRole.ASSISTANT) return;
     const segs =
-      msg.blocks && msg.blocks.length > 0 ? blocksToSegments(msg.blocks) : [];
+      msg.blocks && msg.blocks.length > 0
+        ? (() => {
+            const acc = new MessageAccumulator();
+            msg.blocks!.forEach((b) => acc.pushBlock(b));
+            return acc.getSegments();
+          })()
+        : [];
     if (!segmentsHaveTodo(segs)) return;
     lastAssistantMessageIndexWithTodo = msgIndex;
     segs.forEach((s) => {

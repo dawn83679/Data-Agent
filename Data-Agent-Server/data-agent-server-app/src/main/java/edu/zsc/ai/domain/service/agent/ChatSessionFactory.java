@@ -7,7 +7,10 @@ import edu.zsc.ai.agent.memory.MemoryIdUtil;
 import edu.zsc.ai.api.model.request.ChatRequest;
 import edu.zsc.ai.common.constant.ChatErrorConstants;
 import edu.zsc.ai.common.enums.ai.AgentModeEnum;
+import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
 import edu.zsc.ai.common.enums.ai.ModelEnum;
+import edu.zsc.ai.context.AgentRequestContext;
+import edu.zsc.ai.context.AgentRequestContextInfo;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
@@ -20,6 +23,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Objects;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Prepares all state needed before an agent invocation:
@@ -39,23 +44,33 @@ public class ChatSessionFactory {
      * Build a ChatSession from an incoming ChatRequest.
      */
     public ChatSession create(ChatRequest request) {
-        String modelName = resolveModel(request.getModel());
-        AgentModeEnum agentMode = AgentModeEnum.fromRequest(request.getAgentType());
+        RequestContextInfo previousRequestContext = RequestContext.snapshot();
+        AgentRequestContextInfo previousAgentRequestContext = AgentRequestContext.snapshot();
+        try {
+            String modelName = resolveModel(request.getModel());
+            AgentModeEnum agentMode = AgentModeEnum.fromRequest(request.getAgentType());
+            AgentRequestContext.set(AgentRequestContextInfo.builder()
+                    .agentMode(agentMode.getCode())
+                    .agentType(AgentTypeEnum.MAIN.getCode())
+                    .modelName(modelName)
+                    .build());
 
-        RequestContext.get().setAgentMode(agentMode.getCode());
+            ReActAgent agent = reActAgentProvider.getAgent(modelName, request.getLanguage(), agentMode.getCode());
 
-        ReActAgent agent = reActAgentProvider.getAgent(modelName, request.getLanguage(), agentMode.getCode());
+            Long conversationId = ensureConversation(request);
 
-        Long conversationId = ensureConversation(request);
+            String memoryId = MemoryIdUtil.build(RequestContext.getUserId(), conversationId, modelName);
+            String enrichedMessage = memoryContextService.buildEnrichedMessage(
+                    RequestContext.getUserId(), conversationId, request.getMessage());
+            InvocationParameters parameters = InvocationParameters.from(buildInvocationContext());
+            RequestContextInfo requestContextSnapshot = RequestContext.snapshot();
+            AgentRequestContextInfo agentRequestContextSnapshot = AgentRequestContext.snapshot();
 
-        String memoryId = MemoryIdUtil.build(RequestContext.getUserId(), conversationId, modelName);
-        String enrichedMessage = memoryContextService.buildEnrichedMessage(
-                RequestContext.getUserId(), conversationId, request.getMessage());
-        InvocationParameters parameters = InvocationParameters.from(RequestContext.toMap());
-        RequestContextInfo contextSnapshot = RequestContext.get();
-
-        return new ChatSession(modelName, agentMode, agent, memoryId,
-                enrichedMessage, parameters, conversationId, contextSnapshot);
+            return new ChatSession(modelName, agentMode, agent, memoryId,
+                    enrichedMessage, parameters, conversationId, requestContextSnapshot, agentRequestContextSnapshot);
+        } finally {
+            restoreContexts(previousRequestContext, previousAgentRequestContext);
+        }
     }
 
     /**
@@ -63,17 +78,37 @@ public class ChatSessionFactory {
      * reusing the conversation and model from the original session.
      */
     public ChatSession createPlanContinuation(ChatSession original, ChatRequest request) {
-        RequestContext.set(original.contextSnapshot());
-        RequestContext.get().setAgentMode(AgentModeEnum.PLAN.getCode());
+        RequestContextInfo previousRequestContext = RequestContext.snapshot();
+        AgentRequestContextInfo previousAgentRequestContext = AgentRequestContext.snapshot();
+        try {
+            if (original.requestContextSnapshot() != null) {
+                RequestContext.set(original.requestContextSnapshot());
+            } else {
+                RequestContext.clear();
+            }
 
-        ReActAgent planAgent = reActAgentProvider.getAgent(
-                original.modelName(), request.getLanguage(), AgentModeEnum.PLAN.getCode());
-        InvocationParameters planParams = InvocationParameters.from(RequestContext.toMap());
-        String continuation = "Continue analyzing the user's request and create a structured execution plan.";
+            AgentRequestContextInfo planAgentContext = original.agentRequestContextSnapshot() != null
+                    ? original.agentRequestContextSnapshot().toBuilder()
+                    .agentMode(AgentModeEnum.PLAN.getCode())
+                    .build()
+                    : AgentRequestContextInfo.builder()
+                    .agentMode(AgentModeEnum.PLAN.getCode())
+                    .agentType(AgentTypeEnum.MAIN.getCode())
+                    .modelName(original.modelName())
+                    .build();
+            AgentRequestContext.set(planAgentContext);
 
-        return new ChatSession(original.modelName(), AgentModeEnum.PLAN, planAgent,
-                original.memoryId(), continuation, planParams,
-                original.conversationId(), original.contextSnapshot());
+            ReActAgent planAgent = reActAgentProvider.getAgent(
+                    original.modelName(), request.getLanguage(), AgentModeEnum.PLAN.getCode());
+            InvocationParameters planParams = InvocationParameters.from(buildInvocationContext());
+            String continuation = "Continue analyzing the user's request and create a structured execution plan.";
+
+            return new ChatSession(original.modelName(), AgentModeEnum.PLAN, planAgent,
+                    original.memoryId(), continuation, planParams,
+                    original.conversationId(), RequestContext.snapshot(), AgentRequestContext.snapshot());
+        } finally {
+            restoreContexts(previousRequestContext, previousAgentRequestContext);
+        }
     }
 
     private String resolveModel(String model) {
@@ -95,5 +130,26 @@ public class ChatSessionFactory {
         RequestContext.updateConversationId(conversation.getId());
         log.info("Created new conversation: id={}", conversation.getId());
         return conversation.getId();
+    }
+
+    private Map<String, Object> buildInvocationContext() {
+        Map<String, Object> invocationContext = new HashMap<>(RequestContext.toMap());
+        invocationContext.putAll(AgentRequestContext.toMap());
+        return invocationContext;
+    }
+
+    private void restoreContexts(RequestContextInfo previousRequestContext,
+                                 AgentRequestContextInfo previousAgentRequestContext) {
+        if (previousRequestContext != null) {
+            RequestContext.set(previousRequestContext);
+        } else {
+            RequestContext.clear();
+        }
+
+        if (previousAgentRequestContext != null) {
+            AgentRequestContext.set(previousAgentRequestContext);
+        } else {
+            AgentRequestContext.clear();
+        }
     }
 }

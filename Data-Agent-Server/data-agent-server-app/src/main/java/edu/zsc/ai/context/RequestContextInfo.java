@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
  * Contains current request context data
  */
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class RequestContextInfo {
@@ -39,9 +39,4 @@ public class RequestContextInfo {
      * Schema name
      */
     private String schema;
-
-    /**
-     * Agent mode (agent / plan)
-     */
-    private String agentMode;
 }

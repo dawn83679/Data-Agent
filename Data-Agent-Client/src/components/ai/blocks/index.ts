@@ -21,3 +21,9 @@ export {
 } from './askUserQuestionTypes';
 export type { AskUserQuestionPayload } from './askUserQuestionTypes';
 export { getToolType, ToolType } from './toolTypes';
+export { SubAgentRunBlock } from './SubAgentRunBlock';
+export { SingleSubAgentCard } from './SingleSubAgentCard';
+export { SubAgentProgressTimeline } from './SubAgentProgressTimeline';
+export type { SubAgentProgressEvent } from './subAgentTypes';
+export { getAgentTheming, buildNestedToolCalls, subAgentConsoleTabId } from './subAgentDataHelpers';
+export { useSubAgentConsoleTab } from './subAgentConsoleHook';

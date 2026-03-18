@@ -16,6 +16,9 @@ import { parseExitPlanPayload, parsePartialExitPlanPayload, type ExitPlanPayload
 import { getToolType, ToolType } from './toolTypes';
 import { formatParameters } from './formatParameters';
 import { ToolExecutionState } from '../messageListLib/types';
+import type { Segment } from '../messageListLib/types';
+import { SubAgentRunBlock } from './SubAgentRunBlock';
+import type { SubAgentProgressEvent } from './subAgentTypes';
 import { AskUserQuestionCard } from './AskUserQuestionCard';
 import { WriteConfirmCard } from './WriteConfirmCard';
 import { ExitPlanModeCard } from './ExitPlanModeCard';
@@ -37,6 +40,10 @@ export interface ToolRunBlockProps {
   toolCallId?: string;
   /** Whether this tool run belongs to current streaming turn and can auto retry. */
   allowAutoRetry?: boolean;
+  /** SubAgent progress events collected from STATUS blocks (exploreSchema/generateSqlPlan only). */
+  progressEvents?: SubAgentProgressEvent[];
+  /** Nested tool runs from SubAgent (getEnvironmentOverview, searchObjects, etc.). */
+  nestedToolRuns?: Segment[];
 }
 
 /**
@@ -57,10 +64,27 @@ export function ToolRunBlock({
   executionState,
   toolCallId,
   allowAutoRetry = false,
+  progressEvents,
+  nestedToolRuns,
 }: ToolRunBlockProps) {
   const toolType = getToolType(toolName);
   const formattedParameters = formatParameters(parametersData);
   const isInteractive = toolType === ToolType.ASK_USER || toolType === ToolType.WRITE_CONFIRM;
+
+  // 0. exploreSchema / generateSqlPlan — render as SubAgent card at every lifecycle stage
+  if (toolType === ToolType.CALLING_SUB_AGENT) {
+    return (
+      <SubAgentRunBlock
+        toolName={toolName}
+        parametersData={parametersData}
+        responseData={responseData}
+        responseError={responseError}
+        progressEvents={progressEvents}
+        toolCallId={toolCallId}
+        nestedToolRuns={nestedToolRuns}
+      />
+    );
+  }
 
   // 0a. Thinking tool — render as thought block at every lifecycle stage
   if (toolType === ToolType.THINKING) {
@@ -97,13 +121,30 @@ export function ToolRunBlock({
 
   // 1. Handle Execution Lifecycle States
   if (executionState === ToolExecutionState.STREAMING_ARGUMENTS) {
-    if (isInteractive) return <ToolRunExecuting toolName={toolName} parametersData={parametersData} />;
-    return <ToolRunStreaming toolName={toolName} partialArguments={parametersData} />;
+    if (isInteractive) {
+      return (
+        <ToolRunExecuting
+          toolName={toolName}
+          parametersData={parametersData}
+        />
+      );
+    }
+    return (
+      <ToolRunStreaming
+        toolName={toolName}
+        partialArguments={parametersData}
+      />
+    );
   }
 
   if (executionState === ToolExecutionState.EXECUTING || (pending && !executionState)) {
     // Both interactive and non-interactive tools should just pulse while executing/pending
-    return <ToolRunExecuting toolName={toolName} parametersData={parametersData} />;
+    return (
+      <ToolRunExecuting
+        toolName={toolName}
+        parametersData={parametersData}
+      />
+    );
   }
 
   // 2. Error fallback for non-chart tools.

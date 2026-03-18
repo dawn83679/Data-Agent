@@ -12,7 +12,7 @@
 
 import { create } from 'zustand';
 import type { DbTypeOption } from '../types/dbType';
-import type { ConsoleTabMetadata } from '../types/tab';
+import type { ConsoleTabMetadata, SubAgentConsoleTabMetadata } from '../types/tab';
 import type { PreferenceState } from '../constants/workspacePreferences';
 import { useTabStore, type Tab } from './tabStore';
 import { usePreferenceStore } from './preferenceStore';
@@ -45,6 +45,7 @@ export interface WorkspaceState extends PreferenceState {
   updateTabContent: (id: string, content: string) => void;
   updateTabMetadata: (id: string, metadata: Partial<ConsoleTabMetadata>) => void;
   updatePlanPayload: (id: string, payload: import('../components/ai/blocks/exitPlanModeTypes').ExitPlanPayload) => void;
+  updateSubAgentConsole: (id: string, metadata: SubAgentConsoleTabMetadata) => void;
   reorderTabs: (sourceId: string, destinationId: string) => void;
 
   // UI actions
@@ -100,6 +101,7 @@ const getAggregatedState = (): WorkspaceState => {
     updateTabContent: () => {},
     updateTabMetadata: () => {},
     updatePlanPayload: () => {},
+    updateSubAgentConsole: () => {},
     reorderTabs: () => {},
     setSettingsModalOpen: () => {},
     updatePreferences: () => {},
@@ -188,6 +190,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => {
       });
     },
 
+    updateSubAgentConsole: (id, metadata) => {
+      useTabStore.getState().updateSubAgentConsole(id, metadata);
+      const tabState = useTabStore.getState();
+      set({
+        tabs: tabState.tabs,
+      });
+    },
+
     reorderTabs: (sourceId, destinationId) => {
       useTabStore.getState().reorderTabs(sourceId, destinationId);
       const tabState = useTabStore.getState();
@@ -266,6 +276,7 @@ useWorkspaceStore.getState = () => {
     updateTabContent: current.updateTabContent,
     updateTabMetadata: current.updateTabMetadata,
     updatePlanPayload: current.updatePlanPayload,
+    updateSubAgentConsole: current.updateSubAgentConsole,
     reorderTabs: current.reorderTabs,
     setSettingsModalOpen: current.setSettingsModalOpen,
     updatePreferences: current.updatePreferences,

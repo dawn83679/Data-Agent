@@ -7,8 +7,9 @@ import { Toolbar } from "../components/workspace/Toolbar";
 import { TableDataTab } from "../components/workspace/TableDataTab";
 import { EmptyState } from "../components/workspace/EmptyState";
 import { PlanConsole } from "../components/plan/PlanConsole";
+import { SubAgentConsole } from "../components/subagent/SubAgentConsole";
 import { useWorkspaceStore } from "../store/workspaceStore";
-import type { TableTabMetadata, PlanTabMetadata } from "../types/tab";
+import type { TableTabMetadata, PlanTabMetadata, SubAgentConsoleTabMetadata } from "../types/tab";
 import type { ExecuteSqlResponse } from "../types/sql";
 import { sqlExecutionService } from "../services/sqlExecution.service";
 import { I18N_KEYS } from "../constants/i18nKeys";
@@ -22,7 +23,8 @@ export default function Home() {
     const [isRunning, setIsRunning] = useState(false);
 
     const activeTab = tabs.find(t => t.id === activeTabId);
-    const sqlContext = activeTab?.type !== 'plan'
+    const isSpecialTab = activeTab?.type === 'plan' || activeTab?.type === 'subagent-console';
+    const sqlContext = !isSpecialTab
         ? activeTab?.metadata as import('../types/tab').ConsoleTabMetadata | undefined
         : undefined;
 
@@ -85,6 +87,11 @@ export default function Home() {
                 <PlanConsole
                     tabId={activeTab.id}
                     payload={(activeTab.metadata as PlanTabMetadata).planPayload}
+                />
+            ) : activeTab?.type === 'subagent-console' ? (
+                <SubAgentConsole
+                    tabId={activeTab.id}
+                    metadata={activeTab.metadata as SubAgentConsoleTabMetadata}
                 />
             ) : (
                 <ResultsPanel

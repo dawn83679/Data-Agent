@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
+import edu.zsc.ai.agent.tool.message.WriteConfirmationMessageSupport;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.domain.model.context.DbContext;
 import lombok.extern.slf4j.Slf4j;
@@ -111,8 +112,7 @@ public class WriteConfirmationStore {
 
         if (sessionTokens.isEmpty()) {
             log.warn("[WriteConfirm] consumeConfirmedBySql: no tokens at all for userId={} conversationId={}", userId, conversationId);
-            return WriteConsumeResult.fail("NO_TOKEN",
-                    "No confirmation token exists for this conversation. You must call askUserConfirm first.");
+            return WriteConsumeResult.fail("NO_TOKEN", WriteConfirmationMessageSupport.noTokenForConversation());
         }
 
         // Step 2: check token statuses
@@ -122,13 +122,11 @@ public class WriteConfirmationStore {
             boolean hasPending = sessionTokens.stream().anyMatch(e -> e.getStatus() == WriteConfirmationStatus.PENDING);
             if (hasPending) {
                 log.warn("[WriteConfirm] consumeConfirmedBySql: only PENDING tokens for userId={} conversationId={}", userId, conversationId);
-                return WriteConsumeResult.fail("NOT_CONFIRMED",
-                        "Confirmation token exists but user has not confirmed yet. Wait for user confirmation.");
+                return WriteConsumeResult.fail("NOT_CONFIRMED", WriteConfirmationMessageSupport.tokenPending());
             }
             // all must be CONSUMED
             log.warn("[WriteConfirm] consumeConfirmedBySql: only CONSUMED tokens for userId={} conversationId={}", userId, conversationId);
-            return WriteConsumeResult.fail("ALREADY_CONSUMED",
-                    "Confirmation token was already used. Call askUserConfirm again for a new confirmation.");
+            return WriteConsumeResult.fail("ALREADY_CONSUMED", WriteConfirmationMessageSupport.tokenAlreadyConsumed());
         }
 
         // Step 3: among CONFIRMED tokens, try to find an exact match
@@ -152,28 +150,20 @@ public class WriteConfirmationStore {
 
         if (!Objects.equals(closest.getConnectionId(), db.connectionId())) {
             return WriteConsumeResult.fail("PARAM_MISMATCH",
-                    "Confirmed token connectionId=" + closest.getConnectionId()
-                            + " but executeNonSelectSql received connectionId=" + db.connectionId()
-                            + ". Use the same connectionId.");
+                    WriteConfirmationMessageSupport.connectionMismatch(closest.getConnectionId(), db.connectionId()));
         }
         if (!Objects.equals(closest.getCatalog(), db.catalog())) {
             return WriteConsumeResult.fail("PARAM_MISMATCH",
-                    "Confirmed token catalog='" + closest.getCatalog()
-                            + "' but executeNonSelectSql received catalog='" + db.catalog()
-                            + "'. Use the same catalog.");
+                    WriteConfirmationMessageSupport.catalogMismatch(closest.getCatalog(), db.catalog()));
         }
         if (!Objects.equals(closest.getSchema(), db.schema())) {
             return WriteConsumeResult.fail("PARAM_MISMATCH",
-                    "Confirmed token schema='" + closest.getSchema()
-                            + "' but executeNonSelectSql received schema='" + db.schema()
-                            + "'. Use the same schema.");
+                    WriteConfirmationMessageSupport.schemaMismatch(closest.getSchema(), db.schema()));
         }
         // SQL must differ
         log.warn("[WriteConfirm] consumeConfirmedBySql: SQL mismatch for userId={} conversationId={}", userId, conversationId);
         return WriteConsumeResult.fail("SQL_MISMATCH",
-                "SQL content differs from the confirmed SQL. Confirmed: '" + closest.getSql()
-                        + "'; Received: '" + sql
-                        + "'. You must call askUserConfirm again with the new SQL.");
+                WriteConfirmationMessageSupport.sqlMismatch(closest.getSql(), sql));
     }
 
     /**

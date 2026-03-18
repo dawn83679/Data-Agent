@@ -9,6 +9,10 @@
 # Maven
 **/target/
 
+# Debug logs
+**/logs/
+.data-agent/
+
 # Node
 **/node_modules/
 **/dist/

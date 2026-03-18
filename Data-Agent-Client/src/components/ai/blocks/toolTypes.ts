@@ -3,6 +3,7 @@ import { isAskUserQuestionTool } from './askUserQuestionTypes';
 import { isWriteConfirmTool } from './writeConfirmTypes';
 import { isEnterPlanModeTool } from './enterPlanModeTypes';
 import { isExitPlanModeTool } from './exitPlanModeTypes';
+import { isCallingSubAgentTool } from './subAgentTypes';
 
 const CHART_TOOL_NAMES = new Set(['renderChart']);
 const THINKING_TOOL_NAMES = new Set(['thinking']);
@@ -34,6 +35,8 @@ export enum ToolType {
   EXIT_PLAN = 'EXIT_PLAN',
   /** ActivateSkill tool - renders response as markdown. */
   SKILL = 'SKILL',
+  /** SubAgent tools (exploreSchema, generateSqlPlan) - renders as SubAgent card with progress. */
+  CALLING_SUB_AGENT = 'CALLING_SUB_AGENT',
   /** All other tools (including built-in database tools) - renders as ToolRunDetail */
   GENERIC = 'GENERIC',
 }
@@ -53,5 +56,6 @@ export function getToolType(toolName: string): ToolType {
   if (isEnterPlanModeTool(toolName)) return ToolType.ENTER_PLAN;
   if (isExitPlanModeTool(toolName)) return ToolType.EXIT_PLAN;
   if (SKILL_TOOL_NAMES.has(toolName)) return ToolType.SKILL;
+  if (isCallingSubAgentTool(toolName)) return ToolType.CALLING_SUB_AGENT;
   return ToolType.GENERIC;
 }

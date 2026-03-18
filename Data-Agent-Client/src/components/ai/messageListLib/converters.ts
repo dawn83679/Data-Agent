@@ -12,6 +12,7 @@ export function chatMessageToMessage(msg: ChatMessage): Message {
     content: msg.content,
     timestamp: msg.createdAt ?? new Date(),
     blocks: msg.blocks,
+    doneMetadata: msg.doneMetadata,
   };
 }
 

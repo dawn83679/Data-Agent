@@ -4,8 +4,8 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * 智谱 GLM 流式对话模型配置
- * 配置前缀: ai.zhipu.streaming-chat-model
+ * Zhipu GLM streaming chat model configuration.
+ * Config prefix: ai.zhipu.streaming-chat-model
  */
 @Data
 @ConfigurationProperties(prefix = "ai.zhipu.streaming-chat-model")
@@ -21,7 +21,5 @@ public class ZhipuStreamingChatProperties {
     public static class Parameters {
 
         private double temperature = 0.7;
-
-        private int maxToken = 4096;
     }
 }

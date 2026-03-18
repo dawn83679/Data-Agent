@@ -33,6 +33,8 @@ export function renderSegment(
           responseError={segment.responseError}
           pending={segment.pending}
           toolCallId={segment.toolCallId}
+          progressEvents={segment.progressEvents}
+          nestedToolRuns={segment.nestedToolRuns}
           allowAutoRetry={allowAutoRetryForToolRun}
         />
       );

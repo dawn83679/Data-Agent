@@ -24,6 +24,10 @@ export const MessageBlockType = {
   THOUGHT: 'THOUGHT',
   TOOL_CALL: 'TOOL_CALL',
   TOOL_RESULT: 'TOOL_RESULT',
+  SUB_AGENT_START: 'SUB_AGENT_START',
+  SUB_AGENT_PROGRESS: 'SUB_AGENT_PROGRESS',
+  SUB_AGENT_COMPLETE: 'SUB_AGENT_COMPLETE',
+  SUB_AGENT_ERROR: 'SUB_AGENT_ERROR',
   STATUS: 'STATUS',
 } as const;
 
@@ -56,6 +60,8 @@ export interface ChatResponseBlock {
   type?: MessageBlockType;
   data?: string;
   conversationId?: number;
+  parentToolCallId?: string;
+  subAgentTaskId?: string;
   done: boolean;
 }
 
@@ -69,7 +75,27 @@ export interface ChatMessage {
   role: MessageRole;
   content: string;
   blocks?: ChatResponseBlock[];
+  doneMetadata?: DoneMetadata;
   createdAt?: Date;
+}
+
+export interface DoneMetadata {
+  toolCount?: number;
+  toolCounts?: Record<string, number>;
+  totalTokens?: number;
+  outputTokens?: number;
+}
+
+export interface SubAgentEventData {
+  agentType?: string;
+  message?: string;
+  toolCount?: number;
+  toolCounts?: Record<string, number>;
+  taskId?: string;
+  connectionId?: number;
+  timeoutSeconds?: number;
+  summaryText?: string;
+  resultJson?: string;
 }
 
 export interface UseChatOptions {

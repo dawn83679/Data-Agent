@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.Map;
 
 /**
- * MiniMax M2.5 模型配置（参照 Qwen 接入方式）
+ * MiniMax M2.5 model configuration (following Qwen integration pattern).
  */
 @Configuration
 @RequiredArgsConstructor
@@ -44,7 +44,6 @@ public class MiniMaxModelConfig implements ChatModelProvider {
                 .modelName(miniMaxProperties.getModelName())
                 .defaultRequestParameters(OpenAiChatRequestParameters.builder()
                         .temperature(params.getTemperature())
-                        .maxOutputTokens(params.getMaxToken())
                         .build())
                 .build();
     }
@@ -57,7 +56,6 @@ public class MiniMaxModelConfig implements ChatModelProvider {
                 .modelName(miniMaxProperties.getModelName())
                 .defaultRequestParameters(OpenAiChatRequestParameters.builder()
                         .temperature(params.getTemperature())
-                        .maxOutputTokens(params.getMaxToken())
                         .build())
                 .build();
     }

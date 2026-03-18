@@ -63,7 +63,7 @@ public interface OAuthStrategy {
      */
     default String buildSuccessRedirectUrl(String fromUrl, String accessToken, String refreshToken) {
         try {
-            if (!StringUtils.isNotBlank(fromUrl)) {
+            if (StringUtils.isBlank(fromUrl)) {
                 return null;
             }
 
@@ -86,7 +86,7 @@ public interface OAuthStrategy {
      */
     default String buildErrorRedirectUrl(String fromUrl, String error) {
         try {
-            if (!StringUtils.isNotBlank(fromUrl)) {
+            if (StringUtils.isBlank(fromUrl)) {
                 return null;
             }
 
@@ -113,7 +113,7 @@ public interface OAuthStrategy {
         }
 
         // Code must be present
-        if (!StringUtils.isNotBlank(code)) {
+        if (StringUtils.isBlank(code)) {
             return false;
         }
 

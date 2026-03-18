@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Bot } from 'lucide-react';
 import { SegmentList } from './SegmentList';
+import { ChatStatsFooter } from '../blocks/ChatStatsFooter';
 import type { Message, Segment, TodoBoxSpec } from './types';
 import { I18N_KEYS } from '../../../constants/i18nKeys';
 
@@ -39,6 +40,9 @@ export function AssistantBubble({
           isLastAssistantStreaming={isLastAssistantStreaming}
           isWaiting={isWaiting}
         />
+        {!isLastAssistantStreaming && message.doneMetadata && (
+          <ChatStatsFooter metadata={message.doneMetadata} />
+        )}
       </div>
     </div>
   );

@@ -94,6 +94,12 @@
             <artifactId>langchain4j-spring-boot-starter</artifactId>
         </dependency>
 
+        <!-- LangChain4j Agentic Module -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-agentic</artifactId>
+        </dependency>
+
         <!-- Qwen (DashScope) Integration -->
         <dependency>
             <groupId>dev.langchain4j</groupId>

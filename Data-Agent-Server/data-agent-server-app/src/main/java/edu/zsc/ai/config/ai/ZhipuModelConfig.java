@@ -12,9 +12,9 @@ import org.springframework.context.annotation.Configuration;
 import java.util.Map;
 
 /**
- * 智谱 GLM 模型配置
- * 与千问一致分为 chat-model、streaming-chat-model、embedding-model 三块。
- * Embedding 由 {@link EmbeddingConfig} 根据 ai.embedding.provider 统一路由。
+ * Zhipu GLM model configuration.
+ * Split into chat-model, streaming-chat-model, embedding-model (same as Qwen).
+ * Embedding is routed by {@link EmbeddingConfig} based on ai.embedding.provider.
  */
 @Configuration
 @RequiredArgsConstructor
@@ -47,7 +47,6 @@ public class ZhipuModelConfig implements ChatModelProvider {
                 .apiKey(streamingChatProperties.getApiKey())
                 .model(model.getModelName())
                 .temperature(params.getTemperature())
-                .maxToken(params.getMaxToken())
                 .build();
     }
 
@@ -57,7 +56,6 @@ public class ZhipuModelConfig implements ChatModelProvider {
                 .apiKey(chatProperties.getApiKey())
                 .model(model.getModelName())
                 .temperature(params.getTemperature())
-                .maxToken(params.getMaxToken())
                 .build();
     }
 }

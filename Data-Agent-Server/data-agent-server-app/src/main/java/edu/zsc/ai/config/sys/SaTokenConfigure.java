@@ -6,6 +6,8 @@ import cn.dev33.satoken.stp.StpUtil;
 import edu.zsc.ai.common.constant.ResponseCode;
 import edu.zsc.ai.common.constant.ResponseMessageKey;
 import edu.zsc.ai.common.enums.sys.SessionStatusEnum;
+import edu.zsc.ai.context.AgentExecutionContext;
+import edu.zsc.ai.context.AgentRequestContext;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.exception.BusinessException;
@@ -67,6 +69,8 @@ public class SaTokenConfigure implements WebMvcConfigurer {
             @Override
             public void afterCompletion(HttpServletRequest request, HttpServletResponse response,
                                         Object handler, Exception ex) {
+                AgentExecutionContext.clear();
+                AgentRequestContext.clear();
                 RequestContext.clear();
             }
         })

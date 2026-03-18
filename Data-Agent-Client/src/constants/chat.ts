@@ -39,3 +39,19 @@ export const PLANNING_LABEL = 'Planning...';
 export const STATUS_LABELS: Record<string, string> = {
   compressing: 'Compressing memory...',
 };
+
+/** SubAgent type → display label mapping. */
+export const SUB_AGENT_LABELS: Record<string, string> = {
+  explorer: 'Explorer',
+  EXPLORER: 'Explorer',
+  planner: 'SQL Planner',
+  PLANNER: 'SQL Planner',
+};
+
+/** SubAgent phase → display label mapping. */
+export const SUB_AGENT_PHASE_LABELS: Record<string, string> = {
+  start: 'Starting...',
+  progress: 'Processing...',
+  complete: 'Completed',
+  error: 'Failed',
+};

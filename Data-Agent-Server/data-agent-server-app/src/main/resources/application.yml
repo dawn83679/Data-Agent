@@ -78,13 +78,11 @@ ai:
       model-name: glm-5
       parameters:
         temperature: 0.7
-        max-token: 4096
     streaming-chat-model:
       api-key: ${zhipu_AI_API_KEY:}
       model-name: glm-5
       parameters:
         temperature: 0.7
-        max-token: 4096
     embedding-model:
       api-key: ${zhipu_AI_API_KEY:}
       model-name: embedding-2
@@ -95,12 +93,33 @@ ai:
     model-name: MiniMax-M2.5
     parameters:
       temperature: 0.7
-      max-token: 4096
 
 # 全局通用线程池（发现、异步任务等共用）
 app:
   executor:
     pool-size: 20
+
+agent:
+  observability:
+    enabled: false
+    runtime-log-enabled: false
+    console-log-enabled: true
+    sse-event-log-enabled: true
+    model-event-log-enabled: true
+    tool-event-log-enabled: true
+    include-prompt: false
+    include-response: true
+    include-token-stream: true
+    runtime-log-dir: ~/.data-agent/logs/agent/runtime
+  sub-agent:
+    explorer:
+      timeout-seconds: 120
+      dispatch:
+        max-concurrency: 3
+        queue-capacity: 9
+    planner:
+      timeout-seconds: 180
+    max-explorer-loop: 3
 
 memory:
   enabled: true

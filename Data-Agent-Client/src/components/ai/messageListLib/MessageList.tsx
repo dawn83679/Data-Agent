@@ -4,7 +4,7 @@ import { Bot } from 'lucide-react';
 import { MessageRole } from '../../../types/chat';
 import { I18N_KEYS } from '../../../constants/i18nKeys';
 import { mergeAssistantToolPairs } from './mergeMessages';
-import { blocksToSegments } from './blocksToSegments';
+import { MessageAccumulator } from './MessageAccumulator';
 import { MessageListItem } from './MessageListItem';
 import { segmentsHaveTodo } from './segmentTodoUtils';
 import { useTodoInMessages } from './useTodoInMessages';
@@ -65,7 +65,11 @@ export function MessageList({
           isLastMessage && msg.role === MessageRole.ASSISTANT && isLoading;
         let segments =
           msg.blocks && msg.blocks.length > 0
-            ? blocksToSegments(msg.blocks)
+            ? (() => {
+                const acc = new MessageAccumulator();
+                msg.blocks!.forEach((b) => acc.pushBlock(b));
+                return acc.getSegments();
+              })()
             : msg.role === MessageRole.ASSISTANT && (msg.content ?? '').trim() !== ''
               ? [{ kind: SegmentKind.TEXT as const, data: msg.content ?? '' }]
               : [];

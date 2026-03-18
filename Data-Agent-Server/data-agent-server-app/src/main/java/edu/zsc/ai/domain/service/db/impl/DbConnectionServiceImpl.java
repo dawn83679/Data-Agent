@@ -30,7 +30,7 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
 
     @Override
     public DbConnection getByName(String name) {
-        if (!StringUtils.isNotBlank(name)) {
+        if (StringUtils.isBlank(name)) {
             return null;
         }
 
@@ -43,7 +43,7 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
      * Get connection by name for a specific user (for uniqueness check within user's connections).
      */
     private DbConnection getByNameAndUserId(String name, Long userId) {
-        if (!StringUtils.isNotBlank(name) || userId == null) {
+        if (StringUtils.isBlank(name) || userId == null) {
             return null;
         }
         LambdaQueryWrapper<DbConnection> wrapper = new LambdaQueryWrapper<>();
@@ -98,7 +98,7 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
 
         String originalPassword = existingConnection.getPassword();
         BeanUtils.copyProperties(request, existingConnection);
-        if (!StringUtils.isNotBlank(request.getPassword())) {
+        if (StringUtils.isBlank(request.getPassword())) {
             existingConnection.setPassword(originalPassword);
         }
         existingConnection.setId(connectionId);

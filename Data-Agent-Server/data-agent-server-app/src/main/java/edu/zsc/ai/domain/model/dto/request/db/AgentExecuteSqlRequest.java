@@ -11,7 +11,7 @@ import lombok.experimental.SuperBuilder;
 /**
  * SQL Execution Request for AI Agent Tool
  * Used by ExecuteSqlTool for Agent/LLM calls.
- * userId is obtained from RequestContext (set by ToolContext or SaTokenConfigure interceptor).
+ * userId is obtained from RequestContext (set by AgentInvocationContext or SaTokenConfigure interceptor).
  */
 @Data
 @SuperBuilder

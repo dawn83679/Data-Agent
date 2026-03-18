@@ -30,8 +30,8 @@
         <mybatis-plus-jsqlparser.version>3.5.14</mybatis-plus-jsqlparser.version>
         <postgresql.version>42.7.2</postgresql.version>
         <sa-token.version>1.44.0</sa-token.version>
-        <langchain4j.version>1.12.1</langchain4j.version>
-        <langchain4j-community.version>1.12.1-beta21</langchain4j-community.version>
+        <langchain4j.version>1.12.2</langchain4j.version>
+        <langchain4j-community.version>1.12.2-beta22</langchain4j-community.version>
     </properties>
 
     <dependencyManagement>

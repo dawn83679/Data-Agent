@@ -2,6 +2,8 @@ package edu.zsc.ai.aspect;
 
 import cn.dev33.satoken.stp.StpUtil;
 import edu.zsc.ai.aspect.annotation.EnableRequestContext;
+import edu.zsc.ai.context.AgentExecutionContext;
+import edu.zsc.ai.context.AgentRequestContext;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.api.model.request.BaseRequest;
@@ -73,8 +75,10 @@ public class RequestContextAspect {
                 log.debug("Clearing RequestContext after method: {}.{}",
                     joinPoint.getSignature().getDeclaringTypeName(),
                     joinPoint.getSignature().getName());
-                RequestContext.clear();
             }
+            AgentExecutionContext.clear();
+            AgentRequestContext.clear();
+            RequestContext.clear();
         }
     }
 }

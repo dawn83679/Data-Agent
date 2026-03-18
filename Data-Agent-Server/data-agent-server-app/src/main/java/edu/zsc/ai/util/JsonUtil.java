@@ -11,6 +11,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -70,6 +71,23 @@ public class JsonUtil {
     public static <T> T json2Object(@NotBlank String json, Class<T> clazz) {
         try {
             return objectMapper.readValue(json, clazz);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static <T> T json2Object(@NotBlank String json, TypeReference<T> typeRef) {
+        try {
+            return objectMapper.readValue(json, typeRef);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static <T> List<T> json2List(@NotBlank String json, Class<T> elementClass) {
+        try {
+            return objectMapper.readValue(json,
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, elementClass));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

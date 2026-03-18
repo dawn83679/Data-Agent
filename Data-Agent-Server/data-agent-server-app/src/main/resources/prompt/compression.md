@@ -13,7 +13,7 @@ The conversation history below contains user messages, assistant messages, and t
 **Completely remove:**
 - Failed tool calls that were later retried successfully (keep only the successful result)
 - Duplicate or redundant searches (keep only the final/best result)
-- `thinking` tool content and internal reasoning traces
+- Internal reasoning traces
 - Raw tool call JSON parameters
 
 **Extract key information only:**

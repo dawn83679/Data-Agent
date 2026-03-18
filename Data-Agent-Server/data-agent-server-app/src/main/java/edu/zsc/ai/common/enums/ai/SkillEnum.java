@@ -14,7 +14,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum SkillEnum {
 
-    CHART("chart", "skills/chart.md");
+    CHART("chart", "skills/chart.md"),
+    SQL_OPTIMIZATION("sql-optimization", "skills/sql-optimization.md");
 
     private final String skillName;
     private final String resourcePath;

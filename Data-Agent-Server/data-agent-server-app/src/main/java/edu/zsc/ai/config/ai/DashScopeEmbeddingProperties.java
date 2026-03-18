@@ -4,8 +4,8 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * 千问（DashScope）向量模型配置
- * 配置前缀与 langchain4j DashScope 一致: langchain4j.community.dashscope.embedding-model
+ * Qwen (DashScope) embedding model configuration.
+ * Config prefix: langchain4j.community.dashscope.embedding-model
  */
 @Data
 @ConfigurationProperties(prefix = "langchain4j.community.dashscope.embedding-model")

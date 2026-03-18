@@ -1,4 +1,4 @@
-import { FileCode, ListTodo, Table as TableIcon, X } from 'lucide-react';
+import { FileCode, ListTodo, Table as TableIcon, X, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
 import { useTabStore } from '../../store/tabStore';
@@ -26,11 +26,13 @@ import {
   ContextMenuTrigger,
 } from '../ui/ContextMenu';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '../ui/Tooltip';
+import type { SubAgentConsoleTabMetadata } from '../../types/tab';
+import { SUB_AGENT_TYPES, type SubAgentType } from '../ai/blocks/subAgentTypes';
 
 interface SortableTabProps {
   tabId: string;
   name: string;
-  type: 'file' | 'table' | 'plan';
+  type: 'file' | 'table' | 'plan' | 'subagent-console';
   connectionName?: string;
   databaseName?: string | null;
   isActive: boolean;
@@ -40,6 +42,7 @@ interface SortableTabProps {
   onCloseRight: (id: string) => void;
   onCloseOthers: (id: string) => void;
   onCloseAll: () => void;
+  subAgentType?: SubAgentType;
 }
 
 function SortableTab({
@@ -55,6 +58,7 @@ function SortableTab({
   onCloseRight,
   onCloseOthers,
   onCloseAll,
+  subAgentType,
 }: SortableTabProps) {
   const { t } = useTranslation();
   const {
@@ -67,7 +71,7 @@ function SortableTab({
   } = useSortable({ id: tabId });
 
   const tabLabel =
-    type === 'plan'
+    type === 'plan' || type === 'subagent-console'
       ? name
       : type === 'table'
         ? name
@@ -80,6 +84,17 @@ function SortableTab({
     transition,
   };
 
+  const isPlannerConsole = type === 'subagent-console' && subAgentType === SUB_AGENT_TYPES.PLANNER;
+  const activeClass = isActive
+    ? isPlannerConsole
+      ? 'border-purple-500 bg-tab-active theme-text-primary'
+      : type === 'subagent-console'
+        ? 'border-cyan-500 bg-tab-active theme-text-primary'
+        : 'border-primary bg-tab-active theme-text-primary'
+    : 'border-transparent theme-bg-panel theme-text-secondary hover:bg-accent/50';
+
+  const subAgentIconClass = isPlannerConsole ? 'text-purple-400' : 'text-cyan-400';
+
   return (
     <ContextMenu>
       <Tooltip>
@@ -91,9 +106,7 @@ function SortableTab({
               onClick={() => onSwitch(tabId)}
               className={cn(
                 'flex items-center px-3 text-[11px] min-w-[120px] max-w-[220px] group select-none border-b-2 transition-colors relative cursor-pointer shrink-0',
-                isActive
-                  ? 'border-primary bg-tab-active theme-text-primary'
-                  : 'border-transparent theme-bg-panel theme-text-secondary hover:bg-accent/50',
+                activeClass,
                 isDragging && 'opacity-40'
               )}
               {...attributes}
@@ -102,6 +115,8 @@ function SortableTab({
               <span className="mr-1.5 shrink-0">
                 {type === 'plan' ? (
                   <ListTodo className="w-3 h-3 text-amber-400" />
+                ) : type === 'subagent-console' ? (
+                  <Zap className={cn('w-3 h-3', subAgentIconClass)} />
                 ) : type === 'file' ? (
                   <FileCode className="w-3 h-3 text-blue-400" />
                 ) : (
@@ -187,8 +202,9 @@ export function TabBar() {
                 tabId={tab.id}
                 name={tab.name}
                 type={tab.type}
-                connectionName={tab.type !== 'plan' ? (tab.metadata as import('../../types/tab').ConsoleTabMetadata | undefined)?.connectionName : undefined}
-                databaseName={tab.type !== 'plan' ? (tab.metadata as import('../../types/tab').ConsoleTabMetadata | undefined)?.databaseName : undefined}
+                connectionName={tab.type !== 'plan' && tab.type !== 'subagent-console' ? (tab.metadata as import('../../types/tab').ConsoleTabMetadata | undefined)?.connectionName : undefined}
+                databaseName={tab.type !== 'plan' && tab.type !== 'subagent-console' ? (tab.metadata as import('../../types/tab').ConsoleTabMetadata | undefined)?.databaseName : undefined}
+                subAgentType={tab.type === 'subagent-console' ? (tab.metadata as SubAgentConsoleTabMetadata | undefined)?.agentType : undefined}
                 isActive={tab.active}
                 onSwitch={switchTab}
                 onClose={closeTab}

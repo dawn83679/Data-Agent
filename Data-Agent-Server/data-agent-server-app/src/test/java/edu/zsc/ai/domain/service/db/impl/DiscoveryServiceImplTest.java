@@ -1,0 +1,123 @@
+package edu.zsc.ai.domain.service.db.impl;
+
+import edu.zsc.ai.agent.tool.sql.model.NamedObjectDetail;
+import edu.zsc.ai.agent.tool.sql.model.ObjectQueryItem;
+import edu.zsc.ai.agent.tool.sql.model.ObjectSearchResponse;
+import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
+import edu.zsc.ai.context.AgentRequestContext;
+import edu.zsc.ai.context.AgentRequestContextInfo;
+import edu.zsc.ai.context.RequestContext;
+import edu.zsc.ai.context.RequestContextInfo;
+import edu.zsc.ai.domain.model.context.DbContext;
+import edu.zsc.ai.domain.model.dto.response.db.ConnectionResponse;
+import edu.zsc.ai.domain.service.db.ColumnService;
+import edu.zsc.ai.domain.service.db.DatabaseObjectService;
+import edu.zsc.ai.domain.service.db.DatabaseService;
+import edu.zsc.ai.domain.service.db.DbConnectionService;
+import edu.zsc.ai.domain.service.db.IndexService;
+import edu.zsc.ai.domain.service.db.SchemaService;
+import edu.zsc.ai.plugin.constant.DatabaseObjectTypeEnum;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.concurrent.Executor;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+class DiscoveryServiceImplTest {
+
+    private final Executor executor = Runnable::run;
+    private final DbConnectionService dbConnectionService = mock(DbConnectionService.class);
+    private final DatabaseService databaseService = mock(DatabaseService.class);
+    private final SchemaService schemaService = mock(SchemaService.class);
+    private final DatabaseObjectService databaseObjectService = mock(DatabaseObjectService.class);
+    private final IndexService indexService = mock(IndexService.class);
+    private final ColumnService columnService = mock(ColumnService.class);
+
+    private DiscoveryServiceImpl discoveryService;
+
+    @BeforeEach
+    void setUp() {
+        discoveryService = new DiscoveryServiceImpl(
+                executor,
+                dbConnectionService,
+                databaseService,
+                schemaService,
+                databaseObjectService,
+                indexService,
+                columnService
+        );
+    }
+
+    @AfterEach
+    void tearDown() {
+        AgentRequestContext.clear();
+        RequestContext.clear();
+    }
+
+    @Test
+    void searchObjects_inExplorerScope_usesAllowedConnectionsOnly() {
+        AgentRequestContext.set(AgentRequestContextInfo.builder()
+                .agentType(AgentTypeEnum.EXPLORER.getCode())
+                .allowedConnectionIds(List.of(5L, 7L))
+                .build());
+
+        when(dbConnectionService.getConnectionById(5L)).thenReturn(connection(5L));
+        when(dbConnectionService.getConnectionById(7L)).thenReturn(connection(7L));
+        when(databaseService.getDatabases(5L)).thenReturn(List.of("db5"));
+        when(databaseService.getDatabases(7L)).thenReturn(List.of("db7"));
+        when(schemaService.listSchemas(anyLong(), anyString())).thenReturn(List.of("public"));
+        when(databaseObjectService.searchObjects(eq(DatabaseObjectTypeEnum.TABLE), eq("%user%"), any(DbContext.class), isNull()))
+                .thenAnswer(invocation -> {
+                    DbContext db = invocation.getArgument(2);
+                    return List.of("users_" + db.connectionId());
+                });
+
+        ObjectSearchResponse response = discoveryService.searchObjects(
+                "%user%", DatabaseObjectTypeEnum.TABLE, null, null, null);
+
+        assertEquals(2, response.results().size());
+        assertEquals(List.of(5L, 7L), response.results().stream().map(item -> item.connectionId()).toList());
+        verify(dbConnectionService, never()).getAllConnections();
+    }
+
+    @Test
+    void getObjectDetails_inExplorerScope_marksOutOfScopeItemsAsFailed() {
+        RequestContext.set(RequestContextInfo.builder()
+                .connectionId(5L)
+                .build());
+        AgentRequestContext.set(AgentRequestContextInfo.builder()
+                .agentType(AgentTypeEnum.EXPLORER.getCode())
+                .allowedConnectionIds(List.of(5L))
+                .build());
+
+        List<NamedObjectDetail> results = discoveryService.getObjectDetails(List.of(
+                new ObjectQueryItem("TABLE", "users", 7L, "app", "public")
+        ));
+
+        assertEquals(1, results.size());
+        assertFalse(results.get(0).success());
+        assertTrue(results.get(0).error().contains("not allowed"));
+    }
+
+    private static ConnectionResponse connection(Long id) {
+        return ConnectionResponse.builder()
+                .id(id)
+                .name("conn-" + id)
+                .dbType("postgresql")
+                .build();
+    }
+}

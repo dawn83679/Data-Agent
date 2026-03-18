@@ -1,30 +1,71 @@
 package edu.zsc.ai.config.ai;
 
+import dev.langchain4j.agent.tool.Tool;
+import dev.langchain4j.agent.tool.ToolSpecification;
+import dev.langchain4j.agent.tool.ToolSpecifications;
+import dev.langchain4j.service.tool.DefaultToolExecutor;
+import dev.langchain4j.service.tool.ToolExecutor;
 import edu.zsc.ai.agent.annotation.AgentTool;
+import edu.zsc.ai.agent.tool.ask.AskUserQuestionTool;
 import edu.zsc.ai.agent.tool.ask.AskUserConfirmTool;
 import edu.zsc.ai.agent.tool.chart.ChartTool;
-import edu.zsc.ai.agent.tool.plan.ExitPlanModeTool;
+import edu.zsc.ai.agent.tool.orchestrator.CallingExplorerTool;
+import edu.zsc.ai.agent.tool.orchestrator.CallingPlannerTool;
+import edu.zsc.ai.agent.tool.skill.ActivateSkillTool;
+import edu.zsc.ai.agent.tool.sql.GetEnvironmentOverviewTool;
+import edu.zsc.ai.agent.tool.sql.GetObjectDetailTool;
+import edu.zsc.ai.agent.tool.sql.SearchObjectsTool;
 import edu.zsc.ai.agent.tool.sql.ExecuteSqlTool;
+import edu.zsc.ai.agent.tool.todo.TodoTool;
 import edu.zsc.ai.common.enums.ai.AgentModeEnum;
+import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Configuration
 public class AgentToolConfig {
 
-    private static final Set<Class<?>> PLAN_MODE_DISABLED = Set.of(
-            ExecuteSqlTool.class,
-            ChartTool.class,
-            AskUserConfirmTool.class
-    );
-
-    private static final Set<Class<?>> AGENT_MODE_DISABLED = Set.of(
-            ExitPlanModeTool.class
+    private static final Map<ToolScope, Set<Class<?>>> TOOL_SCOPE_ALLOWLISTS = Map.of(
+            ToolScope.MAIN_AGENT, Set.of(
+                    GetEnvironmentOverviewTool.class,
+                    ExecuteSqlTool.class,
+                    CallingExplorerTool.class,
+                    CallingPlannerTool.class,
+                    ChartTool.class,
+                    AskUserQuestionTool.class,
+                    AskUserConfirmTool.class,
+                    TodoTool.class,
+                    ActivateSkillTool.class
+            ),
+            ToolScope.MAIN_PLAN, Set.of(
+                    GetEnvironmentOverviewTool.class,
+                    CallingExplorerTool.class,
+                    CallingPlannerTool.class,
+                    AskUserQuestionTool.class,
+                    TodoTool.class,
+                    ActivateSkillTool.class
+            ),
+            ToolScope.EXPLORER, Set.of(
+                    TodoTool.class,
+                    SearchObjectsTool.class,
+                    GetObjectDetailTool.class
+            ),
+            ToolScope.PLANNER, Set.of(
+                    TodoTool.class,
+                    ActivateSkillTool.class,
+                    GetObjectDetailTool.class
+            )
     );
 
     @Bean
@@ -32,12 +73,114 @@ public class AgentToolConfig {
         return new ArrayList<>(context.getBeansWithAnnotation(AgentTool.class).values());
     }
 
-    public List<Object> filterTools(List<Object> agentTools, AgentModeEnum mode) {
-        Set<Class<?>> disabled = (mode == AgentModeEnum.PLAN)
-                ? PLAN_MODE_DISABLED
-                : AGENT_MODE_DISABLED;
-        return agentTools.stream()
-                .filter(tool -> !disabled.contains(tool.getClass()))
+    public Map<ToolSpecification, ToolExecutor> buildToolExecutors(List<Object> agentTools) {
+        if (CollectionUtils.isEmpty(agentTools)) {
+            return Map.of();
+        }
+
+        List<ToolRegistration> registrations = agentTools.stream()
+                .flatMap(tool -> resolveToolRegistrations(tool).stream())
                 .toList();
+
+        ToolSpecifications.validateSpecifications(registrations.stream()
+                .map(ToolRegistration::specification)
+                .collect(Collectors.toList()));
+
+        Map<ToolSpecification, ToolExecutor> executors = new LinkedHashMap<>();
+        for (ToolRegistration registration : registrations) {
+            executors.put(
+                    registration.specification(),
+                    new DefaultToolExecutor(
+                            registration.toolBean(),
+                            registration.originalMethod(),
+                            registration.invocableMethod()
+                    )
+            );
+        }
+        return executors;
+    }
+
+    /**
+     * Resolve the exact tool set exposed to the Main Agent.
+     * EnterPlanModeTool / ExitPlanModeTool are intentionally not exposed.
+     */
+    public List<Object> resolveMainTools(List<Object> agentTools, AgentModeEnum mode) {
+        ToolScope scope = mode == AgentModeEnum.PLAN ? ToolScope.MAIN_PLAN : ToolScope.MAIN_AGENT;
+        return resolveTools(agentTools, scope);
+    }
+
+    /**
+     * Resolve the exact tool set exposed to a sub-agent.
+     */
+    public List<Object> resolveSubAgentTools(List<Object> agentTools, AgentTypeEnum agentType) {
+        ToolScope scope = switch (agentType) {
+            case EXPLORER -> ToolScope.EXPLORER;
+            case PLANNER -> ToolScope.PLANNER;
+            case MAIN -> throw new IllegalArgumentException("MAIN is not a sub-agent");
+        };
+        return resolveTools(agentTools, scope);
+    }
+
+    /**
+     * Check if tool is an instance of any class in the set.
+     * Uses instanceof semantics so it works with subclasses and proxies.
+     */
+    private static boolean matchesAny(Object tool, Set<Class<?>> classes) {
+        for (Class<?> clazz : classes) {
+            if (clazz.isInstance(tool)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private List<Object> resolveTools(List<Object> agentTools, ToolScope scope) {
+        if (CollectionUtils.isEmpty(agentTools)) {
+            return List.of();
+        }
+        Set<Class<?>> allowlist = TOOL_SCOPE_ALLOWLISTS.get(scope);
+        if (allowlist == null) {
+            throw new IllegalArgumentException("Unknown tool scope: " + scope);
+        }
+        return agentTools.stream()
+                .filter(tool -> matchesAny(tool, allowlist))
+                .toList();
+    }
+
+    private List<ToolRegistration> resolveToolRegistrations(Object toolBean) {
+        Class<?> targetClass = AopUtils.getTargetClass(toolBean);
+        if (targetClass == null) {
+            return List.of();
+        }
+
+        List<ToolRegistration> registrations = new ArrayList<>();
+        for (Method method : targetClass.getDeclaredMethods()) {
+            if (!method.isAnnotationPresent(Tool.class)) {
+                continue;
+            }
+            Method invocableMethod = AopUtils.selectInvocableMethod(method, toolBean.getClass());
+            registrations.add(new ToolRegistration(
+                    toolBean,
+                    ToolSpecifications.toolSpecificationFrom(method),
+                    method,
+                    invocableMethod
+            ));
+        }
+        return registrations;
+    }
+
+    private record ToolRegistration(
+            Object toolBean,
+            ToolSpecification specification,
+            Method originalMethod,
+            Method invocableMethod
+    ) {
+    }
+
+    private enum ToolScope {
+        MAIN_AGENT,
+        MAIN_PLAN,
+        EXPLORER,
+        PLANNER
     }
 }

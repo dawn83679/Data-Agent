@@ -4,6 +4,7 @@ import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.ReturnBehavior;
 import dev.langchain4j.agent.tool.Tool;
 import edu.zsc.ai.agent.annotation.AgentTool;
+import edu.zsc.ai.agent.tool.message.ToolMessageSupport;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -19,12 +20,12 @@ public class EnterPlanModeTool {
 
     @Tool(
             value = {
-                    "Calling this tool greatly reduces risk on complex or write operations — you analyze ",
-                    "and plan without executing, avoiding costly mistakes. Use exitPlanMode to deliver the plan.",
-                    "",
-                    "When to Use: write operations (DML/DDL), multi-step or multi-table tasks, vague goals, or when thinking suggests Plan mode.",
-                    "When NOT to Use: for simple one-shot read-only queries with a clear target.",
-                    "Relation: after entering, use getEnvironmentOverview/searchObjects/getObjectDetail and thinking; then exitPlanMode with title and steps. triggerSignal: CHECKLIST_RECOMMENDATION|MULTI_STEP_DISCOVERED|UNEXPECTED_COMPLEXITY|IRREVERSIBLE_OPERATION|MULTI_TABLE_WRITE."
+                    "Value: hands a complex or risky task from execution flow into structured planning so the next response becomes a decision-ready plan.",
+                    "Use When: call only when the runtime explicitly exposes this tool for a plan handoff, especially for writes, vague scope, multi-step work, or unexpected complexity.",
+                    "After Success: stop direct execution and continue in planning mode.",
+                    "After Failure: stay in the current flow, explain the blocked handoff if needed, and do not force direct execution of risky work.",
+                    "Relation: this opens a plan flow that is later closed by exitPlanMode.",
+                    "Trigger signal: CHECKLIST_RECOMMENDATION | MULTI_STEP_DISCOVERED | UNEXPECTED_COMPLEXITY | IRREVERSIBLE_OPERATION | MULTI_TABLE_WRITE."
             },
             returnBehavior = ReturnBehavior.IMMEDIATE
     )
@@ -34,6 +35,10 @@ public class EnterPlanModeTool {
                     "UNEXPECTED_COMPLEXITY | IRREVERSIBLE_OPERATION | MULTI_TABLE_WRITE")
             String triggerSignal) {
         log.info("[Tool] enterPlanMode, reason='{}', trigger='{}'", reason, triggerSignal);
-        return "Entering Plan mode [" + triggerSignal + "]: " + reason;
+        return ToolMessageSupport.sentence(
+                "Plan mode was activated for trigger " + triggerSignal + ".",
+                "Reason: " + reason + ".",
+                "Stop direct execution and continue by producing a decision-ready plan for the user."
+        );
     }
 }

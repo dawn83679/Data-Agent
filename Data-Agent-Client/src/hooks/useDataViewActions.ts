@@ -10,6 +10,7 @@ import { useWorkspaceStore } from '../store/workspaceStore';
 import { TableDblClickConsoleTargetEnum } from '../constants/workspacePreferences';
 import { I18N_KEYS } from '../constants/i18nKeys';
 import type { ExplorerNode } from '../types/explorer';
+import type { ConsoleTabMetadata } from '../types/tab';
 
 interface DataViewActionsProps {
   setSelectedDdlNode: (node: ExplorerNode | null) => void;
@@ -71,7 +72,10 @@ export function useDataViewActions({
       // Open or reuse console tab
       const dbName = node.catalog || null;
       const schemaName = node.schema || null;
-      const consoleTabs = tabs.filter((tab) => tab.type === 'file' && tab.metadata?.connectionId === Number(connId));
+      const consoleTabs = tabs.filter((tab) =>
+        tab.type === 'file'
+        && (tab.metadata as ConsoleTabMetadata | undefined)?.connectionId === Number(connId)
+      );
       const reuseTab =
         tableDblClickConsoleTarget === TableDblClickConsoleTargetEnum.REUSE && consoleTabs.length > 0;
       const tabId = reuseTab ? consoleTabs[0].id : `console-${Date.now()}`;

@@ -125,7 +125,7 @@ export function TableDataTab({ metadata, onMetadataChange }: TableDataTabProps) 
   const getSortDir = (column: string) => {
     const parts = (orderText || '')
       .split(',')
-      .map((part) => part.trim())
+      .map((part: string) => part.trim())
       .filter(Boolean);
     for (const part of parts) {
       const match = part.match(/^([^\s]+)\s*(asc|desc)?$/i);

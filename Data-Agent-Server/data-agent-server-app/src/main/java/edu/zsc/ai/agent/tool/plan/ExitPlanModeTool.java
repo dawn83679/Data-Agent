@@ -6,8 +6,10 @@ import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.ReturnBehavior;
 import dev.langchain4j.agent.tool.Tool;
 import edu.zsc.ai.agent.annotation.AgentTool;
+import edu.zsc.ai.agent.tool.message.ToolMessageSupport;
 import edu.zsc.ai.agent.tool.plan.model.PlanStep;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 
 /**
  * Plan-mode exit tool: presents the structured execution plan to the user.
@@ -22,12 +24,13 @@ public class ExitPlanModeTool {
 
     @Tool(
             value = {
-                    "Calling this tool delivers your plan to the user and greatly improves alignment — ",
-                    "they can approve or adjust before any execution. Title + steps (order, description, SQL, objectName). Only in Plan mode.",
-                    "",
-                    "When to Use: when analysis is complete and you have a clear, step-by-step plan with production-ready SQL.",
-                    "When NOT to Use: in Agent mode — this tool is only exposed in Plan mode.",
-                    "Relation: pair with enterPlanMode; after exploration and analysis call this with all steps needed to achieve the goal."
+                    "Value: delivers the final structured plan payload to the user at the end of a planning flow.",
+                    "Use When: call only when planning is complete and the plan is specific enough to execute without new design work.",
+                    "After Success: wait for the user's decision before executing the plan or changing its scope.",
+                    "After Failure: keep refining the plan in planning mode. Do not switch back to execution with an incomplete plan.",
+                    "Wait For User: once the plan is presented, do not execute or broaden the scope until the user responds.",
+                    "Result Consumption: the tool arguments carry the plan title and ordered steps that the frontend presents to the user.",
+                    "Relation: this closes a plan flow started by enterPlanMode."
             },
             returnBehavior = ReturnBehavior.IMMEDIATE
     )
@@ -35,10 +38,13 @@ public class ExitPlanModeTool {
             @P("Plan title / summary") String title,
             @P("List of planned steps, each with order, description, SQL, and objectName") List<PlanStep> steps) {
 
-        int stepCount = steps != null ? steps.size() : 0;
+        int stepCount = CollectionUtils.size(steps);
         log.info("[Tool] exitPlanMode, title='{}', steps={}", title, stepCount);
 
         // Minimal result for memory — full plan data is in the tool call arguments
-        return "Plan presented to user: " + title + " (" + stepCount + " steps).";
+        return ToolMessageSupport.sentence(
+                "Plan '" + title + "' was presented to the user with " + stepCount + " step(s).",
+                "Wait for the user's decision before executing the plan or changing its scope."
+        );
     }
 }

@@ -9,5 +9,9 @@ public enum MessageBlockEnum {
     THOUGHT,
     TOOL_CALL,
     TOOL_RESULT,
-    STATUS
+    STATUS,
+    SUB_AGENT_START,
+    SUB_AGENT_PROGRESS,
+    SUB_AGENT_COMPLETE,
+    SUB_AGENT_ERROR
 }

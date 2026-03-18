@@ -1,6 +1,6 @@
 package edu.zsc.ai.context;
 
-import edu.zsc.ai.common.constant.RequestContextConstant;
+import edu.zsc.ai.common.constant.InvocationContextConstant;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
@@ -37,6 +37,11 @@ public class RequestContext {
             log.warn("No context found in current thread");
         }
         return context;
+    }
+
+    public static RequestContextInfo snapshot() {
+        RequestContextInfo context = CONTEXT_HOLDER.get();
+        return context == null ? null : context.toBuilder().build();
     }
 
     /**
@@ -80,14 +85,6 @@ public class RequestContext {
     }
 
     /**
-     * Get agent mode from current context
-     */
-    public static String getAgentMode() {
-        RequestContextInfo context = get();
-        return context != null ? context.getAgentMode() : null;
-    }
-
-    /**
      * Clear context from current thread
      */
     public static void clear() {
@@ -121,12 +118,11 @@ public class RequestContext {
      */
     public static Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<>();
-        putIfNotNull(map, RequestContextConstant.USER_ID, getUserId());
-        putIfNotNull(map, RequestContextConstant.CONVERSATION_ID, getConversationId());
-        putIfNotNull(map, RequestContextConstant.CONNECTION_ID, getConnectionId());
-        putIfNotNull(map, RequestContextConstant.DATABASE_NAME, getCatalog());
-        putIfNotNull(map, RequestContextConstant.SCHEMA_NAME, getSchema());
-        putIfNotNull(map, RequestContextConstant.AGENT_MODE, getAgentMode());
+        putIfNotNull(map, InvocationContextConstant.USER_ID, getUserId());
+        putIfNotNull(map, InvocationContextConstant.CONVERSATION_ID, getConversationId());
+        putIfNotNull(map, InvocationContextConstant.CONNECTION_ID, getConnectionId());
+        putIfNotNull(map, InvocationContextConstant.DATABASE_NAME, getCatalog());
+        putIfNotNull(map, InvocationContextConstant.SCHEMA_NAME, getSchema());
         return map;
     }
 

@@ -4,7 +4,7 @@ import type { Message } from './types';
 /**
  * Merge all consecutive assistant messages into one so each assistant "turn" is a single bubble.
  * History API returns TOOL_CALL, TOOL_RESULT, TEXT as separate messages; merging here produces
- * one message with blocks [TOOL_CALL, TOOL_RESULT, ..., TEXT] so blocksToSegments can pair and order correctly.
+ * one message with blocks [TOOL_CALL, TOOL_RESULT, ..., TEXT] so MessageAccumulator can pair and order correctly.
  */
 export function mergeAssistantToolPairs(messages: Message[]): Message[] {
   const result: Message[] = [];

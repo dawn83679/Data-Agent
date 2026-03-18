@@ -8,17 +8,17 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import java.util.concurrent.Executor;
 
 /**
- * 全局通用线程池，供发现、异步任务等所有并行 IO 场景共用。
+ * Global shared thread pool for discovery, async tasks, and all parallel IO scenarios.
  */
 @Configuration
 public class ExecutorConfig {
 
-    /** 全局共享线程池的 Bean 名称，需要时注入此 Executor 即可。 */
+    /** Bean name for the global shared executor. Inject by this qualifier when needed. */
     public static final String SHARED_EXECUTOR_BEAN_NAME = "sharedExecutor";
 
     /**
-     * 全局通用有界线程池。发现（getEnvironmentOverview / searchObjects）、AsyncTaskManager 等
-     * 均可注入使用，由 Spring 管理生命周期（优雅关闭）。
+     * Global bounded thread pool. Used by discovery (getEnvironmentOverview / searchObjects),
+     * AsyncTaskManager, etc. Lifecycle managed by Spring (graceful shutdown).
      */
     @Bean(name = SHARED_EXECUTOR_BEAN_NAME)
     public Executor sharedExecutor(

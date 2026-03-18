@@ -10,9 +10,11 @@ import java.util.Locale;
 @Getter
 public enum PromptEnum {
 
-    EN("en", "prompt/system_agent_en.xml"),
-    ZH("zh", "prompt/system_agent_zh.xml"),
-    COMPRESSION("compression", "prompt/compression.md");
+    EN("en", "prompt/main-agent_en.md"),
+    ZH("zh", "prompt/main-agent_zh.md"),
+    COMPRESSION("compression", "prompt/compression.md"),
+    EXPLORER("explorer", "prompt/explorer.md"),
+    PLANNER("planner", "prompt/planner.md");
 
     private final String code;
     private final String systemPromptResource;
