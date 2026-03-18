@@ -13,6 +13,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Returns the full connection/catalog/schema landscape.
@@ -40,6 +41,36 @@ public class GetEnvironmentOverviewTool {
             return AgentToolResult.empty();
         }
         log.info("[Tool done] getEnvironmentOverview, connections={}", overview.size());
-        return AgentToolResult.success(overview);
+        return AgentToolResult.builder()
+                .success(true)
+                .message(buildOverviewMessage(overview))
+                .result(overview)
+                .build();
+    }
+
+    private String buildOverviewMessage(List<ConnectionOverview> overview) {
+        List<ConnectionOverview> unavailableConnections = overview.stream()
+                .filter(connection -> StringUtils.isNotBlank(connection.error()))
+                .toList();
+        if (CollectionUtils.isEmpty(unavailableConnections)) {
+            return "All listed connections are currently available.";
+        }
+
+        String unavailableSummary = unavailableConnections.stream()
+                .map(connection -> String.format("%s(id=%s)",
+                        connection.name(),
+                        connection.id()))
+                .collect(Collectors.joining("; "));
+
+        long availableCount = overview.size() - unavailableConnections.size();
+        if (availableCount > 0) {
+            return "Unavailable connections found: "
+                    + unavailableSummary
+                    + ". Ask the user whether to switch to an available connection or retry later. Do not continue object discovery until the user replies.";
+        }
+
+        return "No available connections: "
+                + unavailableSummary
+                + ". Ask the user whether to retry later or check the connection configuration. Do not continue object discovery until the user replies.";
     }
 }

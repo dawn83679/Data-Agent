@@ -57,6 +57,7 @@ class CallingExplorerToolTest {
         AgentToolResult result = tool.callingExplorerSubAgent(tasksJson, null, null);
 
         assertTrue(result.isSuccess());
+        assertEquals("ok", result.getMessage());
         ExplorerResultEnvelope envelope = JsonUtil.json2Object((String) result.getResult(), ExplorerResultEnvelope.class);
         assertEquals(1, envelope.getTaskResults().size());
         assertEquals("users", envelope.getTaskResults().get(0).getObjects().get(0).getObjectName());
@@ -123,11 +124,29 @@ class CallingExplorerToolTest {
         AgentToolResult result = tool.callingExplorerSubAgent(tasksJson, null, null);
 
         assertTrue(result.isSuccess());
+        assertTrue(result.getMessage().contains("Explorer failed for: connectionId=2 (connection timeout)"));
+        assertTrue(result.getMessage().contains("Ask the user whether to switch connections, narrow the scope, or retry later"));
+        assertTrue(result.getMessage().contains("Do not continue object discovery until the user replies"));
         ExplorerResultEnvelope envelope = JsonUtil.json2Object((String) result.getResult(), ExplorerResultEnvelope.class);
         assertEquals(2, envelope.getTaskResults().size());
         assertEquals(1, envelope.getTaskResults().stream().filter(task -> task.getStatus() == ExplorerTaskStatus.SUCCESS).count());
         assertEquals(1, envelope.getTaskResults().stream().filter(task -> task.getStatus() == ExplorerTaskStatus.ERROR).count());
         assertTrue(envelope.getTaskResults().stream().anyMatch(task -> "connection timeout".equals(task.getErrorMessage())));
+    }
+
+    @Test
+    void singleTask_failure_returnsBlockingMessage() {
+        when(mockExplorer.invoke(any(SubAgentRequest.class))).thenThrow(new RuntimeException("connection timeout"));
+
+        String tasksJson = "[{\"connectionId\":2,\"instruction\":\"explore orders\"}]";
+        AgentToolResult result = tool.callingExplorerSubAgent(tasksJson, null, null);
+
+        assertTrue(result.isSuccess());
+        assertTrue(result.getMessage().contains("Explorer failed for: connectionId=2 (connection timeout)"));
+        assertTrue(result.getMessage().contains("Do not continue object discovery until the user replies"));
+        ExplorerResultEnvelope envelope = JsonUtil.json2Object((String) result.getResult(), ExplorerResultEnvelope.class);
+        assertEquals(1, envelope.getTaskResults().size());
+        assertEquals(ExplorerTaskStatus.ERROR, envelope.getTaskResults().get(0).getStatus());
     }
 
     @Test

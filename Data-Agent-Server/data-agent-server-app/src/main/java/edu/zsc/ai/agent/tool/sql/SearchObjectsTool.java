@@ -21,6 +21,8 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 /**
  * Pattern (fuzzy) search across connections for tables/views/functions.
  * Explorer SubAgent uses this for schema discovery.
@@ -88,6 +90,16 @@ public class SearchObjectsTool {
         ObjectSearchResponse response = discoveryService.searchObjects(
                 objectNamePattern, normalizedType, connectionId, databaseName, schemaName);
 
+        if (CollectionUtils.isNotEmpty(response.errors())) {
+            log.info("[Tool done] searchObjects, resultCount={}, truncated={}, errorCount={}",
+                    response.totalCount(), response.truncated(), response.errors().size());
+            return AgentToolResult.builder()
+                    .success(true)
+                    .message(buildSearchMessage(response))
+                    .result(response)
+                    .build();
+        }
+
         if (CollectionUtils.isEmpty(response.results())) {
             log.info("[Tool done] searchObjects -> empty");
             return AgentToolResult.empty();
@@ -96,5 +108,18 @@ public class SearchObjectsTool {
         log.info("[Tool done] searchObjects, resultCount={}, truncated={}",
                 response.totalCount(), response.truncated());
         return AgentToolResult.success(response);
+    }
+
+    private String buildSearchMessage(ObjectSearchResponse response) {
+        String errorSummary = String.join("; ", response.errors());
+        if (CollectionUtils.isNotEmpty(response.results())) {
+            return "Search completed with scope errors: "
+                    + errorSummary
+                    + ". Ask the user whether to continue with the available matches or change the connection/scope. Do not continue object discovery until the user replies.";
+        }
+
+        return "Search could not reliably complete: "
+                + errorSummary
+                + ". Ask the user whether to retry with another connection or scope. Do not continue object discovery until the user replies.";
     }
 }

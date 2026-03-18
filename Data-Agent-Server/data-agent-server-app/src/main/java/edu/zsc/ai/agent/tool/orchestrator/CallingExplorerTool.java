@@ -133,9 +133,10 @@ public class CallingExplorerTool extends SubAgentToolSupport {
                 "rawResponseLength", StringUtils.length(result.getRawResponse()),
                 "elapsedMs", System.currentTimeMillis() - startTime
         ));
-        return AgentToolResult.success(JsonUtil.object2json(ExplorerResultEnvelope.builder()
+        ExplorerResultEnvelope envelope = ExplorerResultEnvelope.builder()
                 .taskResults(List.of(result))
-                .build()));
+                .build();
+        return buildExplorerAgentResult(List.of(task), envelope);
     }
 
     private AgentToolResult invokeConcurrent(List<ExplorerTask> tasks, Long timeoutSeconds) {
@@ -188,9 +189,10 @@ public class CallingExplorerTool extends SubAgentToolSupport {
                     "elapsedMs", System.currentTimeMillis() - startTime,
                     "resultSummary", summarizeTaskResults(results)
             ));
-            return AgentToolResult.success(JsonUtil.object2json(ExplorerResultEnvelope.builder()
+            ExplorerResultEnvelope envelope = ExplorerResultEnvelope.builder()
                     .taskResults(results)
-                    .build()));
+                    .build();
+            return buildExplorerAgentResult(tasks, envelope);
 
         } catch (TimeoutException e) {
             log.error("[Tool] callingExplorerSubAgent concurrent timeout, timeoutSeconds={}, elapsedMs={}, rootCauseClass={}, rootCauseMessage={}",
@@ -370,6 +372,41 @@ public class CallingExplorerTool extends SubAgentToolSupport {
                     + "}");
         }
         return summaries.toString();
+    }
+
+
+    private AgentToolResult buildExplorerAgentResult(List<ExplorerTask> tasks, ExplorerResultEnvelope envelope) {
+        String resultJson = JsonUtil.object2json(envelope);
+        String message = buildExplorerMessage(tasks, envelope.getTaskResults());
+        if (StringUtils.isBlank(message)) {
+            return AgentToolResult.success(resultJson);
+        }
+        return AgentToolResult.builder()
+                .success(true)
+                .message(message)
+                .result(resultJson)
+                .build();
+    }
+
+    private String buildExplorerMessage(List<ExplorerTask> tasks, List<ExplorerTaskResult> results) {
+        if (CollectionUtils.isEmpty(results)) {
+            return null;
+        }
+        List<String> failedTasks = new ArrayList<>();
+        for (int index = 0; index < results.size(); index++) {
+            ExplorerTaskResult result = results.get(index);
+            if (result.getStatus() != ExplorerTaskStatus.ERROR) {
+                continue;
+            }
+            ExplorerTask task = index < tasks.size() ? tasks.get(index) : null;
+            failedTasks.add("connectionId="
+                    + (task != null ? task.getConnectionId() : "unknown")
+                    + " (" + StringUtils.defaultIfBlank(result.getErrorMessage(), "unknown error") + ")");
+        }
+        if (failedTasks.isEmpty()) {
+            return null;
+        }
+        return "Explorer failed for: " + String.join("; ", failedTasks) + ". Ask the user whether to switch connections, narrow the scope, or retry later. Do not continue object discovery until the user replies.";
     }
 
     private String preview(String value) {

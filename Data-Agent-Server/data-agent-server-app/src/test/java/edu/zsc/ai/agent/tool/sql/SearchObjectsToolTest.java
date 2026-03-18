@@ -6,6 +6,7 @@ import edu.zsc.ai.agent.tool.error.ToolErrorMapper;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.agent.tool.sql.model.ObjectSearchQuery;
 import edu.zsc.ai.agent.tool.sql.model.ObjectSearchResponse;
+import edu.zsc.ai.agent.tool.sql.model.ObjectSearchResult;
 import edu.zsc.ai.common.constant.InvocationContextConstant;
 import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
 import edu.zsc.ai.context.AgentRequestContext;
@@ -20,8 +21,6 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -105,6 +104,45 @@ class SearchObjectsToolTest {
         assertFalse(result.isSuccess());
         assertTrue(result.getMessage().contains("not allowed"));
         verifyNoInteractions(discoveryService);
+    }
+
+    @Test
+    void returnsBlockingMessageWhenSearchHasResultsAndScopeErrors() {
+        when(discoveryService.searchObjects("%user%", null, null, null, null))
+                .thenReturn(new ObjectSearchResponse(
+                        List.of(new ObjectSearchResult(1L, "test1", "mysql", "app", "public", "users", "TABLE")),
+                        1,
+                        false,
+                        List.of("connectionId=7 timeout")
+                ));
+
+        AgentToolResult result = tool.searchObjects(
+                new ObjectSearchQuery("%user%", null, null, null, null),
+                InvocationParameters.from(Map.of())
+        );
+
+        assertTrue(result.isSuccess());
+        assertTrue(result.getMessage().contains("Search completed with scope errors"));
+        assertTrue(result.getMessage().contains("connectionId=7 timeout"));
+        assertTrue(result.getMessage().contains("Ask the user whether to continue with the available matches or change the connection/scope"));
+        assertTrue(result.getMessage().contains("Do not continue object discovery until the user replies"));
+    }
+
+    @Test
+    void returnsBlockingMessageWhenSearchFailsForScopeWithoutResults() {
+        when(discoveryService.searchObjects("%user%", null, 5L, null, null))
+                .thenReturn(new ObjectSearchResponse(List.of(), 0, false, List.of("connectionId=5 closed")));
+
+        AgentToolResult result = tool.searchObjects(
+                new ObjectSearchQuery("%user%", null, 5L, null, null),
+                InvocationParameters.from(Map.of(InvocationContextConstant.CONNECTION_ID, "5"))
+        );
+
+        assertTrue(result.isSuccess());
+        assertTrue(result.getMessage().contains("Search could not reliably complete"));
+        assertTrue(result.getMessage().contains("connectionId=5 closed"));
+        assertTrue(result.getMessage().contains("Ask the user whether to retry with another connection or scope"));
+        assertTrue(result.getMessage().contains("Do not continue object discovery until the user replies"));
     }
 
     private SearchObjectsTool proxiedTool() {
