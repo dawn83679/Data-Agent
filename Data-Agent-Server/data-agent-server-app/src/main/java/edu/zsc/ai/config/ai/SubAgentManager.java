@@ -1,10 +1,15 @@
 package edu.zsc.ai.config.ai;
 
+import edu.zsc.ai.agent.subagent.SubAgent;
+import edu.zsc.ai.agent.subagent.SubAgentRequest;
+import edu.zsc.ai.agent.subagent.contract.PlannerRequest;
+import edu.zsc.ai.agent.subagent.contract.SchemaSummary;
+import edu.zsc.ai.agent.subagent.contract.SqlPlan;
 import edu.zsc.ai.agent.subagent.explorer.ExplorerSubAgent;
 import edu.zsc.ai.agent.subagent.planner.PlannerSubAgent;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /**
@@ -13,14 +18,18 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Getter
-@RequiredArgsConstructor
 public class SubAgentManager {
 
-    @Lazy
-    private final ExplorerSubAgent explorerSubAgent;
-
-    @Lazy
-    private final PlannerSubAgent plannerSubAgent;
-
+    private final SubAgent<SubAgentRequest, SchemaSummary> explorerSubAgent;
+    private final SubAgent<PlannerRequest, SqlPlan> plannerSubAgent;
     private final SubAgentProperties properties;
+
+    public SubAgentManager(
+            @Lazy @Qualifier("loggingExplorerSubAgent") SubAgent<SubAgentRequest, SchemaSummary> explorerSubAgent,
+            @Lazy @Qualifier("loggingPlannerSubAgent") SubAgent<PlannerRequest, SqlPlan> plannerSubAgent,
+            SubAgentProperties properties) {
+        this.explorerSubAgent = explorerSubAgent;
+        this.plannerSubAgent = plannerSubAgent;
+        this.properties = properties;
+    }
 }

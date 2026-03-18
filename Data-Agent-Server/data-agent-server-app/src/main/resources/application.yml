@@ -100,6 +100,17 @@ app:
     pool-size: 20
 
 agent:
+  observability:
+    enabled: false
+    runtime-log-enabled: false
+    console-log-enabled: true
+    sse-event-log-enabled: true
+    model-event-log-enabled: true
+    tool-event-log-enabled: true
+    include-prompt: false
+    include-response: true
+    include-token-stream: true
+    runtime-log-dir: ~/.data-agent/logs/agent/runtime
   sub-agent:
     explorer:
       timeout-seconds: 120

@@ -1,0 +1,12 @@
+agent:
+  observability:
+    enabled: false
+    runtime-log-enabled: false
+    console-log-enabled: false
+    sse-event-log-enabled: false
+    model-event-log-enabled: false
+    tool-event-log-enabled: false
+    include-prompt: false
+    include-response: false
+    include-token-stream: false
+    runtime-log-dir: ~/.data-agent/logs/agent/runtime

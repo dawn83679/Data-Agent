@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Shared formatting and error helpers for sub-agent implementations and orchestrator tools.
@@ -63,5 +64,29 @@ public final class SubAgentTextSupport {
     public static String rootCauseMessage(Throwable throwable) {
         Throwable cause = rootCause(throwable);
         return cause == null ? null : StringUtils.defaultIfBlank(cause.getMessage(), cause.getClass().getSimpleName());
+    }
+
+    public static String errorSummary(Throwable throwable, String fallbackMessage) {
+        return errorSummary(throwable, fallbackMessage, null);
+    }
+
+    public static String errorSummary(Throwable throwable, String fallbackMessage, Long timeoutSeconds) {
+        String fallback = StringUtils.defaultIfBlank(fallbackMessage, "SubAgent execution failed");
+        Throwable cause = rootCause(throwable);
+        if (cause == null) {
+            return fallback;
+        }
+        if (cause instanceof TimeoutException) {
+            return StringUtils.defaultIfBlank(
+                    cause.getMessage(),
+                    timeoutSeconds != null && timeoutSeconds > 0
+                            ? "Timed out after " + timeoutSeconds + "s"
+                            : "Timed out"
+            );
+        }
+        return StringUtils.defaultIfBlank(
+                StringUtils.defaultIfBlank(cause.getMessage(), cause.getClass().getSimpleName()),
+                fallback
+        );
     }
 }

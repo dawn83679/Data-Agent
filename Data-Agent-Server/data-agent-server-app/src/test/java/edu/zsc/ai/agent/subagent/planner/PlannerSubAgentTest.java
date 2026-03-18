@@ -56,7 +56,8 @@ class PlannerSubAgentTest {
         private PlannerSubAgent createTestableAgent() throws Exception {
             var constructor = PlannerSubAgent.class.getDeclaredConstructors()[0];
             constructor.setAccessible(true);
-            return (PlannerSubAgent) constructor.newInstance(null, null, null, null);
+            Object[] args = new Object[constructor.getParameterCount()];
+            return (PlannerSubAgent) constructor.newInstance(args);
         }
 
         @Test

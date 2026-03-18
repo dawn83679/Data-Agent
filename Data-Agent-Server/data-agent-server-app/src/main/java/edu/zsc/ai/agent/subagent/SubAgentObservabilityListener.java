@@ -4,6 +4,10 @@ import edu.zsc.ai.agent.tool.AgentToolTracker;
 import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
 import edu.zsc.ai.domain.model.dto.response.agent.ChatResponseBlock;
 import edu.zsc.ai.domain.service.agent.SseEmitterRegistry;
+import edu.zsc.ai.observability.AgentLogEvent;
+import edu.zsc.ai.observability.AgentLogFields;
+import edu.zsc.ai.observability.AgentLogService;
+import edu.zsc.ai.observability.AgentLogType;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -29,6 +33,7 @@ public class SubAgentObservabilityListener {
     private final String parentToolCallId;
     private final Long connectionId;
     private final Long timeoutSeconds;
+    private final AgentLogService agentLogService;
 
     // Tool usage tracking
     private final AgentToolTracker toolTracker = new AgentToolTracker();
@@ -97,6 +102,18 @@ public class SubAgentObservabilityListener {
                                          String parentToolCallId,
                                          Long connectionId,
                                          Long timeoutSeconds) {
+        this(agentType, conversationId, sseEmitterRegistry, onToolExecutedCallback, taskId, parentToolCallId, connectionId, timeoutSeconds, null);
+    }
+
+    public SubAgentObservabilityListener(AgentTypeEnum agentType,
+                                         Long conversationId,
+                                         SseEmitterRegistry sseEmitterRegistry,
+                                         BiConsumer<String, Object> onToolExecutedCallback,
+                                         String taskId,
+                                         String parentToolCallId,
+                                         Long connectionId,
+                                         Long timeoutSeconds,
+                                         AgentLogService agentLogService) {
         this.agentType = agentType;
         this.conversationId = conversationId;
         this.sseEmitterRegistry = sseEmitterRegistry;
@@ -105,6 +122,7 @@ public class SubAgentObservabilityListener {
         this.parentToolCallId = parentToolCallId;
         this.connectionId = connectionId;
         this.timeoutSeconds = timeoutSeconds;
+        this.agentLogService = agentLogService;
         this.traceId = "conv-" + conversationId + "-" + System.currentTimeMillis();
     }
 
@@ -114,6 +132,7 @@ public class SubAgentObservabilityListener {
     public void emitStart() {
         invocationStartMs = System.currentTimeMillis();
         emitSubAgentBlock(ChatResponseBlock.subAgentStart(agentType.getCode(), parentToolCallId, taskId, connectionId, timeoutSeconds));
+        recordLifecycleEvent(AgentLogType.SUB_AGENT_START, "sub_agent_start", null, null);
         log.debug("SubAgent [{}] invocation started, traceId={}", agentType.getCode(), traceId);
     }
 
@@ -144,6 +163,10 @@ public class SubAgentObservabilityListener {
         emitSubAgentBlock(ChatResponseBlock.subAgentComplete(
                 agentType.getCode(), parentToolCallId, taskId,
                 toolTracker.getTotalCount(), toolTracker.getToolCounts(), summaryText, resultJson, connectionId, timeoutSeconds));
+        recordLifecycleEvent(AgentLogType.SUB_AGENT_COMPLETE, "sub_agent_complete", null, AgentLogFields.of(
+                "toolCount", toolTracker.getTotalCount(),
+                "toolCounts", toolTracker.getToolCounts(),
+                "summaryText", summaryText));
         log.info("SubAgent [{}] completed: duration={}ms, {} tool calls, traceId={}, spanId={}",
                 agentType.getCode(), durationMs, toolTracker.getTotalCount(), traceId, span.spanId());
     }
@@ -170,6 +193,7 @@ public class SubAgentObservabilityListener {
         spans.add(span);
 
         emitSubAgentBlock(ChatResponseBlock.subAgentError(agentType.getCode(), errorMsg, parentToolCallId, taskId, connectionId, timeoutSeconds));
+        recordLifecycleEvent(AgentLogType.SUB_AGENT_ERROR, "sub_agent_error", null, AgentLogFields.of("errorMessage", errorMsg));
         log.error("SubAgent [{}] failed: duration={}ms, error={}, traceId={}",
                 agentType.getCode(), durationMs, errorMsg, traceId);
     }
@@ -220,6 +244,26 @@ public class SubAgentObservabilityListener {
         if (sseEmitterRegistry == null) return;
         log.debug("[Observability] emitting {}: agentType={}", block.getType(), agentType.getCode());
         sseEmitterRegistry.get(conversationId).ifPresent(sink -> sink.tryEmitNext(block));
+    }
+
+    private void recordLifecycleEvent(AgentLogType type, String message, Throwable throwable, Map<String, Object> payload) {
+        if (agentLogService == null) {
+            return;
+        }
+        agentLogService.record(AgentLogEvent.builder()
+                .type(type)
+                .loggerName("SubAgentObservabilityListener")
+                .conversationId(conversationId)
+                .traceId(traceId)
+                .agentType(agentType.getCode())
+                .taskId(taskId)
+                .parentToolCallId(parentToolCallId)
+                .elapsedMs(invocationStartMs > 0 ? System.currentTimeMillis() - invocationStartMs : null)
+                .message(message)
+                .payload(payload)
+                .errorClass(throwable != null ? throwable.getClass().getName() : null)
+                .errorMessage(throwable != null ? throwable.getMessage() : null)
+                .build());
     }
 
     /**

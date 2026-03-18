@@ -7,7 +7,6 @@ import edu.zsc.ai.domain.service.agent.ChatService;
 import edu.zsc.ai.domain.service.agent.ChatSession;
 import edu.zsc.ai.domain.service.agent.ChatSessionFactory;
 import edu.zsc.ai.domain.service.agent.ChatStreamBridge;
-import edu.zsc.ai.util.SseLogWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -48,6 +47,6 @@ public class ChatServiceImpl implements ChatService {
                 block.setConversationId(session.conversationId());
             }
             return block;
-        }).doOnNext(block -> SseLogWriter.append(block, session.conversationId()));
+        });
     }
 }

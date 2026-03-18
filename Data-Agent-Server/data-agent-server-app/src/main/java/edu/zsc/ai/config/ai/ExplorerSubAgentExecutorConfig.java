@@ -2,6 +2,8 @@ package edu.zsc.ai.config.ai;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import edu.zsc.ai.observability.AgentLogService;
+import edu.zsc.ai.observability.decorator.LoggingExecutorServiceDecorator;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -22,7 +24,7 @@ public class ExplorerSubAgentExecutorConfig {
     public static final String EXPLORER_SUB_AGENT_EXECUTOR_BEAN = "explorerSubAgentExecutor";
 
     @Bean(name = EXPLORER_SUB_AGENT_EXECUTOR_BEAN, destroyMethod = "shutdown")
-    public ExecutorService explorerSubAgentExecutor(SubAgentProperties properties) {
+    public ExecutorService explorerSubAgentExecutor(SubAgentProperties properties, AgentLogService agentLogService) {
         int maxConcurrency = Math.max(1, properties.getExplorer().getDispatch().getMaxConcurrency());
         int queueCapacity = Math.max(1, properties.getExplorer().getDispatch().getQueueCapacity());
         BlockingQueue<Runnable> queue = new ArrayBlockingQueue<>(queueCapacity);
@@ -40,7 +42,7 @@ public class ExplorerSubAgentExecutorConfig {
             }
         };
 
-        return new ThreadPoolExecutor(
+        ExecutorService delegate = new ThreadPoolExecutor(
                 maxConcurrency,
                 maxConcurrency,
                 60L,
@@ -54,5 +56,6 @@ public class ExplorerSubAgentExecutorConfig {
                 },
                 blockingPolicy
         );
+        return new LoggingExecutorServiceDecorator(delegate, agentLogService, EXPLORER_SUB_AGENT_EXECUTOR_BEAN);
     }
 }
