@@ -134,10 +134,12 @@ function buildAutoFeedbackMessage(
   ].join('\n');
 }
 
-function mergeThemeAxis(axis: unknown, isDark: boolean): unknown {
-  const labelColor = isDark ? '#d1d5db' : '#374151';
+function mergeThemeAxis(axis: unknown, isDark: boolean, axisType: 'x' | 'y' = 'x'): unknown {
+  const labelColor = isDark ? '#ffffff' : '#374151';
   const lineColor = isDark ? 'rgba(148,163,184,0.45)' : 'rgba(100,116,139,0.45)';
   const splitLineColor = isDark ? 'rgba(148,163,184,0.22)' : 'rgba(148,163,184,0.35)';
+  const noBorderStyle = isDark ? { textBorderWidth: 0, textShadowBlur: 0 } : {};
+  const nameLocation = axisType === 'x' ? 'end' : undefined;
 
   const mergeOne = (axisItem: unknown): unknown => {
     if (!axisItem || typeof axisItem !== 'object' || Array.isArray(axisItem)) {
@@ -153,7 +155,9 @@ function mergeThemeAxis(axis: unknown, isDark: boolean): unknown {
 
     return {
       ...source,
-      axisLabel: { color: labelColor, ...axisLabel },
+      ...(nameLocation ? { nameLocation } : {}),
+      nameGap: source.nameGap ?? 22,
+      axisLabel: { color: labelColor, overflow: 'truncate', ...noBorderStyle, ...axisLabel },
       axisLine: {
         ...axisLine,
         lineStyle: { color: lineColor, ...axisLineStyle },
@@ -162,7 +166,7 @@ function mergeThemeAxis(axis: unknown, isDark: boolean): unknown {
         ...splitLine,
         lineStyle: { color: splitLineColor, ...splitLineStyle },
       },
-      nameTextStyle: { color: labelColor, ...nameTextStyle },
+      nameTextStyle: { color: labelColor, ...noBorderStyle, ...nameTextStyle },
     };
   };
 
@@ -174,8 +178,9 @@ function mergeThemeAxis(axis: unknown, isDark: boolean): unknown {
 
 function applyThemeDefaults(option: Record<string, unknown>, theme: 'light' | 'dark'): EChartsOption {
   const isDark = theme === 'dark';
-  const textColor = isDark ? '#e5e7eb' : '#111827';
+  const textColor = isDark ? '#ffffff' : '#111827';
   const subTextColor = isDark ? '#9ca3af' : '#6b7280';
+  const noBorderStyle = isDark ? { textBorderWidth: 0, textShadowBlur: 0 } : {};
 
   const sourceTextStyle = (option.textStyle as Record<string, unknown> | undefined) ?? {};
   const sourceLegend = (option.legend as Record<string, unknown> | undefined) ?? {};
@@ -184,27 +189,24 @@ function applyThemeDefaults(option: Record<string, unknown>, theme: 'light' | 'd
   const sourceTitleTextStyle = (sourceTitle.textStyle as Record<string, unknown> | undefined) ?? {};
   const sourceTitleSubTextStyle = (sourceTitle.subtextStyle as Record<string, unknown> | undefined) ?? {};
   const sourceGrid = (option.grid as Record<string, unknown> | undefined) ?? {};
-
-  // Detect if this is a pie chart
   const series = option.series;
   const isPieChart = Array.isArray(series) 
     ? series.some((s: unknown) => (s as Record<string, unknown>)?.type === 'pie')
     : (series as Record<string, unknown> | undefined)?.type === 'pie';
-
-  // Calculate top padding based on title presence
   const hasTitle = sourceTitle && (sourceTitle.text || sourceTitle.subtext);
-  const defaultTop = hasTitle ? 80 : 60;
+  const defaultTop = hasTitle ? 88 : 70;
 
   const baseConfig = {
     ...option,
     backgroundColor: option.backgroundColor ?? 'transparent',
     textStyle: {
       color: textColor,
+      ...noBorderStyle,
       ...sourceTextStyle,
     },
     title: {
       left: 'center',
-      top: 20,
+      top: 12,
       ...sourceTitle,
       textStyle: {
         color: textColor,
@@ -212,27 +214,31 @@ function applyThemeDefaults(option: Record<string, unknown>, theme: 'light' | 'd
         fontWeight: 'normal',
         overflow: 'break',
         width: '90%',
+        ...noBorderStyle,
         ...sourceTitleTextStyle,
       },
       subtextStyle: {
         color: subTextColor,
+        ...noBorderStyle,
         ...sourceTitleSubTextStyle,
       },
     },
   };
 
   if (isPieChart) {
-    // Adjust pie chart series to have better positioning
     const adjustedSeries = Array.isArray(series)
       ? series.map((s: unknown) => {
           const seriesItem = s as Record<string, unknown>;
           if (seriesItem.type === 'pie') {
             return {
               ...seriesItem,
-              center: seriesItem.center ?? ['60%', '55%'],
-              radius: seriesItem.radius ?? ['0%', '65%'],
+              center: ['62%', '54%'],
+              radius: ['0%', '48%'],
+              avoidLabelOverlap: true,
+              labelLayout: { moveOverlap: 'shiftY' as const, hideOverlap: true },
               label: {
-                fontSize: 12,
+                color: textColor,
+                ...noBorderStyle,
                 ...(seriesItem.label as Record<string, unknown> | undefined),
               },
             };
@@ -241,55 +247,77 @@ function applyThemeDefaults(option: Record<string, unknown>, theme: 'light' | 'd
         })
       : {
           ...(series as Record<string, unknown>),
-          center: (series as Record<string, unknown>)?.center ?? ['60%', '55%'],
-          radius: (series as Record<string, unknown>)?.radius ?? ['0%', '65%'],
+          center: ['62%', '54%'],
+          radius: ['0%', '48%'],
+          avoidLabelOverlap: true,
+          labelLayout: { moveOverlap: 'shiftY' as const, hideOverlap: true },
           label: {
-            fontSize: 12,
+            color: textColor,
+            ...noBorderStyle,
             ...((series as Record<string, unknown>)?.label as Record<string, unknown> | undefined),
           },
         };
 
-    // Special handling for pie charts
     return {
       ...baseConfig,
+      title: { ...baseConfig.title, padding: [0, 0, 18, 0] },
       series: adjustedSeries,
       legend: {
         orient: 'vertical',
-        left: 20,
+        left: 16,
         top: 'middle',
-        itemGap: 12,
-        itemWidth: 18,
-        itemHeight: 12,
         ...sourceLegend,
         textStyle: {
           color: textColor,
-          fontSize: 12,
+          ...noBorderStyle,
           ...sourceLegendTextStyle,
         },
       },
     } as EChartsOption;
   }
 
-  // Default handling for bar/line/scatter charts
+  const mergeSeriesLabel = (s: unknown): Record<string, unknown> => {
+    const item = s as Record<string, unknown>;
+    const sourceLabel = (item.label as Record<string, unknown> | undefined) ?? {};
+    return {
+      ...item,
+      label: {
+        color: textColor,
+        ...noBorderStyle,
+        ...sourceLabel,
+      },
+    };
+  };
+  const adjustedCartesianSeries = Array.isArray(series)
+    ? series.map(mergeSeriesLabel)
+    : series && typeof series === 'object'
+      ? mergeSeriesLabel(series)
+      : series;
+
   return {
     ...baseConfig,
+    series: adjustedCartesianSeries,
     legend: {
       ...sourceLegend,
+      top: hasTitle ? 44 : 32,
+      left: 'center',
+      orient: 'horizontal',
       textStyle: {
         color: textColor,
+        ...noBorderStyle,
         ...sourceLegendTextStyle,
       },
     },
     grid: {
       top: defaultTop,
-      left: 70,
-      right: 50,
-      bottom: 100,
+      left: 80,
+      right: 125,
+      bottom: 30,
       containLabel: true,
       ...sourceGrid,
     },
-    xAxis: mergeThemeAxis(option.xAxis, isDark),
-    yAxis: mergeThemeAxis(option.yAxis, isDark),
+    xAxis: mergeThemeAxis(option.xAxis, isDark, 'x'),
+    yAxis: mergeThemeAxis(option.yAxis, isDark, 'y'),
   } as EChartsOption;
 }
 
@@ -354,12 +382,8 @@ export function ChartToolBlock({
         pixelRatio: 2,
         backgroundColor: theme === 'dark' ? '#1f2937' : '#ffffff',
       });
-      
-      // Convert data URL to blob
       const response = await fetch(dataUrl);
       const blob = await response.blob();
-      
-      // Copy to clipboard
       await navigator.clipboard.write([
         new ClipboardItem({
           'image/png': blob
@@ -403,10 +427,27 @@ export function ChartToolBlock({
       chart.resize();
       setRenderError(null);
 
-      const onResize = () => chart.resize();
-      window.addEventListener('resize', onResize);
+      const doResize = () => {
+        const w = container.offsetWidth;
+        const h = container.offsetHeight;
+        if (w > 0 && h > 0) {
+          chart.resize({ width: w, height: h });
+        }
+      };
+      const scheduleResize = () => requestAnimationFrame(doResize);
+
+      window.addEventListener('resize', scheduleResize);
+      window.visualViewport?.addEventListener('resize', scheduleResize);
+      window.visualViewport?.addEventListener('scroll', scheduleResize);
+
+      const ro = new ResizeObserver(() => scheduleResize());
+      ro.observe(container);
+
       return () => {
-        window.removeEventListener('resize', onResize);
+        window.removeEventListener('resize', scheduleResize);
+        window.visualViewport?.removeEventListener('resize', scheduleResize);
+        window.visualViewport?.removeEventListener('scroll', scheduleResize);
+        ro.disconnect();
       };
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Unknown ECharts rendering error.';
@@ -480,6 +521,11 @@ export function ChartToolBlock({
   const chartTypeLabel = getLocalizedChartTypeLabel(parsedParams.chartType ?? chartPayload.chartType, t);
   const chartDescription = (chartPayload.description ?? parsedParams.description ?? '').trim();
 
+  const isPieChart = useMemo(() => {
+    const s = chartPayload.option?.series;
+    return Array.isArray(s) ? s.some((x: unknown) => (x as Record<string, unknown>)?.type === 'pie') : (s as Record<string, unknown> | undefined)?.type === 'pie';
+  }, [chartPayload.option]);
+
   return (
     <div className="mb-2 space-y-2 rounded border theme-border p-2">
       <button
@@ -512,10 +558,10 @@ export function ChartToolBlock({
             </div>
           ) : (
             <>
-              <div className="relative group">
+              <div className="relative group flex items-center justify-center">
                 <div
                   ref={chartContainerRef}
-                  className="w-full min-h-[400px] h-[450px] rounded border theme-border theme-bg-main"
+                  className={`w-full max-w-full min-w-0 rounded border theme-border theme-bg-main p-4 box-border ${isPieChart ? 'min-h-[300px] h-[360px]' : 'min-h-[280px] h-[min(450px,75vh)]'}`}
                 />
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-sm border theme-border overflow-hidden">
