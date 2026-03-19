@@ -196,7 +196,7 @@ public class ChatStreamBridge {
                             "toolCount", toolTracker.getTotalCount(),
                             "outputTokens", response.tokenUsage() != null ? response.tokenUsage().outputTokenCount() : null,
                             "totalTokens", response.tokenUsage() != null ? response.tokenUsage().totalTokenCount() : null));
-            publishTokenUsageIfPresent(response, conversationId);
+            publishTokenUsageIfPresent(response, conversationId, emitDoneBlock || !enterPlanTriggered.get());
 
             if (emitDoneBlock) {
                 sink.tryEmitNext(ChatResponseBlock.doneBlock(toolTracker.toMetadata()));
@@ -226,7 +226,9 @@ public class ChatStreamBridge {
     }
 
     private void publishTokenUsageIfPresent(
-            dev.langchain4j.model.chat.response.ChatResponse response, Long conversationId) {
+            dev.langchain4j.model.chat.response.ChatResponse response,
+            Long conversationId,
+            boolean finalTurn) {
         if (Objects.isNull(response.tokenUsage())) {
             return;
         }
@@ -237,7 +239,7 @@ public class ChatStreamBridge {
             log.info("Chat completed for conversation {}: {} total tokens (output: {})",
                     conversationId, totalTokens, outputTokens);
             eventPublisher.publishEvent(
-                    new ChatCompletedEvent(this, conversationId, outputTokens, totalTokens));
+                    new ChatCompletedEvent(this, conversationId, outputTokens, totalTokens, finalTurn));
         } else {
             log.debug("No token usage available for conversation {}", conversationId);
         }

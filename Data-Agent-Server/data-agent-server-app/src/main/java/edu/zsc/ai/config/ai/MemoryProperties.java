@@ -14,6 +14,8 @@ public class MemoryProperties {
 
     private Retrieval retrieval = new Retrieval();
 
+    private Maintenance maintenance = new Maintenance();
+
     @Data
     public static class Embedding {
 
@@ -23,10 +25,18 @@ public class MemoryProperties {
     @Data
     public static class Retrieval {
 
-        private int preloadTopK = 6;
-
-        private int candidateTopK = 10;
-
         private double minScore = 0.72;
+    }
+
+    @Data
+    public static class Maintenance {
+
+        private boolean enabled = true;
+
+        private long fixedDelayMs = 3_600_000L;
+
+        private boolean archiveExpiredEnabled = true;
+
+        private boolean hideDuplicateEnabled = true;
     }
 }

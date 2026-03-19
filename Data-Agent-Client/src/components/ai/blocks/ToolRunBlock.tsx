@@ -270,7 +270,7 @@ function PlanStreamHandler({ parametersData }: { parametersData: string }) {
       // Subsequent renders — update the payload
       ws.updatePlanPayload(tabId, partial);
     }
-  }, [parametersData]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [parametersData]);
 
   if (!partial) return null;
 
@@ -317,7 +317,7 @@ function PlanCompleteHandler({ payload }: { payload: ExitPlanPayload }) {
         metadata: { planPayload: payload },
       });
     }
-  }, [tabId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tabId]);
 
   const handleViewPlan = () => {
     const ws = useWorkspaceStore.getState();

@@ -8,6 +8,8 @@ import edu.zsc.ai.agent.ReActAgentProvider;
 import edu.zsc.ai.common.enums.ai.AgentModeEnum;
 import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
 import edu.zsc.ai.common.enums.ai.PromptEnum;
+import edu.zsc.ai.domain.service.agent.systemprompt.SystemPromptAssemblyContext;
+import edu.zsc.ai.domain.service.agent.systemprompt.SystemPromptManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -27,6 +29,8 @@ public class AgentManager {
     private final AgentToolConfig agentToolConfig;
     private final Map<String, StreamingChatModel> modelsByName;
     private final List<Object> agentTools;
+    private final AgentSkillConfig agentSkillConfig;
+    private final SystemPromptManager systemPromptManager;
 
     private final Map<String, ReActAgent> dynamicAgentCache = new ConcurrentHashMap<>();
 
@@ -45,15 +49,23 @@ public class AgentManager {
             return dynamicAgentCache.computeIfAbsent(cacheKey, key -> {
                 log.info("Create MainAgent dynamically: model={}, language={}, mode={}",
                         modelName, promptLanguage.getCode(), mode.getCode());
-                String systemPrompt = PromptConfig.getPrompt(promptLanguage);
+                String systemPrompt = systemPromptManager.render(SystemPromptAssemblyContext.builder()
+                                .promptEnum(promptLanguage)
+                                .agentType(AgentTypeEnum.MAIN)
+                                .agentMode(mode)
+                                .modelName(modelName)
+                                .language(promptLanguage.getCode())
+                                .availableSkills(agentSkillConfig.resolveAvailableSkills(AgentTypeEnum.MAIN, mode))
+                                .build())
+                        .renderedPrompt();
                 return buildMainAgent(model, mode, systemPrompt);
             });
         };
     }
 
     private ReActAgent buildMainAgent(StreamingChatModel model,
-                                       AgentModeEnum mode,
-                                       String systemPrompt) {
+                                      AgentModeEnum mode,
+                                      String systemPrompt) {
         List<Object> tools = agentToolConfig.resolveMainTools(agentTools, mode);
         AgentToolConfig.ToolBundle toolBundle = agentToolConfig.buildToolBundle(tools);
 

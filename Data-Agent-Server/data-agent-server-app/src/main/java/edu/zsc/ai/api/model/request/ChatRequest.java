@@ -1,7 +1,10 @@
 package edu.zsc.ai.api.model.request;
 
+import java.util.List;
+
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 /**
@@ -9,6 +12,7 @@ import lombok.NoArgsConstructor;
  */
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class ChatRequest extends BaseRequest {
 
     @NotBlank(message = "Message cannot be empty")
@@ -31,4 +35,25 @@ public class ChatRequest extends BaseRequest {
      * Optional; server defaults to Agent mode when blank/unknown.
      */
     private String agentType;
+
+    /**
+     * Database catalog name used by chat runtime context.
+     */
+    private String catalogName;
+
+    /**
+     * Structured @ mentions selected from ChatInput.
+     * These are used to populate the runtime prompt's <user_mention> block.
+     */
+    private List<ChatUserMention> userMentions;
+
+    @Override
+    public String getCatalog() {
+        return catalogName;
+    }
+
+    @Override
+    public void setCatalog(String catalog) {
+        this.catalogName = catalog;
+    }
 }

@@ -26,12 +26,14 @@ export function ChatInput() {
     modelState,
     agentState,
     chatContextState,
+    mentionState,
     onCommand,
     messages,
   } = useAIAssistantContext();
   const { model, setModel, modelOptions } = modelState;
   const { agent, setAgent } = agentState;
   const { setChatContext } = chatContextState;
+  const { setUserMentions } = mentionState;
   const modelNames = useMemo(() => modelOptions.map((m) => m.modelName), [modelOptions]);
 
   // Track todos for display above input
@@ -51,6 +53,12 @@ export function ChatInput() {
     input,
     setChatContext,
     setInput,
+    onMentionResolved: (mention) => {
+      setUserMentions((prev) => {
+        const withoutSameToken = prev.filter((item) => item.token !== mention.token);
+        return [...withoutSameToken, mention];
+      });
+    },
   });
 
   const handleInputChange = useInputChangeHandler({

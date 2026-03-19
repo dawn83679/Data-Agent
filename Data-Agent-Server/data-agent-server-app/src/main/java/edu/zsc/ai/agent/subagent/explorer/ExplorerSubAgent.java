@@ -12,8 +12,6 @@ import edu.zsc.ai.agent.subagent.contract.SchemaSummary;
 import edu.zsc.ai.common.constant.InvocationContextConstant;
 import edu.zsc.ai.config.ai.SubAgentFactory;
 import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
-import edu.zsc.ai.common.enums.ai.PromptEnum;
-import edu.zsc.ai.config.ai.PromptConfig;
 import edu.zsc.ai.config.ai.SubAgentProperties;
 import edu.zsc.ai.context.AgentExecutionContext;
 import edu.zsc.ai.context.AgentRequestContext;
@@ -111,10 +109,8 @@ public class ExplorerSubAgent extends AbstractSubAgent<SubAgentRequest, SchemaSu
                     taskId,
                     StringUtils.length(message),
                     preview(message));
-            String systemPrompt = PromptConfig.getPrompt(PromptEnum.EXPLORER);
-
-            ExplorerAgentService agentService = subAgentFactory.buildExplorerAgent(
-                    modelName, systemPrompt);
+            String systemPrompt = "(managed by SystemPromptManager)";
+            ExplorerAgentService agentService = subAgentFactory.buildExplorerAgent(modelName);
 
             Map<String, Object> invocationContext = buildInvocationContext(request);
             log.info("[Explorer] invocation context built, taskId={}, defaultConnectionId={}, allowedConnectionIds={}, invocationKeys={}",

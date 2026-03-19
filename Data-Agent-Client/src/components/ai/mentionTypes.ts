@@ -1,9 +1,20 @@
+export type MentionObjectType = 'TABLE' | 'VIEW';
+
+export interface MentionPayload {
+  connectionId?: number;
+  connectionName?: string;
+  catalogName?: string;
+  schemaName?: string;
+  objectName?: string;
+  objectType?: MentionObjectType;
+}
+
 export type MentionLevel = 'connection' | 'database' | 'schema' | 'table';
 
 export interface MentionItem {
   id: string;
   label: string;
-  payload?: { connectionId?: number; databaseName?: string; schemaName?: string };
+  payload?: MentionPayload;
 }
 
 /** Regex to match a single @mention token (e.g. @conn or @conn/db/schema/table). */

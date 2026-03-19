@@ -33,4 +33,8 @@ public enum AgentModeEnum {
         }
         return AGENT;
     }
+
+    public String promptMode() {
+        return this == PLAN ? "plan" : "normal";
+    }
 }

@@ -7,7 +7,11 @@ import edu.zsc.ai.agent.annotation.AgentTool;
 import edu.zsc.ai.agent.subagent.SubAgentMemoryFactory;
 import edu.zsc.ai.agent.subagent.explorer.ExplorerAgentService;
 import edu.zsc.ai.agent.subagent.planner.PlannerAgentService;
+import edu.zsc.ai.common.enums.ai.AgentModeEnum;
 import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
+import edu.zsc.ai.common.enums.ai.PromptEnum;
+import edu.zsc.ai.domain.service.agent.systemprompt.SystemPromptAssemblyContext;
+import edu.zsc.ai.domain.service.agent.systemprompt.SystemPromptManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
@@ -30,16 +34,19 @@ public class SubAgentFactory {
     private final Map<String, StreamingChatModel> modelsByName;
     private final AgentToolConfig agentToolConfig;
     private final ApplicationContext applicationContext;
+    private final AgentSkillConfig agentSkillConfig;
+    private final SystemPromptManager systemPromptManager;
 
     /**
      * Build an Explorer SubAgent using AiServices.builder().
      * Each invocation creates a fresh agent with isolated temporary memory.
      */
-    public ExplorerAgentService buildExplorerAgent(String modelName, String systemPrompt) {
+    public ExplorerAgentService buildExplorerAgent(String modelName) {
         StreamingChatModel model = resolveModel(modelName);
         List<Object> tools = agentToolConfig.resolveSubAgentTools(getAgentTools(), AgentTypeEnum.EXPLORER);
         AgentToolConfig.ToolBundle toolBundle = agentToolConfig.buildToolBundle(tools);
         ChatMemory memory = SubAgentMemoryFactory.createTemporary();
+        String systemPrompt = renderSystemPrompt(PromptEnum.EXPLORER, AgentTypeEnum.EXPLORER, AgentModeEnum.AGENT, modelName);
 
         log.info("[SubAgentFactory] Building {} SubAgent, model={}, toolCount={}", AgentTypeEnum.EXPLORER, modelName, tools.size());
         return AiServices.builder(ExplorerAgentService.class)
@@ -54,11 +61,12 @@ public class SubAgentFactory {
      * Build a Planner SubAgent using AiServices.builder().
      * Each invocation creates a fresh agent with isolated temporary memory.
      */
-    public PlannerAgentService buildPlannerAgent(String modelName, String systemPrompt) {
+    public PlannerAgentService buildPlannerAgent(String modelName) {
         StreamingChatModel model = resolveModel(modelName);
         List<Object> tools = agentToolConfig.resolveSubAgentTools(getAgentTools(), AgentTypeEnum.PLANNER);
         AgentToolConfig.ToolBundle toolBundle = agentToolConfig.buildToolBundle(tools);
         ChatMemory memory = SubAgentMemoryFactory.createTemporary();
+        String systemPrompt = renderSystemPrompt(PromptEnum.PLANNER, AgentTypeEnum.PLANNER, AgentModeEnum.AGENT, modelName);
 
         log.info("[SubAgentFactory] Building {} SubAgent, model={}, toolCount={}", AgentTypeEnum.PLANNER, modelName, tools.size());
         return AiServices.builder(PlannerAgentService.class)
@@ -67,6 +75,21 @@ public class SubAgentFactory {
                 .chatMemory(memory)
                 .tools(toolBundle.executors(), toolBundle.immediateReturnToolNames())
                 .build();
+    }
+
+    private String renderSystemPrompt(PromptEnum promptEnum,
+                                      AgentTypeEnum agentType,
+                                      AgentModeEnum agentMode,
+                                      String modelName) {
+        return systemPromptManager.render(SystemPromptAssemblyContext.builder()
+                        .promptEnum(promptEnum)
+                        .agentType(agentType)
+                        .agentMode(agentMode)
+                        .modelName(modelName)
+                        .language(promptEnum.getCode())
+                        .availableSkills(agentSkillConfig.resolveAvailableSkills(agentType, agentMode))
+                        .build())
+                .renderedPrompt();
     }
 
     private StreamingChatModel resolveModel(String modelName) {

@@ -9,6 +9,8 @@ import dev.langchain4j.service.tool.ToolExecutor;
 import edu.zsc.ai.agent.annotation.AgentTool;
 import edu.zsc.ai.agent.tool.ask.AskUserQuestionTool;
 import edu.zsc.ai.agent.tool.chart.ChartTool;
+import edu.zsc.ai.agent.tool.memory.ReadMemoryTool;
+import edu.zsc.ai.agent.tool.memory.WriteMemoryTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingExplorerTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingPlannerTool;
 import edu.zsc.ai.agent.tool.plan.EnterPlanModeTool;
@@ -54,6 +56,8 @@ class AgentToolConfigTest {
     private ExitPlanModeTool exitPlanModeTool;
     private ActivateSkillTool activateSkillTool;
     private ChartTool chartTool;
+    private ReadMemoryTool readMemoryTool;
+    private WriteMemoryTool writeMemoryTool;
 
     @BeforeEach
     void setUp() {
@@ -69,8 +73,10 @@ class AgentToolConfigTest {
         todoTool = new TodoTool();
         enterPlanModeTool = new EnterPlanModeTool();
         exitPlanModeTool = new ExitPlanModeTool();
-        activateSkillTool = new ActivateSkillTool();
+        activateSkillTool = new ActivateSkillTool(new AgentSkillConfig());
         chartTool = new ChartTool();
+        readMemoryTool = new ReadMemoryTool(null, null);
+        writeMemoryTool = new WriteMemoryTool(null);
 
         allTools = List.of(
                 getEnvironmentOverviewTool,
@@ -84,7 +90,9 @@ class AgentToolConfigTest {
                 enterPlanModeTool,
                 exitPlanModeTool,
                 activateSkillTool,
-                chartTool
+                chartTool,
+                readMemoryTool,
+                writeMemoryTool
         );
     }
 
@@ -103,6 +111,8 @@ class AgentToolConfigTest {
             assertTrue(tools.contains(todoTool));
             assertTrue(tools.contains(activateSkillTool));
             assertTrue(tools.contains(chartTool));
+            assertTrue(tools.contains(readMemoryTool));
+            assertTrue(tools.contains(writeMemoryTool));
 
             assertFalse(tools.contains(searchObjectsTool));
             assertFalse(tools.contains(getObjectDetailTool));
@@ -123,6 +133,8 @@ class AgentToolConfigTest {
 
             assertFalse(tools.contains(executeSqlTool));
             assertFalse(tools.contains(chartTool));
+            assertFalse(tools.contains(readMemoryTool));
+            assertFalse(tools.contains(writeMemoryTool));
             assertFalse(tools.contains(searchObjectsTool));
             assertFalse(tools.contains(getObjectDetailTool));
             assertFalse(tools.contains(enterPlanModeTool));
@@ -165,6 +177,8 @@ class AgentToolConfigTest {
             assertFalse(tools.contains(callingExplorerTool), "Planner should NOT have CallingExplorerTool");
             assertFalse(tools.contains(callingPlannerTool), "Planner should NOT have CallingPlannerTool");
             assertFalse(tools.contains(chartTool), "Planner should NOT have ChartTool");
+            assertFalse(tools.contains(readMemoryTool), "Planner should NOT have ReadMemoryTool");
+            assertFalse(tools.contains(writeMemoryTool), "Planner should NOT have WriteMemoryTool");
             assertFalse(tools.contains(enterPlanModeTool), "Planner should NOT have EnterPlanModeTool");
             assertFalse(tools.contains(exitPlanModeTool), "Planner should NOT have ExitPlanModeTool");
         }

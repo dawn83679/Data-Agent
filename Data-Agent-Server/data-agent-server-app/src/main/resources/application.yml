@@ -131,6 +131,9 @@ memory:
   embedding:
     dimension: 1024
   retrieval:
-    preload-top-k: 6
-    candidate-top-k: 10
     min-score: 0.72
+  maintenance:
+    enabled: true
+    fixed-delay-ms: 3600000
+    archive-expired-enabled: true
+    hide-duplicate-enabled: true

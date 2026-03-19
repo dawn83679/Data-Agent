@@ -12,6 +12,11 @@ import {
     SESSION_EXPIRED_MESSAGE,
 } from '../constants/chat';
 
+interface QueuedMessage {
+    text: string;
+    bodyOverrides?: Partial<ChatRequest>;
+}
+
 export interface ConversationPrefs {
     agent: string;
     model: string;
@@ -46,7 +51,7 @@ function readPrefsFromStorage(conversationId: number): ConversationPrefs | null 
 interface ConversationRuntime {
     conversationId: number | null;
     messages: ChatMessage[];
-    queue: string[];
+    queue: QueuedMessage[];
     isLoading: boolean;
     isWaiting: boolean;
     submitting: boolean;
@@ -90,7 +95,7 @@ interface UseConversationRuntimeReturn {
     queue: string[];
 
     // Actions
-    submitMessage: (text: string) => Promise<void>;
+    submitMessage: (text: string, bodyOverrides?: Partial<ChatRequest>) => Promise<void>;
     stop: () => void;
     removeFromQueue: (index: number) => void;
     setActiveConversation: (id: number | null) => void;
@@ -395,7 +400,7 @@ export function useConversationRuntime(
     );
 
     const submitMessageToRuntime = useCallback(
-        async (runtime: ConversationRuntime, text: string) => {
+        async (runtime: ConversationRuntime, text: string, bodyOverrides?: Partial<ChatRequest>) => {
             const trimmed = text.trim();
             if (!trimmed || runtime.submitting) return;
 
@@ -433,6 +438,7 @@ export function useConversationRuntime(
             const request: ChatRequest = {
                 message: trimmed,
                 ...baseBody,
+                ...bodyOverrides,
                 ...(isPersistedConversationId(runtime.conversationId) && { conversationId: runtime.conversationId }),
             };
 
@@ -537,7 +543,7 @@ export function useConversationRuntime(
 
                     // Small delay to ensure UI updates
                     setTimeout(() => {
-                        submitMessageToRuntime(runtime, first);
+                        submitMessageToRuntime(runtime, first.text, first.bodyOverrides);
                     }, 0);
                 }
             }
@@ -547,17 +553,17 @@ export function useConversationRuntime(
     );
 
     const submitMessage = useCallback(
-        async (text: string) => {
+        async (text: string, bodyOverrides?: Partial<ChatRequest>) => {
             const runtime = getOrCreateRuntime(activeConversationId);
 
             // If already submitting, add to queue
             if (runtime.submitting) {
-                runtime.queue = [...runtime.queue, text.trim()];
+                runtime.queue = [...runtime.queue, { text: text.trim(), bodyOverrides }];
                 forceUpdate();
                 return;
             }
 
-            await submitMessageToRuntime(runtime, text);
+            await submitMessageToRuntime(runtime, text, bodyOverrides);
         },
         [activeConversationId, getOrCreateRuntime, submitMessageToRuntime, forceUpdate]
     );
@@ -686,7 +692,7 @@ export function useConversationRuntime(
         messages: activeRuntime.messages,
         isLoading: activeRuntime.isLoading,
         isWaiting: activeRuntime.isWaiting,
-        queue: activeRuntime.queue,
+        queue: activeRuntime.queue.map((item) => item.text),
         submitMessage,
         stop,
         removeFromQueue,

@@ -14,11 +14,25 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum SkillEnum {
 
-    CHART("chart", "skills/chart.md"),
-    SQL_OPTIMIZATION("sql-optimization", "skills/sql-optimization.md");
+    CHART(
+            "chart",
+            "skills/chart.md",
+            "Generate chart rendering guidance for final structured visualization output."
+    ),
+    SQL_OPTIMIZATION(
+            "sql-optimization",
+            "skills/sql-optimization.md",
+            "Optimize complex SQL involving joins, subqueries, aggregation, and execution-plan risks."
+    ),
+    MEMORY(
+            "memory",
+            "skills/memory.md",
+            "Extract and write durable memory when the conversation reveals stable user preferences, durable constraints, business rules, or reusable validated knowledge."
+    );
 
     private final String skillName;
     private final String resourcePath;
+    private final String description;
 
     private static final Map<String, SkillEnum> BY_NAME = Arrays.stream(values())
             .collect(Collectors.toMap(SkillEnum::getSkillName, e -> e));
