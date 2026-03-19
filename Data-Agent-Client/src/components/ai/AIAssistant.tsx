@@ -5,7 +5,6 @@ import { AIAssistantProvider } from './AIAssistantContext';
 import { ChatInput } from './ChatInput';
 import { AIAssistantHeader } from './AIAssistantHeader';
 import { AIAssistantContent } from './AIAssistantContent';
-import { MemoryCandidateDock } from './MemoryCandidateDock';
 import { PlanListPanel } from './PlanListPanel';
 import { PermissionRuleDialog } from './permissions/PermissionRuleDialog';
 import { useConversationRuntime } from '../../hooks/useConversationRuntime';
@@ -16,7 +15,7 @@ import { ChatPaths } from '../../constants/apiPaths';
 import { DEFAULT_MODEL, FALLBACK_MODELS } from '../../constants/models';
 import { SLASH_COMMAND_IDS } from './slashCommands';
 import { I18N_KEYS } from '../../constants/i18nKeys';
-import type { ChatContext } from '../../types/chat';
+import type { ChatContext, ChatUserMention } from '../../types/chat';
 import type { ModelOption } from '../../types/ai';
 import { chatMessagesToMessages } from './MessageList';
 import { extractPlansFromMessages } from './blocks/exitPlanModeTypes';
@@ -32,6 +31,7 @@ export function AIAssistant() {
   const [modelOptions, setModelOptions] = useState<ModelOption[]>(FALLBACK_MODELS);
   const [model, setModelState] = useState<string>(DEFAULT_MODEL);
   const [chatContext, setChatContext] = useState<ChatContext>({});
+  const [userMentions, setUserMentions] = useState<ChatUserMention[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPlanListOpen, setIsPlanListOpen] = useState(false);
@@ -61,13 +61,18 @@ export function AIAssistant() {
       language: i18n.resolvedLanguage ?? i18n.language ?? 'en',
       agentType: agent,
       ...(chatContext.connectionId != null && { connectionId: chatContext.connectionId }),
-      ...(chatContext.databaseName != null && chatContext.databaseName !== '' && { databaseName: chatContext.databaseName }),
+      ...(chatContext.catalogName != null && chatContext.catalogName !== '' && { catalogName: chatContext.catalogName }),
       ...(chatContext.schemaName != null && chatContext.schemaName !== '' && { schemaName: chatContext.schemaName }),
+      ...(userMentions.length > 0 && { userMentions }),
     },
     onError: (err) => {
       console.error('Stream error:', err);
     },
   });
+
+  useEffect(() => {
+    setUserMentions((prev) => prev.filter((mention) => input.includes(mention.token)));
+  }, [input]);
 
   // Restore mode/model when active conversation changes
   const prevActiveConversationIdRef = useRef<number | null | undefined>(undefined);
@@ -138,21 +143,16 @@ export function AIAssistant() {
   const handleSend = useCallback(() => {
     if (!input.trim()) return;
     const messageText = input.trim();
-    setInput('');
+    const activeMentions = userMentions.filter((mention) => messageText.includes(mention.token));
     userHasScrolledUpRef.current = false;
-    submitMessage(messageText);
-  }, [input, setInput, submitMessage]);
+    submitMessage(messageText, activeMentions.length > 0 ? { userMentions: activeMentions } : undefined);
+    setInput('');
+    setUserMentions([]);
+  }, [input, setInput, submitMessage, userMentions]);
 
   const chatMessages = chatMessagesToMessages(messages);
   const persistedConversationId =
     activeConversationId != null && activeConversationId > 0 ? activeConversationId : null;
-
-  const completedAssistantCount = messages.reduce((count, message) => {
-    if (message.role !== 'assistant') return count;
-    const hasDoneBlock = message.blocks?.some((block) => block.done) ?? false;
-    return hasDoneBlock ? count + 1 : count;
-  }, 0);
-  const candidateRefreshKey = `${persistedConversationId ?? 'none'}:${isLoading ? 'loading' : completedAssistantCount}`;
 
   const conversationPlans = useMemo(() => extractPlansFromMessages(messages), [messages]);
   const latestPlanTabId_ = useMemo(() => {
@@ -177,6 +177,7 @@ export function AIAssistant() {
     modelState: { model, setModel, modelOptions },
     agentState: { agent, setAgent },
     chatContextState: { chatContext, setChatContext },
+    mentionState: { userMentions, setUserMentions },
     messages,
     latestPlanTabId: latestPlanTabId_,
     onCommand: (id: string) => {
@@ -200,6 +201,7 @@ export function AIAssistant() {
         <AIAssistantHeader
           title={t(I18N_KEYS.AI.TITLE)}
           historyAriaLabel={t(I18N_KEYS.AI.HISTORY)}
+          memoryAriaLabel={t(I18N_KEYS.AI.MEMORY_ENTRY_TOOLTIP)}
           accessToken={!!accessToken}
           isHistoryOpen={isHistoryOpen}
           setIsHistoryOpen={setIsHistoryOpen}
@@ -254,11 +256,6 @@ export function AIAssistant() {
           isWaiting={isWaiting}
           queue={queue}
           onRemoveFromQueue={removeFromQueue}
-        />
-
-        <MemoryCandidateDock
-          conversationId={persistedConversationId}
-          refreshKey={candidateRefreshKey}
         />
 
         <div ref={chatInputAnchorRef}>

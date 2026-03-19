@@ -1,28 +1,45 @@
 package edu.zsc.ai.common.enums.ai;
 
 import java.util.Arrays;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Supported long-term memory types.
  */
+@Getter
+@RequiredArgsConstructor
 public enum MemoryTypeEnum {
 
-    PREFERENCE,
-    BUSINESS_RULE,
-    KNOWLEDGE_POINT,
-    GOLDEN_SQL_CASE,
-    WORKFLOW_CONSTRAINT;
+    PREFERENCE("PREFERENCE"),
+    BUSINESS_RULE("BUSINESS_RULE"),
+    KNOWLEDGE_POINT("KNOWLEDGE_POINT"),
+    GOLDEN_SQL_CASE("GOLDEN_SQL_CASE"),
+    WORKFLOW_CONSTRAINT("WORKFLOW_CONSTRAINT");
 
-    public static MemoryTypeEnum fromValue(String value) {
-        if (StringUtils.isBlank(value)) {
-            throw new IllegalArgumentException("Memory type cannot be blank");
+    private final String code;
+
+    public static MemoryTypeEnum fromCode(String code) {
+        if (code == null || code.isBlank()) {
+            return null;
         }
-        String normalized = value.trim().toUpperCase();
+        String normalized = code.trim().toUpperCase(Locale.ROOT);
         return Arrays.stream(values())
-                .filter(v -> v.name().equals(normalized))
+                .filter(v -> v.code.equals(normalized))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Unsupported memory type: " + value));
+                .orElse(null);
+    }
+
+    public static String validCodes() {
+        return Arrays.stream(values())
+                .map(MemoryTypeEnum::getCode)
+                .collect(Collectors.joining(", "));
+    }
+
+    public boolean matches(String code) {
+        return this == fromCode(code);
     }
 }

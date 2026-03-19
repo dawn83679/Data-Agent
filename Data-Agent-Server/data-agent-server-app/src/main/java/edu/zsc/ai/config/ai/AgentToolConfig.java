@@ -9,6 +9,8 @@ import dev.langchain4j.service.tool.ToolExecutor;
 import edu.zsc.ai.agent.annotation.AgentTool;
 import edu.zsc.ai.agent.tool.ask.AskUserQuestionTool;
 import edu.zsc.ai.agent.tool.chart.ChartTool;
+import edu.zsc.ai.agent.tool.memory.ReadMemoryTool;
+import edu.zsc.ai.agent.tool.memory.WriteMemoryTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingExplorerTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingPlannerTool;
 import edu.zsc.ai.agent.tool.skill.ActivateSkillTool;
@@ -46,7 +48,9 @@ public class AgentToolConfig {
                     ChartTool.class,
                     AskUserQuestionTool.class,
                     TodoTool.class,
-                    ActivateSkillTool.class
+                    ActivateSkillTool.class,
+                    ReadMemoryTool.class,
+                    WriteMemoryTool.class
             ),
             ToolScope.MAIN_PLAN, Set.of(
                     GetEnvironmentOverviewTool.class,

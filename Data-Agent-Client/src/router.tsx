@@ -7,6 +7,7 @@ const Settings = lazy(() => import("./pages/Settings").then((m) => ({ default: m
 const Profile = lazy(() => import("./pages/Profile").then((m) => ({ default: m.default })));
 const PasswordReset = lazy(() => import("./pages/PasswordReset").then((m) => ({ default: m.default })));
 const Sessions = lazy(() => import("./pages/Sessions").then((m) => ({ default: m.default })));
+const Memories = lazy(() => import("./pages/Memories").then((m) => ({ default: m.default })));
 
 interface RouterConfig {
     path?: string;
@@ -46,6 +47,15 @@ const routes: RouterConfig[] = [
             { path: "password", element: <Suspense fallback={null}><PasswordReset /></Suspense>, requiresAuth: true },
             { path: "sessions", element: <Suspense fallback={null}><Sessions /></Suspense>, requiresAuth: true },
         ],
+    },
+    {
+        path: "/memories",
+        element: (
+            <Suspense fallback={null}>
+                <Memories />
+            </Suspense>
+        ),
+        requiresAuth: true,
     },
 ];
 

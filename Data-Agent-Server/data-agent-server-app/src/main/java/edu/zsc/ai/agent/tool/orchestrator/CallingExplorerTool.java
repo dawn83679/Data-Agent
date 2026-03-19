@@ -6,22 +6,14 @@ import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.agent.annotation.AgentTool;
 import edu.zsc.ai.agent.subagent.SubAgentRequest;
 import edu.zsc.ai.agent.subagent.SubAgentTimeoutPolicy;
-import edu.zsc.ai.agent.subagent.contract.ExplorerResultEnvelope;
-import edu.zsc.ai.agent.subagent.contract.ExplorerTask;
-import edu.zsc.ai.agent.subagent.contract.ExplorerTaskResult;
-import edu.zsc.ai.agent.subagent.contract.ExplorerTaskStatus;
-import edu.zsc.ai.agent.subagent.contract.SchemaSummary;
+import edu.zsc.ai.agent.subagent.contract.*;
 import edu.zsc.ai.agent.tool.error.AgentToolExecuteException;
 import edu.zsc.ai.agent.tool.message.ToolMessageSupport;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.common.enums.ai.ToolNameEnum;
 import edu.zsc.ai.config.ai.ExplorerSubAgentExecutorConfig;
 import edu.zsc.ai.config.ai.SubAgentManager;
-import edu.zsc.ai.context.AgentExecutionContext;
-import edu.zsc.ai.context.AgentRequestContext;
-import edu.zsc.ai.context.AgentRequestContextInfo;
-import edu.zsc.ai.context.RequestContext;
-import edu.zsc.ai.context.RequestContextInfo;
+import edu.zsc.ai.context.*;
 import edu.zsc.ai.observability.AgentLogFields;
 import edu.zsc.ai.observability.AgentLogService;
 import edu.zsc.ai.util.JsonUtil;
@@ -36,7 +28,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.IntStream;
 
 /**
  * Delegates schema exploration to Explorer SubAgent(s).
@@ -163,12 +154,10 @@ public class CallingExplorerTool extends SubAgentToolSupport {
                 "taskCount", tasks.size()
         ));
 
-        List<CompletableFuture<ExplorerTaskResult>> futures = IntStream.range(0, tasks.size())
-                .mapToObj(i -> {
-                    ExplorerTask task = tasks.get(i);
+        List<CompletableFuture<ExplorerTaskResult>> futures = tasks.stream().map(explorerTask -> {
                     String taskId = buildTaskId("explore", requestContextSnapshot);
                     return CompletableFuture.supplyAsync(() -> executeTask(
-                            task, resolveTaskTimeoutSeconds(task, timeoutSeconds), requestContextSnapshot, agentRequestContextSnapshot, parentToolCallId, taskId), explorerExecutor);
+                            explorerTask, resolveTaskTimeoutSeconds(explorerTask, timeoutSeconds), requestContextSnapshot, agentRequestContextSnapshot, parentToolCallId, taskId), explorerExecutor);
                 })
                 .toList();
 

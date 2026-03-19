@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode } from 'react';
-import type { ChatContext, ChatRequest } from '../../types/chat';
+import type { ChatContext, ChatRequest, ChatUserMention } from '../../types/chat';
 import type { ModelOption } from '../../types/ai';
 import type { AgentType } from './agentTypes';
 
@@ -19,6 +19,11 @@ export interface ChatContextState {
   setChatContext: React.Dispatch<React.SetStateAction<ChatContext>>;
 }
 
+export interface MentionState {
+  userMentions: ChatUserMention[];
+  setUserMentions: React.Dispatch<React.SetStateAction<ChatUserMention[]>>;
+}
+
 export interface AIAssistantContextValue {
   input: string;
   setInput: (value: string) => void;
@@ -35,6 +40,7 @@ export interface AIAssistantContextValue {
   modelState: ModelState;
   agentState: AgentState;
   chatContextState: ChatContextState;
+  mentionState: MentionState;
   onCommand?: (commandId: string) => void;
   /** Raw messages for todo tracking */
   messages?: any[];

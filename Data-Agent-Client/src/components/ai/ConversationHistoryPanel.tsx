@@ -108,7 +108,7 @@ export function ConversationHistoryPanel({
         if (pendingIndex !== null) {
           setPendingHighlightIndex(pendingIndex);
         }
-      } catch (err) {
+      } catch {
         toast.error(t(I18N_KEYS.AI.LOAD_FAILED));
       } finally {
         setLoading(false);

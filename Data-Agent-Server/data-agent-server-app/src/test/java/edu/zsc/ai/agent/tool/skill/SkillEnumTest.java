@@ -37,10 +37,31 @@ class SkillEnumTest {
     }
 
     @Test
+    void memorySkill_exists() {
+        SkillEnum skill = SkillEnum.fromName("memory");
+        assertNotNull(skill);
+        assertEquals("memory", skill.getSkillName());
+        assertEquals("skills/memory.md", skill.getResourcePath());
+        assertFalse(skill.getDescription().isBlank());
+    }
+
+    @Test
+    void memorySkill_resourceLoadable() {
+        String content = PromptConfig.loadClassPathResource("skills/memory.md");
+        assertNotNull(content);
+        assertFalse(content.isBlank());
+        assertTrue(content.contains("readMemory"));
+        assertTrue(content.contains("writeMemory"));
+        assertTrue(content.contains("PREFERENCE"));
+        assertTrue(content.contains("WORKSPACE"));
+    }
+
+    @Test
     void validNames_includesBothSkills() {
         String names = SkillEnum.validNames();
         assertTrue(names.contains("chart"));
         assertTrue(names.contains("sql-optimization"));
+        assertTrue(names.contains("memory"));
     }
 
     @Test

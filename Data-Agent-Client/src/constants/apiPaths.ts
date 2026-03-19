@@ -32,11 +32,21 @@ export const ChatPaths = {
   STREAM: '/api/chat/stream',
 } as const;
 
-/** Memory candidate endpoints */
+/** Memory management endpoints */
 export const MemoryPaths = {
-  CANDIDATES_CURRENT_CONVERSATION: '/memories/candidates/current-conversation',
-  CANDIDATES: '/memories/candidates',
-  CANDIDATES_COMMIT: '/memories/candidates/commit',
+  LIST: '/memories',
+  METADATA: '/memories/metadata',
+  DETAIL: '/memories/:id',
+  SEARCH: '/memories/search',
+  MAINTENANCE_SUMMARY: '/memories/maintenance/summary',
+  MAINTENANCE_RUN: '/memories/maintenance/run',
+  CREATE: '/memories',
+  UPDATE: '/memories/:id',
+  ARCHIVE: '/memories/:id/archive',
+  RESTORE: '/memories/:id/restore',
+  CONFIRM: '/memories/:id/confirm',
+  NEEDS_REVIEW: '/memories/:id/needs-review',
+  DELETE: '/memories/:id',
 } as const;
 
 /** Connection management endpoints */

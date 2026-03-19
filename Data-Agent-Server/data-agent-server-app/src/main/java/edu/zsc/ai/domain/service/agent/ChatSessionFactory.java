@@ -1,5 +1,16 @@
 package edu.zsc.ai.domain.service.agent;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
+
 import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.agent.ReActAgent;
 import edu.zsc.ai.agent.ReActAgentProvider;
@@ -14,17 +25,14 @@ import edu.zsc.ai.context.AgentRequestContextInfo;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
+import edu.zsc.ai.domain.service.agent.prompt.UserPromptAssemblyContext;
+import edu.zsc.ai.domain.service.agent.prompt.PromptRenderResult;
+import edu.zsc.ai.domain.service.agent.prompt.UserPromptManager;
 import edu.zsc.ai.domain.service.ai.AiConversationService;
 import edu.zsc.ai.domain.service.ai.MemoryContextService;
+import edu.zsc.ai.domain.service.ai.model.MemoryPromptContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.util.Objects;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Prepares all state needed before an agent invocation:
@@ -39,6 +47,7 @@ public class ChatSessionFactory {
     private final ReActAgentProvider reActAgentProvider;
     private final AiConversationService aiConversationService;
     private final MemoryContextService memoryContextService;
+    private final UserPromptManager userPromptManager;
 
     /**
      * Build a ChatSession from an incoming ChatRequest.
@@ -60,8 +69,20 @@ public class ChatSessionFactory {
             Long conversationId = ensureConversation(request);
 
             String memoryId = MemoryIdUtil.build(RequestContext.getUserId(), conversationId, modelName);
-            String enrichedMessage = memoryContextService.buildEnrichedMessage(
+            MemoryPromptContext memoryPromptContext = memoryContextService.loadPromptContext(
                     RequestContext.getUserId(), conversationId, request.getMessage());
+            UserPromptAssemblyContext promptContext = UserPromptAssemblyContext.builder()
+                    .userMessage(request.getMessage())
+                    .language(request.getLanguage())
+                    .agentMode(agentMode.promptMode())
+                    .modelName(modelName)
+                    .currentDate(LocalDate.now(ZoneId.systemDefault()))
+                    .timezone(ZoneId.systemDefault().getId())
+                    .memoryPromptContext(memoryPromptContext)
+                    .userMentions(request.getUserMentions() == null ? List.of() : request.getUserMentions())
+                    .build();
+            PromptRenderResult<?> promptRenderResult = userPromptManager.render(promptContext);
+            String enrichedMessage = promptRenderResult.renderedPrompt();
             InvocationParameters parameters = InvocationParameters.from(buildInvocationContext());
             RequestContextInfo requestContextSnapshot = RequestContext.snapshot();
             AgentRequestContextInfo agentRequestContextSnapshot = AgentRequestContext.snapshot();
@@ -152,4 +173,5 @@ public class ChatSessionFactory {
             AgentRequestContext.clear();
         }
     }
+
 }
