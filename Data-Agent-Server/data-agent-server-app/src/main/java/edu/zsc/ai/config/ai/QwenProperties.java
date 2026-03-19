@@ -10,6 +10,8 @@ public class QwenProperties {
 
     private String apiKey;
 
+    private String baseUrl;
+
     private Parameters parameters = new Parameters();
 
     @Data

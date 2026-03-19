@@ -30,7 +30,7 @@ public class CompressionServiceImpl implements CompressionService {
         String template = PromptConfig.getPrompt(PromptEnum.COMPRESSION);
         String prompt = String.format(template, serializedHistory);
 
-        ChatModel model = chatModelsByName.get(ModelEnum.QWEN_PLUS.getModelName());
+        ChatModel model = chatModelsByName.get(ModelEnum.QWEN3_5_PLUS.getModelName());
         ChatRequest request = ChatRequest.builder()
                 .messages(UserMessage.from(prompt))
                 .build();

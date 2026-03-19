@@ -106,13 +106,7 @@
             <artifactId>langchain4j-community-dashscope-spring-boot-starter</artifactId>
         </dependency>
 
-        <!-- 智谱 AI (Zhipu) Integration -->
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-community-zhipu-ai</artifactId>
-        </dependency>
-
-        <!-- OpenAI-Compatible (MiniMax Qwen3.5-plus等) -->
+        <!-- OpenAI-Compatible (Zhipu/MiniMax/Qwen compatible endpoints等) -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-open-ai</artifactId>
