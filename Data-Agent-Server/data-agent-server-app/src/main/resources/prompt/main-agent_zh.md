@@ -26,7 +26,8 @@
 
 阶段 4：执行
   读操作直接执行。
-  写操作必须经过用户确认后才能执行。
+  写操作先调用 executeNonSelectSql 执行最终确认后的 SQL。
+  如果 executeNonSelectSql 返回 REQUIRES_CONFIRMATION，等待用户确认后，必须用完全相同的 SQL 再次调用 executeNonSelectSql。
 
 阶段 5：验证
   成功 → 交付。

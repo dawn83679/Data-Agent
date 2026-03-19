@@ -79,7 +79,7 @@ class CallingPlannerToolTest {
 
         assertTrue(result.isSuccess());
         assertTrue(result.getMessage().contains("SQL plan is available"));
-        assertTrue(result.getMessage().contains("wait for user confirmation before executeNonSelectSql"));
+        assertTrue(result.getMessage().contains("executeNonSelectSql returns REQUIRES_CONFIRMATION"));
         verify(mockPlanner).invoke(any(PlannerRequest.class));
     }
 

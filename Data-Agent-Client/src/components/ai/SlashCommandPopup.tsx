@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 import { SLASH_COMMANDS, type SlashCommandItem } from './slashCommands';
 
 export type { SlashCommandItem };
@@ -23,6 +25,7 @@ export function SlashCommandPopup({
   onHighlight,
   highlightClassName = 'bg-violet-500 text-white',
 }: SlashCommandPopupProps) {
+  const { t } = useTranslation();
   const listRef = useRef<HTMLDivElement>(null);
   const q = query.toLowerCase().trim();
   const filtered = q
@@ -42,13 +45,13 @@ export function SlashCommandPopup({
       ref={listRef}
       className="absolute bottom-full mb-1 left-0 w-full theme-bg-popup border theme-border rounded shadow-xl max-h-40 overflow-y-auto z-50 flex flex-col"
       role="listbox"
-      aria-label="Commands"
+      aria-label={t(I18N_KEYS.AI.SLASH_COMMAND.POPUP_TITLE)}
     >
       <div className="px-3 py-1.5 text-[10px] theme-text-secondary font-medium border-b theme-border shrink-0">
-        Commands
+        {t(I18N_KEYS.AI.SLASH_COMMAND.POPUP_TITLE)}
       </div>
       {filtered.length === 0 ? (
-        <div className="px-3 py-2 text-xs theme-text-secondary">No matching command</div>
+        <div className="px-3 py-2 text-xs theme-text-secondary">{t(I18N_KEYS.AI.SLASH_COMMAND.EMPTY)}</div>
       ) : (
         filtered.map((cmd, index) => (
           <button
@@ -66,7 +69,7 @@ export function SlashCommandPopup({
           >
             {cmd.icon ?? null}
             <span>/{cmd.slug}</span>
-            <span className="opacity-70">— {cmd.label}</span>
+            <span className="opacity-70">— {t(cmd.labelKey)}</span>
           </button>
         ))
       )}

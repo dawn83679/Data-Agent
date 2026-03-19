@@ -1,6 +1,7 @@
 import { MessageBlockType } from '../../../types/chat';
 import type { ChatResponseBlock, SubAgentEventData } from '../../../types/chat';
 import { normalizeSubAgentType, type SubAgentProgressEvent } from '../blocks/subAgentTypes';
+import { ExecuteNonSelectToolStatus } from '../blocks/executeNonSelectTypes';
 import { getToolType, ToolType } from '../blocks/toolTypes';
 import { parseToolCall, parseToolResult, idStr } from './blockParsing';
 import type { Segment } from './types';
@@ -17,7 +18,11 @@ function isResultError(hasFailed: boolean, result: string | undefined): boolean 
   if (!result) return false;
   try {
     const parsed = JSON.parse(result) as Record<string, unknown>;
-    return parsed?.success === false;
+    if (parsed?.success === false) return true;
+    if (parsed?.status === ExecuteNonSelectToolStatus.EXECUTED && parsed.execution && typeof parsed.execution === 'object') {
+      return (parsed.execution as Record<string, unknown>).success === false;
+    }
+    return false;
   } catch {
     return false;
   }

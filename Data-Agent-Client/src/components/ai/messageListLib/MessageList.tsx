@@ -12,6 +12,7 @@ import { PlanningIndicator } from '../blocks';
 import { getToolType, ToolType } from '../blocks/toolTypes';
 import type { Message, Segment, TodoBoxSpec } from './types';
 import { isTodoCompleted } from '../blocks/todoTypes';
+import { ExecuteNonSelectToolStatus, parseExecuteNonSelectToolResult } from '../blocks/executeNonSelectTypes';
 import { SegmentKind } from './types';
 
 export type { Message } from './types';
@@ -79,8 +80,14 @@ export function MessageList({
           segments = segments.filter((seg) => {
             if (seg.kind === SegmentKind.TOOL_RUN) {
               const toolType = getToolType(seg.toolName);
-              if (toolType === ToolType.ASK_USER || toolType === ToolType.WRITE_CONFIRM) {
+              if (toolType === ToolType.ASK_USER) {
                 return false;
+              }
+              if (seg.toolName === 'executeNonSelectSql') {
+                const executeNonSelectPayload = parseExecuteNonSelectToolResult(seg.responseData);
+                if (executeNonSelectPayload?.status === ExecuteNonSelectToolStatus.REQUIRES_CONFIRMATION) {
+                  return false;
+                }
               }
             }
             return true;

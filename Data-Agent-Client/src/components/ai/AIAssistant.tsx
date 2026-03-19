@@ -7,6 +7,7 @@ import { AIAssistantHeader } from './AIAssistantHeader';
 import { AIAssistantContent } from './AIAssistantContent';
 import { MemoryCandidateDock } from './MemoryCandidateDock';
 import { PlanListPanel } from './PlanListPanel';
+import { PermissionRuleDialog } from './permissions/PermissionRuleDialog';
 import { useConversationRuntime } from '../../hooks/useConversationRuntime';
 import { useAuthStore } from '../../store/authStore';
 import { conversationService } from '../../services/conversation.service';
@@ -34,6 +35,7 @@ export function AIAssistant() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPlanListOpen, setIsPlanListOpen] = useState(false);
+  const [isPermissionOpen, setIsPermissionOpen] = useState(false);
   const [input, setInput] = useState('');
 
   const {
@@ -186,6 +188,8 @@ export function AIAssistant() {
         setIsHistoryOpen(true);
       } else if (id === SLASH_COMMAND_IDS.PLAN) {
         setIsPlanListOpen(true);
+      } else if (id === SLASH_COMMAND_IDS.PERMISSION) {
+        setIsPermissionOpen(true);
       }
     },
   };
@@ -265,6 +269,11 @@ export function AIAssistant() {
           onClose={() => setIsPlanListOpen(false)}
           plans={conversationPlans}
           anchorRef={chatInputAnchorRef}
+        />
+        <PermissionRuleDialog
+          open={isPermissionOpen}
+          onClose={() => setIsPermissionOpen(false)}
+          conversationId={activeConversationId}
         />
       </div>
     </AIAssistantProvider>

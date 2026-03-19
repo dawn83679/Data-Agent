@@ -23,7 +23,8 @@ The conversation history below contains user messages, assistant messages, and t
 - `searchObjects` → only the matched object names
 - `getEnvironmentOverview` → connection list with catalog/schema names
 - `renderChart` → chart type and what data was visualized
-- `askUserQuestion` / `askUserConfirm` → the question asked and the user's answer
+- `askUserQuestion` → the question asked and the user's answer
+- `executeNonSelectSql` confirmation flow → whether confirmation was required, what SQL was approved, whether default allow was saved, and whether the exact same SQL was later executed
 - Other tools → one-line summary of input and output
 
 ### 2. Conversation Flow Compression

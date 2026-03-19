@@ -1,9 +1,9 @@
 package edu.zsc.ai.agent.tool.error;
 
 import dev.langchain4j.invocation.InvocationParameters;
-import edu.zsc.ai.agent.tool.ask.AskUserConfirmTool;
 import edu.zsc.ai.agent.tool.message.ToolMessageSupport;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
+import edu.zsc.ai.agent.tool.sql.model.ExecuteNonSelectToolResult;
 import edu.zsc.ai.agent.tool.sql.model.AgentSqlResult;
 import edu.zsc.ai.common.enums.ai.ToolNameEnum;
 import lombok.extern.slf4j.Slf4j;
@@ -39,8 +39,8 @@ public class ToolErrorMapper {
         if (AgentSqlResult.class.isAssignableFrom(returnType)) {
             return AgentSqlResult.fail(messageForModel);
         }
-        if (AskUserConfirmTool.WriteConfirmationResult.class.isAssignableFrom(returnType)) {
-            return AskUserConfirmTool.WriteConfirmationResult.error(messageForModel);
+        if (ExecuteNonSelectToolResult.class.isAssignableFrom(returnType)) {
+            return ExecuteNonSelectToolResult.executed(false, AgentSqlResult.fail(messageForModel), messageForModel);
         }
         if (String.class.equals(returnType)) {
             return messageForModel;

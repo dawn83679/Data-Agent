@@ -44,7 +44,7 @@ const TOOL_CALL_PREVIEW_CONFIGS: Record<string, ToolCallPreviewConfig> = {
       completed: 'none',
     },
   },
-  askUserConfirm: {
+  executeNonSelectSql: {
     fields: ['databaseName', 'schemaName', 'sql'],
     fallbackByPhase: {
       streaming: 'none',

@@ -41,10 +41,10 @@ public class CallingPlannerTool extends SubAgentToolSupport {
             "Value: turns verified schema context into a structured SQL plan with steps and SQL blocks you can review or execute.",
             "Use When: call after callingExplorerSubAgent or equivalent discovery has produced usable schema context and you need SQL generation or optimization.",
             "Preconditions: schemaSummaryJson is required. It may be a SchemaSummary JSON or a callingExplorerSubAgent taskResults envelope JSON. Include optimization context in instruction when relevant.",
-            "After Success: review the returned planSteps and sqlBlocks against the user goal. For write SQL, call askUserConfirm before executeNonSelectSql. For read SQL, verify scope and then call executeSelectSql.",
+            "After Success: review the returned planSteps and sqlBlocks against the user goal. For write SQL, call executeNonSelectSql and respect its returned status. For read SQL, verify scope and then call executeSelectSql.",
             "After Failure: gather missing schema context or improve the planner instruction and retry. Do not execute guessed SQL.",
             "Result Consumption: use summaryText for explanation, planSteps for the execution outline, and sqlBlocks as candidate SQL to verify before running.",
-            "Relation: usually after callingExplorerSubAgent and before executeSelectSql or the askUserConfirm -> executeNonSelectSql write flow. Planner timeout defaults to 180 seconds, and lower values are raised to 120."
+            "Relation: usually after callingExplorerSubAgent and before executeSelectSql or executeNonSelectSql. Planner timeout defaults to 180 seconds, and lower values are raised to 120."
     })
     public AgentToolResult callingPlannerSubAgent(
             @P("Task instruction - describe what SQL to generate, include optimization context if needed") String instruction,
@@ -210,7 +210,7 @@ public class CallingPlannerTool extends SubAgentToolSupport {
         return ToolMessageSupport.sentence(
                 "SQL plan is available with " + planStepCount + " plan step(s) and " + sqlBlockCount + " SQL block(s).",
                 "Review the plan against the user's goal before executing it.",
-                "For write SQL, wait for user confirmation before executeNonSelectSql.",
+                "For write SQL, if executeNonSelectSql returns REQUIRES_CONFIRMATION, wait for the user's confirmation and then retry executeNonSelectSql with the exact same SQL.",
                 "For read SQL, execute only after the target objects and filters are verified."
         );
     }

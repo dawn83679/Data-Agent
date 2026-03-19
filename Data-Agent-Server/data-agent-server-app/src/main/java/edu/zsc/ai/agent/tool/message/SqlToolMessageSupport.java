@@ -28,7 +28,7 @@ public final class SqlToolMessageSupport {
     public static String requireReadOnlyStatements(Long connectionId, String databaseName, String schemaName) {
         return ToolMessageSupport.sentence(
                 "executeSelectSql only accepts read-only statements for " + buildScope(connectionId, databaseName, schemaName) + ".",
-                "Move INSERT, UPDATE, DELETE, and DDL statements to askUserConfirm followed by executeNonSelectSql.",
+                "Move INSERT, UPDATE, DELETE, and DDL statements to executeNonSelectSql.",
                 "Do not continue with executeSelectSql until every statement is read-only."
         );
     }
@@ -43,15 +43,15 @@ public final class SqlToolMessageSupport {
     public static String requireWriteStatements(Long connectionId, String databaseName, String schemaName) {
         return ToolMessageSupport.sentence(
                 "executeNonSelectSql requires at least one write statement for " + buildScope(connectionId, databaseName, schemaName) + ".",
-                "Finalize the write SQL, ask for confirmation, and then retry."
+                "Finalize the write SQL and retry."
         );
     }
 
-    public static String confirmationBlocked(Long connectionId, String databaseName, String schemaName, String detail) {
+    public static String confirmationRequired(Long connectionId, String databaseName, String schemaName) {
         return ToolMessageSupport.sentence(
-                "executeNonSelectSql is blocked for " + buildScope(connectionId, databaseName, schemaName) + ".",
-                detail,
-                "Call askUserConfirm with the exact final SQL and wait for approval before retrying."
+                "executeNonSelectSql requires user confirmation for " + buildScope(connectionId, databaseName, schemaName) + ".",
+                "Nothing has been executed yet.",
+                "Wait for the user to confirm and then retry executeNonSelectSql with the exact same SQL."
         );
     }
 

@@ -55,12 +55,13 @@ public class AgentManager {
                                        AgentModeEnum mode,
                                        String systemPrompt) {
         List<Object> tools = agentToolConfig.resolveMainTools(agentTools, mode);
+        AgentToolConfig.ToolBundle toolBundle = agentToolConfig.buildToolBundle(tools);
 
         return AiServices.builder(ReActAgent.class)
                 .streamingChatModel(model)
                 .systemMessage(systemPrompt)
                 .chatMemoryProvider(chatMemoryProvider)
-                .tools(agentToolConfig.buildToolExecutors(tools))
+                .tools(toolBundle.executors(), toolBundle.immediateReturnToolNames())
                 .build();
     }
 

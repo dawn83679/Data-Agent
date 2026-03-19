@@ -1,6 +1,5 @@
 import { isTodoTool } from './todoTypes';
 import { isAskUserQuestionTool } from './askUserQuestionTypes';
-import { isWriteConfirmTool } from './writeConfirmTypes';
 import { isEnterPlanModeTool } from './enterPlanModeTypes';
 import { isExitPlanModeTool } from './exitPlanModeTypes';
 import { isCallingSubAgentTool } from './subAgentTypes';
@@ -13,7 +12,7 @@ const SKILL_TOOL_NAMES = new Set(['activateSkill']);
  * Unified tool type detection and classification for AI assistant tools.
  *
  * Tool Categories:
- * 1. Interactive System Tools: TodoWrite, AskUserQuestion, AskUserConfirm (need user interaction)
+ * 1. Interactive System Tools: TodoWrite, AskUserQuestion (need user interaction)
  * 2. Built-in Database Tools: DDL, SQL queries, table operations (use ToolRunDetail)
  * 3. Built-in Chart Tool: renderChart (use ChartToolBlock)
  */
@@ -23,8 +22,6 @@ export enum ToolType {
   TODO = 'TODO',
   /** AskUserQuestion tool - renders as AskUserQuestionBlock */
   ASK_USER = 'ASK_USER',
-  /** AskUserConfirm tool - renders as write confirmation panel */
-  WRITE_CONFIRM = 'WRITE_CONFIRM',
   /** Built-in chart rendering tool. */
   CHART = 'CHART',
   /** Thinking tool - renders as collapsible thought block. */
@@ -50,7 +47,6 @@ export enum ToolType {
 export function getToolType(toolName: string): ToolType {
   if (isTodoTool(toolName)) return ToolType.TODO;
   if (isAskUserQuestionTool(toolName)) return ToolType.ASK_USER;
-  if (isWriteConfirmTool(toolName)) return ToolType.WRITE_CONFIRM;
   if (CHART_TOOL_NAMES.has(toolName)) return ToolType.CHART;
   if (THINKING_TOOL_NAMES.has(toolName)) return ToolType.THINKING;
   if (isEnterPlanModeTool(toolName)) return ToolType.ENTER_PLAN;

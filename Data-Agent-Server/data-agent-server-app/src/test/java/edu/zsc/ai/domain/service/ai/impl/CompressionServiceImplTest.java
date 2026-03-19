@@ -174,15 +174,27 @@ class CompressionServiceImplTest {
                 )),
                 ToolExecutionResultMessage.from("call-1", "executeSelectSql",
                         "{\"columns\":[\"cnt\"],\"rows\":[[\"5230\"]],\"rowCount\":1}"),
-                // AI 用 askUserConfirm 确认危险操作
                 AiMessage.from(List.of(
                         ToolExecutionRequest.builder()
                                 .id("call-2")
-                                .name("askUserConfirm")
-                                .arguments("{\"question\":\"This will delete 5,230 orders created before 2023-01-01. Are you sure?\"}")
+                                .name("executeNonSelectSql")
+                                .arguments("{\"sql\":\"DELETE FROM orders WHERE created_at < '2023-01-01'\"}")
                                 .build()
                 )),
-                ToolExecutionResultMessage.from("call-2", "askUserConfirm", "{\"confirmed\":true}"),
+                ToolExecutionResultMessage.from("call-2", "executeNonSelectSql",
+                        "{\"status\":\"REQUIRES_CONFIRMATION\",\"requiresConfirmation\":true,\"ruleMatched\":false,"
+                                + "\"confirmation\":{\"conversationId\":42,\"connectionId\":5,\"databaseName\":\"sales\","
+                                + "\"schemaName\":\"public\",\"sql\":\"DELETE FROM orders WHERE created_at < '2023-01-01'\","
+                                + "\"sqlPreview\":\"DELETE FROM orders WHERE created_at < '2023-01-01'\","
+                                + "\"availableGrantOptions\":["
+                                + "{\"scopeType\":\"CONVERSATION\",\"grantPreset\":\"EXACT_SCHEMA\"},"
+                                + "{\"scopeType\":\"CONVERSATION\",\"grantPreset\":\"DATABASE_ALL_SCHEMAS\"},"
+                                + "{\"scopeType\":\"CONVERSATION\",\"grantPreset\":\"CONNECTION_ALL_DATABASES\"},"
+                                + "{\"scopeType\":\"USER\",\"grantPreset\":\"EXACT_SCHEMA\"},"
+                                + "{\"scopeType\":\"USER\",\"grantPreset\":\"DATABASE_ALL_SCHEMAS\"},"
+                                + "{\"scopeType\":\"USER\",\"grantPreset\":\"CONNECTION_ALL_DATABASES\"}]},"
+                                + "\"message\":\"executeNonSelectSql requires user confirmation\"}"),
+                UserMessage.from("I confirm this write. Please retry the exact same SQL."),
                 AiMessage.from(List.of(
                         ToolExecutionRequest.builder()
                                 .id("call-3")
@@ -191,19 +203,22 @@ class CompressionServiceImplTest {
                                 .build()
                 )),
                 ToolExecutionResultMessage.from("call-3", "executeNonSelectSql",
-                        "{\"affectedRows\":5230,\"success\":true}"),
+                        "{\"status\":\"EXECUTED\",\"requiresConfirmation\":false,\"ruleMatched\":false,"
+                                + "\"execution\":{\"success\":true,\"results\":[{\"success\":true,\"affectedRows\":5230}]},"
+                                + "\"message\":\"Write SQL executed after explicit user approval.\"}"),
                 AiMessage.from("Done! Successfully deleted 5,230 old orders.")
         );
 
         String result = compressionService.compress(messages);
 
         String prompt = capturePromptText();
-        // 验证 askUserConfirm 的问题和回答都在提示词中
-        assertTrue(prompt.contains("askUserConfirm"), "Should contain askUserConfirm tool name");
+        // 验证新的确认流程信息都在提示词中
+        assertTrue(prompt.contains("REQUIRES_CONFIRMATION"), "Should contain executeNonSelectSql confirmation status");
         assertTrue(prompt.contains("5,230"), "Should contain the row count in question");
-        assertTrue(prompt.contains("confirmed"), "Should contain user's confirmation");
+        assertTrue(prompt.contains("I confirm this write"), "Should contain user's confirmation message");
         assertTrue(prompt.contains("DELETE FROM orders"), "Should contain the DML SQL");
         assertTrue(prompt.contains("affectedRows"), "Should contain affected rows result");
+        assertFalse(prompt.contains("askUserConfirm"), "Should not reference removed askUserConfirm tool");
     }
 
     // ==================== 场景 4: 带 memory_context 注入的消息 ====================

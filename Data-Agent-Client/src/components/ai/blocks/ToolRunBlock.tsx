@@ -11,7 +11,7 @@ import {
   parseAskUserQuestionParameters,
   parseAskUserQuestionResponse,
 } from './askUserQuestionTypes';
-import { parseWriteConfirmPayload, parseWriteConfirmToken } from './writeConfirmTypes';
+import { ExecuteNonSelectToolStatus, parseExecuteNonSelectToolResult } from './executeNonSelectTypes';
 import { parseExitPlanPayload, parsePartialExitPlanPayload, type ExitPlanPayload } from './exitPlanModeTypes';
 import { getToolType, ToolType } from './toolTypes';
 import { formatParameters } from './formatParameters';
@@ -20,7 +20,7 @@ import type { Segment } from '../messageListLib/types';
 import { SubAgentRunBlock } from './SubAgentRunBlock';
 import type { SubAgentProgressEvent } from './subAgentTypes';
 import { AskUserQuestionCard } from './AskUserQuestionCard';
-import { WriteConfirmCard } from './WriteConfirmCard';
+import { WriteExecutionConfirmCard } from './WriteExecutionConfirmCard';
 import { ExitPlanModeCard } from './ExitPlanModeCard';
 import { ThoughtBlock } from './ThoughtBlock';
 import { useWorkspaceStore } from '../../../store/workspaceStore';
@@ -52,7 +52,7 @@ export interface ToolRunBlockProps {
  * Tool types:
  * - TODO: TodoWrite → TodoListBlock
  * - ASK_USER: AskUserQuestion → AskUserQuestionCard (Inline)
- * - WRITE_CONFIRM: AskUserConfirm → WriteConfirmCard (Inline)
+ * - executeNonSelectSql (when confirmation required) → WriteExecutionConfirmCard (Inline)
  * - GENERIC: All other tools (database, etc.) → ToolRunDetail
  */
 export function ToolRunBlock({
@@ -69,7 +69,11 @@ export function ToolRunBlock({
 }: ToolRunBlockProps) {
   const toolType = getToolType(toolName);
   const formattedParameters = formatParameters(parametersData);
-  const isInteractive = toolType === ToolType.ASK_USER || toolType === ToolType.WRITE_CONFIRM;
+  const executeNonSelectPayload = toolName === 'executeNonSelectSql'
+    ? parseExecuteNonSelectToolResult(responseData)
+    : null;
+  const isInteractive = toolType === ToolType.ASK_USER
+    || executeNonSelectPayload?.status === ExecuteNonSelectToolStatus.REQUIRES_CONFIRMATION;
 
   // 0. exploreSchema / generateSqlPlan — render as SubAgent card at every lifecycle stage
   if (toolType === ToolType.CALLING_SUB_AGENT) {
@@ -147,6 +151,11 @@ export function ToolRunBlock({
     );
   }
 
+  const executeNonSelectExecutionData =
+    executeNonSelectPayload?.status === ExecuteNonSelectToolStatus.EXECUTED && executeNonSelectPayload.execution !== undefined
+      ? JSON.stringify(executeNonSelectPayload.execution)
+      : responseData;
+
   // 2. Error fallback for non-chart tools.
   // Chart errors should still go through ChartToolBlock to trigger auto-feedback.
   if (responseError && toolType !== ToolType.CHART) {
@@ -154,13 +163,17 @@ export function ToolRunBlock({
       <GenericToolRun
         toolName={toolName}
         formattedParameters={formattedParameters}
-        responseData={responseData}
+        responseData={executeNonSelectExecutionData}
         responseError={responseError}
       />
     );
   }
 
   // 3. Dispatch Completed Tool Rendering by Category
+  if (executeNonSelectPayload?.status === ExecuteNonSelectToolStatus.REQUIRES_CONFIRMATION) {
+    return <WriteExecutionConfirmCard payload={executeNonSelectPayload} />;
+  }
+
   switch (toolType) {
     // CATEGORY A: Interactive Tools (Inline Cards)
     case ToolType.ASK_USER: {
@@ -168,51 +181,11 @@ export function ToolRunBlock({
       const askUserPayloadFromParams = parseAskUserQuestionParameters(parametersData);
       const askUserPayload = askUserPayloadFromResponse ?? askUserPayloadFromParams ?? null;
 
-      // Detect if responseData is a user's submitted answer (not a minimal tool summary).
-      // Minimal summaries like "2 question(s) presented to user." are NOT user answers.
-      const responseText = (responseData ?? '').trim();
-      const isMinimalToolSummary = /^\d+ question\(s\) presented to user\.$/.test(responseText);
-      const askUserSubmittedAnswer =
-        askUserPayloadFromResponse == null && askUserPayloadFromParams != null && responseText !== '' && !isMinimalToolSummary
-          ? responseText
-          : undefined;
-
       if (!askUserPayload) return null;
 
-      // If already answered but not loading, or if we need to show the form
-      // We always render the card (interactive if questions to answer, static if answered)
       return (
         <AskUserQuestionCard
           askUserPayload={askUserPayload}
-          submittedAnswer={askUserSubmittedAnswer}
-        />
-      );
-    }
-
-    case ToolType.WRITE_CONFIRM: {
-      // Display data (sql, explanation) is in tool call arguments;
-      // confirmationToken is in tool result (generated server-side).
-      const fromParams = parseWriteConfirmPayload(parametersData);
-      const fromResponse = parseWriteConfirmPayload(responseData);
-      const tokenOnly = parseWriteConfirmToken(responseData);
-
-      // Merge: prefer params for display data, fill in token from response
-      let writeConfirmPayload = fromResponse ?? fromParams ?? null;
-      if (fromParams && tokenOnly) {
-        writeConfirmPayload = { ...fromParams, confirmationToken: tokenOnly.confirmationToken, expiresInSeconds: tokenOnly.expiresInSeconds };
-      }
-      if (!writeConfirmPayload) return null;
-
-      // Determine if it was already answered checking responseData text if parameters held the token
-      let submittedAnswer: string | undefined = undefined;
-      if (responseData && (responseData.includes('confirmed') || responseData.includes('cancelled'))) {
-        submittedAnswer = responseData;
-      }
-
-      return (
-        <WriteConfirmCard
-          payload={writeConfirmPayload}
-          submittedAnswer={submittedAnswer}
         />
       );
     }
@@ -233,7 +206,7 @@ export function ToolRunBlock({
         <ChartToolBlock
           toolName={toolName}
           parametersData={parametersData}
-          responseData={responseData}
+          responseData={executeNonSelectExecutionData}
           responseError={responseError}
           toolCallId={toolCallId}
           allowAutoRetry={allowAutoRetry}
@@ -245,7 +218,7 @@ export function ToolRunBlock({
       return (
         <SkillToolBlock
           skillName={parsedSkillName}
-          responseData={responseData}
+          responseData={executeNonSelectExecutionData}
           responseError={responseError}
         />
       );
@@ -258,7 +231,7 @@ export function ToolRunBlock({
         <GenericToolRun
           toolName={toolName}
           formattedParameters={formattedParameters}
-          responseData={responseData}
+          responseData={executeNonSelectExecutionData}
           responseError={responseError}
         />
       );

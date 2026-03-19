@@ -1,23 +1,23 @@
 package edu.zsc.ai.config.ai;
 
 import dev.langchain4j.agent.tool.P;
+import dev.langchain4j.agent.tool.ReturnBehavior;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.service.tool.ToolExecutor;
-import edu.zsc.ai.agent.tool.ask.AskUserConfirmTool;
-import edu.zsc.ai.agent.tool.ask.AskUserQuestionTool;
 import edu.zsc.ai.agent.annotation.AgentTool;
+import edu.zsc.ai.agent.tool.ask.AskUserQuestionTool;
 import edu.zsc.ai.agent.tool.chart.ChartTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingExplorerTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingPlannerTool;
 import edu.zsc.ai.agent.tool.plan.EnterPlanModeTool;
 import edu.zsc.ai.agent.tool.plan.ExitPlanModeTool;
 import edu.zsc.ai.agent.tool.skill.ActivateSkillTool;
+import edu.zsc.ai.agent.tool.sql.ExecuteSqlTool;
 import edu.zsc.ai.agent.tool.sql.GetEnvironmentOverviewTool;
 import edu.zsc.ai.agent.tool.sql.GetObjectDetailTool;
 import edu.zsc.ai.agent.tool.sql.SearchObjectsTool;
-import edu.zsc.ai.agent.tool.sql.ExecuteSqlTool;
 import edu.zsc.ai.agent.tool.todo.TodoTool;
 import edu.zsc.ai.common.enums.ai.AgentModeEnum;
 import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
@@ -27,25 +27,25 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.aop.framework.ProxyFactory;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AgentToolConfigTest {
 
     private AgentToolConfig config;
     private List<Object> allTools;
 
-    // Mocked tool instances — mock() creates real subclass instances so getClass() matches
     private GetEnvironmentOverviewTool getEnvironmentOverviewTool;
     private SearchObjectsTool searchObjectsTool;
     private GetObjectDetailTool getObjectDetailTool;
     private ExecuteSqlTool executeSqlTool;
-    private AskUserConfirmTool askUserConfirmTool;
     private AskUserQuestionTool askUserQuestionTool;
     private CallingExplorerTool callingExplorerTool;
     private CallingPlannerTool callingPlannerTool;
@@ -59,26 +59,24 @@ class AgentToolConfigTest {
     void setUp() {
         config = new AgentToolConfig();
 
-        getEnvironmentOverviewTool = mock(GetEnvironmentOverviewTool.class);
-        searchObjectsTool = mock(SearchObjectsTool.class);
-        getObjectDetailTool = mock(GetObjectDetailTool.class);
-        executeSqlTool = mock(ExecuteSqlTool.class);
-        askUserConfirmTool = mock(AskUserConfirmTool.class);
-        askUserQuestionTool = mock(AskUserQuestionTool.class);
-        callingExplorerTool = mock(CallingExplorerTool.class);
-        callingPlannerTool = mock(CallingPlannerTool.class);
-        todoTool = mock(TodoTool.class);
-        enterPlanModeTool = mock(EnterPlanModeTool.class);
-        exitPlanModeTool = mock(ExitPlanModeTool.class);
-        activateSkillTool = mock(ActivateSkillTool.class);
-        chartTool = mock(ChartTool.class);
+        getEnvironmentOverviewTool = new GetEnvironmentOverviewTool(null);
+        searchObjectsTool = new SearchObjectsTool(null);
+        getObjectDetailTool = new GetObjectDetailTool(null);
+        executeSqlTool = new ExecuteSqlTool(null, null, null);
+        askUserQuestionTool = new AskUserQuestionTool();
+        callingExplorerTool = new CallingExplorerTool(null, null, null);
+        callingPlannerTool = new CallingPlannerTool(null, null, null);
+        todoTool = new TodoTool();
+        enterPlanModeTool = new EnterPlanModeTool();
+        exitPlanModeTool = new ExitPlanModeTool();
+        activateSkillTool = new ActivateSkillTool();
+        chartTool = new ChartTool();
 
         allTools = List.of(
                 getEnvironmentOverviewTool,
                 searchObjectsTool,
                 getObjectDetailTool,
                 executeSqlTool,
-                askUserConfirmTool,
                 askUserQuestionTool,
                 callingExplorerTool,
                 callingPlannerTool,
@@ -99,7 +97,6 @@ class AgentToolConfigTest {
 
             assertTrue(tools.contains(getEnvironmentOverviewTool));
             assertTrue(tools.contains(executeSqlTool));
-            assertTrue(tools.contains(askUserConfirmTool));
             assertTrue(tools.contains(askUserQuestionTool));
             assertTrue(tools.contains(callingExplorerTool));
             assertTrue(tools.contains(callingPlannerTool));
@@ -125,7 +122,6 @@ class AgentToolConfigTest {
             assertTrue(tools.contains(activateSkillTool));
 
             assertFalse(tools.contains(executeSqlTool));
-            assertFalse(tools.contains(askUserConfirmTool));
             assertFalse(tools.contains(chartTool));
             assertFalse(tools.contains(searchObjectsTool));
             assertFalse(tools.contains(getObjectDetailTool));
@@ -165,7 +161,6 @@ class AgentToolConfigTest {
             assertFalse(tools.contains(executeSqlTool), "Planner should NOT have ExecuteSqlTool");
             assertFalse(tools.contains(getEnvironmentOverviewTool), "Planner should NOT have GetEnvironmentOverviewTool");
             assertFalse(tools.contains(searchObjectsTool), "Planner should NOT have SearchObjectsTool");
-            assertFalse(tools.contains(askUserConfirmTool), "Planner should NOT have AskUserConfirmTool");
             assertFalse(tools.contains(askUserQuestionTool), "Planner should NOT have AskUserQuestionTool");
             assertFalse(tools.contains(callingExplorerTool), "Planner should NOT have CallingExplorerTool");
             assertFalse(tools.contains(callingPlannerTool), "Planner should NOT have CallingPlannerTool");
@@ -186,7 +181,18 @@ class AgentToolConfigTest {
     }
 
     @Test
-    void buildToolExecutors_supportsCglibProxyAndInvokesProxyMethod() {
+    void buildToolBundle_collectsImmediateReturnToolNames() {
+        AgentToolConfig.ToolBundle toolBundle = config.buildToolBundle(List.of(
+                new ImmediateEchoTool(),
+                new EchoTool()
+        ));
+
+        assertEquals(Set.of("immediateEcho"), toolBundle.immediateReturnToolNames());
+        assertEquals(2, toolBundle.executors().size());
+    }
+
+    @Test
+    void buildToolBundle_supportsCglibProxyAndInvokesProxyMethod() {
         AtomicInteger adviceCounter = new AtomicInteger();
         EchoTool target = new EchoTool();
         ProxyFactory proxyFactory = new ProxyFactory(target);
@@ -197,9 +203,11 @@ class AgentToolConfigTest {
         });
         Object proxy = proxyFactory.getProxy();
 
-        Map<ToolSpecification, ToolExecutor> executors = config.buildToolExecutors(List.of(proxy));
+        AgentToolConfig.ToolBundle toolBundle = config.buildToolBundle(List.of(proxy));
+        Map<ToolSpecification, ToolExecutor> executors = toolBundle.executors();
 
         assertEquals(1, executors.size());
+        assertTrue(toolBundle.immediateReturnToolNames().isEmpty());
 
         Map.Entry<ToolSpecification, ToolExecutor> registration = executors.entrySet().iterator().next();
         assertEquals("echo", registration.getKey().name());
@@ -222,6 +230,15 @@ class AgentToolConfigTest {
         @Tool
         public String echo(@P("Echo value") String value) {
             return "echo:" + value;
+        }
+    }
+
+    @AgentTool
+    static class ImmediateEchoTool {
+
+        @Tool(returnBehavior = ReturnBehavior.IMMEDIATE)
+        public String immediateEcho(@P("Echo value") String value) {
+            return "immediate:" + value;
         }
     }
 }

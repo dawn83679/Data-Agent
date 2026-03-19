@@ -28,7 +28,6 @@ public enum ToolNameEnum {
 
     // ── User interaction ──
     ASK_USER_QUESTION("askUserQuestion"),
-    ASK_USER_CONFIRM("askUserConfirm"),
 
     // ── Discovery (database objects) ──
     GET_ENVIRONMENT_OVERVIEW("getEnvironmentOverview"),

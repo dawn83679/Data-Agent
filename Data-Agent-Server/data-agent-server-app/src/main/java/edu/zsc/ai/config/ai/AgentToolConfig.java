@@ -1,13 +1,13 @@
 package edu.zsc.ai.config.ai;
 
 import dev.langchain4j.agent.tool.Tool;
+import dev.langchain4j.agent.tool.ReturnBehavior;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.agent.tool.ToolSpecifications;
 import dev.langchain4j.service.tool.DefaultToolExecutor;
 import dev.langchain4j.service.tool.ToolExecutor;
 import edu.zsc.ai.agent.annotation.AgentTool;
 import edu.zsc.ai.agent.tool.ask.AskUserQuestionTool;
-import edu.zsc.ai.agent.tool.ask.AskUserConfirmTool;
 import edu.zsc.ai.agent.tool.chart.ChartTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingExplorerTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingPlannerTool;
@@ -27,6 +27,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +45,6 @@ public class AgentToolConfig {
                     CallingPlannerTool.class,
                     ChartTool.class,
                     AskUserQuestionTool.class,
-                    AskUserConfirmTool.class,
                     TodoTool.class,
                     ActivateSkillTool.class
             ),
@@ -73,9 +73,9 @@ public class AgentToolConfig {
         return new ArrayList<>(context.getBeansWithAnnotation(AgentTool.class).values());
     }
 
-    public Map<ToolSpecification, ToolExecutor> buildToolExecutors(List<Object> agentTools) {
+    public ToolBundle buildToolBundle(List<Object> agentTools) {
         if (CollectionUtils.isEmpty(agentTools)) {
-            return Map.of();
+            return new ToolBundle(Map.of(), Set.of());
         }
 
         List<ToolRegistration> registrations = agentTools.stream()
@@ -87,6 +87,7 @@ public class AgentToolConfig {
                 .collect(Collectors.toList()));
 
         Map<ToolSpecification, ToolExecutor> executors = new LinkedHashMap<>();
+        Set<String> immediateReturnToolNames = new LinkedHashSet<>();
         for (ToolRegistration registration : registrations) {
             executors.put(
                     registration.specification(),
@@ -96,8 +97,11 @@ public class AgentToolConfig {
                             registration.invocableMethod()
                     )
             );
+            if (registration.returnBehavior() == ReturnBehavior.IMMEDIATE) {
+                immediateReturnToolNames.add(registration.specification().name());
+            }
         }
-        return executors;
+        return new ToolBundle(executors, Set.copyOf(immediateReturnToolNames));
     }
 
     /**
@@ -163,7 +167,8 @@ public class AgentToolConfig {
                     toolBean,
                     ToolSpecifications.toolSpecificationFrom(method),
                     method,
-                    invocableMethod
+                    invocableMethod,
+                    method.getAnnotation(Tool.class).returnBehavior()
             ));
         }
         return registrations;
@@ -173,7 +178,14 @@ public class AgentToolConfig {
             Object toolBean,
             ToolSpecification specification,
             Method originalMethod,
-            Method invocableMethod
+            Method invocableMethod,
+            ReturnBehavior returnBehavior
+    ) {
+    }
+
+    public record ToolBundle(
+            Map<ToolSpecification, ToolExecutor> executors,
+            Set<String> immediateReturnToolNames
     ) {
     }
 

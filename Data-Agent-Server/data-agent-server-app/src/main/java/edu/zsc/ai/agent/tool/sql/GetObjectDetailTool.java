@@ -38,7 +38,7 @@ public class GetObjectDetailTool {
             "After Success: use the returned DDL, row counts, and indexes to validate joins, filters, limits, and write impact before moving forward.",
             "After Partial Success: continue only with objects whose detail lookup succeeded; askUserQuestion or retry if failed objects may still matter.",
             "After Failure: correct the object identifiers or scope and retry. Do not plan SQL against unknown structure.",
-            "Relation: usually after searchObjects and before callingPlannerSubAgent, executeSelectSql, or askUserConfirm for write flows."
+            "Relation: usually after searchObjects and before callingPlannerSubAgent, executeSelectSql, or executeNonSelectSql for write flows."
     })
     public AgentToolResult getObjectDetail(
             @P("List of objects to retrieve details for") List<ObjectQueryItem> objects,

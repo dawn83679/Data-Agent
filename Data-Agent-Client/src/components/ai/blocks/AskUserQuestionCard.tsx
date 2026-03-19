@@ -7,10 +7,9 @@ import { useAIAssistantContext } from '../AIAssistantContext';
 
 export interface AskUserQuestionCardProps {
     askUserPayload: AskUserQuestionPayload;
-    submittedAnswer?: string;
 }
 
-export function AskUserQuestionCard({ askUserPayload, submittedAnswer }: AskUserQuestionCardProps) {
+export function AskUserQuestionCard({ askUserPayload }: AskUserQuestionCardProps) {
     const { t } = useTranslation();
     const { submitMessage, isLoading } = useAIAssistantContext();
     const [isSubmitted, setIsSubmitted] = useState(false);
@@ -104,7 +103,7 @@ export function AskUserQuestionCard({ askUserPayload, submittedAnswer }: AskUser
         setIsSubmitted(true);
     };
 
-    if (submittedAnswer || isSubmitted) {
+    if (isSubmitted) {
         return null;
     }
 

@@ -26,7 +26,8 @@ Phase 3: Planning (loop)
 
 Phase 4: Execution
   Read operations: execute directly.
-  Write operations: must be confirmed by the user before execution.
+  Write operations: call executeNonSelectSql with the finalized SQL.
+  If executeNonSelectSql returns REQUIRES_CONFIRMATION, wait for the user to confirm and then retry executeNonSelectSql with the exact same SQL.
 
 Phase 5: Verification
   Success → deliver results.
