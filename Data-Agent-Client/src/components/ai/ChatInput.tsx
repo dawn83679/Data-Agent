@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChatInputToolbar } from './ChatInputToolbar';
 import { AGENT_COLORS, AGENT_TYPES } from './agentTypes';
@@ -17,6 +17,7 @@ import { useInputChangeHandler } from './hooks/useInputChangeHandler';
 
 export function ChatInput() {
   const { t } = useTranslation();
+  const [isComposing, setIsComposing] = useState(false);
   const {
     input,
     setInput,
@@ -71,6 +72,7 @@ export function ChatInput() {
   });
 
   const handleKeyDown = useKeyboardHandler({
+    isComposing,
     slashOpen: slashCmd.slashOpen,
     slashHighlightedIndex: slashCmd.slashHighlightedIndex,
     filteredSlashCommands: slashCmd.filteredSlashCommands,
@@ -127,6 +129,7 @@ export function ChatInput() {
             input={input}
             agent={agent}
             onChange={handleInputChange}
+            onCompositionStateChange={setIsComposing}
             onKeyDown={handleKeyDown}
           />
 
