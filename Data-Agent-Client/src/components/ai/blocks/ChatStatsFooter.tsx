@@ -1,4 +1,4 @@
-import { Wrench, Zap } from 'lucide-react';
+import { Archive, Wrench, Zap } from 'lucide-react';
 import type { DoneMetadata } from '../../../types/chat';
 
 export interface ChatStatsFooterProps {
@@ -11,11 +11,21 @@ function formatTokens(n: number): string {
 }
 
 export function ChatStatsFooter({ metadata }: ChatStatsFooterProps) {
-  const { toolCount, toolCounts, totalTokens, outputTokens } = metadata;
+  const {
+    toolCount,
+    toolCounts,
+    totalTokens,
+    outputTokens,
+    memoryCompressed,
+    tokenCountBefore,
+    tokenCountAfter,
+    keptRecentCount,
+  } = metadata;
 
   const hasTools = toolCount != null && toolCount > 0;
   const hasTokens = totalTokens != null && totalTokens > 0;
-  if (!hasTools && !hasTokens) return null;
+  const hasCompression = memoryCompressed === true;
+  if (!hasTools && !hasTokens && !hasCompression) return null;
 
   const toolDetails = toolCounts
     ? Object.entries(toolCounts)
@@ -42,6 +52,20 @@ export function ChatStatsFooter({ metadata }: ChatStatsFooterProps) {
             {formatTokens(totalTokens!)} tokens
             {outputTokens != null && outputTokens > 0 && (
               <> (output: {formatTokens(outputTokens)})</>
+            )}
+          </span>
+        </span>
+      )}
+      {hasCompression && (
+        <span className="flex items-center gap-1">
+          <Archive className="w-3 h-3" />
+          <span>
+            memory compressed
+            {tokenCountBefore != null && tokenCountAfter != null && (
+              <> {formatTokens(tokenCountBefore)} → {formatTokens(tokenCountAfter)} tokens</>
+            )}
+            {keptRecentCount != null && keptRecentCount > 0 && (
+              <> (kept {keptRecentCount} recent)</>
             )}
           </span>
         </span>

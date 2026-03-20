@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, type Dispatch, type SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { AgentType } from './agentTypes';
 import { AIAssistantProvider } from './AIAssistantContext';
 import { ChatInput } from './ChatInput';
@@ -17,26 +18,63 @@ import { SLASH_COMMAND_IDS } from './slashCommands';
 import { I18N_KEYS } from '../../constants/i18nKeys';
 import type { ChatContext, ChatUserMention } from '../../types/chat';
 import type { ModelOption } from '../../types/ai';
+import { findMentionTokens } from './mentionTypes';
 import { chatMessagesToMessages } from './MessageList';
 import { extractPlansFromMessages } from './blocks/exitPlanModeTypes';
 import { planTabId } from './blocks/ToolRunBlock';
 
 const DEFAULT_AGENT: AgentType = 'Agent';
 
+function filterMentionsByTokens(mentions: ChatUserMention[], tokens: string[]): ChatUserMention[] {
+  if (mentions.length === 0 || tokens.length === 0) {
+    return [];
+  }
+
+  const tokenSet = new Set(tokens);
+  return mentions.filter((mention) => tokenSet.has(mention.token));
+}
+
+function resolveMentionsInText(text: string, mentions: ChatUserMention[]): ChatUserMention[] {
+  if (text === '' || mentions.length === 0) {
+    return [];
+  }
+
+  const matchedTokens = findMentionTokens(text, mentions.map((mention) => mention.token));
+  if (matchedTokens.length === 0) {
+    return [];
+  }
+
+  const mentionMap = new Map(mentions.map((mention) => [mention.token, mention]));
+  return matchedTokens
+    .map((token) => mentionMap.get(token))
+    .filter((mention): mention is ChatUserMention => mention != null);
+}
+
 export function AIAssistant() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const accessToken = useAuthStore((s) => s.accessToken);
 
   const [agent, setAgentState] = useState<AgentType>(DEFAULT_AGENT);
   const [modelOptions, setModelOptions] = useState<ModelOption[]>(FALLBACK_MODELS);
   const [model, setModelState] = useState<string>(DEFAULT_MODEL);
   const [chatContext, setChatContext] = useState<ChatContext>({});
-  const [userMentions, setUserMentions] = useState<ChatUserMention[]>([]);
+  const [userMentions, setUserMentionsState] = useState<ChatUserMention[]>([]);
+  const userMentionsRef = useRef<ChatUserMention[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPlanListOpen, setIsPlanListOpen] = useState(false);
   const [isPermissionOpen, setIsPermissionOpen] = useState(false);
   const [input, setInput] = useState('');
+
+  const setUserMentions = useCallback<Dispatch<SetStateAction<ChatUserMention[]>>>((value) => {
+    const next =
+      typeof value === 'function'
+        ? (value as (prev: ChatUserMention[]) => ChatUserMention[])(userMentionsRef.current)
+        : value;
+    userMentionsRef.current = next;
+    setUserMentionsState(next);
+  }, []);
 
   const {
     messages,
@@ -63,7 +101,6 @@ export function AIAssistant() {
       ...(chatContext.connectionId != null && { connectionId: chatContext.connectionId }),
       ...(chatContext.catalogName != null && chatContext.catalogName !== '' && { catalogName: chatContext.catalogName }),
       ...(chatContext.schemaName != null && chatContext.schemaName !== '' && { schemaName: chatContext.schemaName }),
-      ...(userMentions.length > 0 && { userMentions }),
     },
     onError: (err) => {
       console.error('Stream error:', err);
@@ -71,8 +108,9 @@ export function AIAssistant() {
   });
 
   useEffect(() => {
-    setUserMentions((prev) => prev.filter((mention) => input.includes(mention.token)));
-  }, [input]);
+    const activeTokens = findMentionTokens(input, userMentionsRef.current.map((mention) => mention.token));
+    setUserMentions((prev) => filterMentionsByTokens(prev, activeTokens));
+  }, [input, setUserMentions]);
 
   // Restore mode/model when active conversation changes
   const prevActiveConversationIdRef = useRef<number | null | undefined>(undefined);
@@ -143,12 +181,12 @@ export function AIAssistant() {
   const handleSend = useCallback(() => {
     if (!input.trim()) return;
     const messageText = input.trim();
-    const activeMentions = userMentions.filter((mention) => messageText.includes(mention.token));
+    const activeMentions = resolveMentionsInText(messageText, userMentionsRef.current);
     userHasScrolledUpRef.current = false;
     submitMessage(messageText, activeMentions.length > 0 ? { userMentions: activeMentions } : undefined);
     setInput('');
     setUserMentions([]);
-  }, [input, setInput, submitMessage, userMentions]);
+  }, [input, setInput, submitMessage, setUserMentions]);
 
   const chatMessages = chatMessagesToMessages(messages);
   const persistedConversationId =
@@ -187,6 +225,10 @@ export function AIAssistant() {
         loadMessages(null, []);
       } else if (id === SLASH_COMMAND_IDS.HISTORY) {
         setIsHistoryOpen(true);
+      } else if (id === SLASH_COMMAND_IDS.MEMORY) {
+        setIsHistoryOpen(false);
+        setIsSettingsOpen(false);
+        navigate('/memories');
       } else if (id === SLASH_COMMAND_IDS.PLAN) {
         setIsPlanListOpen(true);
       } else if (id === SLASH_COMMAND_IDS.PERMISSION) {

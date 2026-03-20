@@ -87,6 +87,20 @@ export function useSubAgentConsoleTab(options: UseSubAgentConsoleTabOptions) {
     if (metadataKey === lastMetadataKeyRef.current) return;
     lastMetadataKeyRef.current = metadataKey;
 
+    if (status === 'running') {
+      ws.tabs
+        .filter((tab) => {
+          if (tab.id === tabId || tab.type !== 'subagent-console') {
+            return false;
+          }
+          const tabMetadata = tab.metadata as SubAgentConsoleTabMetadata | undefined;
+          return tabMetadata?.agentType === agentType && tabMetadata.status === 'error';
+        })
+        .forEach((tab) => {
+          ws.closeTab(tab.id);
+        });
+    }
+
     const existingTab = ws.tabs.find((tab) => tab.id === tabId);
     if (existingTab) {
       ws.updateSubAgentConsole(tabId, metadata);

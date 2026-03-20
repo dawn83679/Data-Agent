@@ -44,8 +44,6 @@ export const MemoryPaths = {
   UPDATE: '/memories/:id',
   ARCHIVE: '/memories/:id/archive',
   RESTORE: '/memories/:id/restore',
-  CONFIRM: '/memories/:id/confirm',
-  NEEDS_REVIEW: '/memories/:id/needs-review',
   DELETE: '/memories/:id',
 } as const;
 

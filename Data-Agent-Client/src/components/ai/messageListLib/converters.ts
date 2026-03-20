@@ -10,6 +10,7 @@ export function chatMessageToMessage(msg: ChatMessage): Message {
     id: msg.id,
     role: msg.role,
     content: msg.content,
+    userMentions: msg.userMentions,
     timestamp: msg.createdAt ?? new Date(),
     blocks: msg.blocks,
     doneMetadata: msg.doneMetadata,

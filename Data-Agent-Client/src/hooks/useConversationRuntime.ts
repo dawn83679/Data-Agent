@@ -429,6 +429,7 @@ export function useConversationRuntime(
                 id: crypto.randomUUID(),
                 role: MessageRole.USER,
                 content: trimmed,
+                userMentions: bodyOverrides?.userMentions,
                 createdAt: new Date(),
             };
             touchRuntime(runtime);
