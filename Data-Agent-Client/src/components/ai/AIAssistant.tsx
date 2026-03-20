@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { AgentType } from './agentTypes';
 import { AIAssistantProvider } from './AIAssistantContext';
 import { ChatInput } from './ChatInput';
@@ -7,13 +8,13 @@ import { AIAssistantHeader } from './AIAssistantHeader';
 import { AIAssistantContent } from './AIAssistantContent';
 import { MemoryCandidateDock } from './MemoryCandidateDock';
 import { PlanListPanel } from './PlanListPanel';
-import { PermissionRuleDialog } from './permissions/PermissionRuleDialog';
 import { useConversationRuntime } from '../../hooks/useConversationRuntime';
 import { useAuthStore } from '../../store/authStore';
 import { conversationService } from '../../services/conversation.service';
 import { aiService } from '../../services/ai.service';
 import { ChatPaths } from '../../constants/apiPaths';
 import { DEFAULT_MODEL, FALLBACK_MODELS } from '../../constants/models';
+import { ROUTES } from '../../constants/routes';
 import { SLASH_COMMAND_IDS } from './slashCommands';
 import { I18N_KEYS } from '../../constants/i18nKeys';
 import type { ChatContext } from '../../types/chat';
@@ -26,6 +27,7 @@ const DEFAULT_AGENT: AgentType = 'Agent';
 
 export function AIAssistant() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const accessToken = useAuthStore((s) => s.accessToken);
 
   const [agent, setAgentState] = useState<AgentType>(DEFAULT_AGENT);
@@ -35,7 +37,6 @@ export function AIAssistant() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPlanListOpen, setIsPlanListOpen] = useState(false);
-  const [isPermissionOpen, setIsPermissionOpen] = useState(false);
   const [input, setInput] = useState('');
 
   const {
@@ -189,7 +190,11 @@ export function AIAssistant() {
       } else if (id === SLASH_COMMAND_IDS.PLAN) {
         setIsPlanListOpen(true);
       } else if (id === SLASH_COMMAND_IDS.PERMISSION) {
-        setIsPermissionOpen(true);
+        if (activeConversationId != null && activeConversationId > 0) {
+          navigate(`${ROUTES.PERMISSIONS}?conversationId=${activeConversationId}`);
+          return;
+        }
+        navigate(ROUTES.PERMISSIONS);
       }
     },
   };
@@ -269,11 +274,6 @@ export function AIAssistant() {
           onClose={() => setIsPlanListOpen(false)}
           plans={conversationPlans}
           anchorRef={chatInputAnchorRef}
-        />
-        <PermissionRuleDialog
-          open={isPermissionOpen}
-          onClose={() => setIsPermissionOpen(false)}
-          conversationId={activeConversationId}
         />
       </div>
     </AIAssistantProvider>
