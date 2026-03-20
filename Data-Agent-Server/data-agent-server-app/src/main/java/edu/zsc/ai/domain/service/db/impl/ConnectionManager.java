@@ -10,6 +10,8 @@ import edu.zsc.ai.domain.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
@@ -17,6 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class ConnectionManager {
+
+    private static final int CONNECTION_VALIDATION_TIMEOUT_SECONDS = 1;
 
     /**
      * Active connection record.
@@ -51,8 +55,12 @@ public class ConnectionManager {
      */
     public static void registerConnection(Long dbConnectionId, ActiveConnection activeConnection) {
         String innerKey = generateInnerKey(activeConnection.databaseName(), activeConnection.schemaName());
-        activeConnections.computeIfAbsent(dbConnectionId, k -> new ConcurrentHashMap<>())
+        ActiveConnection previous = activeConnections.computeIfAbsent(dbConnectionId, k -> new ConcurrentHashMap<>())
                 .put(innerKey, activeConnection);
+
+        if (previous != null && previous.connection() != activeConnection.connection()) {
+            doClose(previous);
+        }
 
         log.info("Connection registered: dbConnectionId={}, key={}, dbType={}",
                 dbConnectionId, innerKey, activeConnection.dbType());
@@ -67,7 +75,12 @@ public class ConnectionManager {
             return Optional.empty();
         }
         String key = generateInnerKey(db.catalog(), db.schema());
-        return Optional.ofNullable(innerMap.get(key));
+        ActiveConnection active = innerMap.get(key);
+        if (!isConnectionUsable(active)) {
+            removeInvalidConnection(db.connectionId(), key, active);
+            return Optional.empty();
+        }
+        return Optional.of(active);
     }
 
     /**
@@ -93,8 +106,32 @@ public class ConnectionManager {
      * Get any active connection for a dbConnectionId (e.g. for listing databases).
      */
     public static Optional<ActiveConnection> getAnyActiveConnection(Long dbConnectionId) {
-        return Optional.ofNullable(activeConnections.get(dbConnectionId))
-                .flatMap(m -> m.values().stream().findFirst());
+        Map<String, ActiveConnection> innerMap = activeConnections.get(dbConnectionId);
+        if (innerMap == null) {
+            return Optional.empty();
+        }
+
+        String rootKey = generateInnerKey(null, null);
+        ActiveConnection rootConnection = innerMap.get(rootKey);
+        if (isConnectionUsable(rootConnection)) {
+            return Optional.of(rootConnection);
+        }
+        removeInvalidConnection(dbConnectionId, rootKey, rootConnection);
+
+        for (Map.Entry<String, ActiveConnection> entry : innerMap.entrySet()) {
+            if (rootKey.equals(entry.getKey())) {
+                continue;
+            }
+
+            ActiveConnection active = entry.getValue();
+            if (isConnectionUsable(active)) {
+                return Optional.of(active);
+            }
+            removeInvalidConnection(dbConnectionId, entry.getKey(), active);
+        }
+
+        cleanupEmptyGroup(dbConnectionId, innerMap);
+        return Optional.empty();
     }
 
     /**
@@ -135,6 +172,52 @@ public class ConnectionManager {
                     active.dbConnectionId(), active.databaseName(), active.schemaName());
         } catch (Exception e) {
             log.error("Error closing connection: dbConnectionId={}", active.dbConnectionId(), e);
+        }
+    }
+
+    private static boolean isConnectionUsable(ActiveConnection active) {
+        if (active == null || active.connection() == null) {
+            return false;
+        }
+
+        Connection connection = active.connection();
+        try {
+            if (connection.isClosed()) {
+                return false;
+            }
+            return connection.isValid(CONNECTION_VALIDATION_TIMEOUT_SECONDS);
+        } catch (SQLFeatureNotSupportedException e) {
+            log.debug("Connection validation is not supported by driver, falling back to isClosed check: dbConnectionId={}",
+                    active.dbConnectionId());
+            return true;
+        } catch (SQLException e) {
+            log.warn("Failed to validate connection, treating it as stale: dbConnectionId={}", active.dbConnectionId(), e);
+            return false;
+        }
+    }
+
+    private static void removeInvalidConnection(Long dbConnectionId, String innerKey, ActiveConnection active) {
+        if (active == null) {
+            return;
+        }
+
+        Map<String, ActiveConnection> innerMap = activeConnections.get(dbConnectionId);
+        if (innerMap == null) {
+            return;
+        }
+
+        boolean removed = innerMap.remove(innerKey, active);
+        cleanupEmptyGroup(dbConnectionId, innerMap);
+        if (removed) {
+            log.warn("Discarding stale connection: dbConnectionId={}, key={}, dbType={}",
+                    dbConnectionId, innerKey, active.dbType());
+            doClose(active);
+        }
+    }
+
+    private static void cleanupEmptyGroup(Long dbConnectionId, Map<String, ActiveConnection> innerMap) {
+        if (innerMap.isEmpty()) {
+            activeConnections.remove(dbConnectionId, innerMap);
         }
     }
 }
