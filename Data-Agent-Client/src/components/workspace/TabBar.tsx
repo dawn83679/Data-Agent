@@ -43,6 +43,7 @@ interface SortableTabProps {
   onCloseOthers: (id: string) => void;
   onCloseAll: () => void;
   subAgentType?: SubAgentType;
+  subAgentStatus?: SubAgentConsoleTabMetadata['status'];
 }
 
 function SortableTab({
@@ -59,6 +60,7 @@ function SortableTab({
   onCloseOthers,
   onCloseAll,
   subAgentType,
+  subAgentStatus,
 }: SortableTabProps) {
   const { t } = useTranslation();
   const {
@@ -85,15 +87,24 @@ function SortableTab({
   };
 
   const isPlannerConsole = type === 'subagent-console' && subAgentType === SUB_AGENT_TYPES.PLANNER;
-  const activeClass = isActive
-    ? isPlannerConsole
-      ? 'border-purple-500 bg-tab-active theme-text-primary'
-      : type === 'subagent-console'
-        ? 'border-cyan-500 bg-tab-active theme-text-primary'
-        : 'border-primary bg-tab-active theme-text-primary'
-    : 'border-transparent theme-bg-panel theme-text-secondary hover:bg-accent/50';
+  const isFailedSubAgent = type === 'subagent-console' && subAgentStatus === 'error';
+  const activeClass = isFailedSubAgent
+    ? 'border-red-500 bg-red-500/10 text-red-200'
+    : isActive
+      ? isPlannerConsole
+        ? 'border-purple-500 bg-tab-active theme-text-primary'
+        : type === 'subagent-console'
+          ? 'border-cyan-500 bg-tab-active theme-text-primary'
+          : 'border-primary bg-tab-active theme-text-primary'
+      : isFailedSubAgent
+        ? 'border-transparent bg-red-500/5 text-red-300 hover:bg-red-500/10'
+        : 'border-transparent theme-bg-panel theme-text-secondary hover:bg-accent/50';
 
-  const subAgentIconClass = isPlannerConsole ? 'text-purple-400' : 'text-cyan-400';
+  const subAgentIconClass = isFailedSubAgent
+    ? 'text-red-400'
+    : isPlannerConsole
+      ? 'text-purple-400'
+      : 'text-cyan-400';
 
   return (
     <ContextMenu>
@@ -205,6 +216,7 @@ export function TabBar() {
                 connectionName={tab.type !== 'plan' && tab.type !== 'subagent-console' ? (tab.metadata as import('../../types/tab').ConsoleTabMetadata | undefined)?.connectionName : undefined}
                 databaseName={tab.type !== 'plan' && tab.type !== 'subagent-console' ? (tab.metadata as import('../../types/tab').ConsoleTabMetadata | undefined)?.databaseName : undefined}
                 subAgentType={tab.type === 'subagent-console' ? (tab.metadata as SubAgentConsoleTabMetadata | undefined)?.agentType : undefined}
+                subAgentStatus={tab.type === 'subagent-console' ? (tab.metadata as SubAgentConsoleTabMetadata | undefined)?.status : undefined}
                 isActive={tab.active}
                 onSwitch={switchTab}
                 onClose={closeTab}

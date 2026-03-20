@@ -85,6 +85,7 @@ export interface ChatMessage {
   id: string;
   role: MessageRole;
   content: string;
+  userMentions?: ChatUserMention[];
   blocks?: ChatResponseBlock[];
   doneMetadata?: DoneMetadata;
   createdAt?: Date;
@@ -95,6 +96,13 @@ export interface DoneMetadata {
   toolCounts?: Record<string, number>;
   totalTokens?: number;
   outputTokens?: number;
+  memoryCompressed?: boolean;
+  tokenCountBefore?: number;
+  tokenCountAfter?: number;
+  compressedMessageCount?: number;
+  keptRecentCount?: number;
+  compressionOutputTokens?: number;
+  compressionTotalTokens?: number;
 }
 
 export interface SubAgentEventData {

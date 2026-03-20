@@ -23,7 +23,6 @@ export const memoryService = {
         keyword: params.keyword || undefined,
         memoryType: params.memoryType || undefined,
         status: params.status,
-        reviewState: params.reviewState || undefined,
         scope: params.scope || undefined,
       },
     });
@@ -72,16 +71,6 @@ export const memoryService = {
 
   restore: async (id: number): Promise<Memory> => {
     const response = await http.post<Memory>(buildMemoryPath(MemoryPaths.RESTORE, id));
-    return response.data;
-  },
-
-  confirm: async (id: number): Promise<Memory> => {
-    const response = await http.post<Memory>(buildMemoryPath(MemoryPaths.CONFIRM, id));
-    return response.data;
-  },
-
-  markNeedsReview: async (id: number): Promise<Memory> => {
-    const response = await http.post<Memory>(buildMemoryPath(MemoryPaths.NEEDS_REVIEW, id));
     return response.data;
   },
 

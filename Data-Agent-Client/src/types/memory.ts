@@ -32,10 +32,6 @@ export const MEMORY_WORKSPACE_LEVEL_OPTIONS = ['GLOBAL', 'CONNECTION', 'CATALOG'
 export type KnownMemoryWorkspaceLevel = (typeof MEMORY_WORKSPACE_LEVEL_OPTIONS)[number];
 export type MemoryWorkspaceLevel = KnownMemoryWorkspaceLevel | (string & {});
 
-export const MEMORY_REVIEW_STATE_OPTIONS = ['USER_CONFIRMED', 'NEEDS_REVIEW'] as const;
-export type KnownMemoryReviewState = (typeof MEMORY_REVIEW_STATE_OPTIONS)[number];
-export type MemoryReviewState = KnownMemoryReviewState | (string & {});
-
 export const MEMORY_SOURCE_TYPE_OPTIONS = ['MANUAL', 'AGENT'] as const;
 export type KnownMemorySourceType = (typeof MEMORY_SOURCE_TYPE_OPTIONS)[number];
 export type MemorySourceType = KnownMemorySourceType | (string & {});
@@ -53,9 +49,6 @@ export const isKnownMemoryType = (value?: string | null): value is KnownMemoryTy
 
 export const isMemoryScope = (value?: string | null): value is KnownMemoryScope =>
   !!value && MEMORY_SCOPE_OPTIONS.includes(value as KnownMemoryScope);
-
-export const isMemoryReviewState = (value?: string | null): value is KnownMemoryReviewState =>
-  !!value && MEMORY_REVIEW_STATE_OPTIONS.includes(value as KnownMemoryReviewState);
 
 export const isMemorySourceType = (value?: string | null): value is KnownMemorySourceType =>
   !!value && MEMORY_SOURCE_TYPE_OPTIONS.includes(value as KnownMemorySourceType);
@@ -90,7 +83,6 @@ export interface Memory {
   scope: MemoryScope;
   memoryType: MemoryType;
   subType?: MemorySubType | null;
-  reviewState: MemoryReviewState;
   sourceType: MemorySourceType;
   title: string;
   content: string;
@@ -117,7 +109,6 @@ export interface MemoryListParams {
   keyword?: string;
   memoryType?: MemoryType;
   status?: number;
-  reviewState?: MemoryReviewState;
   scope?: MemoryScope;
 }
 
@@ -153,7 +144,6 @@ export interface MemoryCreateRequest {
   workspaceLevel?: MemoryWorkspaceLevel;
   scope?: MemoryScope;
   subType?: MemorySubType;
-  reviewState?: MemoryReviewState;
   sourceType?: MemorySourceType;
   title?: string;
   reason?: string;
@@ -175,7 +165,6 @@ export interface MemoryMetadataTypeItem {
 export interface MemoryMetadataResponse {
   scopes: MemoryScope[];
   workspaceLevels: MemoryWorkspaceLevel[];
-  reviewStates: MemoryReviewState[];
   sourceTypes: MemorySourceType[];
   memoryTypes: MemoryMetadataTypeItem[];
 }

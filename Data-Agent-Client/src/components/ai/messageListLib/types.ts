@@ -1,4 +1,4 @@
-import type { ChatResponseBlock, DoneMetadata } from '../../../types/chat';
+import type { ChatResponseBlock, ChatUserMention, DoneMetadata } from '../../../types/chat';
 import type { MessageRole } from '../../../types/chat';
 import type { TodoItem } from '../blocks';
 import type { SubAgentProgressEvent } from '../blocks/subAgentTypes';
@@ -20,6 +20,7 @@ export interface Message {
   id: string;
   role: MessageRole;
   content: string;
+  userMentions?: ChatUserMention[];
   timestamp: Date;
   blocks?: ChatResponseBlock[];
   doneMetadata?: DoneMetadata;

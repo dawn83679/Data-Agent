@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { User, Copy, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { COPY_FEEDBACK_SHORT_MS } from '../../../constants/timing';
-import { parseMentionSegments } from '../mentionTypes';
+import { expandMentionTokensForCopy, parseMentionSegments } from '../mentionTypes';
 import type { Message } from './types';
 import { I18N_KEYS } from '../../../constants/i18nKeys';
 import { useMarkdownComponents, markdownRemarkPlugins } from '../blocks/markdownComponents';
@@ -33,7 +33,7 @@ export function UserBubble({ message }: UserBubbleProps) {
   const markdownComponents = useMarkdownComponents();
 
   const handleCopy = useCallback(async () => {
-    const text = message.content ?? '';
+    const text = expandMentionTokensForCopy(message.content ?? '', message.userMentions ?? []);
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
@@ -42,7 +42,7 @@ export function UserBubble({ message }: UserBubbleProps) {
     } catch {
       // ignore
     }
-  }, [message.content]);
+  }, [message.content, message.userMentions]);
 
   // Check if content contains markdown syntax
   const hasMarkdown = /[*_`#\[\]>-]/.test(message.content);

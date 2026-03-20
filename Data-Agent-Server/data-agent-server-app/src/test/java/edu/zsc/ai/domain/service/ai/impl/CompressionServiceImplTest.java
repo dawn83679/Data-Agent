@@ -9,6 +9,7 @@ import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import edu.zsc.ai.common.enums.ai.ModelEnum;
+import edu.zsc.ai.domain.service.ai.model.CompressionResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -92,9 +93,9 @@ class CompressionServiceImplTest {
                 AiMessage.from("The orders table has 4 columns: id (PK), customer_id (FK to customers), total, and created_at. It contains 15,230 rows.")
         );
 
-        String result = compressionService.compress(messages);
+        CompressionResult result = compressionService.compress(messages);
 
-        assertEquals(expectedSummary, result);
+        assertEquals(expectedSummary, result.summary());
 
         // 验证提示词中包含完整的工具调用结构（工具名、参数、结果）
         String prompt = capturePromptText();
@@ -143,7 +144,8 @@ class CompressionServiceImplTest {
                 AiMessage.from("Here are the top 10 customers by revenue. Acme Corp leads with $125,000.")
         );
 
-        String result = compressionService.compress(messages);
+        CompressionResult result = compressionService.compress(messages);
+        assertEquals(expectedSummary, result.summary());
 
         // 验证提示词包含了失败和成功两次调用，让模型能判断哪些该保留
         String prompt = capturePromptText();
@@ -209,7 +211,8 @@ class CompressionServiceImplTest {
                 AiMessage.from("Done! Successfully deleted 5,230 old orders.")
         );
 
-        String result = compressionService.compress(messages);
+        CompressionResult result = compressionService.compress(messages);
+        assertEquals(expectedSummary, result.summary());
 
         String prompt = capturePromptText();
         // 验证新的确认流程信息都在提示词中
@@ -362,9 +365,9 @@ class CompressionServiceImplTest {
         }
         // 12 轮 × 4 条 = 48 条消息，接近 50 条上限
 
-        String result = compressionService.compress(messages);
+        CompressionResult result = compressionService.compress(messages);
 
-        assertEquals("## Active Context\n- Long conversation compressed", result);
+        assertEquals("## Active Context\n- Long conversation compressed", result.summary());
 
         String prompt = capturePromptText();
         // 验证第一轮和最后一轮的内容都在

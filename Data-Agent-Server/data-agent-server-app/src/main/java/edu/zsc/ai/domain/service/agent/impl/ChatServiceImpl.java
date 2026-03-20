@@ -1,6 +1,7 @@
 package edu.zsc.ai.domain.service.agent.impl;
 
 import edu.zsc.ai.agent.tool.AgentToolTracker;
+import edu.zsc.ai.agent.memory.ChatMemoryCompressor;
 import edu.zsc.ai.api.model.request.ChatRequest;
 import edu.zsc.ai.domain.model.dto.response.agent.ChatResponseBlock;
 import edu.zsc.ai.domain.service.agent.ChatService;
@@ -12,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -22,6 +25,7 @@ public class ChatServiceImpl implements ChatService {
 
     private final ChatSessionFactory chatSessionFactory;
     private final ChatStreamBridge chatStreamBridge;
+    private final ChatMemoryCompressor chatMemoryCompressor;
 
     @Override
     public Flux<ChatResponseBlock> chat(ChatRequest request) {
@@ -34,7 +38,7 @@ public class ChatServiceImpl implements ChatService {
 
         return agentFlux.concatWith(Flux.defer(() -> {
             if (!enterPlanTriggered.get()) {
-                return Flux.just(ChatResponseBlock.doneBlock(toolTracker.toMetadata()));
+                return Flux.just(ChatResponseBlock.doneBlock(buildDoneMetadata(session.conversationId(), toolTracker)));
             }
 
             log.info("enterPlanMode triggered for conversation {}, chaining Plan mode agent",
@@ -48,5 +52,11 @@ public class ChatServiceImpl implements ChatService {
             }
             return block;
         });
+    }
+
+    private Map<String, Object> buildDoneMetadata(Long conversationId, AgentToolTracker toolTracker) {
+        Map<String, Object> metadata = new LinkedHashMap<>(toolTracker.toMetadata());
+        metadata.putAll(chatMemoryCompressor.consumeDoneMetadata(conversationId));
+        return metadata;
     }
 }
