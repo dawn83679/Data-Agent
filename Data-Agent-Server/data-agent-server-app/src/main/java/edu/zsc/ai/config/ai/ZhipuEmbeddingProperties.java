@@ -13,6 +13,8 @@ public class ZhipuEmbeddingProperties {
 
     private String apiKey;
 
+    private String baseUrl;
+
     private String modelName = "embedding-2";
 
     private int dimension = 1024;

@@ -13,6 +13,8 @@ public class ZhipuStreamingChatProperties {
 
     private String apiKey;
 
+    private String baseUrl;
+
     private String modelName = "glm-5";
 
     private Parameters parameters = new Parameters();
@@ -21,5 +23,7 @@ public class ZhipuStreamingChatProperties {
     public static class Parameters {
 
         private double temperature = 0.7;
+
+        private Integer maxToken;
     }
 }

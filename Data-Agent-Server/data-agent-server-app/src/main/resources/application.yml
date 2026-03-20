@@ -53,13 +53,15 @@ langchain4j:
     dashscope:
       chat-model:
         api-key: ${ALIYUN_AI_API_KEY:}
-        model-name: qwen3-max
+        base-url: https://coding.dashscope.aliyuncs.com/v1
+        model-name: qwen3.5-plus
         parameters:
           enable-thinking: true
           thinking-budget: 1000
       streaming-chat-model:
         api-key: ${ALIYUN_AI_API_KEY:}
-        model-name: qwen3-max
+        base-url: https://coding.dashscope.aliyuncs.com/v1
+        model-name: qwen3.5-plus
         parameters:
           enable-thinking: true
           thinking-budget: 1000
@@ -75,16 +77,19 @@ ai:
   zhipu:
     chat-model:
       api-key: ${zhipu_AI_API_KEY:}
+      base-url: https://coding.dashscope.aliyuncs.com/v1
       model-name: glm-5
       parameters:
         temperature: 0.7
     streaming-chat-model:
       api-key: ${zhipu_AI_API_KEY:}
+      base-url: https://coding.dashscope.aliyuncs.com/v1
       model-name: glm-5
       parameters:
         temperature: 0.7
     embedding-model:
       api-key: ${zhipu_AI_API_KEY:}
+      base-url: https://coding.dashscope.aliyuncs.com/v1
       model-name: embedding-2
       dimension: 1024
   minimax:

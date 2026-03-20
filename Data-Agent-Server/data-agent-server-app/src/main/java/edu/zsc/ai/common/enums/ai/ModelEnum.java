@@ -6,9 +6,8 @@ import lombok.Getter;
 public enum ModelEnum {
 
     QWEN3_5_PLUS("qwen3.5-plus", 131072, 120000, false),
-    QWEN3_MAX("qwen3-max", 256000, 230000, false),
+    QWEN3_MAX("qwen3-max-2026-01-23", 256000, 230000, false),
     QWEN3_MAX_THINKING("qwen3-max-thinking", 256000, 230000, true),
-    QWEN_PLUS("qwen-plus", 1048576, 900000, false),
     GLM_5("glm-5", 200000, 128000, true),
     MINIMAX_M2_5("MiniMax-M2.5", 204800, 150000, true);
 

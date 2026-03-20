@@ -1,8 +1,8 @@
 package edu.zsc.ai.config.ai;
 
 import dev.langchain4j.community.model.dashscope.QwenEmbeddingModel;
-import dev.langchain4j.community.model.zhipu.ZhipuAiEmbeddingModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
+import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
@@ -59,10 +59,12 @@ public class EmbeddingConfig {
     }
 
     private EmbeddingModel buildZhipuEmbeddingModel() {
-        log.info("Using Zhipu as embedding provider");
-        return ZhipuAiEmbeddingModel.builder()
+        log.info("Using Zhipu OpenAI-compatible API as embedding provider");
+        return OpenAiEmbeddingModel.builder()
+                .baseUrl(zhipuProperties.getBaseUrl())
                 .apiKey(zhipuProperties.getApiKey())
-                .model(zhipuProperties.getModelName())
+                .modelName(zhipuProperties.getModelName())
+                .dimensions(zhipuProperties.getDimension())
                 .build();
     }
 }
