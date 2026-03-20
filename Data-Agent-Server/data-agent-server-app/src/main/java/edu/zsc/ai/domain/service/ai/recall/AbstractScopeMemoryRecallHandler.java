@@ -2,29 +2,43 @@ package edu.zsc.ai.domain.service.ai.recall;
 
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
-
 import edu.zsc.ai.common.enums.ai.MemoryScopeEnum;
+import edu.zsc.ai.domain.service.ai.MemoryService;
 import edu.zsc.ai.domain.service.ai.model.MemorySearchResult;
+import edu.zsc.ai.domain.service.handler.AbstractHandler;
+import edu.zsc.ai.observability.AgentLogFields;
+import edu.zsc.ai.observability.AgentLogService;
+import edu.zsc.ai.common.constant.MemoryRecallLogConstant;
 
-public abstract class AbstractScopeMemoryRecallHandler implements MemoryRecallHandler {
+public abstract class AbstractScopeMemoryRecallHandler extends AbstractHandler<MemoryRecallQuery, List<MemoryRecallItem>>
+        implements MemoryRecallHandler {
 
-    @Override
-    public boolean support(MemoryRecallContext context) {
-        return StringUtils.isBlank(context.getScope()) || scope().matches(context.getScope());
+    private final MemoryService memoryService;
+    private final AgentLogService agentLogService;
+
+    protected AbstractScopeMemoryRecallHandler(MemoryService memoryService, AgentLogService agentLogService) {
+        this.memoryService = memoryService;
+        this.agentLogService = agentLogService;
     }
 
     @Override
-    public List<MemoryRecallItem> handle(MemoryRecallContext context, List<MemorySearchResult> candidates) {
-        return candidates.stream()
-                .filter(candidate -> scope().matches(candidate.getScope()))
+    public boolean support(MemoryRecallQuery input) {
+        return scope().matches(input.targetScope());
+    }
+
+    @Override
+    protected List<MemoryRecallItem> doHandle(MemoryRecallQuery input) {
+        agentLogService.recordDebug(MemoryRecallLogConstant.LOGGER_NAME, MemoryRecallLogConstant.EVENT_RECALL_QUERY_HANDLER_MATCH,
+                AgentLogFields.of(
+                        MemoryRecallLogConstant.FIELD_QUERY_NAME, input.queryName(),
+                        MemoryRecallLogConstant.FIELD_PLANNING_REASON, input.planningReason(),
+                        MemoryRecallLogConstant.FIELD_TARGET_SCOPE, input.targetScope(),
+                        MemoryRecallLogConstant.FIELD_MATCHED_HANDLER, getClass().getSimpleName()
+                ));
+        return memoryService.recallAccessibleMemories(input)
+                .stream()
                 .map(this::toRecallItem)
                 .toList();
-    }
-
-    @Override
-    public int order() {
-        return scopeOrder();
     }
 
     protected MemoryRecallItem toRecallItem(MemorySearchResult candidate) {
@@ -39,7 +53,6 @@ public abstract class AbstractScopeMemoryRecallHandler implements MemoryRecallHa
                 .content(candidate.getContent())
                 .normalizedContentKey(candidate.getNormalizedContentKey())
                 .reason(candidate.getReason())
-                .reviewState(candidate.getReviewState())
                 .sourceType(candidate.getSourceType())
                 .score(candidate.getScore())
                 .conversationId(candidate.getConversationId())
@@ -48,6 +61,4 @@ public abstract class AbstractScopeMemoryRecallHandler implements MemoryRecallHa
     }
 
     protected abstract MemoryScopeEnum scope();
-
-    protected abstract int scopeOrder();
 }

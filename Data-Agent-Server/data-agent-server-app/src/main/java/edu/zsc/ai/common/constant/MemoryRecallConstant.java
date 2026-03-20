@@ -21,7 +21,6 @@ public final class MemoryRecallConstant {
     public static final String ITEM_TITLE = "title";
     public static final String ITEM_CONTENT = "content";
     public static final String ITEM_REASON = "reason";
-    public static final String ITEM_REVIEW_STATE = "reviewState";
     public static final String ITEM_SOURCE_TYPE = "sourceType";
     public static final String ITEM_SCORE = "score";
     public static final String ITEM_ACTION = "action";

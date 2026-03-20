@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
+import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.agent.annotation.AgentTool;
 import edu.zsc.ai.agent.tool.message.ToolMessageSupport;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
@@ -40,17 +41,22 @@ public class ReadMemoryTool {
 
     @Tool({
             "Value: recalls durable memory across conversation, workspace, and user dimensions when prompt-injected memory is not enough.",
-            "Use When: only when the current task needs targeted durable context that is missing or unclear in the current prompt.",
-            "Preconditions: intent should describe the durable fact you need; optional scope, memoryType, and subType can narrow the recall.",
+            "Use When: call when the current task depends on durable context that is missing, insufficient, or ambiguous in the current prompt.",
+            "Common Cases: checking a stable user preference, a durable workflow rule, a validated workspace fact, or a reusable domain rule before deciding how to answer.",
+            "Preconditions: intent must describe the durable context you want; optional scope, memoryType, and subType should narrow recall to the smallest useful slice.",
+            "Scope Guidance: prefer the narrowest valid scope. Use USER for cross-conversation preferences, WORKSPACE for environment-specific durable rules, and CONVERSATION only for short-lived but reusable context within this conversation.",
+            "Classification Guidance: use memoryType/subType only when you already know the likely class of memory. If unsure, leave filters empty rather than guessing wrong.",
+            "Optional: activateSkill(\"memory\") only if you need the extended memory classification guide; the tool itself does not require that skill to run.",
             "After Success: use only the returned durable memory that directly helps the task; do not narrate the tool call itself to the user.",
             "After Failure: refine the intent or filters and retry only if durable context is still needed.",
-            "Do Not Use When: prompt-injected memory already covers the need, or when you just need transient turn context."
+            "Do Not Use When: prompt-injected memory already covers the need, or when you only need transient turn context, current-turn emotions, or one-off task instructions."
     })
     public AgentToolResult readMemory(
             @P("What durable context you want to recall") String intent,
             @P(value = "Optional scope filter: USER/WORKSPACE/CONVERSATION", required = false) String scope,
             @P(value = "Optional memory type filter", required = false) String memoryType,
-            @P(value = "Optional memory subType filter", required = false) String subType) {
+            @P(value = "Optional memory subType filter", required = false) String subType,
+            InvocationParameters parameters) {
 
         AgentTypeEnum agentType = AgentTypeEnum.fromCode(AgentRequestContext.getAgentType());
         AgentModeEnum agentMode = AgentModeEnum.fromRequest(AgentRequestContext.getAgentMode());
@@ -83,6 +89,9 @@ public class ReadMemoryTool {
                     .map(MemoryRecallItem::getId)
                     .toList();
             memoryService.recordMemoryAccess(memoryIds);
+            if (!memoryIds.isEmpty()) {
+                memoryService.recordMemoryUsage(memoryIds);
+            }
             log.info("[Tool done] readMemory, conversationId={}, scope={}, memoryType={}, subType={}, recalledCount={}, memoryIds={}, summary={}",
                     RequestContext.getConversationId(),
                     normalizedScope,
@@ -170,7 +179,6 @@ public class ReadMemoryTool {
         payload.put(MemoryRecallConstant.ITEM_TITLE, item.getTitle());
         payload.put(MemoryRecallConstant.ITEM_CONTENT, item.getContent());
         payload.put(MemoryRecallConstant.ITEM_REASON, item.getReason());
-        payload.put(MemoryRecallConstant.ITEM_REVIEW_STATE, item.getReviewState());
         payload.put(MemoryRecallConstant.ITEM_SOURCE_TYPE, item.getSourceType());
         payload.put(MemoryRecallConstant.ITEM_SCORE, item.getScore());
         return payload;

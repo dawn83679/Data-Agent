@@ -47,14 +47,12 @@ public class MemoryController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String memoryType,
             @RequestParam(required = false) Integer status,
-            @RequestParam(required = false) String reviewState,
             @RequestParam(required = false) String scope) {
         PageResponse<AiMemory> page = memoryService.pageCurrentUserMemories(
                 PageRequest.builder().current(current).size(size).build(),
                 keyword,
                 memoryType,
                 status,
-                reviewState,
                 scope);
         PageResponse<MemoryResponse> body = PageResponse.<MemoryResponse>builder()
                 .current(page.getCurrent())
@@ -116,16 +114,6 @@ public class MemoryController {
     @PostMapping("/{id}/restore")
     public ApiResponse<MemoryResponse> restore(@PathVariable @NotNull Long id) {
         return ApiResponse.success(MemoryConverter.toMemoryResponse(memoryService.restoreMemory(id)));
-    }
-
-    @PostMapping("/{id}/confirm")
-    public ApiResponse<MemoryResponse> confirm(@PathVariable @NotNull Long id) {
-        return ApiResponse.success(MemoryConverter.toMemoryResponse(memoryService.confirmMemory(id)));
-    }
-
-    @PostMapping("/{id}/needs-review")
-    public ApiResponse<MemoryResponse> markNeedsReview(@PathVariable @NotNull Long id) {
-        return ApiResponse.success(MemoryConverter.toMemoryResponse(memoryService.markMemoryNeedsReview(id)));
     }
 
     @DeleteMapping("/{id}")

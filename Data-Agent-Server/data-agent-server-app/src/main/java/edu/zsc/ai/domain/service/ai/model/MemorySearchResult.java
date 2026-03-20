@@ -33,8 +33,6 @@ public class MemorySearchResult {
 
     private String reason;
 
-    private String reviewState;
-
     private String sourceType;
 
     private double score;

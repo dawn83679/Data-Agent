@@ -14,7 +14,6 @@ public final class MemoryMetadataConstant {
     public static final String TITLE = "title";
     public static final String NORMALIZED_CONTENT_KEY = "normalizedContentKey";
     public static final String REASON = "reason";
-    public static final String REVIEW_STATE = "reviewState";
     public static final String SOURCE_TYPE = "sourceType";
     public static final String UPDATED_AT = "updatedAt";
 

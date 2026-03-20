@@ -33,8 +33,6 @@ public class MemoryRecallItem {
 
     private String reason;
 
-    private String reviewState;
-
     private String sourceType;
 
     private double score;

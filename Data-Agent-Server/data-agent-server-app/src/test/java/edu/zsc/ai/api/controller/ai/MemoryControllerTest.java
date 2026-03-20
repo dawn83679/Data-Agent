@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
-import edu.zsc.ai.common.enums.ai.MemoryReviewStateEnum;
 import edu.zsc.ai.common.enums.ai.MemoryScopeEnum;
 import edu.zsc.ai.common.enums.ai.MemorySourceTypeEnum;
 import edu.zsc.ai.common.enums.ai.MemorySubTypeEnum;
@@ -36,7 +35,6 @@ class MemoryControllerTest {
 
         assertEquals(Arrays.stream(MemoryScopeEnum.values()).map(MemoryScopeEnum::getCode).toList(), body.getScopes());
         assertEquals(Arrays.stream(MemoryWorkspaceLevelEnum.values()).map(MemoryWorkspaceLevelEnum::getCode).toList(), body.getWorkspaceLevels());
-        assertEquals(Arrays.stream(MemoryReviewStateEnum.values()).map(MemoryReviewStateEnum::getCode).toList(), body.getReviewStates());
         assertEquals(Arrays.stream(MemorySourceTypeEnum.values()).map(MemorySourceTypeEnum::getCode).toList(), body.getSourceTypes());
 
         Map<String, MemoryMetadataResponse.MemoryTypeMetadata> metadataByType = body.getMemoryTypes().stream()

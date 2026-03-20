@@ -35,8 +35,6 @@ public class AiMemory {
 
     private String subType;
 
-    private String reviewState;
-
     private String sourceType;
 
     private String title;

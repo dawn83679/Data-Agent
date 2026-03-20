@@ -19,7 +19,6 @@ class MemoryConverterTest {
                 .conversationId(9L)
                 .scope("USER")
                 .memoryType("PREFERENCE")
-                .reviewState("USER_CONFIRMED")
                 .sourceType("MANUAL")
                 .title("Concise output")
                 .content("User prefers concise output.")

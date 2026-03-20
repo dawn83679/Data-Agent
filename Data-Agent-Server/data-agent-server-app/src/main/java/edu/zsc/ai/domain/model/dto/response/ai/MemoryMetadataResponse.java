@@ -3,7 +3,6 @@ package edu.zsc.ai.domain.model.dto.response.ai;
 import java.util.Arrays;
 import java.util.List;
 
-import edu.zsc.ai.common.enums.ai.MemoryReviewStateEnum;
 import edu.zsc.ai.common.enums.ai.MemoryScopeEnum;
 import edu.zsc.ai.common.enums.ai.MemorySourceTypeEnum;
 import edu.zsc.ai.common.enums.ai.MemorySubTypeEnum;
@@ -24,8 +23,6 @@ public class MemoryMetadataResponse {
 
     private List<String> workspaceLevels;
 
-    private List<String> reviewStates;
-
     private List<String> sourceTypes;
 
     private List<MemoryTypeMetadata> memoryTypes;
@@ -37,9 +34,6 @@ public class MemoryMetadataResponse {
                         .toList())
                 .workspaceLevels(Arrays.stream(MemoryWorkspaceLevelEnum.values())
                         .map(MemoryWorkspaceLevelEnum::getCode)
-                        .toList())
-                .reviewStates(Arrays.stream(MemoryReviewStateEnum.values())
-                        .map(MemoryReviewStateEnum::getCode)
                         .toList())
                 .sourceTypes(Arrays.stream(MemorySourceTypeEnum.values())
                         .map(MemorySourceTypeEnum::getCode)

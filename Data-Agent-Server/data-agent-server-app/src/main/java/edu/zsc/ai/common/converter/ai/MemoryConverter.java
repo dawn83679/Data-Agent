@@ -20,7 +20,6 @@ public final class MemoryConverter {
                 .scope(memory.getScope())
                 .memoryType(memory.getMemoryType())
                 .subType(memory.getSubType())
-                .reviewState(memory.getReviewState())
                 .sourceType(memory.getSourceType())
                 .title(memory.getTitle())
                 .content(memory.getContent())

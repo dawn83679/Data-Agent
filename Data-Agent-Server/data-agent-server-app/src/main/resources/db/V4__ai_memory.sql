@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS ai_memory (
     scope                   VARCHAR(32) NOT NULL DEFAULT 'USER',
     memory_type             VARCHAR(32) NOT NULL,
     sub_type                VARCHAR(64),
-    review_state            VARCHAR(32) NOT NULL DEFAULT 'NEEDS_REVIEW',
     source_type             VARCHAR(32) NOT NULL DEFAULT 'AGENT',
     title                   VARCHAR(255),
     content                 TEXT NOT NULL,
@@ -43,7 +42,6 @@ COMMENT ON COLUMN ai_memory.workspace_level IS 'Abstract workspace binding level
 COMMENT ON COLUMN ai_memory.scope IS 'Memory scope: USER / WORKSPACE / CONVERSATION';
 COMMENT ON COLUMN ai_memory.memory_type IS 'Top-level semantic memory type';
 COMMENT ON COLUMN ai_memory.sub_type IS 'Refined subtype within the memory type';
-COMMENT ON COLUMN ai_memory.review_state IS 'Audit state, for example NEEDS_REVIEW or USER_CONFIRMED';
 COMMENT ON COLUMN ai_memory.source_type IS 'Source of memory creation, such as AGENT or MANUAL';
 COMMENT ON COLUMN ai_memory.title IS 'Short human-readable title';
 COMMENT ON COLUMN ai_memory.content IS 'Authoritative durable memory content';

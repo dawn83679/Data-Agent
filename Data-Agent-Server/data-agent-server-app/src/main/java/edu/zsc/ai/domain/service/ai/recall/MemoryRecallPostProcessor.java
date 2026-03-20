@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 
 import edu.zsc.ai.common.constant.MemoryRecallConstant;
 import edu.zsc.ai.common.constant.MemoryConstant;
-import edu.zsc.ai.common.enums.ai.MemoryReviewStateEnum;
 import edu.zsc.ai.common.enums.ai.MemoryScopeEnum;
 import edu.zsc.ai.common.enums.ai.MemoryWorkspaceLevelEnum;
 
@@ -86,7 +85,6 @@ public class MemoryRecallPostProcessor {
     private Comparator<MemoryRecallItem> recallComparator() {
         return Comparator.comparingInt(this::scopePriority)
                 .thenComparing(Comparator.comparingInt(this::workspacePriority).reversed())
-                .thenComparingInt(this::reviewPriority)
                 .thenComparing(Comparator.comparingDouble(MemoryRecallItem::getScore).reversed())
                 .thenComparing(MemoryRecallItem::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(MemoryRecallItem::getId, Comparator.nullsLast(Comparator.reverseOrder()));
@@ -100,11 +98,6 @@ public class MemoryRecallPostProcessor {
     private int workspacePriority(MemoryRecallItem item) {
         MemoryWorkspaceLevelEnum level = MemoryWorkspaceLevelEnum.fromCode(item.getWorkspaceLevel());
         return level == null ? -1 : level.getPriority();
-    }
-
-    private int reviewPriority(MemoryRecallItem item) {
-        MemoryReviewStateEnum reviewState = MemoryReviewStateEnum.fromCode(item.getReviewState());
-        return reviewState == null ? Integer.MAX_VALUE : reviewState.getPriority();
     }
 
     private String dedupKey(MemoryRecallItem item) {

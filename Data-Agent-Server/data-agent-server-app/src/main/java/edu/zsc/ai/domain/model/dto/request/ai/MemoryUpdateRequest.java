@@ -28,9 +28,6 @@ public class MemoryUpdateRequest {
     @Size(max = 64, message = "subType must not exceed 64 characters")
     private String subType;
 
-    @Size(max = 32, message = "reviewState must not exceed 32 characters")
-    private String reviewState;
-
     @Size(max = 32, message = "sourceType must not exceed 32 characters")
     private String sourceType;
 

@@ -29,8 +29,6 @@ public class MemoryResponse {
 
     private String subType;
 
-    private String reviewState;
-
     private String sourceType;
 
     private String title;

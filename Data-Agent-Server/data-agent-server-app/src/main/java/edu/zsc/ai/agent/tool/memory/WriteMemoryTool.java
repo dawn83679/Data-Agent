@@ -6,6 +6,7 @@ import java.util.Map;
 
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
+import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.agent.annotation.AgentTool;
 import edu.zsc.ai.agent.tool.message.ToolMessageSupport;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
@@ -18,6 +19,7 @@ import edu.zsc.ai.domain.exception.BusinessException;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryWriteRequest;
 import edu.zsc.ai.domain.model.entity.ai.AiMemory;
 import edu.zsc.ai.domain.service.ai.MemoryService;
+import edu.zsc.ai.domain.service.ai.model.MemoryWriteResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,9 +32,13 @@ public class WriteMemoryTool {
 
     @Tool({
             "Value: writes durable structured memory for future prompt injection and workspace continuity.",
-            "Use When: only when the conversation reveals stable preferences, durable constraints, business rules, validated knowledge, or reusable SQL patterns.",
-            "Preconditions: choose a valid scope, memoryType, and subType; content must be concise, durable, and reusable.",
-            "Workspace Binding: when scope=WORKSPACE, pass the explicit workspace binding fields needed by the chosen workspaceLevel instead of relying on hidden runtime inference.",
+            "Use When: call only when the conversation reveals stable preferences, durable constraints, business rules, validated knowledge, or reusable SQL patterns that should help future turns.",
+            "Durability Test: write memory only if the information should still be useful beyond this turn. Stable preferences, verified rules, and reusable patterns qualify; one-off requests, emotions, and speculative claims do not.",
+            "Preconditions: choose the narrowest valid scope, memoryType, and subType; content must be concise, durable, and reusable rather than conversational.",
+            "Scope Guidance: use USER for durable user preferences or habits, WORKSPACE for database or project rules tied to the current environment, and CONVERSATION only for short-lived but reusable constraints inside this conversation.",
+            "Workspace Binding: when scope=WORKSPACE, you must explicitly choose workspaceLevel and provide the matching binding fields based on the current task context.",
+            "Classification Guidance: PREFERENCE is for stable response or interaction preferences; BUSINESS_RULE and WORKFLOW_CONSTRAINT are for durable rules; KNOWLEDGE_POINT is for verified facts; GOLDEN_SQL_CASE is for validated reusable SQL patterns.",
+            "Optional: activateSkill(\"memory\") only if you need the extended memory classification guide; the tool itself does not require that skill to run.",
             "After Success: continue the task normally; do not narrate the memory write as the user-facing result.",
             "After Failure: fix the classification or content and retry only if the information is truly durable.",
             "Do Not Use When: the information is temporary, emotional-only, speculative, or specific to a one-off task."
@@ -49,7 +55,8 @@ public class WriteMemoryTool {
             @P("Authoritative durable memory content") String content,
             @P(value = "Short reason explaining why this memory should persist", required = false) String reason,
             @P(value = "Optional confidence score between 0 and 1", required = false) Double confidence,
-            @P(value = "Optional source message ids that justify this memory", required = false) List<String> sourceMessageIds) {
+            @P(value = "Optional source message ids that justify this memory", required = false) List<String> sourceMessageIds,
+            InvocationParameters parameters) {
 
         AgentTypeEnum agentType = AgentTypeEnum.fromCode(AgentRequestContext.getAgentType());
         AgentModeEnum agentMode = AgentModeEnum.fromRequest(AgentRequestContext.getAgentMode());
@@ -61,7 +68,7 @@ public class WriteMemoryTool {
         }
 
         try {
-            AiMemory memory = memoryService.writeAgentMemory(MemoryWriteRequest.builder()
+            MemoryWriteResult writeResult = memoryService.writeAgentMemory(MemoryWriteRequest.builder()
                     .scope(scope)
                     .workspaceLevel(workspaceLevel)
                     .workspaceConnectionId(workspaceConnectionId)
@@ -75,6 +82,7 @@ public class WriteMemoryTool {
                     .confidence(confidence)
                     .sourceMessageIds(sourceMessageIds)
                     .build());
+            AiMemory memory = writeResult.getMemory();
 
             Map<String, Object> result = new LinkedHashMap<>();
             result.put(MemoryRecallConstant.ITEM_MEMORY_ID, memory.getId());
@@ -83,17 +91,17 @@ public class WriteMemoryTool {
             result.put(MemoryRecallConstant.ITEM_WORKSPACE_CONTEXT_KEY, memory.getWorkspaceContextKey());
             result.put(MemoryRecallConstant.ITEM_MEMORY_TYPE, memory.getMemoryType());
             result.put(MemoryRecallConstant.ITEM_SUB_TYPE, memory.getSubType());
-            result.put(MemoryRecallConstant.ITEM_REVIEW_STATE, memory.getReviewState());
-            String action = resolveAction(memory);
+            String action = writeResult.getAction() == null
+                    ? MemoryToolActionEnum.UNKNOWN.getCode()
+                    : writeResult.getAction().getCode();
             result.put(MemoryRecallConstant.ITEM_ACTION, action);
-            log.info("[Tool done] writeMemory, action={}, memoryId={}, scope={}, workspaceLevel={}, memoryType={}, subType={}, reviewState={}",
+            log.info("[Tool done] writeMemory, action={}, memoryId={}, scope={}, workspaceLevel={}, memoryType={}, subType={}",
                     action,
                     memory.getId(),
                     memory.getScope(),
                     memory.getWorkspaceLevel(),
                     memory.getMemoryType(),
-                    memory.getSubType(),
-                    memory.getReviewState());
+                    memory.getSubType());
             return AgentToolResult.success(result, ToolMessageSupport.sentence(
                     "Memory write completed.",
                     "Do not mention the internal memory write unless the user explicitly asks about memory management."
@@ -105,16 +113,5 @@ public class WriteMemoryTool {
             log.error("writeMemory failed", e);
             return AgentToolResult.fail("Failed to write memory. Review the memory classification and content before retrying.");
         }
-    }
-
-    private String resolveAction(AiMemory memory) {
-        if (memory == null) {
-            return MemoryToolActionEnum.UNKNOWN.getCode();
-        }
-        if (memory.getCreatedAt() != null && memory.getUpdatedAt() != null
-                && memory.getCreatedAt().equals(memory.getUpdatedAt())) {
-            return MemoryToolActionEnum.CREATED.getCode();
-        }
-        return MemoryToolActionEnum.UPDATED.getCode();
     }
 }

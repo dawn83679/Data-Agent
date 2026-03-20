@@ -2,13 +2,7 @@ package edu.zsc.ai.domain.service.ai.recall;
 
 import java.util.List;
 
-import edu.zsc.ai.domain.service.ai.model.MemorySearchResult;
+import edu.zsc.ai.domain.service.handler.Handler;
 
-public interface MemoryRecallHandler {
-
-    boolean support(MemoryRecallContext context);
-
-    List<MemoryRecallItem> handle(MemoryRecallContext context, List<MemorySearchResult> candidates);
-
-    int order();
+public interface MemoryRecallHandler extends Handler<MemoryRecallQuery, List<MemoryRecallItem>> {
 }

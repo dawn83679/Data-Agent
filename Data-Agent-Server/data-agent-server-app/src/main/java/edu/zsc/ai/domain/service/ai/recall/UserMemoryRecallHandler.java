@@ -3,17 +3,18 @@ package edu.zsc.ai.domain.service.ai.recall;
 import org.springframework.stereotype.Component;
 
 import edu.zsc.ai.common.enums.ai.MemoryScopeEnum;
+import edu.zsc.ai.domain.service.ai.MemoryService;
+import edu.zsc.ai.observability.AgentLogService;
 
 @Component
 public class UserMemoryRecallHandler extends AbstractScopeMemoryRecallHandler {
 
-    @Override
-    protected MemoryScopeEnum scope() {
-        return MemoryScopeEnum.USER;
+    public UserMemoryRecallHandler(MemoryService memoryService, AgentLogService agentLogService) {
+        super(memoryService, agentLogService);
     }
 
     @Override
-    protected int scopeOrder() {
-        return 2;
+    protected MemoryScopeEnum scope() {
+        return MemoryScopeEnum.USER;
     }
 }
