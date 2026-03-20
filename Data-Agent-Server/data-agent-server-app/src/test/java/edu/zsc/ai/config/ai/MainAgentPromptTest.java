@@ -78,6 +78,42 @@ class MainAgentPromptTest {
     }
 
     @Test
+    void workflow_prioritizesMemoryLanguageAndMentionGrounding() {
+        assertTrue(promptContent.contains("user_memory 里的 <user_preferences> 是结构化 XML 偏好记录，也是默认有效的回答协议"),
+                "Prompt should keep durable language/output preferences active by default");
+        assertTrue(promptContent.contains("只有用户在本轮明确要求切换时才覆盖"),
+                "Prompt should require explicit override for response preferences");
+        assertTrue(promptContent.contains("不要把 user_question 里偶然出现的英文"),
+                "Prompt should reject incidental language as an override signal");
+        assertTrue(promptContent.contains("在最终交付前，回看 <user_preferences>"),
+                "Prompt should require a final preference compliance check");
+        assertTrue(promptContent.contains("user_mention 是 JSON 数组"),
+                "Prompt should describe user_mention as structured JSON");
+        assertTrue(promptContent.contains("你的目标不是遵循固定流程"),
+                "Prompt should emphasize judgment over rigid workflow");
+    }
+
+    @Test
+    void workflow_allowsDirectReadPathForClearReadOnlyRequests() {
+        assertTrue(promptContent.contains("最小、最有效的下一步"),
+                "Prompt should prefer minimal effective next actions");
+        assertTrue(promptContent.contains("searchObjects 适合做轻量候选发现"),
+                "Prompt should describe lightweight discovery capability");
+        assertTrue(promptContent.contains("简单只读任务通常可以直接执行"),
+                "Prompt should keep a direct execution path for simple reads");
+    }
+
+    @Test
+    void workflow_usesExamplesInsteadOfBusinessSpecificRules() {
+        assertTrue(promptContent.contains("<examples>"),
+                "Prompt should include abstract examples");
+        assertTrue(promptContent.contains("示例 A：作用域缺失"),
+                "Prompt should teach scope reduction through examples");
+        assertTrue(promptContent.contains("示例 D：局部结果"),
+                "Prompt should teach how to treat local evidence through examples");
+    }
+
+    @Test
     void mentionsCallingSubAgent() {
         assertTrue(promptContent.contains("callingExplorerSubAgent") && promptContent.contains("callingPlannerSubAgent"),
                 "v2 prompt should reference callingExplorerSubAgent and callingPlannerSubAgent tools");
@@ -113,5 +149,13 @@ class MainAgentPromptTest {
     void noForbiddenBlock() {
         assertFalse(promptContent.contains("<forbidden>"),
                 "v2 merges forbidden into <iron-rules>");
+    }
+
+    @Test
+    void examplesAvoidBusinessSpecificHardcoding() {
+        assertFalse(promptContent.contains("删除所有测试用户"),
+                "Prompt examples should not hardcode business-specific cases");
+        assertFalse(promptContent.contains("vip_levels"),
+                "Prompt examples should remain abstract");
     }
 }

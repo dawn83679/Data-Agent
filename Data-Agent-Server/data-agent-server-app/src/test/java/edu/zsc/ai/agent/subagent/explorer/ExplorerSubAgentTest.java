@@ -29,6 +29,7 @@ class ExplorerSubAgentTest {
         assertTrue(content.contains("<role>"));
         assertTrue(content.contains("<rule>"));
         assertTrue(content.contains("TodoTool"));
+        assertTrue(content.contains("executeSelectSql"));
     }
 
     @Test

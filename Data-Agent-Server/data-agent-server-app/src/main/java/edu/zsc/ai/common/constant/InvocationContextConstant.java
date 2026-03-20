@@ -17,4 +17,5 @@ public final class InvocationContextConstant {
     public static final String AGENT_TYPE = "agentType";
     public static final String ALLOWED_CONNECTION_IDS = "allowedConnectionIds";
     public static final String MODEL_NAME = "modelName";
+    public static final String LANGUAGE = "language";
 }

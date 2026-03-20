@@ -53,6 +53,42 @@ class SearchObjectsToolTest {
     }
 
     @Test
+    void nonExplorerMode_inheritsDatabaseAndSchemaFromRequestContextWhenConnectionMatches() {
+        when(discoveryService.searchObjects("chat2db_user", null, 5L, "app", "public"))
+                .thenReturn(new ObjectSearchResponse(List.of(), 0, false, null));
+
+        AgentToolResult result = tool.searchObjects(
+                new ObjectSearchQuery("chat2db_user", null, 5L, null, null),
+                InvocationParameters.from(Map.of(
+                        InvocationContextConstant.CONNECTION_ID, "5",
+                        InvocationContextConstant.DATABASE_NAME, "app",
+                        InvocationContextConstant.SCHEMA_NAME, "public"
+                ))
+        );
+
+        assertTrue(result.isSuccess());
+        verify(discoveryService).searchObjects("chat2db_user", null, 5L, "app", "public");
+    }
+
+    @Test
+    void nonExplorerMode_doesNotInheritDatabaseAndSchemaAcrossDifferentConnections() {
+        when(discoveryService.searchObjects("chat2db_user", null, 7L, null, null))
+                .thenReturn(new ObjectSearchResponse(List.of(), 0, false, null));
+
+        AgentToolResult result = tool.searchObjects(
+                new ObjectSearchQuery("chat2db_user", null, 7L, null, null),
+                InvocationParameters.from(Map.of(
+                        InvocationContextConstant.CONNECTION_ID, "5",
+                        InvocationContextConstant.DATABASE_NAME, "app",
+                        InvocationContextConstant.SCHEMA_NAME, "public"
+                ))
+        );
+
+        assertTrue(result.isSuccess());
+        verify(discoveryService).searchObjects("chat2db_user", null, 7L, null, null);
+    }
+
+    @Test
     void explorerMode_withoutDatabaseScope_searchesAllowedConnectionsInsteadOfDefaultOne() {
         when(discoveryService.searchObjects("%user%", null, null, null, null))
                 .thenReturn(new ObjectSearchResponse(List.of(), 0, false, null));

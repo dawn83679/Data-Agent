@@ -104,6 +104,8 @@ class AgentToolConfigTest {
             List<Object> tools = config.resolveMainTools(allTools, AgentModeEnum.AGENT);
 
             assertTrue(tools.contains(getEnvironmentOverviewTool));
+            assertTrue(tools.contains(searchObjectsTool));
+            assertTrue(tools.contains(getObjectDetailTool));
             assertTrue(tools.contains(executeSqlTool));
             assertTrue(tools.contains(askUserQuestionTool));
             assertTrue(tools.contains(callingExplorerTool));
@@ -114,8 +116,6 @@ class AgentToolConfigTest {
             assertTrue(tools.contains(readMemoryTool));
             assertTrue(tools.contains(writeMemoryTool));
 
-            assertFalse(tools.contains(searchObjectsTool));
-            assertFalse(tools.contains(getObjectDetailTool));
             assertFalse(tools.contains(enterPlanModeTool));
             assertFalse(tools.contains(exitPlanModeTool));
         }
@@ -149,28 +149,29 @@ class AgentToolConfigTest {
         void explorer_hasDiscoveryTools() {
             List<Object> tools = config.resolveSubAgentTools(allTools, AgentTypeEnum.EXPLORER);
 
-            assertEquals(3, tools.size(), "Explorer should have 3 scoped discovery tools");
+            assertEquals(4, tools.size(), "Explorer should have 4 scoped tools");
             assertFalse(tools.contains(getEnvironmentOverviewTool), "Explorer should NOT have GetEnvironmentOverviewTool");
             assertTrue(tools.contains(todoTool), "Explorer should have TodoTool");
             assertTrue(tools.contains(searchObjectsTool), "Explorer should have SearchObjectsTool");
             assertTrue(tools.contains(getObjectDetailTool), "Explorer should have GetObjectDetailTool");
+            assertTrue(tools.contains(executeSqlTool), "Explorer should have ExecuteSqlTool");
         }
 
         @Test
-        void planner_hasTodoSkillAndObjectDetail() {
+        void planner_hasTodoSkillObjectDetailAndExecuteSql() {
             List<Object> tools = config.resolveSubAgentTools(allTools, AgentTypeEnum.PLANNER);
 
-            assertEquals(3, tools.size(), "Planner should have exactly 3 tools");
+            assertEquals(4, tools.size(), "Planner should have exactly 4 tools");
             assertTrue(tools.contains(todoTool), "Planner should have TodoTool");
             assertTrue(tools.contains(activateSkillTool), "Planner should have ActivateSkillTool");
             assertTrue(tools.contains(getObjectDetailTool), "Planner should have GetObjectDetailTool");
+            assertTrue(tools.contains(executeSqlTool), "Planner should have ExecuteSqlTool");
         }
 
         @Test
-        void planner_excludesExecutionAndDiscoveryTools() {
+        void planner_excludesBroadDiscoveryAndOrchestrationTools() {
             List<Object> tools = config.resolveSubAgentTools(allTools, AgentTypeEnum.PLANNER);
 
-            assertFalse(tools.contains(executeSqlTool), "Planner should NOT have ExecuteSqlTool");
             assertFalse(tools.contains(getEnvironmentOverviewTool), "Planner should NOT have GetEnvironmentOverviewTool");
             assertFalse(tools.contains(searchObjectsTool), "Planner should NOT have SearchObjectsTool");
             assertFalse(tools.contains(askUserQuestionTool), "Planner should NOT have AskUserQuestionTool");

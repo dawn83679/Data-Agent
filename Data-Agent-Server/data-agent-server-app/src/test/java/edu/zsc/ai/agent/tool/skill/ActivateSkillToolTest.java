@@ -30,9 +30,12 @@ class ActivateSkillToolTest {
         assertTrue(result.contains("writeMemory"));
         assertTrue(result.contains("readMemory"));
         assertTrue(result.contains("PREFERENCE"));
-        assertTrue(result.contains("Example A - Stable user preference"));
-        assertTrue(result.contains("workspaceLevel=`CATALOG`"));
-        assertTrue(result.contains("Monthly revenue in analytics is computed"));
+        assertTrue(result.contains("### USER"));
+        assertTrue(result.contains("### GLOBAL"));
+        assertTrue(result.contains("#### METRIC_CALCULATION"));
+        assertTrue(result.contains("Good:"));
+        assertTrue(result.contains("Bad:"));
+        assertTrue(result.contains("ARPU equals revenue divided by paid_users."));
     }
 
     @Test

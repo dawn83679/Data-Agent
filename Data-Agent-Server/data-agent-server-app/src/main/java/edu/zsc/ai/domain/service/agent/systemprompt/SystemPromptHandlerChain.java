@@ -6,14 +6,15 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
-import edu.zsc.ai.domain.service.agent.prompt.AbstractPromptHandlerChain;
 import edu.zsc.ai.domain.service.agent.prompt.PromptHandleRequest;
 import edu.zsc.ai.domain.service.agent.prompt.PromptSectionResult;
+import edu.zsc.ai.domain.service.handler.AbstractHandlerChain;
 
 @Component
-public class SystemPromptHandlerChain extends AbstractPromptHandlerChain<
+public class SystemPromptHandlerChain extends AbstractHandlerChain<
         PromptHandleRequest<SystemPromptAssemblyContext, SystemPromptSection>,
-        PromptSectionResult<SystemPromptSection>> {
+        PromptSectionResult<SystemPromptSection>,
+        SystemPromptHandler> {
 
     public SystemPromptHandlerChain(List<SystemPromptHandler> handlers) {
         super(handlers);
@@ -23,7 +24,7 @@ public class SystemPromptHandlerChain extends AbstractPromptHandlerChain<
         Map<SystemPromptSection, PromptSectionResult<SystemPromptSection>> output = new EnumMap<>(SystemPromptSection.class);
         for (SystemPromptSection section : SystemPromptSection.renderOrder()) {
             PromptHandleRequest<SystemPromptAssemblyContext, SystemPromptSection> input = new PromptHandleRequest<>(context, section);
-            PromptSectionResult<SystemPromptSection> result = handle(input, () -> new PromptSectionResult<>(section, "", false, Map.of()));
+            PromptSectionResult<SystemPromptSection> result = handle(input);
             output.put(section, result);
         }
         return output;

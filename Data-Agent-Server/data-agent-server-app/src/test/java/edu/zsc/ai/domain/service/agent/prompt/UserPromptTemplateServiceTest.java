@@ -2,6 +2,7 @@ package edu.zsc.ai.domain.service.agent.prompt;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -57,7 +58,6 @@ class UserPromptTemplateServiceTest {
                                                 .workspaceLevel("SCHEMA")
                                                 .memoryType("BUSINESS_RULE")
                                                 .subType("DOMAIN_RULE")
-                                                .reviewState("NEEDS_REVIEW")
                                                 .content("Always confirm write SQL against production-like databases.")
                                                 .score(0.91)
                                                 .build()))
@@ -97,14 +97,76 @@ class UserPromptTemplateServiceTest {
         assertTrue(prompt.contains("agent_mode: normal"));
         assertTrue(prompt.contains("model_name: qwen3-max"));
         assertTrue(prompt.contains("User prefers concise explanations with SQL examples."));
-        assertTrue(prompt.contains("[WORKSPACE/SCHEMA · BUSINESS_RULE/DOMAIN_RULE · NEEDS_REVIEW]"));
+        assertTrue(prompt.contains("[WORKSPACE/SCHEMA · BUSINESS_RULE/DOMAIN_RULE]"));
         assertTrue(prompt.contains("Always confirm write SQL against production-like databases."));
-        assertTrue(prompt.contains("TABLE:main.analytics.public.orders"));
-        assertTrue(prompt.contains("VIEW:main.analytics.public.active_users"));
+        assertTrue(prompt.contains("\"token\":\"@orders\""));
+        assertTrue(prompt.contains("\"objectType\":\"TABLE\""));
+        assertTrue(prompt.contains("\"connectionId\":12"));
+        assertTrue(prompt.contains("\"catalogName\":\"analytics\""));
+        assertTrue(prompt.contains("\"schemaName\":\"public\""));
+        assertTrue(prompt.contains("\"objectName\":\"orders\""));
+        assertTrue(prompt.contains("\"token\":\"@active_users\""));
+        assertTrue(prompt.contains("\"objectType\":\"VIEW\""));
+        assertTrue(prompt.contains("contains a structured JSON array of database objects explicitly referenced by the user via @"));
         assertTrue(prompt.contains("Please design a safer SQL migration plan"));
         assertTrue(result.estimatedTokens() > 0);
         assertEquals("Please design a safer SQL migration plan",
                 edu.zsc.ai.agent.memory.MemoryUtil.stripInjectedWrapper(prompt));
+    }
+
+    @Test
+    void render_marksLanguagePreferenceMemoryAsHighPriorityConstraint() {
+        UserPromptHandlerChain chain = new UserPromptHandlerChain(List.of(
+                new SystemContextPromptStrategy(),
+                new SystemReminderPromptStrategy(),
+                new UserMemoryPromptStrategy(),
+                new UserMentionPromptStrategy(),
+                new UserQuestionPromptStrategy()));
+        UserPromptManager manager = new UserPromptManager(
+                chain,
+                PromptConfig.loadClassPathResource(UserPromptManager.TEMPLATE_PATH));
+
+        UserPromptAssemblyContext context = UserPromptAssemblyContext.builder()
+                .userMessage("Please check monthly sales")
+                .language("zh")
+                .agentMode("normal")
+                .modelName("qwen3.5-plus")
+                .currentDate(LocalDate.of(2026, 3, 19))
+                .timezone("Asia/Shanghai")
+                .memoryPromptContext(MemoryPromptContext.builder()
+                        .recallResult(MemoryRecallResult.builder()
+                                .items(List.of(
+                                        MemoryRecallItem.builder()
+                                                .id(1L)
+                                                .memoryType("PREFERENCE")
+                                                .subType("LANGUAGE_PREFERENCE")
+                                                .content("用户偏好使用中文进行交互")
+                                                .score(0.98)
+                                                .build()))
+                                .build())
+                        .build())
+                .build();
+
+        String prompt = manager.render(context).renderedPrompt();
+
+        assertTrue(prompt.contains(UserPromptTagConstant.USER_PREFERENCES_OPEN));
+        assertTrue(prompt.contains("<preference>"));
+        assertTrue(prompt.contains("<sub_type>LANGUAGE_PREFERENCE</sub_type>"));
+        assertTrue(prompt.contains("<priority>HIGH_PRIORITY_RESPONSE_CONSTRAINT</priority>"));
+        assertTrue(prompt.contains("<content>用户偏好使用中文进行交互</content>"));
+        assertTrue(prompt.contains("用户偏好使用中文进行交互"));
+        assertTrue(prompt.contains("within "
+                + UserPromptTagConstant.USER_MEMORY_OPEN
+                + ", "
+                + UserPromptTagConstant.USER_PREFERENCES_OPEN
+                + " contains structured XML preference records and must be applied by default"));
+        assertTrue(prompt.contains("LANGUAGE_PREFERENCE and other response constraints from "
+                + UserPromptTagConstant.USER_MEMORY_OPEN
+                + " override the incidental language or formatting inside "
+                + UserPromptTagConstant.USER_QUESTION_OPEN));
+        assertTrue(prompt.contains("only an explicit instruction in this turn can override those response preferences"));
+        assertTrue(prompt.contains("before producing the final answer, re-check "
+                + UserPromptTagConstant.USER_PREFERENCES_OPEN));
     }
 
     @Test
@@ -136,5 +198,29 @@ class UserPromptTemplateServiceTest {
         assertTrue(prompt.contains(UserPromptTagConstant.USER_MENTION_OPEN
                 + "\n" + PromptConstant.NONE + "\n"
                 + UserPromptTagConstant.USER_MENTION_CLOSE));
+    }
+
+    @Test
+    void render_throwsWhenSectionHandlerIsMissing() {
+        UserPromptHandlerChain chain = new UserPromptHandlerChain(List.of(
+                new SystemContextPromptStrategy(),
+                new SystemReminderPromptStrategy(),
+                new UserMemoryPromptStrategy(),
+                new UserMentionPromptStrategy()));
+        UserPromptManager manager = new UserPromptManager(
+                chain,
+                PromptConfig.loadClassPathResource(UserPromptManager.TEMPLATE_PATH));
+
+        UserPromptAssemblyContext context = UserPromptAssemblyContext.builder()
+                .userMessage("hello")
+                .language("zh")
+                .agentMode("normal")
+                .modelName("qwen3-max")
+                .currentDate(LocalDate.of(2026, 3, 19))
+                .timezone("Asia/Shanghai")
+                .build();
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> manager.render(context));
+        assertTrue(exception.getMessage().contains("No handler matched input"));
     }
 }

@@ -42,6 +42,8 @@ public class AgentToolConfig {
     private static final Map<ToolScope, Set<Class<?>>> TOOL_SCOPE_ALLOWLISTS = Map.of(
             ToolScope.MAIN_AGENT, Set.of(
                     GetEnvironmentOverviewTool.class,
+                    SearchObjectsTool.class,
+                    GetObjectDetailTool.class,
                     ExecuteSqlTool.class,
                     CallingExplorerTool.class,
                     CallingPlannerTool.class,
@@ -63,12 +65,14 @@ public class AgentToolConfig {
             ToolScope.EXPLORER, Set.of(
                     TodoTool.class,
                     SearchObjectsTool.class,
-                    GetObjectDetailTool.class
+                    GetObjectDetailTool.class,
+                    ExecuteSqlTool.class
             ),
             ToolScope.PLANNER, Set.of(
                     TodoTool.class,
                     ActivateSkillTool.class,
-                    GetObjectDetailTool.class
+                    GetObjectDetailTool.class,
+                    ExecuteSqlTool.class
             )
     );
 

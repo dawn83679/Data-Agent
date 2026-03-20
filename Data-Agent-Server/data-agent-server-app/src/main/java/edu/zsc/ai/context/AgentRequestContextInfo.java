@@ -20,4 +20,6 @@ public class AgentRequestContextInfo {
     private List<Long> allowedConnectionIds;
 
     private String modelName;
+
+    private String language;
 }

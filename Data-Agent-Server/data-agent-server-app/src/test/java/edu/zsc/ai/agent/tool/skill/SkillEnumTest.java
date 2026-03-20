@@ -54,6 +54,17 @@ class SkillEnumTest {
         assertTrue(content.contains("writeMemory"));
         assertTrue(content.contains("PREFERENCE"));
         assertTrue(content.contains("WORKSPACE"));
+        assertTrue(content.contains("Scope selection guidance"));
+        assertTrue(content.contains("Workspace level selection guidance"));
+        assertTrue(content.contains("If you are unsure between two scopes, prefer the narrower one"));
+        assertTrue(content.contains("### USER"));
+        assertTrue(content.contains("### GLOBAL"));
+        assertTrue(content.contains("### PREFERENCE"));
+        assertTrue(content.contains("#### RESPONSE_STYLE"));
+        assertTrue(content.contains("Good:"));
+        assertTrue(content.contains("Bad:"));
+        assertTrue(content.contains("The orders table primary key is order_id."));
+        assertTrue(content.contains("Users prefer left joins."));
     }
 
     @Test

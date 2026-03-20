@@ -30,8 +30,8 @@ class GetEnvironmentOverviewToolTest {
 
         assertTrue(result.isSuccess());
         assertTrue(result.getMessage().contains("Environment overview is available for 2 connection(s)."));
-        assertTrue(result.getMessage().contains("Compare candidate objects across available connections"));
-        assertTrue(result.getMessage().contains("ask the user to confirm the target connection"));
+        assertTrue(result.getMessage().contains("current instruction, mention, connectionId, catalog, or schema"));
+        assertTrue(result.getMessage().contains("continue within that scope instead of asking the user to reconfirm it"));
     }
 
     @Test
@@ -46,9 +46,8 @@ class GetEnvironmentOverviewToolTest {
         assertTrue(result.isSuccess());
         assertTrue(result.getMessage().contains("Environment overview is only partially available."));
         assertTrue(result.getMessage().contains("test2(id=2): Connection unreachable or error: timeout"));
-        assertTrue(result.getMessage().contains("Continue only with the remaining available connections"));
-        assertTrue(result.getMessage().contains("Ask the user whether to switch to an available connection or retry later"));
-        assertTrue(result.getMessage().contains("Do not continue object discovery until the user replies"));
+        assertTrue(result.getMessage().contains("Continue with the remaining available connections."));
+        assertTrue(result.getMessage().contains("only when the task still depends on an unavailable connection"));
     }
 
     @Test
@@ -63,6 +62,19 @@ class GetEnvironmentOverviewToolTest {
         assertTrue(result.getMessage().contains("Environment overview could not find any usable connection."));
         assertTrue(result.getMessage().contains("test3(id=3): Connection unreachable or error: connection closed"));
         assertTrue(result.getMessage().contains("Ask the user whether to retry later or check the connection configuration"));
-        assertTrue(result.getMessage().contains("Do not continue object discovery until the user replies"));
+        assertTrue(result.getMessage().contains("Do not continue object discovery until a usable connection is available"));
+    }
+
+    @Test
+    void returnsChineseMessageWhenInvocationLanguageIsChinese() {
+        when(discoveryService.getEnvironmentOverview()).thenReturn(List.of(
+                new ConnectionOverview(1L, "test1", "mysql", List.of(new CatalogInfo("db1", List.of())), null)
+        ));
+
+        AgentToolResult result = tool.getEnvironmentOverview(InvocationParameters.from(Map.of("language", "zh")));
+
+        assertTrue(result.isSuccess());
+        assertTrue(result.getMessage().contains("当前环境中有 1 个可用连接"));
+        assertTrue(result.getMessage().contains("只有当当前指令、mention、connectionId、catalog 或 schema 仍不足以唯一定位目标时"));
     }
 }

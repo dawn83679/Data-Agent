@@ -1,9 +1,9 @@
 package edu.zsc.ai.domain.service.agent.prompt.strategy;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -11,9 +11,9 @@ import org.springframework.stereotype.Component;
 import edu.zsc.ai.api.model.request.ChatUserMention;
 import edu.zsc.ai.common.constant.PromptConstant;
 import edu.zsc.ai.domain.service.agent.prompt.AbstractUserPromptHandler;
-import edu.zsc.ai.domain.service.agent.prompt.PromptTextUtil;
 import edu.zsc.ai.domain.service.agent.prompt.UserPromptAssemblyContext;
 import edu.zsc.ai.domain.service.agent.prompt.UserPromptSection;
+import edu.zsc.ai.util.JsonUtil;
 
 @Component
 public class UserMentionPromptStrategy extends AbstractUserPromptHandler {
@@ -36,19 +36,20 @@ public class UserMentionPromptStrategy extends AbstractUserPromptHandler {
             return PromptConstant.NONE;
         }
 
-        return mentions.stream()
-                .map(this::formatMention)
-                .collect(Collectors.joining("\n"));
+        return JsonUtil.object2json(mentions.stream()
+                .map(this::toPayload)
+                .toList());
     }
 
-    private String formatMention(ChatUserMention mention) {
-        String scope = Stream.of(
-                        mention.getConnectionName(),
-                        mention.getCatalogName(),
-                        mention.getSchemaName(),
-                        mention.getObjectName())
-                .filter(StringUtils::isNotBlank)
-                .collect(Collectors.joining("."));
-        return PromptTextUtil.escape(mention.getObjectType()) + ":" + PromptTextUtil.escape(scope);
+    private Map<String, Object> toPayload(ChatUserMention mention) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("token", mention.getToken());
+        payload.put("objectType", mention.getObjectType());
+        payload.put("connectionId", mention.getConnectionId());
+        payload.put("connectionName", mention.getConnectionName());
+        payload.put("catalogName", mention.getCatalogName());
+        payload.put("schemaName", mention.getSchemaName());
+        payload.put("objectName", mention.getObjectName());
+        return payload;
     }
 }

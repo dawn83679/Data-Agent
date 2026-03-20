@@ -10,6 +10,7 @@ import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.agent.tool.sql.model.NamedObjectDetail;
 import edu.zsc.ai.agent.tool.sql.model.ObjectQueryItem;
 import edu.zsc.ai.common.enums.ai.ToolNameEnum;
+import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.domain.service.db.DiscoveryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Batch retrieve DDL, row count, and indexes for tables/views.
@@ -33,7 +35,7 @@ public class GetObjectDetailTool {
 
     @Tool({
             "Value: fetches verified DDL, row counts, and indexes so SQL generation uses real structure instead of assumptions.",
-            "Use When: call after the target objects are narrowed down and before generating or executing SQL against them.",
+            "Use When: call after the target objects are narrowed down and before generating or executing SQL against them. If connection, database, or schema are omitted but already exist in the current context, this tool uses the current context by default.",
             "Preconditions: provide at least one concrete object. Batch multiple objects in one call when comparing or planning joins.",
             "After Success: use the returned DDL, row counts, and indexes to validate joins, filters, limits, and write impact before moving forward.",
             "After Partial Success: continue only with objects whose detail lookup succeeded; askUserQuestion or retry if failed objects may still matter.",
@@ -52,10 +54,13 @@ public class GetObjectDetailTool {
             );
         }
 
-        List<NamedObjectDetail> results = discoveryService.getObjectDetails(objects);
+        List<ObjectQueryItem> normalizedObjects = objects.stream()
+                .map(this::normalizeObjectQueryItem)
+                .toList();
+        List<NamedObjectDetail> results = discoveryService.getObjectDetails(normalizedObjects);
 
         log.info("[Tool done] getObjectDetail, requested={}, succeeded={}",
-                objects.size(), results.stream().filter(NamedObjectDetail::success).count());
+                normalizedObjects.size(), results.stream().filter(NamedObjectDetail::success).count());
         if (results.stream().anyMatch(detail -> !detail.success())) {
             return AgentToolResult.builder()
                     .success(true)
@@ -64,6 +69,31 @@ public class GetObjectDetailTool {
                     .build();
         }
         return AgentToolResult.success(results, buildObjectDetailSuccessMessage(results));
+    }
+
+    private ObjectQueryItem normalizeObjectQueryItem(ObjectQueryItem item) {
+        if (item == null) {
+            return null;
+        }
+        Long requestConnectionId = RequestContext.getConnectionId();
+        Long effectiveConnectionId = item.getConnectionId() != null ? item.getConnectionId() : requestConnectionId;
+        String effectiveDatabaseName = item.getDatabaseName();
+        String effectiveSchemaName = item.getSchemaName();
+        if (Objects.equals(effectiveConnectionId, requestConnectionId)) {
+            if (StringUtils.isBlank(effectiveDatabaseName)) {
+                effectiveDatabaseName = RequestContext.getCatalog();
+            }
+            if (StringUtils.isBlank(effectiveSchemaName)) {
+                effectiveSchemaName = RequestContext.getSchema();
+            }
+        }
+        return new ObjectQueryItem(
+                item.getObjectType(),
+                item.getObjectName(),
+                effectiveConnectionId,
+                effectiveDatabaseName,
+                effectiveSchemaName
+        );
     }
 
     private String buildObjectDetailMessage(List<NamedObjectDetail> results) {

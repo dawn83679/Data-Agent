@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Pattern (fuzzy) search across connections for tables/views/functions.
@@ -38,12 +39,12 @@ public class SearchObjectsTool {
 
     @Tool({
             "Value: narrows candidate tables, views, and other database objects by name pattern so later steps work from likely targets instead of guesses.",
-            "Use When: call when you know an approximate object name but not its exact connection, database, or schema. Use SQL wildcards such as %order% or %user_%.",
+            "Use When: useful when an approximate object name, keyword, or naming pattern can help discovery. If current context already provides connection, database, or schema, searching within that scope is often the cheapest next step. Use SQL wildcards such as %order% or %user_%.",
             "Preconditions: objectNamePattern is required. databaseName requires connectionId. schemaName requires connectionId plus databaseName.",
-            "After Success: use the returned candidates to pick the target object. If one candidate clearly matches, call getObjectDetail. If multiple remain plausible, askUserQuestion before planning or execution.",
-            "After Partial Success: continue only with matches from successful scopes; do not assume failed scopes contain no matches.",
-            "After Failure: refine the pattern or scope, or ask the user to clarify the target. Do not invent object existence.",
-            "Relation: often after getEnvironmentOverview and before getObjectDetail or callingExplorerSubAgent. Results are capped at 100. If objectType is omitted, TABLE and VIEW are searched."
+            "After Success: the returned matches can support candidate comparison, deeper inspection with getObjectDetail, focused questioning, or broader discovery.",
+            "After Partial Success: some scopes may return useful matches while others remain incomplete.",
+            "After Failure: refine the pattern, adjust the scope, or gather more context before trying again.",
+            "Relation: often helpful before getObjectDetail or callingExplorerSubAgent. Results are capped at 100. If objectType is omitted, TABLE and VIEW are searched."
     })
     public AgentToolResult searchObjects(
             @P("Search query parameters") ObjectSearchQuery query,
@@ -51,6 +52,7 @@ public class SearchObjectsTool {
         String objectNamePattern = query.getObjectNamePattern();
         String objectType = query.getObjectType();
         boolean explorerScope = AgentRequestContext.isExplorerScope();
+        Long requestConnectionId = RequestContext.getConnectionId();
         Long connectionId = ConnectionIdUtil.toLong(query.getConnectionId());
         String databaseName = query.getDatabaseName();
         String schemaName = query.getSchemaName();
@@ -59,7 +61,15 @@ public class SearchObjectsTool {
                     || StringUtils.isNotBlank(databaseName)
                     || StringUtils.isNotBlank(schemaName);
             if (useDefaultConnection) {
-                connectionId = RequestContext.getConnectionId();
+                connectionId = requestConnectionId;
+            }
+        }
+        if (Objects.equals(connectionId, requestConnectionId)) {
+            if (StringUtils.isBlank(databaseName)) {
+                databaseName = RequestContext.getCatalog();
+            }
+            if (StringUtils.isBlank(schemaName)) {
+                schemaName = RequestContext.getSchema();
             }
         }
 
@@ -127,6 +137,7 @@ public class SearchObjectsTool {
             return ToolMessageSupport.sentence(
                     "Object search returned partial results for " + scope + ". Scope failures: " + errorSummary + ".",
                     ToolMessageSupport.continueOnlyWith("the currently returned matches"),
+                    "Treat these matches as candidates until the target scope is confirmed.",
                     ToolMessageSupport.askUserWhether("keep these matches or adjust the connection or scope"),
                     ToolMessageSupport.DO_NOT_CONTINUE_OBJECT_DISCOVERY_UNTIL_USER_REPLIES
             );
@@ -151,14 +162,14 @@ public class SearchObjectsTool {
         if (response.totalCount() == 1) {
             return ToolMessageSupport.sentence(
                     "Object search found 1 candidate for " + scope + ".",
-                    "Use this match to request object details or continue planning only if it matches the user's intent."
+                    "Use this match to request object details or continue planning only if the target scope is already validated and it matches the user's intent."
                             + truncation
             );
         }
         return ToolMessageSupport.sentence(
                 "Object search found " + response.totalCount() + " candidate(s) for " + scope + ".",
-                "Use these matches to narrow down the target object.",
-                "If multiple candidates remain plausible, ask the user to confirm the intended object before requesting details or planning SQL."
+                "Use these matches to narrow down the target object; do not treat them as the final answer yet.",
+                "If multiple candidates remain plausible, ask the user to confirm the intended object or scope before requesting details, planning SQL, or answering."
                         + truncation
         );
     }

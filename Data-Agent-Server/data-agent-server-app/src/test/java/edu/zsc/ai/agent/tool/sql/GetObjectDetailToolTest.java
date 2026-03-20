@@ -5,7 +5,10 @@ import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.agent.tool.sql.model.NamedObjectDetail;
 import edu.zsc.ai.agent.tool.sql.model.ObjectDetail;
 import edu.zsc.ai.agent.tool.sql.model.ObjectQueryItem;
+import edu.zsc.ai.context.RequestContext;
+import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.service.db.DiscoveryService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -13,12 +16,18 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class GetObjectDetailToolTest {
 
     private final DiscoveryService discoveryService = mock(DiscoveryService.class);
     private final GetObjectDetailTool tool = new GetObjectDetailTool(discoveryService);
+
+    @AfterEach
+    void tearDown() {
+        RequestContext.clear();
+    }
 
     @Test
     void returnsSuccessMessageWhenAllObjectDetailsSucceed() {
@@ -75,5 +84,29 @@ class GetObjectDetailToolTest {
         assertTrue(result.getMessage().contains("Object detail lookup failed for all requested objects: users_backup (timeout)"));
         assertTrue(result.getMessage().contains("Ask the user whether to retry with another object or connection"));
         assertTrue(result.getMessage().contains("Do not continue object discovery until the user replies"));
+    }
+
+    @Test
+    void inheritsConnectionAndDatabaseScopeFromRequestContextWhenObjectScopeIsMissing() {
+        RequestContext.set(RequestContextInfo.builder()
+                .connectionId(1L)
+                .catalog("app")
+                .schema("public")
+                .build());
+        List<ObjectQueryItem> requestedObjects = List.of(
+                new ObjectQueryItem("TABLE", "users", null, null, null)
+        );
+        List<ObjectQueryItem> normalizedObjects = List.of(
+                new ObjectQueryItem("TABLE", "users", 1L, "app", "public")
+        );
+        when(discoveryService.getObjectDetails(normalizedObjects))
+                .thenReturn(List.of(
+                        new NamedObjectDetail("users", "TABLE", true, null, new ObjectDetail("ddl", 10L, List.of()))
+                ));
+
+        AgentToolResult result = tool.getObjectDetail(requestedObjects, InvocationParameters.from(Map.of()));
+
+        assertTrue(result.isSuccess());
+        verify(discoveryService).getObjectDetails(normalizedObjects);
     }
 }

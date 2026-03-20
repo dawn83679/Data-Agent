@@ -18,14 +18,14 @@ public class ToolUsageRulesSystemPromptStrategy extends AbstractSystemPromptHand
     @Override
     protected String buildContent(SystemPromptAssemblyContext context) {
         StringBuilder builder = new StringBuilder();
-        builder.append("- only call activateSkill when one of the skills listed in <skill_available> is clearly needed\n");
-        builder.append("- after activateSkill succeeds, directly apply the loaded rules instead of narrating the activation itself\n");
-        builder.append("- do not invent or call unlisted skills\n");
-        builder.append("- do not expose internal tool names in the final user answer unless the user explicitly asks for them");
+        builder.append("- <skill_available> describes the optional skills supported in this session\n");
+        builder.append("- activateSkill is available when one of those skills would meaningfully help with the current task\n");
+        builder.append("- after activateSkill succeeds, you can apply the loaded guidance directly instead of narrating the activation itself\n");
+        builder.append("- internal tool names usually stay out of the final user answer unless the user explicitly asks for them");
         if (context.getAgentType() == AgentTypeEnum.MAIN) {
-            builder.append("\n- use readMemory only when prompt-injected memory is insufficient and you need targeted durable context; do not call it mechanically every turn");
-            builder.append("\n- use writeMemory only for durable, reusable memory; do not write one-off task details");
-            builder.append("\n- when the conversation reveals a stable preference, durable workflow rule, validated workspace fact, or reusable SQL pattern, consider activating the memory skill and writing memory during the turn");
+            builder.append("\n- readMemory can help when prompt-injected memory is not enough and targeted durable context would clarify the task");
+            builder.append("\n- writeMemory fits durable, reusable preferences, rules, facts, and validated patterns more than one-off task details");
+            builder.append("\n- when the conversation reveals a stable preference, durable workflow rule, validated workspace fact, or reusable SQL pattern, you can consider activating the memory skill and writing memory during the turn");
             builder.append("\n- examples of memory-worthy signals: repeated output-format preference, workspace naming/governance constraint, or a verified reusable SQL aggregation pattern");
         }
         return builder.toString();

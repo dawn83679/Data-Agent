@@ -19,11 +19,11 @@ class MemoryEnumTest {
         assertEquals(MemoryTypeEnum.WORKFLOW_CONSTRAINT, MemorySubTypeEnum.IMPLEMENTATION_CONSTRAINT.getMemoryType());
         assertTrue(MemorySubTypeEnum.IMPLEMENTATION_CONSTRAINT.belongsTo(MemoryTypeEnum.WORKFLOW_CONSTRAINT));
         assertFalse(MemorySubTypeEnum.IMPLEMENTATION_CONSTRAINT.belongsTo(MemoryTypeEnum.PREFERENCE));
+        assertEquals(MemoryTypeEnum.PREFERENCE, MemorySubTypeEnum.LANGUAGE_PREFERENCE.getMemoryType());
     }
 
     @Test
-    void reviewAndSourceType_returnNullForUnknownCodes() {
-        assertNull(MemoryReviewStateEnum.fromCode("bad"));
+    void sourceType_returnNullForUnknownCodes() {
         assertNull(MemorySourceTypeEnum.fromCode("bad"));
     }
 }

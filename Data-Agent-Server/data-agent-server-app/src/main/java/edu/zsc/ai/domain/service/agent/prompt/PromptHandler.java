@@ -1,10 +1,6 @@
 package edu.zsc.ai.domain.service.agent.prompt;
 
-public interface PromptHandler<I, O> {
+import edu.zsc.ai.domain.service.handler.Handler;
 
-    boolean support(I input);
-
-    O handle(I input);
-
-    int order();
+public interface PromptHandler<I, O> extends Handler<I, O> {
 }
