@@ -9,6 +9,7 @@ interface ChatInputAreaProps {
     agent: AgentType;
     mention?: UseMentionReturn;
     onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+    onCompositionStateChange?: (isComposing: boolean) => void;
     onKeyDown: (e: React.KeyboardEvent) => void;
 }
 
@@ -19,7 +20,7 @@ export interface ChatInputAreaRef {
 
 /** Textarea input area with @mention highlighting mirror layer */
 export const ChatInputArea = forwardRef<ChatInputAreaRef, ChatInputAreaProps>(
-    function ChatInputArea({ input, agent, mention, onChange, onKeyDown }, ref) {
+    function ChatInputArea({ input, agent, mention, onChange, onCompositionStateChange, onKeyDown }, ref) {
         const { t } = useTranslation();
         
         // 优化: 只在有 @ 符号时才解析和显示镜像层
@@ -68,6 +69,12 @@ export const ChatInputArea = forwardRef<ChatInputAreaRef, ChatInputAreaProps>(
             prevMentionOpenRef.current = isOpen;
             prevMentionLevelRef.current = mention.mentionLevel;
         }, [mention?.mentionOpen, mention?.mentionLevel]);
+
+        useEffect(() => {
+            return () => {
+                onCompositionStateChange?.(false);
+            };
+        }, [onCompositionStateChange]);
 
         // Expose methods to parent via ref
         useImperativeHandle(ref, () => ({
@@ -203,11 +210,13 @@ export const ChatInputArea = forwardRef<ChatInputAreaRef, ChatInputAreaProps>(
 
         const handleCompositionStart = useCallback(() => {
             setIsComposing(true);
-        }, []);
+            onCompositionStateChange?.(true);
+        }, [onCompositionStateChange]);
 
         const handleCompositionEnd = useCallback(() => {
             setIsComposing(false);
-        }, []);
+            onCompositionStateChange?.(false);
+        }, [onCompositionStateChange]);
 
         return (
             <>
