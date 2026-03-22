@@ -1,5 +1,6 @@
 package edu.zsc.ai.api.controller.permission;
 
+import edu.zsc.ai.common.enums.permission.PermissionScopeType;
 import edu.zsc.ai.domain.model.dto.request.permission.PermissionApproveRequest;
 import edu.zsc.ai.domain.model.dto.request.permission.PermissionToggleRequest;
 import edu.zsc.ai.domain.model.dto.request.permission.PermissionUpsertRequest;
@@ -23,8 +24,9 @@ public class PermissionController {
     private final PermissionRuleService permissionRuleService;
 
     @GetMapping("/rules")
-    public ApiResponse<List<PermissionRuleResponse>> listRules(@RequestParam(required = false) Long conversationId) {
-        return ApiResponse.success(permissionRuleService.listForCurrentUser(conversationId));
+    public ApiResponse<List<PermissionRuleResponse>> listRules(@RequestParam(required = false) PermissionScopeType scopeType,
+                                                               @RequestParam(required = false) Long conversationId) {
+        return ApiResponse.success(permissionRuleService.listForCurrentUser(scopeType, conversationId));
     }
 
     @PostMapping("/rules")

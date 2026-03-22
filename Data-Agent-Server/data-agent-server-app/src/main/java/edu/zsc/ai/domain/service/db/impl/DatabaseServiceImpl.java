@@ -22,10 +22,10 @@ public class DatabaseServiceImpl implements DatabaseService {
         connectionService.openConnection(connectionId);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getAnyOwnedActiveConnection(connectionId);
-
         DatabaseProvider provider = DefaultPluginManager.getInstance().getDatabaseProviderByPluginId(active.pluginId());
-
-        return provider.getDatabases(active.connection());
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.getDatabases(borrowed.connection());
+        }
     }
 
     @Override
@@ -33,9 +33,10 @@ public class DatabaseServiceImpl implements DatabaseService {
         connectionService.openConnection(connectionId);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getAnyOwnedActiveConnection(connectionId);
-
         DatabaseProvider provider = DefaultPluginManager.getInstance().getDatabaseProviderByPluginId(active.pluginId());
-        provider.deleteDatabase(active.connection(), databaseName);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            provider.deleteDatabase(borrowed.connection(), databaseName);
+        }
 
         log.info("Database deleted successfully: connectionId={}, databaseName={}", connectionId, databaseName);
     }

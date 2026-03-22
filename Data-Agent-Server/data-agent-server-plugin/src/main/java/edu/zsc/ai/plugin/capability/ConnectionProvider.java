@@ -1,6 +1,7 @@
 package edu.zsc.ai.plugin.capability;
 
 import edu.zsc.ai.plugin.connection.ConnectionConfig;
+
 import java.sql.*;
 
 public interface ConnectionProvider {

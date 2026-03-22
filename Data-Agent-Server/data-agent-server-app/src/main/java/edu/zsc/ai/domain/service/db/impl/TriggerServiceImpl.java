@@ -24,9 +24,10 @@ public class TriggerServiceImpl implements TriggerService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         TriggerProvider provider = DefaultPluginManager.getInstance().getTriggerProviderByPluginId(active.pluginId());
-        return provider.getTriggers(active.connection(), db.catalog(), db.schema(), tableName);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.getTriggers(borrowed.connection(), db.catalog(), db.schema(), tableName);
+        }
     }
 
     @Override
@@ -34,9 +35,10 @@ public class TriggerServiceImpl implements TriggerService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         TriggerProvider provider = DefaultPluginManager.getInstance().getTriggerProviderByPluginId(active.pluginId());
-        return provider.searchTriggers(active.connection(), db.catalog(), db.schema(), tableName, triggerNamePattern);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.searchTriggers(borrowed.connection(), db.catalog(), db.schema(), tableName, triggerNamePattern);
+        }
     }
 
     @Override
@@ -44,9 +46,10 @@ public class TriggerServiceImpl implements TriggerService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         TriggerProvider provider = DefaultPluginManager.getInstance().getTriggerProviderByPluginId(active.pluginId());
-        return provider.getTriggerDdl(active.connection(), db.catalog(), db.schema(), triggerName);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.getTriggerDdl(borrowed.connection(), db.catalog(), db.schema(), triggerName);
+        }
     }
 
     @Override
@@ -54,9 +57,10 @@ public class TriggerServiceImpl implements TriggerService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         TriggerProvider provider = DefaultPluginManager.getInstance().getTriggerProviderByPluginId(active.pluginId());
-        provider.deleteTrigger(active.connection(), db.catalog(), db.schema(), triggerName);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            provider.deleteTrigger(borrowed.connection(), db.catalog(), db.schema(), triggerName);
+        }
 
         log.info("Trigger deleted successfully: connectionId={}, catalog={}, schema={}, triggerName={}",
                 db.connectionId(), db.catalog(), db.schema(), triggerName);

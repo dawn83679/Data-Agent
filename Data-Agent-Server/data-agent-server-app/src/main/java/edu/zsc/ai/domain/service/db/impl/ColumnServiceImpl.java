@@ -24,8 +24,9 @@ public class ColumnServiceImpl implements ColumnService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         ColumnProvider provider = DefaultPluginManager.getInstance().getColumnProviderByPluginId(active.pluginId());
-        return provider.getColumns(active.connection(), db.catalog(), db.schema(), tableName);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.getColumns(borrowed.connection(), db.catalog(), db.schema(), tableName);
+        }
     }
 }

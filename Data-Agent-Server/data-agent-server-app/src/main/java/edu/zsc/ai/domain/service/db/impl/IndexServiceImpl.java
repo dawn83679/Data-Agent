@@ -24,8 +24,9 @@ public class IndexServiceImpl implements IndexService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         IndexProvider provider = DefaultPluginManager.getInstance().getIndexProviderByPluginId(active.pluginId());
-        return provider.getIndexes(active.connection(), db.catalog(), db.schema(), tableName);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.getIndexes(borrowed.connection(), db.catalog(), db.schema(), tableName);
+        }
     }
 }

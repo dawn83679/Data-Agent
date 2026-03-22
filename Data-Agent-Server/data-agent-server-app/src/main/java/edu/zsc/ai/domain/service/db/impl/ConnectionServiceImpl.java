@@ -10,11 +10,12 @@ import edu.zsc.ai.domain.model.dto.response.db.ConnectionTestResponse;
 import edu.zsc.ai.domain.model.entity.db.DbConnection;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.DbConnectionService;
+import edu.zsc.ai.domain.service.db.ManagedDataSourceFactory;
+import edu.zsc.ai.domain.service.db.support.ConnectionProviderChain;
 import edu.zsc.ai.plugin.Plugin;
 import edu.zsc.ai.plugin.capability.ConnectionProvider;
 import edu.zsc.ai.plugin.connection.ConnectionConfig;
 import edu.zsc.ai.plugin.manager.DefaultPluginManager;
-import edu.zsc.ai.plugin.manager.TryFirstSuccess;
 import edu.zsc.ai.domain.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ import java.util.List;
 public class ConnectionServiceImpl implements ConnectionService {
 
     private final DbConnectionService dbConnectionService;
+    private final ManagedDataSourceFactory managedDataSourceFactory;
 
     @Override
     public ConnectionTestResponse testConnection(ConnectRequest request) {
@@ -40,8 +42,8 @@ public class ConnectionServiceImpl implements ConnectionService {
 
         ConnectionConfig config = ConnectionConverter.convertToConfig(request);
 
-        TryFirstSuccess.AttemptResult<ConnectionProvider, Connection> res =
-                TryFirstSuccess.tryFirstSuccess(providers, p -> p.connect(config));
+        ConnectionProviderChain.ConnectionProviderHandleResult<Connection> res =
+                ConnectionProviderChain.fromProviders(providers, ConnectionProvider::connect).handle(config);
 
         BusinessException.assertNotNull(res,
                 String.format("Database type %s was trying to run connection test but no plugin succeeded",
@@ -50,7 +52,7 @@ public class ConnectionServiceImpl implements ConnectionService {
         long ping = System.currentTimeMillis() - startTime;
 
         try {
-            ConnectionProvider provider = res.candidate();
+            ConnectionProvider provider = res.provider();
             Connection connection = res.result();
 
             String dbmsInfo = provider.getDbmsInfo(connection);
@@ -64,7 +66,7 @@ public class ConnectionServiceImpl implements ConnectionService {
                     .build();
         } finally {
             try {
-                res.candidate().closeConnection(res.result());
+                res.provider().closeConnection(res.result());
             } catch (Exception e) {
                 log.warn("Failed to close connection", e);
             }
@@ -80,11 +82,6 @@ public class ConnectionServiceImpl implements ConnectionService {
     @Override
     public Boolean openConnection(DbContext db) {
         DbConnection dbConnection = dbConnectionService.getOwnedById(db.connectionId());
-
-        if (ConnectionManager.getConnection(db).isPresent()) {
-            return Boolean.TRUE;
-        }
-
         ConnectionConfig config = ConnectionConverter.convertToConfig(dbConnection);
         if (db.catalog() != null) {
             config.setDatabase(db.catalog());
@@ -96,25 +93,46 @@ public class ConnectionServiceImpl implements ConnectionService {
         List<ConnectionProvider> providers = DefaultPluginManager.getInstance()
                 .getConnectionProviderByDbType(dbConnection.getDbType());
 
-        TryFirstSuccess.AttemptResult<ConnectionProvider, Connection> res =
-                TryFirstSuccess.tryFirstSuccess(providers, p -> p.connect(config));
+        ConnectionManager.getOrCreateConnection(
+                db,
+                () -> buildPooledConnection(db, dbConnection, config, providers)
+        );
+
+        return Boolean.TRUE;
+    }
+
+    private ConnectionManager.ActiveConnection buildPooledConnection(DbContext db,
+                                                                     DbConnection dbConnection,
+                                                                     ConnectionConfig config,
+                                                                     List<ConnectionProvider> providers) {
+        ConnectionProviderChain.ConnectionProviderHandleResult<javax.sql.DataSource> res =
+                ConnectionProviderChain.fromProviders(
+                        providers,
+                        (provider, ignored) -> managedDataSourceFactory.create(
+                                provider,
+                                config,
+                                new ManagedDataSourceFactory.ManagedDataSourceRequest(
+                                        db.connectionId(),
+                                        dbConnection.getDbType(),
+                                        db.catalog(),
+                                        db.schema()
+                                )
+                        )
+                ).handle(config);
 
         BusinessException.assertNotNull(res, ResponseCode.PARAM_ERROR, ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE);
 
-        ConnectionManager.ActiveConnection active = new ConnectionManager.ActiveConnection(
+        return new ConnectionManager.ActiveConnection(
                 res.result(),
                 dbConnection.getUserId(),
                 db.connectionId(),
                 dbConnection.getDbType(),
-                ((Plugin) res.candidate()).getPluginId(),
+                ((Plugin) res.provider()).getPluginId(),
                 db.catalog(),
                 db.schema(),
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
-        ConnectionManager.registerConnection(db.connectionId(), active);
-
-        return Boolean.TRUE;
     }
 
     @Override

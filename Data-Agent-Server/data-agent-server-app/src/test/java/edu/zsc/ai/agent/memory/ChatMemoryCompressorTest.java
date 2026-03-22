@@ -1,10 +1,14 @@
 package edu.zsc.ai.agent.memory;
 
 import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.ChatMessageSerializer;
 import dev.langchain4j.data.message.UserMessage;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
+import edu.zsc.ai.domain.model.entity.ai.StoredChatMessage;
 import edu.zsc.ai.domain.service.ai.AiConversationService;
+import edu.zsc.ai.domain.service.ai.AiMessageService;
 import edu.zsc.ai.domain.service.ai.CompressionService;
+import edu.zsc.ai.domain.service.ai.model.CompressionDoneMetadata;
 import edu.zsc.ai.domain.service.ai.model.CompressionResult;
 import edu.zsc.ai.observability.AgentLogEvent;
 import edu.zsc.ai.observability.AgentLogService;
@@ -18,7 +22,9 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -26,12 +32,14 @@ import static org.mockito.Mockito.when;
 class ChatMemoryCompressorTest {
 
     private final AiConversationService aiConversationService = mock(AiConversationService.class);
+    private final AiMessageService aiMessageService = mock(AiMessageService.class);
     private final CompressionService compressionService = mock(CompressionService.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private final AgentLogService agentLogService = mock(AgentLogService.class);
 
     private final ChatMemoryCompressor compressor = new ChatMemoryCompressor(
             aiConversationService,
+            aiMessageService,
             compressionService,
             eventPublisher,
             agentLogService
@@ -57,7 +65,7 @@ class ChatMemoryCompressorTest {
                 UserMessage.from("u4")
         );
 
-        List<ChatMessage> result = compressor.compressIfNeeded(conversationId, "qwen3.5-plus", messages);
+        List<ChatMessage> result = compressor.compressIfNeeded(conversationId, "qwen3-max", messages);
 
         verify(aiConversationService).updateTokenCount(conversationId, 1350);
         assertEquals(2, result.size());
@@ -78,7 +86,7 @@ class ChatMemoryCompressorTest {
                 1350
         ));
 
-        compressor.compressIfNeeded(conversationId, "qwen3.5-plus", List.of(
+        compressor.compressIfNeeded(conversationId, "qwen3-max", List.of(
                 UserMessage.from("u1"),
                 UserMessage.from("u2"),
                 UserMessage.from("u3"),
@@ -105,5 +113,48 @@ class ChatMemoryCompressorTest {
                         && conversationId.equals(event.getConversationId())
                         && Integer.valueOf(1350).equals(event.getPayload().get("tokenCountAfter"))));
         verify(eventPublisher).publishEvent(any());
+    }
+
+    @Test
+    void compressNow_replacesConversationMessagesAndReturnsCompressionStats() {
+        Long conversationId = 512L;
+        when(aiConversationService.getByIdForCurrentUser(conversationId)).thenReturn(AiConversation.builder()
+                .id(conversationId)
+                .tokenCount(6400)
+                .build());
+        when(compressionService.compress(any())).thenReturn(new CompressionResult(
+                "## Execution State\n- Task: compressed",
+                2100,
+                700
+        ));
+        when(aiMessageService.getByConversationIdOrderByCreatedAtAsc(conversationId)).thenReturn(List.of(
+                stored(conversationId, UserMessage.from("u1")),
+                stored(conversationId, UserMessage.from("u2")),
+                stored(conversationId, UserMessage.from("u3")),
+                stored(conversationId, UserMessage.from("u4"))
+        ));
+
+        CompressionDoneMetadata result = compressor.compressNow(conversationId, "qwen3.5-plus");
+
+        assertEquals(Boolean.TRUE, result.memoryCompressed());
+        assertEquals(6400, result.tokenCountBefore());
+        assertEquals(null, result.tokenCountAfter());
+        assertEquals(3, result.compressedMessageCount());
+        assertEquals(1, result.keptRecentCount());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ChatMessage>> captor = ArgumentCaptor.forClass((Class) List.class);
+        verify(aiMessageService).replaceConversationMessages(eq(conversationId), captor.capture());
+        verify(aiConversationService, never()).updateTokenCount(conversationId, 700);
+        assertEquals(2, captor.getValue().size());
+        assertTrue(ChatMemoryCompressor.isSummaryMessage(captor.getValue().get(0)));
+        assertTrue(compressor.consumeDoneMetadata(conversationId).isEmpty());
+    }
+
+    private StoredChatMessage stored(Long conversationId, ChatMessage message) {
+        return StoredChatMessage.builder()
+                .conversationId(conversationId)
+                .data(ChatMessageSerializer.messageToJson(message))
+                .build();
     }
 }

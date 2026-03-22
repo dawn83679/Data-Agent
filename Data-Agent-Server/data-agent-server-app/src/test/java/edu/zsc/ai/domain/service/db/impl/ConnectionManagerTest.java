@@ -11,6 +11,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.Map;
+import javax.sql.DataSource;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,8 +31,9 @@ class ConnectionManagerTest {
         Connection staleConnection = mock(Connection.class);
         when(staleConnection.isClosed()).thenReturn(false);
         when(staleConnection.isValid(1)).thenReturn(false);
+        DataSource dataSource = dataSource(staleConnection);
 
-        register(11L, 7L, "sales", null, staleConnection);
+        register(11L, 7L, "sales", null, dataSource);
 
         assertTrue(ConnectionManager.getConnection(new DbContext(11L, "sales", null)).isEmpty());
         assertTrue(ConnectionManager.getAnyActiveConnection(11L).isEmpty());
@@ -43,13 +45,15 @@ class ConnectionManagerTest {
 
         Connection schemaConnection = usableConnection();
         Connection rootConnection = usableConnection();
+        DataSource schemaDataSource = dataSource(schemaConnection);
+        DataSource rootDataSource = dataSource(rootConnection);
 
-        register(21L, 7L, "sales", null, schemaConnection);
-        register(21L, 7L, null, null, rootConnection);
+        register(21L, 7L, "sales", null, schemaDataSource);
+        register(21L, 7L, null, null, rootDataSource);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getAnyOwnedActiveConnection(21L);
 
-        assertSame(rootConnection, active.connection());
+        assertSame(rootDataSource, active.dataSource());
     }
 
     @Test
@@ -58,15 +62,17 @@ class ConnectionManagerTest {
 
         Connection staleRootConnection = mock(Connection.class);
         when(staleRootConnection.isClosed()).thenReturn(true);
+        DataSource staleRootDataSource = dataSource(staleRootConnection);
 
         Connection schemaConnection = usableConnection();
+        DataSource schemaDataSource = dataSource(schemaConnection);
 
-        register(31L, 7L, null, null, staleRootConnection);
-        register(31L, 7L, "sales", null, schemaConnection);
+        register(31L, 7L, null, null, staleRootDataSource);
+        register(31L, 7L, "sales", null, schemaDataSource);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getAnyOwnedActiveConnection(31L);
 
-        assertSame(schemaConnection, active.connection());
+        assertSame(schemaDataSource, active.dataSource());
     }
 
     private Connection usableConnection() throws SQLException {
@@ -76,15 +82,21 @@ class ConnectionManagerTest {
         return connection;
     }
 
+    private DataSource dataSource(Connection connection) throws SQLException {
+        DataSource dataSource = mock(DataSource.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        return dataSource;
+    }
+
     private void register(Long connectionId,
                           Long userId,
                           String catalog,
                           String schema,
-                          Connection connection) {
+                          DataSource dataSource) {
         ConnectionManager.registerConnection(
                 connectionId,
                 new ConnectionManager.ActiveConnection(
-                        connection,
+                        dataSource,
                         userId,
                         connectionId,
                         "mysql",

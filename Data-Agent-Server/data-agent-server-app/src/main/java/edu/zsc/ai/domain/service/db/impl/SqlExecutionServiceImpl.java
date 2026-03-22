@@ -32,19 +32,19 @@ public class SqlExecutionServiceImpl implements SqlExecutionService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         CommandExecutor<SqlCommandRequest, SqlCommandResult> executor = DefaultPluginManager.getInstance()
                 .getSqlCommandExecutorByPluginId(active.pluginId());
-
-        SqlCommandRequest pluginRequest = new SqlCommandRequest();
-        pluginRequest.setConnection(active.connection());
-        pluginRequest.setOriginalSql(sql);
-        pluginRequest.setExecuteSql(sql);
-        pluginRequest.setDatabase(db.catalog());
-        pluginRequest.setSchema(db.schema());
-        pluginRequest.setNeedTransaction(false);
-
-        SqlCommandResult result = executor.executeCommand(pluginRequest);
+        SqlCommandResult result;
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            SqlCommandRequest pluginRequest = new SqlCommandRequest();
+            pluginRequest.setConnection(borrowed.connection());
+            pluginRequest.setOriginalSql(sql);
+            pluginRequest.setExecuteSql(sql);
+            pluginRequest.setDatabase(db.catalog());
+            pluginRequest.setSchema(db.schema());
+            pluginRequest.setNeedTransaction(false);
+            result = executor.executeCommand(pluginRequest);
+        }
 
         ExecuteSqlResponse response = SqlExecutionConverter.toResponse(result);
         if (response != null) {
@@ -59,39 +59,40 @@ public class SqlExecutionServiceImpl implements SqlExecutionService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         CommandExecutor<SqlCommandRequest, SqlCommandResult> executor = DefaultPluginManager.getInstance()
                 .getSqlCommandExecutorByPluginId(active.pluginId());
 
         List<ExecuteSqlResponse> responses = new ArrayList<>(sqls.size());
-        for (String sql : sqls) {
-            try {
-                SqlCommandRequest pluginRequest = new SqlCommandRequest();
-                pluginRequest.setConnection(active.connection());
-                pluginRequest.setOriginalSql(sql);
-                pluginRequest.setExecuteSql(sql);
-                pluginRequest.setDatabase(db.catalog());
-                pluginRequest.setSchema(db.schema());
-                pluginRequest.setNeedTransaction(false);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            for (String sql : sqls) {
+                try {
+                    SqlCommandRequest pluginRequest = new SqlCommandRequest();
+                    pluginRequest.setConnection(borrowed.connection());
+                    pluginRequest.setOriginalSql(sql);
+                    pluginRequest.setExecuteSql(sql);
+                    pluginRequest.setDatabase(db.catalog());
+                    pluginRequest.setSchema(db.schema());
+                    pluginRequest.setNeedTransaction(false);
 
-                SqlCommandResult result = executor.executeCommand(pluginRequest);
+                    SqlCommandResult result = executor.executeCommand(pluginRequest);
 
-                ExecuteSqlResponse response = SqlExecutionConverter.toResponse(result);
-                if (response != null) {
-                    response.setDatabaseName(db.catalog());
-                    response.setSchemaName(db.schema());
+                    ExecuteSqlResponse response = SqlExecutionConverter.toResponse(result);
+                    if (response != null) {
+                        response.setDatabaseName(db.catalog());
+                        response.setSchemaName(db.schema());
+                    }
+                    responses.add(response);
+                } catch (Exception e) {
+                    log.warn("Batch SQL execution failed for statement [{}]: {}", sql, e.getMessage());
+                    ExecuteSqlResponse errorResponse = ExecuteSqlResponse.builder()
+                            .success(false)
+                            .errorMessage(e.getMessage())
+                            .originalSql(sql)
+                            .databaseName(db.catalog())
+                            .schemaName(db.schema())
+                            .build();
+                    responses.add(errorResponse);
                 }
-                responses.add(response);
-            } catch (Exception e) {
-                log.warn("Batch SQL execution failed for statement [{}]: {}", sql, e.getMessage());
-                ExecuteSqlResponse errorResponse = ExecuteSqlResponse.builder()
-                        .success(false)
-                        .errorMessage(e.getMessage())
-                        .originalSql(sql)
-                        .databaseName(db.catalog())
-                        .schemaName(db.schema())
-                        .build();
-                responses.add(errorResponse);
             }
         }
         return responses;

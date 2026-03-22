@@ -237,11 +237,38 @@ class PermissionRuleServiceImplTest {
                 false
         );
 
-        List<PermissionRuleResponse> responses = service.listForCurrentUser(42L);
+        List<PermissionRuleResponse> responses = service.listForCurrentUser(null, 42L);
 
         assertEquals(2, responses.size());
         assertTrue(responses.stream().anyMatch(item -> item.getGrantPreset() == PermissionGrantPreset.CONNECTION_ALL_DATABASES));
         assertTrue(responses.stream().anyMatch(item -> item.getGrantPreset() == PermissionGrantPreset.DATABASE_ALL_SCHEMAS));
+    }
+
+    @Test
+    void listForCurrentUser_supportsConversationScopeWithoutConversationId() {
+        service.upsertForCurrentUser(
+                PermissionScopeType.CONVERSATION,
+                42L,
+                5L,
+                PermissionGrantPreset.DATABASE_ALL_SCHEMAS,
+                "sales",
+                null,
+                true
+        );
+        service.upsertForCurrentUser(
+                PermissionScopeType.CONVERSATION,
+                99L,
+                7L,
+                PermissionGrantPreset.EXACT_SCHEMA,
+                "analytics",
+                "public",
+                false
+        );
+
+        List<PermissionRuleResponse> responses = service.listForCurrentUser(PermissionScopeType.CONVERSATION, null);
+
+        assertEquals(2, responses.size());
+        assertTrue(responses.stream().allMatch(item -> item.getScopeType() == PermissionScopeType.CONVERSATION));
     }
 
     private static ConnectionResponse connection(Long id) {

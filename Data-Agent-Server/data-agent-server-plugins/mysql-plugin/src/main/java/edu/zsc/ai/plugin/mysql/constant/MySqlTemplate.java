@@ -6,7 +6,7 @@ import static edu.zsc.ai.plugin.mysql.constant.MysqlTriggerConstants.*;
 /**
  * All SQL strings used by MySQL plugin.
  */
-public final class MysqlSqlConstants {
+public final class MySqlTemplate {
 
     // --- SHOW commands ---
     /** %s = full table name (catalog.table or table) */
@@ -110,6 +110,18 @@ public final class MysqlSqlConstants {
     public static final String SQL_COUNT_TABLE_DATA =
             "SELECT COUNT(*) AS total FROM %s";
 
-    private MysqlSqlConstants() {
+    /** %1$s = full table name, %2$s = quoted columns joined by comma, %3$s = placeholders joined by comma */
+    public static final String SQL_INSERT_TABLE_ROW =
+            "INSERT INTO %s (%s) VALUES (%s)";
+
+    /** %1$s = full table name, %2$s = where clause without WHERE keyword */
+    public static final String SQL_DELETE_TABLE_ROW =
+            "DELETE FROM %s WHERE %s";
+
+    /** %1$s = full table name, %2$s = where clause without WHERE keyword */
+    public static final String SQL_COUNT_MATCHING_TABLE_ROWS =
+            "SELECT COUNT(*) AS total FROM %s WHERE %s";
+
+    private MySqlTemplate() {
     }
 }

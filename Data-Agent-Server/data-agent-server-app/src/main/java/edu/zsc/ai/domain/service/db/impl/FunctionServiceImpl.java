@@ -24,9 +24,10 @@ public class FunctionServiceImpl implements FunctionService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
-        return provider.getFunctions(active.connection(), db.catalog(), db.schema());
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.getFunctions(borrowed.connection(), db.catalog(), db.schema());
+        }
     }
 
     @Override
@@ -34,9 +35,10 @@ public class FunctionServiceImpl implements FunctionService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
-        return provider.searchFunctions(active.connection(), db.catalog(), db.schema(), functionNamePattern);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.searchFunctions(borrowed.connection(), db.catalog(), db.schema(), functionNamePattern);
+        }
     }
 
     @Override
@@ -44,9 +46,10 @@ public class FunctionServiceImpl implements FunctionService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
-        return provider.countFunctions(active.connection(), db.catalog(), db.schema(), functionNamePattern);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.countFunctions(borrowed.connection(), db.catalog(), db.schema(), functionNamePattern);
+        }
     }
 
     @Override
@@ -54,9 +57,10 @@ public class FunctionServiceImpl implements FunctionService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
-        return provider.getFunctionDdl(active.connection(), db.catalog(), db.schema(), functionName);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.getFunctionDdl(borrowed.connection(), db.catalog(), db.schema(), functionName);
+        }
     }
 
     @Override
@@ -64,9 +68,10 @@ public class FunctionServiceImpl implements FunctionService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
-        provider.deleteFunction(active.connection(), db.catalog(), db.schema(), functionName);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            provider.deleteFunction(borrowed.connection(), db.catalog(), db.schema(), functionName);
+        }
 
         log.info("Function deleted successfully: connectionId={}, catalog={}, schema={}, functionName={}",
                 db.connectionId(), db.catalog(), db.schema(), functionName);

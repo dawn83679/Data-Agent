@@ -23,7 +23,6 @@ public class SchemaServiceImpl implements SchemaService {
         connectionService.openConnection(connectionId);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getAnyOwnedActiveConnection(connectionId);
-
         SchemaProvider provider;
         try {
             provider = DefaultPluginManager.getInstance().getSchemaProviderByPluginId(active.pluginId());
@@ -31,6 +30,8 @@ public class SchemaServiceImpl implements SchemaService {
             throw BusinessException.badRequest("Plugin does not support listing schemas: " + e.getMessage());
         }
 
-        return provider.getSchemas(active.connection(), catalog);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.getSchemas(borrowed.connection(), catalog);
+        }
     }
 }

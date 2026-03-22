@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface PermissionRuleService extends IService<AiPermissionRule> {
 
-    List<PermissionRuleResponse> listForCurrentUser(Long conversationId);
+    List<PermissionRuleResponse> listForCurrentUser(PermissionScopeType scopeType, Long conversationId);
 
     PermissionRuleResponse upsertForCurrentUser(PermissionScopeType scopeType,
                                                 Long conversationId,

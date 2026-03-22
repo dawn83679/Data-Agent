@@ -4,11 +4,10 @@ import edu.zsc.ai.common.constant.ResponseCode;
 import edu.zsc.ai.common.constant.ResponseMessageKey;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.domain.model.context.DbContext;
-import edu.zsc.ai.plugin.capability.ConnectionProvider;
-import edu.zsc.ai.plugin.manager.DefaultPluginManager;
 import edu.zsc.ai.domain.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -16,6 +15,8 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 @Slf4j
 public class ConnectionManager {
@@ -24,10 +25,10 @@ public class ConnectionManager {
 
     /**
      * Active connection record.
-     * Stores the physical connection and its metadata.
+     * Stores the logical connection group and its metadata.
      */
     public record ActiveConnection(
-            Connection connection,
+            DataSource dataSource,
             Long userId,
             Long dbConnectionId,
             String dbType,
@@ -36,6 +37,42 @@ public class ConnectionManager {
             String schemaName,
             LocalDateTime createdAt,
             LocalDateTime lastAccessedAt) {
+
+        public ActiveConnection touch() {
+            return new ActiveConnection(
+                    dataSource,
+                    userId,
+                    dbConnectionId,
+                    dbType,
+                    pluginId,
+                    databaseName,
+                    schemaName,
+                    createdAt,
+                    LocalDateTime.now()
+            );
+        }
+
+        public BorrowedConnection borrowConnection() {
+            return ConnectionManager.borrowConnection(this);
+        }
+    }
+
+    public record BorrowedConnection(
+            Connection connection,
+            ActiveConnection activeConnection) implements AutoCloseable {
+
+        public String pluginId() {
+            return activeConnection.pluginId();
+        }
+
+        @Override
+        public void close() {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                throw new RuntimeException("Failed to close database connection: " + e.getMessage(), e);
+            }
+        }
     }
 
     /**
@@ -51,14 +88,14 @@ public class ConnectionManager {
     }
 
     /**
-     * Register a new active connection.
+     * Package-scoped registration hook used by tests and internal bootstrapping only.
      */
-    public static void registerConnection(Long dbConnectionId, ActiveConnection activeConnection) {
+    static void registerConnection(Long dbConnectionId, ActiveConnection activeConnection) {
         String innerKey = generateInnerKey(activeConnection.databaseName(), activeConnection.schemaName());
         ActiveConnection previous = activeConnections.computeIfAbsent(dbConnectionId, k -> new ConcurrentHashMap<>())
                 .put(innerKey, activeConnection);
 
-        if (previous != null && previous.connection() != activeConnection.connection()) {
+        if (previous != null && previous.dataSource() != activeConnection.dataSource()) {
             doClose(previous);
         }
 
@@ -66,21 +103,32 @@ public class ConnectionManager {
                 dbConnectionId, innerKey, activeConnection.dbType());
     }
 
+    public static ActiveConnection getOrCreateConnection(DbContext db, Supplier<ActiveConnection> activeConnectionSupplier) {
+        Map<String, ActiveConnection> innerMap = activeConnections.computeIfAbsent(db.connectionId(), k -> new ConcurrentHashMap<>());
+        String innerKey = generateInnerKey(db.catalog(), db.schema());
+
+        return innerMap.compute(innerKey, (key, existing) -> {
+            if (isConnectionUsable(existing)) {
+                return existing.touch();
+            }
+
+            ActiveConnection created = activeConnectionSupplier.get();
+            if (existing != null && existing.dataSource() != created.dataSource()) {
+                doClose(existing);
+            }
+
+            log.info("Connection registered: dbConnectionId={}, key={}, dbType={}",
+                    db.connectionId(), innerKey, created.dbType());
+            return created;
+        });
+    }
+
     /**
      * Get active connection for a DbContext.
      */
     public static Optional<ActiveConnection> getConnection(DbContext db) {
-        Map<String, ActiveConnection> innerMap = activeConnections.get(db.connectionId());
-        if (innerMap == null) {
-            return Optional.empty();
-        }
         String key = generateInnerKey(db.catalog(), db.schema());
-        ActiveConnection active = innerMap.get(key);
-        if (!isConnectionUsable(active)) {
-            removeInvalidConnection(db.connectionId(), key, active);
-            return Optional.empty();
-        }
-        return Optional.of(active);
+        return getUsableConnection(db.connectionId(), key);
     }
 
     /**
@@ -112,22 +160,20 @@ public class ConnectionManager {
         }
 
         String rootKey = generateInnerKey(null, null);
-        ActiveConnection rootConnection = innerMap.get(rootKey);
-        if (isConnectionUsable(rootConnection)) {
-            return Optional.of(rootConnection);
+        Optional<ActiveConnection> rootConnection = getUsableConnection(dbConnectionId, rootKey);
+        if (rootConnection.isPresent()) {
+            return rootConnection;
         }
-        removeInvalidConnection(dbConnectionId, rootKey, rootConnection);
 
-        for (Map.Entry<String, ActiveConnection> entry : innerMap.entrySet()) {
-            if (rootKey.equals(entry.getKey())) {
+        for (String key : innerMap.keySet()) {
+            if (rootKey.equals(key)) {
                 continue;
             }
 
-            ActiveConnection active = entry.getValue();
-            if (isConnectionUsable(active)) {
-                return Optional.of(active);
+            Optional<ActiveConnection> active = getUsableConnection(dbConnectionId, key);
+            if (active.isPresent()) {
+                return active;
             }
-            removeInvalidConnection(dbConnectionId, entry.getKey(), active);
         }
 
         cleanupEmptyGroup(dbConnectionId, innerMap);
@@ -163,11 +209,28 @@ public class ConnectionManager {
         }
     }
 
+    public static BorrowedConnection borrowOwnedConnection(DbContext db) {
+        return borrowConnection(getOwnedConnection(db));
+    }
+
+    public static BorrowedConnection borrowAnyOwnedConnection(Long dbConnectionId) {
+        return borrowConnection(getAnyOwnedActiveConnection(dbConnectionId));
+    }
+
+    private static BorrowedConnection borrowConnection(ActiveConnection active) {
+        try {
+            Connection connection = active.dataSource().getConnection();
+            return new BorrowedConnection(connection, active);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to borrow database connection: " + e.getMessage(), e);
+        }
+    }
+
     private static void doClose(ActiveConnection active) {
         try {
-            ConnectionProvider provider = DefaultPluginManager.getInstance()
-                    .getConnectionProviderByPluginId(active.pluginId());
-            provider.closeConnection(active.connection());
+            if (active.dataSource() instanceof AutoCloseable autoCloseable) {
+                autoCloseable.close();
+            }
             log.info("Connection closed: dbConnectionId={}, database={}, schema={}",
                     active.dbConnectionId(), active.databaseName(), active.schemaName());
         } catch (Exception e) {
@@ -176,12 +239,12 @@ public class ConnectionManager {
     }
 
     private static boolean isConnectionUsable(ActiveConnection active) {
-        if (active == null || active.connection() == null) {
+        if (active == null || active.dataSource() == null) {
             return false;
         }
 
-        Connection connection = active.connection();
-        try {
+        try (BorrowedConnection borrowedConnection = borrowConnection(active)) {
+            Connection connection = borrowedConnection.connection();
             if (connection.isClosed()) {
                 return false;
             }
@@ -193,26 +256,35 @@ public class ConnectionManager {
         } catch (SQLException e) {
             log.warn("Failed to validate connection, treating it as stale: dbConnectionId={}", active.dbConnectionId(), e);
             return false;
+        } catch (RuntimeException e) {
+            log.warn("Failed to borrow connection, treating it as stale: dbConnectionId={}", active.dbConnectionId(), e);
+            return false;
         }
     }
 
-    private static void removeInvalidConnection(Long dbConnectionId, String innerKey, ActiveConnection active) {
-        if (active == null) {
-            return;
-        }
-
+    private static Optional<ActiveConnection> getUsableConnection(Long dbConnectionId, String innerKey) {
         Map<String, ActiveConnection> innerMap = activeConnections.get(dbConnectionId);
         if (innerMap == null) {
-            return;
+            return Optional.empty();
         }
 
-        boolean removed = innerMap.remove(innerKey, active);
+        AtomicReference<ActiveConnection> removedConnection = new AtomicReference<>();
+        ActiveConnection active = innerMap.computeIfPresent(innerKey, (key, existing) -> {
+            if (isConnectionUsable(existing)) {
+                return existing.touch();
+            }
+            removedConnection.set(existing);
+            return null;
+        });
+
         cleanupEmptyGroup(dbConnectionId, innerMap);
-        if (removed) {
+        ActiveConnection removed = removedConnection.get();
+        if (removed != null) {
             log.warn("Discarding stale connection: dbConnectionId={}, key={}, dbType={}",
-                    dbConnectionId, innerKey, active.dbType());
-            doClose(active);
+                    dbConnectionId, innerKey, removed.dbType());
+            doClose(removed);
         }
+        return Optional.ofNullable(active);
     }
 
     private static void cleanupEmptyGroup(Long dbConnectionId, Map<String, ActiveConnection> innerMap) {

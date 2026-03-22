@@ -14,6 +14,7 @@ import edu.zsc.ai.plugin.driver.DriverLoader;
 import edu.zsc.ai.plugin.driver.MavenCoordinates;
 import edu.zsc.ai.plugin.model.command.sql.SqlCommandRequest;
 import edu.zsc.ai.plugin.model.command.sql.SqlCommandResult;
+import edu.zsc.ai.plugin.model.db.TableRowValue;
 import edu.zsc.ai.plugin.model.metadata.*;
 import edu.zsc.ai.plugin.mysql.connection.MysqlJdbcConnectionBuilder;
 import edu.zsc.ai.plugin.mysql.constant.*;
@@ -21,7 +22,6 @@ import edu.zsc.ai.plugin.mysql.executor.MySQLSqlExecutor;
 import edu.zsc.ai.plugin.mysql.util.MysqlIdentifierBuilder;
 import edu.zsc.ai.plugin.mysql.value.MySQLDataTypeEnum;
 import org.apache.commons.lang3.StringUtils;
-
 import java.sql.*;
 import java.util.*;
 import java.util.logging.Logger;
@@ -38,6 +38,7 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
     private final MySQLSqlExecutor sqlExecutor = new MySQLSqlExecutor();
 
     private final MySqlSqlValidator sqlValidator = new MySqlSqlValidator();
+    private final MysqlRowWriteSupport rowWriteSupport = new MysqlRowWriteSupport();
 
     @Override
     public boolean supportSchema() {
@@ -113,7 +114,7 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
             if (!connection.isClosed()) {
                 connection.close();
             }
-        } catch (java.sql.SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException("Failed to close database connection: " + e.getMessage(), e);
         }
     }
@@ -174,7 +175,7 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
         }
         String escapedDb = MysqlIdentifierEscaper.getInstance().escapeStringLiteral(db);
         String escapedTable = MysqlIdentifierEscaper.getInstance().escapeStringLiteral(tableOrViewName);
-        String sql = String.format(MysqlSqlConstants.SQL_LIST_COLUMNS, escapedDb, escapedTable);
+        String sql = String.format(MySqlTemplate.SQL_LIST_COLUMNS, escapedDb, escapedTable);
 
         SqlCommandResult result = sqlExecutor.executeCommand(
                 SqlCommandRequest.ofWithoutTransaction(connection, sql, sql, db, null));
@@ -244,7 +245,7 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
     @Override
     public String getTableDdl(Connection connection, String catalog, String schema, String tableName) {
         return getObjectDdl(connection, catalog, tableName,
-                MysqlSqlConstants.SQL_SHOW_CREATE_TABLE,
+                MySqlTemplate.SQL_SHOW_CREATE_TABLE,
                 MysqlShowColumnConstants.CREATE_TABLE,
                 DatabaseObjectTypeEnum.TABLE.getValue());
     }
@@ -252,7 +253,7 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
     @Override
     public String getViewDdl(Connection connection, String catalog, String schema, String viewName) {
         return getObjectDdl(connection, catalog, viewName,
-                MysqlSqlConstants.SQL_SHOW_CREATE_VIEW,
+                MySqlTemplate.SQL_SHOW_CREATE_VIEW,
                 MysqlShowColumnConstants.CREATE_VIEW,
                 DatabaseObjectTypeEnum.VIEW.getValue());
     }
@@ -260,7 +261,7 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
     @Override
     public String getFunctionDdl(Connection connection, String catalog, String schema, String functionName) {
         return getObjectDdl(connection, catalog, functionName,
-                MysqlSqlConstants.SQL_SHOW_CREATE_FUNCTION,
+                MySqlTemplate.SQL_SHOW_CREATE_FUNCTION,
                 MysqlShowColumnConstants.CREATE_FUNCTION,
                 DatabaseObjectTypeEnum.FUNCTION.getValue());
     }
@@ -268,7 +269,7 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
     @Override
     public String getProcedureDdl(Connection connection, String catalog, String schema, String procedureName) {
         return getObjectDdl(connection, catalog, procedureName,
-                MysqlSqlConstants.SQL_SHOW_CREATE_PROCEDURE,
+                MySqlTemplate.SQL_SHOW_CREATE_PROCEDURE,
                 MysqlShowColumnConstants.CREATE_PROCEDURE,
                 DatabaseObjectTypeEnum.PROCEDURE.getValue());
     }
@@ -276,7 +277,7 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
     @Override
     public String getTriggerDdl(Connection connection, String catalog, String schema, String triggerName) {
         return getObjectDdl(connection, catalog, triggerName,
-                MysqlSqlConstants.SQL_SHOW_CREATE_TRIGGER,
+                MySqlTemplate.SQL_SHOW_CREATE_TRIGGER,
                 MysqlShowColumnConstants.SQL_ORIGINAL_STATEMENT,
                 DatabaseObjectTypeEnum.TRIGGER.getValue());
     }
@@ -288,7 +289,7 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
         }
 
         String fullTableName = MysqlIdentifierBuilder.buildFullIdentifier(catalog, tableName);
-        String sql = String.format(MysqlSqlConstants.SQL_SELECT_TABLE_DATA, fullTableName, pageSize, offset);
+        String sql = String.format(MySqlTemplate.SQL_SELECT_TABLE_DATA, fullTableName, pageSize, offset);
 
         SqlCommandResult result = sqlExecutor.executeCommand(
                 SqlCommandRequest.ofWithoutTransaction(connection, sql, sql, catalog, null));
@@ -309,7 +310,7 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
         }
 
         String fullTableName = MysqlIdentifierBuilder.buildFullIdentifier(catalog, tableName);
-        String sql = String.format(MysqlSqlConstants.SQL_COUNT_TABLE_DATA, fullTableName);
+        String sql = String.format(MySqlTemplate.SQL_COUNT_TABLE_DATA, fullTableName);
 
         try (PreparedStatement stmt = connection.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -338,9 +339,9 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
         return countObjectsByName(
                 connection,
                 db,
-                MysqlSqlConstants.SQL_COUNT_TABLES,
+                MySqlTemplate.SQL_COUNT_TABLES,
                 tableNamePattern,
-                MysqlSqlConstants.SQL_COUNT_TABLES_NAME_CLAUSE);
+                MySqlTemplate.SQL_COUNT_TABLES_NAME_CLAUSE);
     }
 
     @Override
@@ -349,9 +350,9 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
         return countObjectsByName(
                 connection,
                 db,
-                MysqlSqlConstants.SQL_COUNT_VIEWS,
+                MySqlTemplate.SQL_COUNT_VIEWS,
                 viewNamePattern,
-                MysqlSqlConstants.SQL_COUNT_TABLES_NAME_CLAUSE);
+                MySqlTemplate.SQL_COUNT_TABLES_NAME_CLAUSE);
     }
 
     @Override
@@ -360,9 +361,9 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
         return countObjectsByName(
                 connection,
                 db,
-                MysqlSqlConstants.SQL_COUNT_FUNCTIONS,
+                MySqlTemplate.SQL_COUNT_FUNCTIONS,
                 functionNamePattern,
-                MysqlSqlConstants.SQL_COUNT_ROUTINES_NAME_CLAUSE);
+                MySqlTemplate.SQL_COUNT_ROUTINES_NAME_CLAUSE);
     }
 
     @Override
@@ -371,9 +372,9 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
         return countObjectsByName(
                 connection,
                 db,
-                MysqlSqlConstants.SQL_COUNT_PROCEDURES,
+                MySqlTemplate.SQL_COUNT_PROCEDURES,
                 procedureNamePattern,
-                MysqlSqlConstants.SQL_COUNT_ROUTINES_NAME_CLAUSE);
+                MySqlTemplate.SQL_COUNT_ROUTINES_NAME_CLAUSE);
     }
 
     @Override
@@ -416,7 +417,7 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
         String fullTableName = MysqlIdentifierBuilder.buildFullIdentifier(catalog, tableName);
         String sql = StringUtils.isNotBlank(whereClause)
                 ? "SELECT COUNT(*) AS total FROM " + fullTableName + " WHERE " + whereClause
-                : String.format(MysqlSqlConstants.SQL_COUNT_TABLE_DATA, fullTableName);
+                : String.format(MySqlTemplate.SQL_COUNT_TABLE_DATA, fullTableName);
 
         try (PreparedStatement stmt = connection.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -450,10 +451,10 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
             return List.of();
         }
         String escapedDb = MysqlIdentifierEscaper.getInstance().escapeStringLiteral(db);
-        String sql = String.format(MysqlSqlConstants.SQL_LIST_TRIGGERS, escapedDb);
+        String sql = String.format(MySqlTemplate.SQL_LIST_TRIGGERS, escapedDb);
         if (StringUtils.isNotBlank(tableName)) {
             String escapedTable = MysqlIdentifierEscaper.getInstance().escapeStringLiteral(tableName);
-            sql += MysqlSqlConstants.SQL_TRIGGER_FILTER_BY_TABLE + escapedTable + "'";
+            sql += MySqlTemplate.SQL_TRIGGER_FILTER_BY_TABLE + escapedTable + "'";
         }
 
         SqlCommandResult result = sqlExecutor.executeCommand(
@@ -492,7 +493,7 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
             return List.of();
         }
         String escapedDb = MysqlIdentifierEscaper.getInstance().escapeStringLiteral(db);
-        String sql = String.format(MysqlSqlConstants.SQL_LIST_FUNCTIONS, escapedDb);
+        String sql = String.format(MySqlTemplate.SQL_LIST_FUNCTIONS, escapedDb);
 
         SqlCommandResult result = sqlExecutor.executeCommand(
                 SqlCommandRequest.ofWithoutTransaction(connection, sql, sql, db, null));
@@ -539,7 +540,7 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
             return List.of();
         }
         String escapedDb = MysqlIdentifierEscaper.getInstance().escapeStringLiteral(db);
-        String sql = String.format(MysqlSqlConstants.SQL_LIST_PROCEDURES, escapedDb);
+        String sql = String.format(MySqlTemplate.SQL_LIST_PROCEDURES, escapedDb);
 
         SqlCommandResult result = sqlExecutor.executeCommand(
                 SqlCommandRequest.ofWithoutTransaction(connection, sql, sql, db, null));
@@ -585,7 +586,7 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
             inClause.append("'").append(escapedSn).append("'");
         }
         String escapedDb = MysqlIdentifierEscaper.getInstance().escapeStringLiteral(db);
-        String sql = String.format(MysqlSqlConstants.SQL_FETCH_PARAMETERS, escapedDb, inClause);
+        String sql = String.format(MySqlTemplate.SQL_FETCH_PARAMETERS, escapedDb, inClause);
 
         SqlCommandResult result = sqlExecutor.executeCommand(
                 SqlCommandRequest.ofWithoutTransaction(connection, sql, sql, db, null));
@@ -716,37 +717,50 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
 
     @Override
     public void deleteDatabase(Connection connection, String catalog) {
-        dropObject(connection, catalog, catalog, MysqlSqlConstants.SQL_DROP_DATABASE,
+        dropObject(connection, catalog, catalog, MySqlTemplate.SQL_DROP_DATABASE,
                 DatabaseObjectTypeEnum.DATABASE.getValue(), false);
     }
 
     @Override
     public void deleteTable(Connection connection, String catalog, String schema, String tableName) {
-        dropObject(connection, catalog, tableName, MysqlSqlConstants.SQL_DROP_TABLE,
+        dropObject(connection, catalog, tableName, MySqlTemplate.SQL_DROP_TABLE,
                 DatabaseObjectTypeEnum.TABLE.getValue(), true);
     }
 
     @Override
+    public SqlCommandResult insertRow(Connection connection, String catalog, String schema, String tableName,
+                                      List<TableRowValue> values) {
+        return rowWriteSupport.insertRow(connection, catalog, schema, tableName, values);
+    }
+
+    @Override
+    public SqlCommandResult deleteRow(Connection connection, String catalog, String schema, String tableName,
+                                      List<TableRowValue> matchValues, boolean force) {
+        return rowWriteSupport.deleteRow(connection, catalog, schema, tableName, matchValues, force);
+    }
+
+    @Override
     public void deleteView(Connection connection, String catalog, String schema, String viewName) {
-        dropObject(connection, catalog, viewName, MysqlSqlConstants.SQL_DROP_VIEW,
+        dropObject(connection, catalog, viewName, MySqlTemplate.SQL_DROP_VIEW,
                 DatabaseObjectTypeEnum.VIEW.getValue(), true);
     }
 
     @Override
     public void deleteFunction(Connection connection, String catalog, String schema, String functionName) {
-        dropObject(connection, catalog, functionName, MysqlSqlConstants.SQL_DROP_FUNCTION,
+        dropObject(connection, catalog, functionName, MySqlTemplate.SQL_DROP_FUNCTION,
                 DatabaseObjectTypeEnum.FUNCTION.getValue(), true);
     }
 
     @Override
     public void deleteProcedure(Connection connection, String catalog, String schema, String procedureName) {
-        dropObject(connection, catalog, procedureName, MysqlSqlConstants.SQL_DROP_PROCEDURE,
+        dropObject(connection, catalog, procedureName, MySqlTemplate.SQL_DROP_PROCEDURE,
                 DatabaseObjectTypeEnum.PROCEDURE.getValue(), true);
     }
 
     @Override
     public void deleteTrigger(Connection connection, String catalog, String schema, String triggerName) {
-        dropObject(connection, catalog, triggerName, MysqlSqlConstants.SQL_DROP_TRIGGER,
+        dropObject(connection, catalog, triggerName, MySqlTemplate.SQL_DROP_TRIGGER,
                 DatabaseObjectTypeEnum.TRIGGER.getValue(), true);
     }
+
 }
