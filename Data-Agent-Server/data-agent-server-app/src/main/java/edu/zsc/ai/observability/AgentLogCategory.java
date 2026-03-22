@@ -5,5 +5,6 @@ public enum AgentLogCategory {
     SSE,
     TOOL,
     TOKEN,
+    PROMPT,
     DEBUG
 }

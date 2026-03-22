@@ -9,6 +9,7 @@ import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import edu.zsc.ai.common.enums.ai.ModelEnum;
+import edu.zsc.ai.domain.service.ai.model.CompressionResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -52,13 +53,22 @@ class CompressionServiceImplTest {
     @Test
     void compress_databaseExplorationWithToolCalls_serializesToolStructure() {
         String expectedSummary = """
-                ## Active Context
-                - Connection: [conn-1, mydb, public]
-                - Current task: explore orders table structure
+                ## Execution State
+                - Task: explore orders table structure
+                - Stage: discovery
+                - Focus: inspect the verified orders schema
+                - Progress: relevant environment scope and key relationships identified
 
-                ## Schema Knowledge
-                - orders: id (int8, PK), customer_id (int8, FK→customers.id), total (numeric), created_at (timestamp)
-                - customers: id (int8, PK), name (varchar)
+                ## Grounded Facts
+                - Scope: [conn-1, mydb, public]
+                - Object: orders -> id (int8, PK), customer_id (int8, FK→customers.id), total (numeric), created_at (timestamp)
+                - Object: customers -> id (int8, PK), name (varchar)
+
+                ## Pending / Blocking
+                - Ambiguity: none
+                - Write confirmation: not_needed
+                - Blocker: none
+                - Next step: answer with the verified schema summary
                 """;
         stubModelResponse(expectedSummary);
 
@@ -92,9 +102,9 @@ class CompressionServiceImplTest {
                 AiMessage.from("The orders table has 4 columns: id (PK), customer_id (FK to customers), total, and created_at. It contains 15,230 rows.")
         );
 
-        String result = compressionService.compress(messages);
+        CompressionResult result = compressionService.compress(messages);
 
-        assertEquals(expectedSummary, result);
+        assertEquals(expectedSummary, result.summary());
 
         // 验证提示词中包含完整的工具调用结构（工具名、参数、结果）
         String prompt = capturePromptText();
@@ -109,11 +119,20 @@ class CompressionServiceImplTest {
     @Test
     void compress_sqlExecutionWithRetry_containsFailureAndSuccess() {
         String expectedSummary = """
-                ## Working SQL
-                - Top customers by revenue: `SELECT c.name, SUM(o.total) as revenue FROM customers c JOIN orders o ON c.id = o.customer_id GROUP BY c.name ORDER BY revenue DESC LIMIT 10` → 10 rows
+                ## Execution State
+                - Task: show top 10 customers by revenue
+                - Stage: execution
+                - Focus: reuse the corrected revenue query
+                - Progress: the failed query was corrected and a verified result is available
 
-                ## Key Findings
-                - First attempt failed with "column 'amount' does not exist", corrected to 'total'
+                ## Reusable Artifacts
+                - SQL [verified]: `SELECT c.name, SUM(o.total) as revenue FROM customers c JOIN orders o ON c.id = o.customer_id GROUP BY c.name ORDER BY revenue DESC LIMIT 10` -> 10 rows, top customers by revenue
+
+                ## Pending / Blocking
+                - Ambiguity: none
+                - Write confirmation: not_needed
+                - Blocker: none
+                - Next step: answer using the verified query result
                 """;
         stubModelResponse(expectedSummary);
 
@@ -143,7 +162,8 @@ class CompressionServiceImplTest {
                 AiMessage.from("Here are the top 10 customers by revenue. Acme Corp leads with $125,000.")
         );
 
-        String result = compressionService.compress(messages);
+        CompressionResult result = compressionService.compress(messages);
+        assertEquals(expectedSummary, result.summary());
 
         // 验证提示词包含了失败和成功两次调用，让模型能判断哪些该保留
         String prompt = capturePromptText();
@@ -158,8 +178,20 @@ class CompressionServiceImplTest {
     @Test
     void compress_askUserQuestionFlow_preservesQuestionAndAnswer() {
         String expectedSummary = """
-                ## User Decisions
-                - User confirmed to delete orders older than 2023-01-01 (estimated 5,230 rows)
+                ## Execution State
+                - Task: clean up old orders from before 2023
+                - Stage: execution
+                - Focus: the confirmed delete has already run
+                - Progress: delete target counted, user confirmed, and write executed successfully
+
+                ## Reusable Artifacts
+                - SQL [verified]: `DELETE FROM orders WHERE created_at < '2023-01-01'` -> executed, affectedRows=5230
+
+                ## Pending / Blocking
+                - Ambiguity: none
+                - Write confirmation: executed
+                - Blocker: none
+                - Next step: report the completed write outcome
                 """;
         stubModelResponse(expectedSummary);
 
@@ -209,7 +241,8 @@ class CompressionServiceImplTest {
                 AiMessage.from("Done! Successfully deleted 5,230 old orders.")
         );
 
-        String result = compressionService.compress(messages);
+        CompressionResult result = compressionService.compress(messages);
+        assertEquals(expectedSummary, result.summary());
 
         String prompt = capturePromptText();
         // 验证新的确认流程信息都在提示词中
@@ -225,7 +258,19 @@ class CompressionServiceImplTest {
 
     @Test
     void compress_messagesWithInjectedXmlTags_includesTagsForModelToDiscard() {
-        stubModelResponse("## Active Context\n- Current task: query user stats");
+        stubModelResponse("""
+                ## Execution State
+                - Task: query user stats
+                - Stage: execution
+                - Focus: report the verified user count
+                - Progress: active user count query completed
+
+                ## Pending / Blocking
+                - Ambiguity: none
+                - Write confirmation: not_needed
+                - Blocker: none
+                - Next step: answer with the verified count
+                """);
 
         List<ChatMessage> messages = List.of(
                 UserMessage.from("<memory_context>\n- User prefers Chinese output\n</memory_context>\n"
@@ -249,13 +294,29 @@ class CompressionServiceImplTest {
         // XML 标签应出现在序列化消息中，由压缩提示词指导模型丢弃
         assertTrue(prompt.contains("memory_context"), "Serialized messages should contain the XML tags");
         assertTrue(prompt.contains("Aggressively Discard"), "Prompt template should instruct to discard XML tags");
+        assertTrue(prompt.contains("<user_memory>"), "Prompt should discard current runtime support wrappers as well");
     }
 
     // ==================== 场景 5: 多轮 searchObjects 探索 ====================
 
     @Test
     void compress_multipleSearchObjectsCalls_allToolCallsSerialized() {
-        stubModelResponse("## Schema Knowledge\n- Relevant tables: user_orders, order_items, order_status_log");
+        stubModelResponse("""
+                ## Execution State
+                - Task: find all tables related to orders
+                - Stage: discovery
+                - Focus: compare candidate order-related tables
+                - Progress: multiple relevant objects identified
+
+                ## Reusable Artifacts
+                - Explorer: high-relevance objects include user_orders, order_items, and order_status_log
+
+                ## Pending / Blocking
+                - Ambiguity: determine which order-related table best matches the user's intent
+                - Write confirmation: not_needed
+                - Blocker: none
+                - Next step: continue schema inspection or clarify the target object
+                """);
 
         List<ChatMessage> messages = List.of(
                 UserMessage.from("Find all tables related to orders"),
@@ -306,7 +367,22 @@ class CompressionServiceImplTest {
 
     @Test
     void compress_renderChartCall_containsChartMetadata() {
-        stubModelResponse("## Key Findings\n- Bar chart: monthly revenue trend shows growth from Jan ($50k) to Jun ($120k)");
+        stubModelResponse("""
+                ## Execution State
+                - Task: show a chart of monthly revenue for 2024
+                - Stage: answering
+                - Focus: present the verified revenue trend visually
+                - Progress: query completed and chart meaning is ready to report
+
+                ## Reusable Artifacts
+                - Chart: bar chart of monthly revenue showing growth from Jan ($50k) to Jun ($120k)
+
+                ## Pending / Blocking
+                - Ambiguity: none
+                - Write confirmation: not_needed
+                - Blocker: none
+                - Next step: answer with the verified chart interpretation
+                """);
 
         List<ChatMessage> messages = List.of(
                 UserMessage.from("Show me a chart of monthly revenue for 2024"),
@@ -343,7 +419,19 @@ class CompressionServiceImplTest {
 
     @Test
     void compress_nearWindowLimit_handlesMaxMessages() {
-        stubModelResponse("## Active Context\n- Long conversation compressed");
+        stubModelResponse("""
+                ## Execution State
+                - Task: continue the long multi-query investigation
+                - Stage: execution
+                - Focus: keep the latest verified query trail available
+                - Progress: a long conversation handoff was compressed successfully
+
+                ## Pending / Blocking
+                - Ambiguity: none
+                - Write confirmation: not_needed
+                - Blocker: none
+                - Next step: continue from the latest verified work state
+                """);
 
         List<ChatMessage> messages = new ArrayList<>();
         // 模拟真实的长对话：用户提问 → AI 调工具 → 工具返回 → AI 回复，循环多次
@@ -362,9 +450,21 @@ class CompressionServiceImplTest {
         }
         // 12 轮 × 4 条 = 48 条消息，接近 50 条上限
 
-        String result = compressionService.compress(messages);
+        CompressionResult result = compressionService.compress(messages);
 
-        assertEquals("## Active Context\n- Long conversation compressed", result);
+        assertEquals("""
+                ## Execution State
+                - Task: continue the long multi-query investigation
+                - Stage: execution
+                - Focus: keep the latest verified query trail available
+                - Progress: a long conversation handoff was compressed successfully
+
+                ## Pending / Blocking
+                - Ambiguity: none
+                - Write confirmation: not_needed
+                - Blocker: none
+                - Next step: continue from the latest verified work state
+                """, result.summary());
 
         String prompt = capturePromptText();
         // 验证第一轮和最后一轮的内容都在
@@ -388,21 +488,24 @@ class CompressionServiceImplTest {
         compressionService.compress(messages);
 
         String prompt = capturePromptText();
-        // 验证压缩提示词的四个核心维度都存在
-        assertTrue(prompt.contains("Tool Call Compression"), "Missing section: Tool Call Compression");
-        assertTrue(prompt.contains("Conversation Flow Compression"), "Missing section: Conversation Flow Compression");
-        assertTrue(prompt.contains("Must Preserve"), "Missing section: Must Preserve");
+        // 验证压缩提示词围绕“执行状态交接”组织
+        assertTrue(prompt.contains("execution-state handoff"), "Missing execution-state handoff objective");
+        assertTrue(prompt.contains("Preserve Execution State"), "Missing section: Preserve Execution State");
+        assertTrue(prompt.contains("Tool-Specific Compression"), "Missing section: Tool-Specific Compression");
+        assertTrue(prompt.contains("Conflict And Ambiguity Handling"), "Missing section: Conflict And Ambiguity Handling");
         assertTrue(prompt.contains("Aggressively Discard"), "Missing section: Aggressively Discard");
 
-        // 验证输出格式的六个章节都在模板中
-        assertTrue(prompt.contains("Active Context"), "Missing output section: Active Context");
-        assertTrue(prompt.contains("Schema Knowledge"), "Missing output section: Schema Knowledge");
-        assertTrue(prompt.contains("Key Findings"), "Missing output section: Key Findings");
-        assertTrue(prompt.contains("Working SQL"), "Missing output section: Working SQL");
-        assertTrue(prompt.contains("User Decisions"), "Missing output section: User Decisions");
-        assertTrue(prompt.contains("Pending"), "Missing output section: Pending");
+        // 验证新的输出格式章节都在模板中
+        assertTrue(prompt.contains("Execution State"), "Missing output section: Execution State");
+        assertTrue(prompt.contains("Grounded Facts"), "Missing output section: Grounded Facts");
+        assertTrue(prompt.contains("Reusable Artifacts"), "Missing output section: Reusable Artifacts");
+        assertTrue(prompt.contains("Pending / Blocking"), "Missing output section: Pending / Blocking");
+        assertTrue(prompt.contains("Stage: [discovery|planning|execution|confirmation|answering]"),
+                "Missing stage contract");
+        assertTrue(prompt.contains("Write confirmation: [not_needed|required|confirmed|executed]"),
+                "Missing write confirmation contract");
 
-        // 验证工具专用压缩规则提到了关键工具名
+        // 验证工具和子代理压缩规则提到了关键工具名
         assertTrue(prompt.contains("getObjectDetail"), "Missing tool rule: getObjectDetail");
         assertTrue(prompt.contains("executeSelectSql"), "Missing tool rule: executeSelectSql");
         assertTrue(prompt.contains("executeNonSelectSql"), "Missing tool rule: executeNonSelectSql");
@@ -410,5 +513,11 @@ class CompressionServiceImplTest {
         assertTrue(prompt.contains("getEnvironmentOverview"), "Missing tool rule: getEnvironmentOverview");
         assertTrue(prompt.contains("renderChart"), "Missing tool rule: renderChart");
         assertTrue(prompt.contains("askUserQuestion"), "Missing tool rule: askUserQuestion");
+        assertTrue(prompt.contains("callingExplorerSubAgent"), "Missing tool rule: callingExplorerSubAgent");
+        assertTrue(prompt.contains("callingPlannerSubAgent"), "Missing tool rule: callingPlannerSubAgent");
+        assertTrue(prompt.contains("readMemory"), "Missing tool rule: readMemory");
+        assertTrue(prompt.contains("writeMemory"), "Missing tool rule: writeMemory");
+        assertTrue(prompt.contains("<system_context>"), "Missing current runtime wrapper discard rule");
+        assertTrue(prompt.contains("<memory_context>"), "Missing legacy wrapper discard rule");
     }
 }

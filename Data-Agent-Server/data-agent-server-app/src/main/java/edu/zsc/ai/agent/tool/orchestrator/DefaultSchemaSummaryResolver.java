@@ -60,7 +60,7 @@ public class DefaultSchemaSummaryResolver implements SchemaSummaryResolver {
         if (StringUtils.isBlank(value)) {
             return;
         }
-        if (buffer.length() > 0) {
+        if (!buffer.isEmpty()) {
             buffer.append(delimiter);
         }
         buffer.append(value);

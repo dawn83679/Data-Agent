@@ -25,9 +25,10 @@ public class ViewServiceImpl implements ViewService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         ViewProvider provider = DefaultPluginManager.getInstance().getViewProviderByPluginId(active.pluginId());
-        return provider.getViews(active.connection(), db.catalog(), db.schema());
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.getViews(borrowed.connection(), db.catalog(), db.schema());
+        }
     }
 
     @Override
@@ -35,9 +36,10 @@ public class ViewServiceImpl implements ViewService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         ViewProvider provider = DefaultPluginManager.getInstance().getViewProviderByPluginId(active.pluginId());
-        return provider.searchViews(active.connection(), db.catalog(), db.schema(), viewNamePattern);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.searchViews(borrowed.connection(), db.catalog(), db.schema(), viewNamePattern);
+        }
     }
 
     @Override
@@ -45,9 +47,10 @@ public class ViewServiceImpl implements ViewService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         ViewProvider provider = DefaultPluginManager.getInstance().getViewProviderByPluginId(active.pluginId());
-        return provider.countViews(active.connection(), db.catalog(), db.schema(), viewNamePattern);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.countViews(borrowed.connection(), db.catalog(), db.schema(), viewNamePattern);
+        }
     }
 
     @Override
@@ -55,9 +58,10 @@ public class ViewServiceImpl implements ViewService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         ViewProvider provider = DefaultPluginManager.getInstance().getViewProviderByPluginId(active.pluginId());
-        return provider.getViewDataCount(active.connection(), db.catalog(), db.schema(), viewName);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.getViewDataCount(borrowed.connection(), db.catalog(), db.schema(), viewName);
+        }
     }
 
     @Override
@@ -65,9 +69,10 @@ public class ViewServiceImpl implements ViewService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         ViewProvider provider = DefaultPluginManager.getInstance().getViewProviderByPluginId(active.pluginId());
-        return provider.getViewDdl(active.connection(), db.catalog(), db.schema(), viewName);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.getViewDdl(borrowed.connection(), db.catalog(), db.schema(), viewName);
+        }
     }
 
     @Override
@@ -75,9 +80,10 @@ public class ViewServiceImpl implements ViewService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         ViewProvider provider = DefaultPluginManager.getInstance().getViewProviderByPluginId(active.pluginId());
-        provider.deleteView(active.connection(), db.catalog(), db.schema(), viewName);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            provider.deleteView(borrowed.connection(), db.catalog(), db.schema(), viewName);
+        }
 
         log.info("View deleted successfully: connectionId={}, catalog={}, schema={}, viewName={}",
                 db.connectionId(), db.catalog(), db.schema(), viewName);
@@ -89,14 +95,14 @@ public class ViewServiceImpl implements ViewService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         ViewProvider provider = DefaultPluginManager.getInstance().getViewProviderByPluginId(active.pluginId());
-
         int offset = (currentPage - 1) * pageSize;
-
-        long totalCount = provider.getViewDataCount(active.connection(), db.catalog(), db.schema(), viewName);
-
-        SqlCommandResult result = provider.getViewData(active.connection(), db.catalog(), db.schema(), viewName, offset, pageSize);
+        long totalCount;
+        SqlCommandResult result;
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            totalCount = provider.getViewDataCount(borrowed.connection(), db.catalog(), db.schema(), viewName);
+            result = provider.getViewData(borrowed.connection(), db.catalog(), db.schema(), viewName, offset, pageSize);
+        }
 
         long totalPages = (totalCount + pageSize - 1) / pageSize;
 
@@ -116,15 +122,15 @@ public class ViewServiceImpl implements ViewService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         ViewProvider provider = DefaultPluginManager.getInstance().getViewProviderByPluginId(active.pluginId());
-
         int offset = (currentPage - 1) * pageSize;
-
-        long totalCount = provider.getViewDataCount(active.connection(), db.catalog(), db.schema(), viewName, whereClause);
-
-        SqlCommandResult result = provider.getViewData(active.connection(), db.catalog(), db.schema(), viewName, offset, pageSize,
-                whereClause, orderByColumn, orderByDirection);
+        long totalCount;
+        SqlCommandResult result;
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            totalCount = provider.getViewDataCount(borrowed.connection(), db.catalog(), db.schema(), viewName, whereClause);
+            result = provider.getViewData(borrowed.connection(), db.catalog(), db.schema(), viewName, offset, pageSize,
+                    whereClause, orderByColumn, orderByDirection);
+        }
 
         long totalPages = (totalCount + pageSize - 1) / pageSize;
 

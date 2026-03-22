@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { History, Plus, Settings as SettingsIcon, X } from 'lucide-react';
+import { Brain, History, Plus, Settings as SettingsIcon, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { AISettings } from './AISettings';
 import { ConversationHistoryPanel } from './ConversationHistoryPanel';
 import { cn } from '../../lib/utils';
@@ -9,6 +10,7 @@ import type { Conversation } from '../../types/conversation';
 export interface AIAssistantHeaderProps {
   title: string;
   historyAriaLabel: string;
+  memoryAriaLabel: string;
   accessToken: boolean;
   isHistoryOpen: boolean;
   setIsHistoryOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -42,6 +44,7 @@ function formatTabTitle(tab: ConversationTabSummary): { display: string; full: s
 export function AIAssistantHeader({
   title: _title,
   historyAriaLabel,
+  memoryAriaLabel,
   accessToken,
   isHistoryOpen,
   setIsHistoryOpen,
@@ -54,6 +57,7 @@ export function AIAssistantHeader({
   onSelectConversation,
   onNewChat,
 }: AIAssistantHeaderProps) {
+  const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -237,6 +241,21 @@ export function AIAssistantHeader({
               />
             )}
           </div>
+        )}
+        {accessToken && (
+          <button
+            type="button"
+            className="inline-flex items-center justify-center theme-text-secondary hover:theme-text-primary transition-colors"
+            aria-label={memoryAriaLabel}
+            title={memoryAriaLabel}
+            onClick={() => {
+              setIsHistoryOpen(false);
+              setIsSettingsOpen(false);
+              navigate('/memories');
+            }}
+          >
+            <Brain className="w-3.5 h-3.5" />
+          </button>
         )}
         <div className="relative">
           <SettingsIcon

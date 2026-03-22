@@ -9,6 +9,8 @@ import dev.langchain4j.service.tool.ToolExecutor;
 import edu.zsc.ai.agent.annotation.AgentTool;
 import edu.zsc.ai.agent.tool.ask.AskUserQuestionTool;
 import edu.zsc.ai.agent.tool.chart.ChartTool;
+import edu.zsc.ai.agent.tool.memory.ReadMemoryTool;
+import edu.zsc.ai.agent.tool.memory.WriteMemoryTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingExplorerTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingPlannerTool;
 import edu.zsc.ai.agent.tool.plan.EnterPlanModeTool;
@@ -54,6 +56,8 @@ class AgentToolConfigTest {
     private ExitPlanModeTool exitPlanModeTool;
     private ActivateSkillTool activateSkillTool;
     private ChartTool chartTool;
+    private ReadMemoryTool readMemoryTool;
+    private WriteMemoryTool writeMemoryTool;
 
     @BeforeEach
     void setUp() {
@@ -69,8 +73,10 @@ class AgentToolConfigTest {
         todoTool = new TodoTool();
         enterPlanModeTool = new EnterPlanModeTool();
         exitPlanModeTool = new ExitPlanModeTool();
-        activateSkillTool = new ActivateSkillTool();
+        activateSkillTool = new ActivateSkillTool(new AgentSkillConfig());
         chartTool = new ChartTool();
+        readMemoryTool = new ReadMemoryTool(null, null);
+        writeMemoryTool = new WriteMemoryTool(null);
 
         allTools = List.of(
                 getEnvironmentOverviewTool,
@@ -84,7 +90,9 @@ class AgentToolConfigTest {
                 enterPlanModeTool,
                 exitPlanModeTool,
                 activateSkillTool,
-                chartTool
+                chartTool,
+                readMemoryTool,
+                writeMemoryTool
         );
     }
 
@@ -96,6 +104,8 @@ class AgentToolConfigTest {
             List<Object> tools = config.resolveMainTools(allTools, AgentModeEnum.AGENT);
 
             assertTrue(tools.contains(getEnvironmentOverviewTool));
+            assertTrue(tools.contains(searchObjectsTool));
+            assertTrue(tools.contains(getObjectDetailTool));
             assertTrue(tools.contains(executeSqlTool));
             assertTrue(tools.contains(askUserQuestionTool));
             assertTrue(tools.contains(callingExplorerTool));
@@ -103,9 +113,9 @@ class AgentToolConfigTest {
             assertTrue(tools.contains(todoTool));
             assertTrue(tools.contains(activateSkillTool));
             assertTrue(tools.contains(chartTool));
+            assertTrue(tools.contains(readMemoryTool));
+            assertTrue(tools.contains(writeMemoryTool));
 
-            assertFalse(tools.contains(searchObjectsTool));
-            assertFalse(tools.contains(getObjectDetailTool));
             assertFalse(tools.contains(enterPlanModeTool));
             assertFalse(tools.contains(exitPlanModeTool));
         }
@@ -123,6 +133,8 @@ class AgentToolConfigTest {
 
             assertFalse(tools.contains(executeSqlTool));
             assertFalse(tools.contains(chartTool));
+            assertFalse(tools.contains(readMemoryTool));
+            assertFalse(tools.contains(writeMemoryTool));
             assertFalse(tools.contains(searchObjectsTool));
             assertFalse(tools.contains(getObjectDetailTool));
             assertFalse(tools.contains(enterPlanModeTool));
@@ -137,34 +149,37 @@ class AgentToolConfigTest {
         void explorer_hasDiscoveryTools() {
             List<Object> tools = config.resolveSubAgentTools(allTools, AgentTypeEnum.EXPLORER);
 
-            assertEquals(3, tools.size(), "Explorer should have 3 scoped discovery tools");
+            assertEquals(4, tools.size(), "Explorer should have 4 scoped tools");
             assertFalse(tools.contains(getEnvironmentOverviewTool), "Explorer should NOT have GetEnvironmentOverviewTool");
             assertTrue(tools.contains(todoTool), "Explorer should have TodoTool");
             assertTrue(tools.contains(searchObjectsTool), "Explorer should have SearchObjectsTool");
             assertTrue(tools.contains(getObjectDetailTool), "Explorer should have GetObjectDetailTool");
+            assertTrue(tools.contains(executeSqlTool), "Explorer should have ExecuteSqlTool");
         }
 
         @Test
-        void planner_hasTodoSkillAndObjectDetail() {
+        void planner_hasTodoSkillObjectDetailAndExecuteSql() {
             List<Object> tools = config.resolveSubAgentTools(allTools, AgentTypeEnum.PLANNER);
 
-            assertEquals(3, tools.size(), "Planner should have exactly 3 tools");
+            assertEquals(4, tools.size(), "Planner should have exactly 4 tools");
             assertTrue(tools.contains(todoTool), "Planner should have TodoTool");
             assertTrue(tools.contains(activateSkillTool), "Planner should have ActivateSkillTool");
             assertTrue(tools.contains(getObjectDetailTool), "Planner should have GetObjectDetailTool");
+            assertTrue(tools.contains(executeSqlTool), "Planner should have ExecuteSqlTool");
         }
 
         @Test
-        void planner_excludesExecutionAndDiscoveryTools() {
+        void planner_excludesBroadDiscoveryAndOrchestrationTools() {
             List<Object> tools = config.resolveSubAgentTools(allTools, AgentTypeEnum.PLANNER);
 
-            assertFalse(tools.contains(executeSqlTool), "Planner should NOT have ExecuteSqlTool");
             assertFalse(tools.contains(getEnvironmentOverviewTool), "Planner should NOT have GetEnvironmentOverviewTool");
             assertFalse(tools.contains(searchObjectsTool), "Planner should NOT have SearchObjectsTool");
             assertFalse(tools.contains(askUserQuestionTool), "Planner should NOT have AskUserQuestionTool");
             assertFalse(tools.contains(callingExplorerTool), "Planner should NOT have CallingExplorerTool");
             assertFalse(tools.contains(callingPlannerTool), "Planner should NOT have CallingPlannerTool");
             assertFalse(tools.contains(chartTool), "Planner should NOT have ChartTool");
+            assertFalse(tools.contains(readMemoryTool), "Planner should NOT have ReadMemoryTool");
+            assertFalse(tools.contains(writeMemoryTool), "Planner should NOT have WriteMemoryTool");
             assertFalse(tools.contains(enterPlanModeTool), "Planner should NOT have EnterPlanModeTool");
             assertFalse(tools.contains(exitPlanModeTool), "Planner should NOT have ExitPlanModeTool");
         }

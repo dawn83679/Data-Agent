@@ -1,10 +1,17 @@
 import http from '../lib/http';
+import { PermissionScopeType } from '../types/permission';
 import type { PermissionApproveRequest, PermissionRule, PermissionUpsertRequest } from '../types/permission';
 
 export const permissionService = {
-  listRules: async (conversationId?: number | null): Promise<PermissionRule[]> => {
+  listRules: async (params?: {
+    scopeType?: PermissionScopeType | null;
+    conversationId?: number | null;
+  }): Promise<PermissionRule[]> => {
     const response = await http.get<PermissionRule[]>('/permissions/rules', {
-      params: conversationId != null ? { conversationId } : undefined,
+      params: {
+        scopeType: params?.scopeType ?? undefined,
+        conversationId: params?.conversationId ?? undefined,
+      },
     });
     return response.data;
   },

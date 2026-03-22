@@ -6,22 +6,14 @@ import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.agent.annotation.AgentTool;
 import edu.zsc.ai.agent.subagent.SubAgentRequest;
 import edu.zsc.ai.agent.subagent.SubAgentTimeoutPolicy;
-import edu.zsc.ai.agent.subagent.contract.ExplorerResultEnvelope;
-import edu.zsc.ai.agent.subagent.contract.ExplorerTask;
-import edu.zsc.ai.agent.subagent.contract.ExplorerTaskResult;
-import edu.zsc.ai.agent.subagent.contract.ExplorerTaskStatus;
-import edu.zsc.ai.agent.subagent.contract.SchemaSummary;
+import edu.zsc.ai.agent.subagent.contract.*;
 import edu.zsc.ai.agent.tool.error.AgentToolExecuteException;
 import edu.zsc.ai.agent.tool.message.ToolMessageSupport;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.common.enums.ai.ToolNameEnum;
 import edu.zsc.ai.config.ai.ExplorerSubAgentExecutorConfig;
 import edu.zsc.ai.config.ai.SubAgentManager;
-import edu.zsc.ai.context.AgentExecutionContext;
-import edu.zsc.ai.context.AgentRequestContext;
-import edu.zsc.ai.context.AgentRequestContextInfo;
-import edu.zsc.ai.context.RequestContext;
-import edu.zsc.ai.context.RequestContextInfo;
+import edu.zsc.ai.context.*;
 import edu.zsc.ai.observability.AgentLogFields;
 import edu.zsc.ai.observability.AgentLogService;
 import edu.zsc.ai.util.JsonUtil;
@@ -36,7 +28,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.IntStream;
 
 /**
  * Delegates schema exploration to Explorer SubAgent(s).
@@ -62,13 +53,13 @@ public class CallingExplorerTool extends SubAgentToolSupport {
 
     @Tool({
             "Value: delegates schema exploration to one or more Explorer sub-agents and returns structured findings you can plan against.",
-            "Use When: call when you need verified schema context before generating SQL, or when discovery spans multiple candidate connections or scopes.",
-            "Preconditions: each task needs connectionId and instruction. Use connectionId from getEnvironmentOverview. Each task may include context and timeoutSeconds. Top-level timeoutSeconds applies only to tasks that do not set their own timeout.",
+            "Use When: call when you need verified schema context before generating SQL, or when discovery spans multiple candidate connections or scopes that are too broad for lightweight direct tools.",
+            "Preconditions: each task needs connectionId and instruction. Use the current grounded connectionId when mention or runtime context already identifies the target scope; call getEnvironmentOverview only when the scope is still unclear. Each task may include context and timeoutSeconds. Top-level timeoutSeconds applies only to tasks that do not set their own timeout.",
             "After Success: review taskResults, keep the objects and summaries that match the user goal, and then call callingPlannerSubAgent or askUserQuestion if ambiguity remains.",
             "After Partial Success: continue only with successful taskResults. Do not assume failed tasks found nothing; retry or ask the user before dropping those scopes.",
             "After Failure: narrow the task scope, correct the connectionId or instruction, or retry later. Do not proceed to SQL planning without usable explorer output.",
             "Result Consumption: each taskResult includes taskId, summaryText, objects, and rawResponse. Consume them task by task instead of blindly merging all tasks.",
-            "Relation: usually after getEnvironmentOverview or focused discovery and before callingPlannerSubAgent. Multiple tasks run concurrently. Explorer timeout defaults to 120 seconds, and lower values are raised to 120."
+            "Relation: use searchObjects or getObjectDetail first when the current scope is already narrow enough. Use callingExplorerSubAgent after focused discovery or getEnvironmentOverview only when you still need broader schema exploration. Multiple tasks run concurrently. Explorer timeout defaults to 120 seconds, and lower values are raised to 120."
     })
     public AgentToolResult callingExplorerSubAgent(
             @P("Explorer task list. Each item: {connectionId: number, instruction: string, context?: string, timeoutSeconds?: number}. timeoutSeconds uses seconds and values below 120 are automatically raised to 120.") List<ExplorerTask> tasks,
@@ -163,12 +154,10 @@ public class CallingExplorerTool extends SubAgentToolSupport {
                 "taskCount", tasks.size()
         ));
 
-        List<CompletableFuture<ExplorerTaskResult>> futures = IntStream.range(0, tasks.size())
-                .mapToObj(i -> {
-                    ExplorerTask task = tasks.get(i);
+        List<CompletableFuture<ExplorerTaskResult>> futures = tasks.stream().map(explorerTask -> {
                     String taskId = buildTaskId("explore", requestContextSnapshot);
                     return CompletableFuture.supplyAsync(() -> executeTask(
-                            task, resolveTaskTimeoutSeconds(task, timeoutSeconds), requestContextSnapshot, agentRequestContextSnapshot, parentToolCallId, taskId), explorerExecutor);
+                            explorerTask, resolveTaskTimeoutSeconds(explorerTask, timeoutSeconds), requestContextSnapshot, agentRequestContextSnapshot, parentToolCallId, taskId), explorerExecutor);
                 })
                 .toList();
 

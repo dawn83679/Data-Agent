@@ -1,5 +1,4 @@
 package edu.zsc.ai.api.model.request;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

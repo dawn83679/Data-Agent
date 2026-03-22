@@ -217,6 +217,12 @@ class PlannerSubAgentTest {
         }
 
         @Test
+        void promptFile_mentionsExecuteSelectSql() {
+            String content = PromptConfig.getPrompt(PromptEnum.PLANNER);
+            assertTrue(content.contains("executeSelectSql"), "Should mention executeSelectSql");
+        }
+
+        @Test
         void promptFile_requiresStructuredJsonOutput() {
             String content = PromptConfig.getPrompt(PromptEnum.PLANNER);
             assertTrue(content.contains("summaryText"), "Should mention summaryText output");

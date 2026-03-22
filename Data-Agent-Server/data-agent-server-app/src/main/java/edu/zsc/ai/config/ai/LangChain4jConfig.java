@@ -18,8 +18,8 @@ import org.springframework.context.annotation.Configuration;
 @RequiredArgsConstructor
 public class LangChain4jConfig {
 
-    /** Max number of messages to retain in chat memory (no token counting, avoids DashScope Tokenization API). */
-    public static final int MAX_MEMORY_MESSAGES = 50;
+    /** Effectively disables count-based eviction; conversation compaction is handled separately. */
+    public static final int MAX_MEMORY_MESSAGES = Integer.MAX_VALUE;
 
     private final ChatMemoryStore chatMemoryStore;
 

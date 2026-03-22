@@ -5,7 +5,7 @@ import lombok.Getter;
 @Getter
 public enum ModelEnum {
 
-    QWEN3_5_PLUS("qwen3.5-plus", 131072, 120000, false),
+    QWEN3_5_PLUS("qwen3.5-plus", 1048576, 900000, false),
     QWEN3_MAX("qwen3-max", 256000, 230000, false),
     QWEN3_MAX_THINKING("qwen3-max-thinking", 256000, 230000, true),
     QWEN_PLUS("qwen-plus", 1048576, 900000, false),

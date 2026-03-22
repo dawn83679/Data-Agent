@@ -9,6 +9,7 @@ interface ChatInputAreaProps {
     agent: AgentType;
     mention?: UseMentionReturn;
     onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+    onCompositionStateChange?: (isComposing: boolean) => void;
     onKeyDown: (e: React.KeyboardEvent) => void;
 }
 
@@ -19,7 +20,7 @@ export interface ChatInputAreaRef {
 
 /** Textarea input area with @mention highlighting mirror layer */
 export const ChatInputArea = forwardRef<ChatInputAreaRef, ChatInputAreaProps>(
-    function ChatInputArea({ input, agent, mention, onChange, onKeyDown }, ref) {
+    function ChatInputArea({ input, agent, mention, onChange, onCompositionStateChange, onKeyDown }, ref) {
         const { t } = useTranslation();
         
         // 优化: 只在有 @ 符号时才解析和显示镜像层
@@ -68,6 +69,12 @@ export const ChatInputArea = forwardRef<ChatInputAreaRef, ChatInputAreaProps>(
             prevMentionOpenRef.current = isOpen;
             prevMentionLevelRef.current = mention.mentionLevel;
         }, [mention?.mentionOpen, mention?.mentionLevel]);
+
+        useEffect(() => {
+            return () => {
+                onCompositionStateChange?.(false);
+            };
+        }, [onCompositionStateChange]);
 
         // Expose methods to parent via ref
         useImperativeHandle(ref, () => ({
@@ -203,11 +210,13 @@ export const ChatInputArea = forwardRef<ChatInputAreaRef, ChatInputAreaProps>(
 
         const handleCompositionStart = useCallback(() => {
             setIsComposing(true);
-        }, []);
+            onCompositionStateChange?.(true);
+        }, [onCompositionStateChange]);
 
         const handleCompositionEnd = useCallback(() => {
             setIsComposing(false);
-        }, []);
+            onCompositionStateChange?.(false);
+        }, [onCompositionStateChange]);
 
         return (
             <>
@@ -235,7 +244,7 @@ export const ChatInputArea = forwardRef<ChatInputAreaRef, ChatInputAreaProps>(
                     {hasMention && (
                         <div
                             ref={mirrorRef}
-                            className="chat-input-mirror absolute inset-0 overflow-y-auto text-xs p-3 whitespace-pre-wrap theme-text-primary"
+                            className="chat-input-mirror absolute inset-0 overflow-y-auto text-xs p-3 pr-14 whitespace-pre-wrap theme-text-primary"
                             aria-hidden="true"
                             style={{
                                 scrollbarWidth: 'none',
@@ -275,7 +284,7 @@ export const ChatInputArea = forwardRef<ChatInputAreaRef, ChatInputAreaProps>(
                         onCompositionStart={handleCompositionStart}
                         onCompositionEnd={handleCompositionEnd}
                         placeholder={t('ai.placeholder_mention')}
-                        className={`relative z-10 w-full bg-transparent text-xs p-3 focus:outline-none placeholder:text-muted-foreground/50 overflow-y-auto whitespace-pre-wrap ${agent === 'Agent' ? 'caret-violet-400' : 'caret-amber-400'}`}
+                        className={`relative z-10 w-full bg-transparent text-xs p-3 pr-14 focus:outline-none placeholder:text-muted-foreground/50 overflow-y-auto whitespace-pre-wrap ${agent === 'Agent' ? 'caret-violet-400' : 'caret-amber-400'}`}
                         style={{
                             resize: 'none',
                             minHeight: '96px',

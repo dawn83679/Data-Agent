@@ -1,27 +1,11 @@
 package edu.zsc.ai.common.converter.ai;
 
-import edu.zsc.ai.domain.model.dto.response.ai.MemoryCandidateResponse;
 import edu.zsc.ai.domain.model.dto.response.ai.MemoryResponse;
 import edu.zsc.ai.domain.model.entity.ai.AiMemory;
-import edu.zsc.ai.domain.model.entity.ai.AiMemoryCandidate;
 
 public final class MemoryConverter {
 
     private MemoryConverter() {
-    }
-
-    public static MemoryCandidateResponse toCandidateResponse(AiMemoryCandidate candidate) {
-        if (candidate == null) {
-            return null;
-        }
-        return MemoryCandidateResponse.builder()
-                .id(candidate.getId())
-                .conversationId(candidate.getConversationId())
-                .candidateType(candidate.getCandidateType())
-                .candidateContent(candidate.getCandidateContent())
-                .reason(candidate.getReason())
-                .createdAt(candidate.getCreatedAt())
-                .build();
     }
 
     public static MemoryResponse toMemoryResponse(AiMemory memory) {
@@ -30,8 +14,30 @@ public final class MemoryConverter {
         }
         return MemoryResponse.builder()
                 .id(memory.getId())
+                .conversationId(memory.getConversationId())
+                .workspaceContextKey(memory.getWorkspaceContextKey())
+                .workspaceLevel(memory.getWorkspaceLevel())
+                .scope(memory.getScope())
+                .memoryType(memory.getMemoryType())
+                .subType(memory.getSubType())
+                .sourceType(memory.getSourceType())
+                .title(memory.getTitle())
+                .content(memory.getContent())
+                .normalizedContentKey(memory.getNormalizedContentKey())
+                .reason(memory.getReason())
+                .sourceMessageIds(memory.getSourceMessageIds())
+                .detailJson(memory.getDetailJson())
                 .status(memory.getStatus())
+                .confidenceScore(memory.getConfidenceScore())
+                .salienceScore(memory.getSalienceScore())
+                .accessCount(memory.getAccessCount())
+                .useCount(memory.getUseCount())
+                .lastAccessedAt(memory.getLastAccessedAt())
+                .lastUsedAt(memory.getLastUsedAt())
+                .expiresAt(memory.getExpiresAt())
+                .archivedAt(memory.getArchivedAt())
                 .createdAt(memory.getCreatedAt())
+                .updatedAt(memory.getUpdatedAt())
                 .build();
     }
 }

@@ -12,6 +12,11 @@ import {
     SESSION_EXPIRED_MESSAGE,
 } from '../constants/chat';
 
+interface QueuedMessage {
+    text: string;
+    bodyOverrides?: Partial<ChatRequest>;
+}
+
 export interface ConversationPrefs {
     agent: string;
     model: string;
@@ -45,8 +50,9 @@ function readPrefsFromStorage(conversationId: number): ConversationPrefs | null 
 
 interface ConversationRuntime {
     conversationId: number | null;
+    tokenCount: number | null;
     messages: ChatMessage[];
-    queue: string[];
+    queue: QueuedMessage[];
     isLoading: boolean;
     isWaiting: boolean;
     submitting: boolean;
@@ -90,11 +96,13 @@ interface UseConversationRuntimeReturn {
     queue: string[];
 
     // Actions
-    submitMessage: (text: string) => Promise<void>;
+    submitMessage: (text: string, bodyOverrides?: Partial<ChatRequest>) => Promise<void>;
     stop: () => void;
     removeFromQueue: (index: number) => void;
     setActiveConversation: (id: number | null) => void;
     loadMessages: (id: number | null, messages: ChatMessage[]) => void;
+    setConversationTokenCount: (id: number | null, tokenCount: number | null) => void;
+    appendLocalAssistantMessage: (message: ChatMessage, id?: number | null) => void;
     closeConversationTab: (id: number | null) => void;
     setConversationTabTitle: (id: number, title: string | null) => void;
     /** Read the prefs of the currently active conversation. */
@@ -104,6 +112,7 @@ interface UseConversationRuntimeReturn {
 
     // Current conversation ID
     activeConversationId: number | null;
+    activeConversationTokenCount: number | null;
 
     // Conversation tabs (all in-memory runtimes)
     conversationTabs: ConversationTabSummary[];
@@ -223,6 +232,7 @@ export function useConversationRuntime(
             const now = Date.now();
             runtime = {
                 conversationId: id,
+                tokenCount: null,
                 messages: [],
                 queue: [],
                 isLoading: false,
@@ -347,6 +357,9 @@ export function useConversationRuntime(
                     if (block.done && block.data) {
                         try {
                             doneMetadata = JSON.parse(block.data) as DoneMetadata;
+                            if (doneMetadata.totalTokens != null && doneMetadata.totalTokens > 0) {
+                                runtime.tokenCount = doneMetadata.totalTokens;
+                            }
                         } catch {
                             console.warn("[SSE] doneMetadata parse failed", block.data);
                         }
@@ -395,7 +408,7 @@ export function useConversationRuntime(
     );
 
     const submitMessageToRuntime = useCallback(
-        async (runtime: ConversationRuntime, text: string) => {
+        async (runtime: ConversationRuntime, text: string, bodyOverrides?: Partial<ChatRequest>) => {
             const trimmed = text.trim();
             if (!trimmed || runtime.submitting) return;
 
@@ -424,6 +437,7 @@ export function useConversationRuntime(
                 id: crypto.randomUUID(),
                 role: MessageRole.USER,
                 content: trimmed,
+                userMentions: bodyOverrides?.userMentions,
                 createdAt: new Date(),
             };
             touchRuntime(runtime);
@@ -433,6 +447,7 @@ export function useConversationRuntime(
             const request: ChatRequest = {
                 message: trimmed,
                 ...baseBody,
+                ...bodyOverrides,
                 ...(isPersistedConversationId(runtime.conversationId) && { conversationId: runtime.conversationId }),
             };
 
@@ -537,7 +552,7 @@ export function useConversationRuntime(
 
                     // Small delay to ensure UI updates
                     setTimeout(() => {
-                        submitMessageToRuntime(runtime, first);
+                        submitMessageToRuntime(runtime, first.text, first.bodyOverrides);
                     }, 0);
                 }
             }
@@ -547,17 +562,17 @@ export function useConversationRuntime(
     );
 
     const submitMessage = useCallback(
-        async (text: string) => {
+        async (text: string, bodyOverrides?: Partial<ChatRequest>) => {
             const runtime = getOrCreateRuntime(activeConversationId);
 
             // If already submitting, add to queue
             if (runtime.submitting) {
-                runtime.queue = [...runtime.queue, text.trim()];
+                runtime.queue = [...runtime.queue, { text: text.trim(), bodyOverrides }];
                 forceUpdate();
                 return;
             }
 
-            await submitMessageToRuntime(runtime, text);
+            await submitMessageToRuntime(runtime, text, bodyOverrides);
         },
         [activeConversationId, getOrCreateRuntime, submitMessageToRuntime, forceUpdate]
     );
@@ -586,6 +601,22 @@ export function useConversationRuntime(
         },
         [getOrCreateRuntime, updateRuntimeMessages, touchRuntime]
     );
+
+    const setConversationTokenCount = useCallback((id: number | null, tokenCount: number | null) => {
+        const runtime = getOrCreateRuntime(id);
+        runtime.tokenCount = tokenCount;
+        touchRuntime(runtime);
+        if (runtime.conversationId === activeConversationIdRef.current) {
+            forceUpdate();
+        }
+    }, [forceUpdate, getOrCreateRuntime, touchRuntime]);
+
+    const appendLocalAssistantMessage = useCallback((message: ChatMessage, id?: number | null) => {
+        const targetId = id === undefined ? activeConversationIdRef.current : id;
+        const runtime = getOrCreateRuntime(targetId ?? null);
+        touchRuntime(runtime);
+        updateRuntimeMessages(runtime, [...runtime.messages, message]);
+    }, [getOrCreateRuntime, touchRuntime, updateRuntimeMessages]);
 
     const setActiveConversation = useCallback((id: number | null) => {
         const current = activeConversationIdRef.current;
@@ -684,14 +715,17 @@ export function useConversationRuntime(
 
     return {
         messages: activeRuntime.messages,
+        activeConversationTokenCount: activeRuntime.tokenCount,
         isLoading: activeRuntime.isLoading,
         isWaiting: activeRuntime.isWaiting,
-        queue: activeRuntime.queue,
+        queue: activeRuntime.queue.map((item) => item.text),
         submitMessage,
         stop,
         removeFromQueue,
         setActiveConversation,
         loadMessages,
+        setConversationTokenCount,
+        appendLocalAssistantMessage,
         closeConversationTab,
         setConversationTabTitle,
         getActivePrefs,

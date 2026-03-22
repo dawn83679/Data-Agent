@@ -4,6 +4,7 @@ import type { SlashCommandItem } from '../slashCommands';
 import type { UseMentionReturn } from '../../../hooks/useMention';
 
 interface UseKeyboardHandlerOptions {
+  isComposing: boolean;
   slashOpen: boolean;
   slashHighlightedIndex: number;
   filteredSlashCommands: SlashCommandItem[];
@@ -21,6 +22,7 @@ interface UseKeyboardHandlerOptions {
 
 /** Manages all keyboard event handling in chat input */
 export function useKeyboardHandler({
+  isComposing,
   slashOpen,
   slashHighlightedIndex,
   filteredSlashCommands,
@@ -37,6 +39,14 @@ export function useKeyboardHandler({
 }: UseKeyboardHandlerOptions) {
   return useCallback(
     (e: React.KeyboardEvent) => {
+      const nativeEvent = e.nativeEvent as KeyboardEvent;
+      const imeHandledEnter =
+        e.key === 'Enter' && (isComposing || nativeEvent.isComposing || e.keyCode === 229);
+
+      if (imeHandledEnter) {
+        return;
+      }
+
       // Handle slash command navigation
       if (slashOpen) {
         if (e.key === 'ArrowDown') {
@@ -92,6 +102,7 @@ export function useKeyboardHandler({
       }
     },
     [
+      isComposing,
       slashOpen,
       slashHighlightedIndex,
       filteredSlashCommands,

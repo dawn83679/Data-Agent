@@ -36,6 +36,7 @@ public class AgentInvocationContext implements AutoCloseable {
                     .agentType(params.get(InvocationContextConstant.AGENT_TYPE))
                     .allowedConnectionIds(ConnectionIdUtil.toLongList(params.get(InvocationContextConstant.ALLOWED_CONNECTION_IDS)))
                     .modelName(params.get(InvocationContextConstant.MODEL_NAME))
+                    .language(params.get(InvocationContextConstant.LANGUAGE))
                     .build();
 
             if (hasRequestContextData(requestContextInfo)) {
@@ -85,6 +86,7 @@ public class AgentInvocationContext implements AutoCloseable {
         return StringUtils.isNotBlank(contextInfo.getAgentMode())
                 || StringUtils.isNotBlank(contextInfo.getAgentType())
                 || StringUtils.isNotBlank(contextInfo.getModelName())
+                || StringUtils.isNotBlank(contextInfo.getLanguage())
                 || CollectionUtils.isNotEmpty(contextInfo.getAllowedConnectionIds());
     }
 }

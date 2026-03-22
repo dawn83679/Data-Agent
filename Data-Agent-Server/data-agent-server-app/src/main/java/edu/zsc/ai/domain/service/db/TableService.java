@@ -1,7 +1,9 @@
 package edu.zsc.ai.domain.service.db;
 
 import edu.zsc.ai.domain.model.context.DbContext;
+import edu.zsc.ai.domain.model.dto.response.db.ExecuteSqlResponse;
 import edu.zsc.ai.domain.model.dto.response.db.TableDataResponse;
+import edu.zsc.ai.plugin.model.db.TableRowValue;
 
 import java.util.List;
 
@@ -18,6 +20,10 @@ public interface TableService {
     String getTableDdl(DbContext db, String tableName);
 
     void deleteTable(DbContext db, String tableName);
+
+    ExecuteSqlResponse insertRow(DbContext db, String tableName, List<TableRowValue> values);
+
+    ExecuteSqlResponse deleteRow(DbContext db, String tableName, List<TableRowValue> matchValues, boolean force);
 
     TableDataResponse getTableData(DbContext db, String tableName, Integer currentPage, Integer pageSize);
 

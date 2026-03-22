@@ -1,6 +1,7 @@
 package edu.zsc.ai.plugin.capability;
 
 import edu.zsc.ai.plugin.constant.JdbcMetaDataConstants;
+import edu.zsc.ai.plugin.model.db.TableRowValue;
 import edu.zsc.ai.plugin.model.command.sql.SqlCommandResult;
 import org.apache.commons.lang3.StringUtils;
 
@@ -45,6 +46,16 @@ public interface TableProvider {
 
     default void deleteTable(Connection connection, String catalog, String schema, String tableName) {
         throw new UnsupportedOperationException("Plugin does not support deleting table");
+    }
+
+    default SqlCommandResult insertRow(Connection connection, String catalog, String schema, String tableName,
+                                       List<TableRowValue> values) {
+        throw new UnsupportedOperationException("Plugin does not support inserting table rows");
+    }
+
+    default SqlCommandResult deleteRow(Connection connection, String catalog, String schema, String tableName,
+                                       List<TableRowValue> matchValues, boolean force) {
+        throw new UnsupportedOperationException("Plugin does not support deleting table rows");
     }
 
     default SqlCommandResult getTableData(Connection connection, String catalog, String schema, String tableName, int offset, int pageSize) {

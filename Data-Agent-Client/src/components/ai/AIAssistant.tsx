@@ -1,45 +1,91 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, type Dispatch, type SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { AgentType } from './agentTypes';
 import { AIAssistantProvider } from './AIAssistantContext';
 import { ChatInput } from './ChatInput';
 import { AIAssistantHeader } from './AIAssistantHeader';
 import { AIAssistantContent } from './AIAssistantContent';
-import { MemoryCandidateDock } from './MemoryCandidateDock';
 import { PlanListPanel } from './PlanListPanel';
-import { PermissionRuleDialog } from './permissions/PermissionRuleDialog';
 import { useConversationRuntime } from '../../hooks/useConversationRuntime';
 import { useAuthStore } from '../../store/authStore';
 import { conversationService } from '../../services/conversation.service';
 import { aiService } from '../../services/ai.service';
 import { ChatPaths } from '../../constants/apiPaths';
 import { DEFAULT_MODEL, FALLBACK_MODELS } from '../../constants/models';
+import { ROUTES } from '../../constants/routes';
 import { SLASH_COMMAND_IDS } from './slashCommands';
 import { I18N_KEYS } from '../../constants/i18nKeys';
-import type { ChatContext } from '../../types/chat';
+import type { ChatContext, ChatMessage, ChatUserMention } from '../../types/chat';
+import { MessageRole } from '../../types/chat';
 import type { ModelOption } from '../../types/ai';
+import { findMentionTokens } from './mentionTypes';
 import { chatMessagesToMessages } from './MessageList';
 import { extractPlansFromMessages } from './blocks/exitPlanModeTypes';
 import { planTabId } from './blocks/ToolRunBlock';
 
 const DEFAULT_AGENT: AgentType = 'Agent';
 
+function formatTokenCount(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) {
+    return '--';
+  }
+  return Math.round(value).toLocaleString();
+}
+
+function filterMentionsByTokens(mentions: ChatUserMention[], tokens: string[]): ChatUserMention[] {
+  if (mentions.length === 0 || tokens.length === 0) {
+    return [];
+  }
+
+  const tokenSet = new Set(tokens);
+  return mentions.filter((mention) => tokenSet.has(mention.token));
+}
+
+function resolveMentionsInText(text: string, mentions: ChatUserMention[]): ChatUserMention[] {
+  if (text === '' || mentions.length === 0) {
+    return [];
+  }
+
+  const matchedTokens = findMentionTokens(text, mentions.map((mention) => mention.token));
+  if (matchedTokens.length === 0) {
+    return [];
+  }
+
+  const mentionMap = new Map(mentions.map((mention) => [mention.token, mention]));
+  return matchedTokens
+    .map((token) => mentionMap.get(token))
+    .filter((mention): mention is ChatUserMention => mention != null);
+}
+
 export function AIAssistant() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const accessToken = useAuthStore((s) => s.accessToken);
 
   const [agent, setAgentState] = useState<AgentType>(DEFAULT_AGENT);
   const [modelOptions, setModelOptions] = useState<ModelOption[]>(FALLBACK_MODELS);
   const [model, setModelState] = useState<string>(DEFAULT_MODEL);
   const [chatContext, setChatContext] = useState<ChatContext>({});
+  const [userMentions, setUserMentionsState] = useState<ChatUserMention[]>([]);
+  const userMentionsRef = useRef<ChatUserMention[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPlanListOpen, setIsPlanListOpen] = useState(false);
-  const [isPermissionOpen, setIsPermissionOpen] = useState(false);
   const [input, setInput] = useState('');
+
+  const setUserMentions = useCallback<Dispatch<SetStateAction<ChatUserMention[]>>>((value) => {
+    const next =
+      typeof value === 'function'
+        ? (value as (prev: ChatUserMention[]) => ChatUserMention[])(userMentionsRef.current)
+        : value;
+    userMentionsRef.current = next;
+    setUserMentionsState(next);
+  }, []);
 
   const {
     messages,
+    activeConversationTokenCount,
     isLoading,
     isWaiting,
     queue,
@@ -48,6 +94,8 @@ export function AIAssistant() {
     removeFromQueue,
     setActiveConversation,
     loadMessages,
+    setConversationTokenCount,
+    appendLocalAssistantMessage,
     activeConversationId,
     conversationTabs,
     closeConversationTab,
@@ -61,13 +109,18 @@ export function AIAssistant() {
       language: i18n.resolvedLanguage ?? i18n.language ?? 'en',
       agentType: agent,
       ...(chatContext.connectionId != null && { connectionId: chatContext.connectionId }),
-      ...(chatContext.databaseName != null && chatContext.databaseName !== '' && { databaseName: chatContext.databaseName }),
+      ...(chatContext.catalogName != null && chatContext.catalogName !== '' && { catalogName: chatContext.catalogName }),
       ...(chatContext.schemaName != null && chatContext.schemaName !== '' && { schemaName: chatContext.schemaName }),
     },
     onError: (err) => {
       console.error('Stream error:', err);
     },
   });
+
+  useEffect(() => {
+    const activeTokens = findMentionTokens(input, userMentionsRef.current.map((mention) => mention.token));
+    setUserMentions((prev) => filterMentionsByTokens(prev, activeTokens));
+  }, [input, setUserMentions]);
 
   // Restore mode/model when active conversation changes
   const prevActiveConversationIdRef = useRef<number | null | undefined>(undefined);
@@ -138,21 +191,16 @@ export function AIAssistant() {
   const handleSend = useCallback(() => {
     if (!input.trim()) return;
     const messageText = input.trim();
-    setInput('');
+    const activeMentions = resolveMentionsInText(messageText, userMentionsRef.current);
     userHasScrolledUpRef.current = false;
-    submitMessage(messageText);
-  }, [input, setInput, submitMessage]);
+    submitMessage(messageText, activeMentions.length > 0 ? { userMentions: activeMentions } : undefined);
+    setInput('');
+    setUserMentions([]);
+  }, [input, setInput, submitMessage, setUserMentions]);
 
   const chatMessages = chatMessagesToMessages(messages);
   const persistedConversationId =
     activeConversationId != null && activeConversationId > 0 ? activeConversationId : null;
-
-  const completedAssistantCount = messages.reduce((count, message) => {
-    if (message.role !== 'assistant') return count;
-    const hasDoneBlock = message.blocks?.some((block) => block.done) ?? false;
-    return hasDoneBlock ? count + 1 : count;
-  }, 0);
-  const candidateRefreshKey = `${persistedConversationId ?? 'none'}:${isLoading ? 'loading' : completedAssistantCount}`;
 
   const conversationPlans = useMemo(() => extractPlansFromMessages(messages), [messages]);
   const latestPlanTabId_ = useMemo(() => {
@@ -164,6 +212,13 @@ export function AIAssistant() {
     setAgentState(DEFAULT_AGENT);
     setModelState(DEFAULT_MODEL);
   }, []);
+
+  const buildLocalAssistantMessage = useCallback((content: string): ChatMessage => ({
+    id: crypto.randomUUID(),
+    role: MessageRole.ASSISTANT,
+    content,
+    createdAt: new Date(),
+  }), []);
 
   const contextValue = {
     input,
@@ -177,19 +232,68 @@ export function AIAssistant() {
     modelState: { model, setModel, modelOptions },
     agentState: { agent, setAgent },
     chatContextState: { chatContext, setChatContext },
+    mentionState: { userMentions, setUserMentions },
     messages,
+    conversationTokenCount: activeConversationTokenCount,
     latestPlanTabId: latestPlanTabId_,
     onCommand: (id: string) => {
       if (id === SLASH_COMMAND_IDS.NEW) {
         resetToDefaults();
         setActiveConversation(null);
         loadMessages(null, []);
+        setConversationTokenCount(null, null);
       } else if (id === SLASH_COMMAND_IDS.HISTORY) {
         setIsHistoryOpen(true);
+      } else if (id === SLASH_COMMAND_IDS.MEMORY) {
+        setIsHistoryOpen(false);
+        setIsSettingsOpen(false);
+        navigate('/memories');
+      } else if (id === SLASH_COMMAND_IDS.COMPRESS) {
+        void (async () => {
+          const targetConversationId = persistedConversationId;
+          if (isLoading) {
+            appendLocalAssistantMessage(buildLocalAssistantMessage(
+              t(I18N_KEYS.AI.COMPRESS.IN_PROGRESS)
+            ));
+            return;
+          }
+          if (targetConversationId == null) {
+            appendLocalAssistantMessage(buildLocalAssistantMessage(
+              t(I18N_KEYS.AI.COMPRESS.NO_CONVERSATION)
+            ));
+            return;
+          }
+
+          try {
+            const result = await conversationService.compress(targetConversationId, { model });
+            const [conversation, list] = await Promise.all([
+              conversationService.getById(targetConversationId),
+              conversationService.getMessages(targetConversationId),
+            ]);
+            setConversationTokenCount(targetConversationId, conversation.tokenCount ?? null);
+            loadMessages(targetConversationId, list);
+            appendLocalAssistantMessage(buildLocalAssistantMessage(
+              result.compressed
+                ? t(I18N_KEYS.AI.COMPRESS.DONE, {
+                    before: formatTokenCount(result.tokenCountBefore),
+                    kept: result.keptRecentCount ?? 0,
+                  })
+                : t(I18N_KEYS.AI.COMPRESS.NOOP)
+            ), targetConversationId);
+          } catch {
+            appendLocalAssistantMessage(buildLocalAssistantMessage(
+              t(I18N_KEYS.AI.COMPRESS.FAILED)
+            ), targetConversationId);
+          }
+        })();
       } else if (id === SLASH_COMMAND_IDS.PLAN) {
         setIsPlanListOpen(true);
       } else if (id === SLASH_COMMAND_IDS.PERMISSION) {
-        setIsPermissionOpen(true);
+        if (activeConversationId != null && activeConversationId > 0) {
+          navigate(`${ROUTES.PERMISSIONS}?conversationId=${activeConversationId}`);
+          return;
+        }
+        navigate(ROUTES.PERMISSIONS);
       }
     },
   };
@@ -200,6 +304,7 @@ export function AIAssistant() {
         <AIAssistantHeader
           title={t(I18N_KEYS.AI.TITLE)}
           historyAriaLabel={t(I18N_KEYS.AI.HISTORY)}
+          memoryAriaLabel={t(I18N_KEYS.AI.MEMORY_ENTRY_TOOLTIP)}
           accessToken={!!accessToken}
           isHistoryOpen={isHistoryOpen}
           setIsHistoryOpen={setIsHistoryOpen}
@@ -222,8 +327,11 @@ export function AIAssistant() {
             try {
               const list = await conversationService.getMessages(id);
               loadMessages(id, list);
+              const conversation = await conversationService.getById(id);
+              setConversationTokenCount(id, conversation.tokenCount ?? null);
             } catch {
               loadMessages(id, []);
+              setConversationTokenCount(id, null);
             }
           }}
           onCloseTab={(id) => {
@@ -232,6 +340,7 @@ export function AIAssistant() {
           onSelectConversation={async (c) => {
             setActiveConversation(c.id);
             setConversationTabTitle(c.id, c.title);
+            setConversationTokenCount(c.id, c.tokenCount ?? null);
             try {
               const list = await conversationService.getMessages(c.id);
               loadMessages(c.id, list);
@@ -243,6 +352,7 @@ export function AIAssistant() {
             resetToDefaults();
             setActiveConversation(null);
             loadMessages(null, []);
+            setConversationTokenCount(null, null);
           }}
         />
 
@@ -256,11 +366,6 @@ export function AIAssistant() {
           onRemoveFromQueue={removeFromQueue}
         />
 
-        <MemoryCandidateDock
-          conversationId={persistedConversationId}
-          refreshKey={candidateRefreshKey}
-        />
-
         <div ref={chatInputAnchorRef}>
           <ChatInput />
         </div>
@@ -269,11 +374,6 @@ export function AIAssistant() {
           onClose={() => setIsPlanListOpen(false)}
           plans={conversationPlans}
           anchorRef={chatInputAnchorRef}
-        />
-        <PermissionRuleDialog
-          open={isPermissionOpen}
-          onClose={() => setIsPermissionOpen(false)}
-          conversationId={activeConversationId}
         />
       </div>
     </AIAssistantProvider>

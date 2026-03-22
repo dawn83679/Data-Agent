@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/authStore';
+import { EMAIL_PATTERN, PASSWORD_POLICY, PASSWORD_RESET_REDIRECT_DELAY_MS } from '../constants/authPolicy';
 import { I18N_KEYS } from '../constants/i18nKeys';
+import { ROUTES } from '../constants/routes';
 import { authService } from '../services/auth.service';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -28,12 +30,14 @@ export default function PasswordReset() {
 
     // 验证密码格式：至少8位，包含字母和数字
     const validatePasswordFormat = (password: string): boolean => {
-        return password.length >= 8 && /[A-Za-z]/.test(password) && /\d/.test(password);
+        return password.length >= PASSWORD_POLICY.RESET_MIN_LENGTH
+            && PASSWORD_POLICY.REQUIRE_LETTER.test(password)
+            && PASSWORD_POLICY.REQUIRE_DIGIT.test(password);
     };
 
     // 验证邮箱格式
     const validateEmail = (email: string): boolean => {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        return EMAIL_PATTERN.test(email);
     };
 
     const validateForm = (): boolean => {
@@ -92,9 +96,9 @@ export default function PasswordReset() {
 
             setTimeout(() => {
                 clearAuth();
-                navigate('/');
+                navigate(ROUTES.HOME);
                 toast.info(t(I18N_KEYS.PASSWORD.LOGIN_AGAIN_TOAST));
-            }, 2000);
+            }, PASSWORD_RESET_REDIRECT_DELAY_MS);
         } catch (error: any) {
             const errorMessage = resolveErrorMessage(error, t(I18N_KEYS.PASSWORD.RESET_FAILED));
             toast.error(errorMessage);

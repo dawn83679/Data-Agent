@@ -32,12 +32,31 @@ import java.util.stream.Collectors;
 public class PermissionRuleServiceImpl extends ServiceImpl<AiPermissionRuleMapper, AiPermissionRule>
         implements PermissionRuleService {
 
+    private static final String MESSAGE_SCOPE_TYPE_REQUIRED = "scopeType is required when saving a default allow rule";
+    private static final String MESSAGE_GRANT_PRESET_REQUIRED_FOR_SAVE = "grantPreset is required when saving a default allow rule";
+    private static final String MESSAGE_PERMISSION_NOT_FOUND = "Permission not found";
+    private static final String MESSAGE_PERMISSION_ACCESS_DENIED = "Permission access denied";
+    private static final String MESSAGE_CONVERSATION_REQUIRED = "conversationId is required for conversation permissions";
+    private static final String MESSAGE_USER_CONVERSATION_MUST_BE_NULL = "conversationId must be null for user permissions";
+    private static final String MESSAGE_REQUEST_CONTEXT_USER_ID_MISSING = "No userId available in RequestContext";
+    private static final String MESSAGE_GRANT_PRESET_REQUIRED = "grantPreset is required";
+    private static final String MESSAGE_EXACT_SCHEMA_CATALOG_REQUIRED = "catalogName is required for EXACT_SCHEMA";
+    private static final String MESSAGE_EXACT_SCHEMA_SCHEMA_REQUIRED = "schemaName is required for EXACT_SCHEMA";
+    private static final String MESSAGE_DATABASE_CATALOG_REQUIRED = "catalogName is required for DATABASE_ALL_SCHEMAS";
+    private static final String MESSAGE_DATABASE_SCHEMA_MUST_BE_EMPTY = "schemaName must be empty for DATABASE_ALL_SCHEMAS";
+    private static final String MESSAGE_CONNECTION_CATALOG_MUST_BE_EMPTY = "catalogName must be empty for CONNECTION_ALL_DATABASES";
+    private static final String MESSAGE_CONNECTION_SCHEMA_MUST_BE_EMPTY = "schemaName must be empty for CONNECTION_ALL_DATABASES";
+    private static final String EMPTY_TEXT = "";
+    private static final int SPECIFICITY_EXACT_SCHEMA = 3;
+    private static final int SPECIFICITY_DATABASE = 2;
+    private static final int SPECIFICITY_CONNECTION = 1;
+
     private final AiConversationService aiConversationService;
     private final DbConnectionService dbConnectionService;
     private final WriteExecutionApprovalStore approvalStore;
 
     @Override
-    public List<PermissionRuleResponse> listForCurrentUser(Long conversationId) {
+    public List<PermissionRuleResponse> listForCurrentUser(PermissionScopeType scopeType, Long conversationId) {
         Long userId = currentUserId();
         if (conversationId != null) {
             aiConversationService.checkAccess(userId, conversationId);
@@ -47,10 +66,7 @@ public class PermissionRuleServiceImpl extends ServiceImpl<AiPermissionRuleMappe
                 .collect(Collectors.toMap(ConnectionResponse::getId, ConnectionResponse::getName));
 
         return currentUserRules(userId).stream()
-                .filter(entity -> entity.getScopeType() == PermissionScopeType.USER
-                        || (conversationId != null
-                        && entity.getScopeType() == PermissionScopeType.CONVERSATION
-                        && Objects.equals(entity.getConversationId(), conversationId)))
+                .filter(entity -> matchesListScope(entity, scopeType, conversationId))
                 .sorted(ruleComparator())
                 .map(entity -> toResponse(entity, connectionNames.get(entity.getConnectionId())))
                 .toList();
@@ -149,8 +165,8 @@ public class PermissionRuleServiceImpl extends ServiceImpl<AiPermissionRuleMappe
         dbConnectionService.getConnectionById(connectionId);
 
         if (scopeType != null || grantPreset != null) {
-            BusinessException.assertNotNull(scopeType, "scopeType is required when saving a default allow rule");
-            BusinessException.assertNotNull(grantPreset, "grantPreset is required when saving a default allow rule");
+            BusinessException.assertNotNull(scopeType, MESSAGE_SCOPE_TYPE_REQUIRED);
+            BusinessException.assertNotNull(grantPreset, MESSAGE_GRANT_PRESET_REQUIRED_FOR_SAVE);
             RuleDefinition definition = normalizeDefinition(grantPreset, catalogName, schemaName);
             upsertForCurrentUser(
                     scopeType,
@@ -169,8 +185,8 @@ public class PermissionRuleServiceImpl extends ServiceImpl<AiPermissionRuleMappe
     private AiPermissionRule getOwnedById(Long id) {
         Long userId = currentUserId();
         AiPermissionRule entity = getById(id);
-        BusinessException.assertNotNull(entity, "Permission not found");
-        BusinessException.assertTrue(Objects.equals(entity.getUserId(), userId), "Permission access denied");
+        BusinessException.assertNotNull(entity, MESSAGE_PERMISSION_NOT_FOUND);
+        BusinessException.assertTrue(Objects.equals(entity.getUserId(), userId), MESSAGE_PERMISSION_ACCESS_DENIED);
         return entity;
     }
 
@@ -178,6 +194,20 @@ public class PermissionRuleServiceImpl extends ServiceImpl<AiPermissionRuleMappe
         return list().stream()
                 .filter(entity -> Objects.equals(entity.getUserId(), userId))
                 .toList();
+    }
+
+    private boolean matchesListScope(AiPermissionRule entity, PermissionScopeType scopeType, Long conversationId) {
+        if (scopeType == PermissionScopeType.USER) {
+            return entity.getScopeType() == PermissionScopeType.USER;
+        }
+        if (scopeType == PermissionScopeType.CONVERSATION) {
+            return entity.getScopeType() == PermissionScopeType.CONVERSATION
+                    && (conversationId == null || Objects.equals(entity.getConversationId(), conversationId));
+        }
+        return entity.getScopeType() == PermissionScopeType.USER
+                || (conversationId != null
+                && entity.getScopeType() == PermissionScopeType.CONVERSATION
+                && Objects.equals(entity.getConversationId(), conversationId));
     }
 
     private AiPermissionRule findExisting(List<AiPermissionRule> rules,
@@ -214,17 +244,17 @@ public class PermissionRuleServiceImpl extends ServiceImpl<AiPermissionRuleMappe
 
     private void validateScope(PermissionScopeType scopeType, Long conversationId, Long userId) {
         if (scopeType == PermissionScopeType.CONVERSATION) {
-            BusinessException.assertNotNull(conversationId, "conversationId is required for conversation permissions");
+            BusinessException.assertNotNull(conversationId, MESSAGE_CONVERSATION_REQUIRED);
             aiConversationService.checkAccess(userId, conversationId);
             return;
         }
-        BusinessException.assertTrue(conversationId == null, "conversationId must be null for user permissions");
+        BusinessException.assertTrue(conversationId == null, MESSAGE_USER_CONVERSATION_MUST_BE_NULL);
     }
 
     private Long currentUserId() {
         Long userId = RequestContext.getUserId();
         if (userId == null) {
-            throw new IllegalStateException("No userId available in RequestContext");
+            throw new IllegalStateException(MESSAGE_REQUEST_CONTEXT_USER_ID_MISSING);
         }
         return userId;
     }
@@ -249,8 +279,8 @@ public class PermissionRuleServiceImpl extends ServiceImpl<AiPermissionRuleMappe
                 .comparing(AiPermissionRule::getConnectionId)
                 .thenComparing(Comparator.comparingInt((AiPermissionRule entity) -> specificityRank(toGrantPreset(entity))).reversed())
                 .thenComparingInt(this::scopePriority)
-                .thenComparing(entity -> Objects.toString(entity.getCatalogName(), ""))
-                .thenComparing(entity -> Objects.toString(entity.getSchemaName(), ""));
+                .thenComparing(entity -> Objects.toString(entity.getCatalogName(), EMPTY_TEXT))
+                .thenComparing(entity -> Objects.toString(entity.getSchemaName(), EMPTY_TEXT));
     }
 
     private Comparator<AiPermissionRule> matchedRuleComparator() {
@@ -317,13 +347,13 @@ public class PermissionRuleServiceImpl extends ServiceImpl<AiPermissionRuleMappe
     }
 
     private RuleDefinition normalizeDefinition(PermissionGrantPreset grantPreset, String catalogName, String schemaName) {
-        BusinessException.assertNotNull(grantPreset, "grantPreset is required");
+        BusinessException.assertNotNull(grantPreset, MESSAGE_GRANT_PRESET_REQUIRED);
         return switch (grantPreset) {
             case EXACT_SCHEMA -> {
                 BusinessException.assertTrue(StringUtils.isNotBlank(catalogName),
-                        "catalogName is required for EXACT_SCHEMA");
+                        MESSAGE_EXACT_SCHEMA_CATALOG_REQUIRED);
                 BusinessException.assertTrue(StringUtils.isNotBlank(schemaName),
-                        "schemaName is required for EXACT_SCHEMA");
+                        MESSAGE_EXACT_SCHEMA_SCHEMA_REQUIRED);
                 yield new RuleDefinition(
                         catalogName,
                         CatalogMatchMode.EXACT,
@@ -333,9 +363,9 @@ public class PermissionRuleServiceImpl extends ServiceImpl<AiPermissionRuleMappe
             }
             case DATABASE_ALL_SCHEMAS -> {
                 BusinessException.assertTrue(StringUtils.isNotBlank(catalogName),
-                        "catalogName is required for DATABASE_ALL_SCHEMAS");
+                        MESSAGE_DATABASE_CATALOG_REQUIRED);
                 BusinessException.assertTrue(StringUtils.isBlank(schemaName),
-                        "schemaName must be empty for DATABASE_ALL_SCHEMAS");
+                        MESSAGE_DATABASE_SCHEMA_MUST_BE_EMPTY);
                 yield new RuleDefinition(
                         catalogName,
                         CatalogMatchMode.EXACT,
@@ -345,9 +375,9 @@ public class PermissionRuleServiceImpl extends ServiceImpl<AiPermissionRuleMappe
             }
             case CONNECTION_ALL_DATABASES -> {
                 BusinessException.assertTrue(StringUtils.isBlank(catalogName),
-                        "catalogName must be empty for CONNECTION_ALL_DATABASES");
+                        MESSAGE_CONNECTION_CATALOG_MUST_BE_EMPTY);
                 BusinessException.assertTrue(StringUtils.isBlank(schemaName),
-                        "schemaName must be empty for CONNECTION_ALL_DATABASES");
+                        MESSAGE_CONNECTION_SCHEMA_MUST_BE_EMPTY);
                 yield new RuleDefinition(
                         null,
                         CatalogMatchMode.ANY,
@@ -370,9 +400,9 @@ public class PermissionRuleServiceImpl extends ServiceImpl<AiPermissionRuleMappe
 
     private int specificityRank(PermissionGrantPreset grantPreset) {
         return switch (grantPreset) {
-            case EXACT_SCHEMA -> 3;
-            case DATABASE_ALL_SCHEMAS -> 2;
-            case CONNECTION_ALL_DATABASES -> 1;
+            case EXACT_SCHEMA -> SPECIFICITY_EXACT_SCHEMA;
+            case DATABASE_ALL_SCHEMAS -> SPECIFICITY_DATABASE;
+            case CONNECTION_ALL_DATABASES -> SPECIFICITY_CONNECTION;
         };
     }
 

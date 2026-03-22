@@ -24,9 +24,10 @@ public class ProcedureServiceImpl implements ProcedureService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         ProcedureProvider provider = DefaultPluginManager.getInstance().getProcedureProviderByPluginId(active.pluginId());
-        return provider.getProcedures(active.connection(), db.catalog(), db.schema());
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.getProcedures(borrowed.connection(), db.catalog(), db.schema());
+        }
     }
 
     @Override
@@ -34,9 +35,10 @@ public class ProcedureServiceImpl implements ProcedureService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         ProcedureProvider provider = DefaultPluginManager.getInstance().getProcedureProviderByPluginId(active.pluginId());
-        return provider.searchProcedures(active.connection(), db.catalog(), db.schema(), procedureNamePattern);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.searchProcedures(borrowed.connection(), db.catalog(), db.schema(), procedureNamePattern);
+        }
     }
 
     @Override
@@ -44,9 +46,10 @@ public class ProcedureServiceImpl implements ProcedureService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         ProcedureProvider provider = DefaultPluginManager.getInstance().getProcedureProviderByPluginId(active.pluginId());
-        return provider.countProcedures(active.connection(), db.catalog(), db.schema(), procedureNamePattern);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.countProcedures(borrowed.connection(), db.catalog(), db.schema(), procedureNamePattern);
+        }
     }
 
     @Override
@@ -54,9 +57,10 @@ public class ProcedureServiceImpl implements ProcedureService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         ProcedureProvider provider = DefaultPluginManager.getInstance().getProcedureProviderByPluginId(active.pluginId());
-        return provider.getProcedureDdl(active.connection(), db.catalog(), db.schema(), procedureName);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            return provider.getProcedureDdl(borrowed.connection(), db.catalog(), db.schema(), procedureName);
+        }
     }
 
     @Override
@@ -64,9 +68,10 @@ public class ProcedureServiceImpl implements ProcedureService {
         connectionService.openConnection(db);
 
         ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-
         ProcedureProvider provider = DefaultPluginManager.getInstance().getProcedureProviderByPluginId(active.pluginId());
-        provider.deleteProcedure(active.connection(), db.catalog(), db.schema(), procedureName);
+        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+            provider.deleteProcedure(borrowed.connection(), db.catalog(), db.schema(), procedureName);
+        }
 
         log.info("Procedure deleted successfully: connectionId={}, catalog={}, schema={}, procedureName={}",
                 db.connectionId(), db.catalog(), db.schema(), procedureName);

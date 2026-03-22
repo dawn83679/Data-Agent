@@ -1,4 +1,4 @@
-import { MessageSquarePlus, Clock, ListTodo, ShieldCheck } from 'lucide-react';
+import { MessageSquarePlus, Clock, ListTodo, ShieldCheck, Brain, Archive } from 'lucide-react';
 import { I18N_KEYS } from '../../constants/i18nKeys';
 
 export interface SlashCommandItem {
@@ -11,6 +11,8 @@ export interface SlashCommandItem {
 export const SLASH_COMMAND_IDS = {
   NEW: 'new',
   HISTORY: 'history',
+  MEMORY: 'memory',
+  COMPRESS: 'compress',
   PLAN: 'plan',
   PERMISSION: 'permission',
 } as const;
@@ -27,6 +29,18 @@ export const SLASH_COMMANDS: SlashCommandItem[] = [
     slug: SLASH_COMMAND_IDS.HISTORY,
     labelKey: I18N_KEYS.AI.SLASH_COMMAND.HISTORY,
     icon: <Clock className="w-3.5 h-3.5 shrink-0" />,
+  },
+  {
+    id: SLASH_COMMAND_IDS.MEMORY,
+    slug: SLASH_COMMAND_IDS.MEMORY,
+    labelKey: I18N_KEYS.AI.SLASH_COMMAND.MEMORY,
+    icon: <Brain className="w-3.5 h-3.5 shrink-0" />,
+  },
+  {
+    id: SLASH_COMMAND_IDS.COMPRESS,
+    slug: SLASH_COMMAND_IDS.COMPRESS,
+    labelKey: I18N_KEYS.AI.SLASH_COMMAND.COMPRESS,
+    icon: <Archive className="w-3.5 h-3.5 shrink-0" />,
   },
   {
     id: SLASH_COMMAND_IDS.PLAN,

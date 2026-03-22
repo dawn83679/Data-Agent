@@ -4,20 +4,54 @@ import java.util.List;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 
-import dev.langchain4j.data.embedding.Embedding;
+import edu.zsc.ai.domain.model.dto.request.ai.MemoryCreateRequest;
+import edu.zsc.ai.domain.model.dto.request.ai.MemoryWriteRequest;
+import edu.zsc.ai.domain.model.dto.request.ai.MemoryUpdateRequest;
 import edu.zsc.ai.domain.model.entity.ai.AiMemory;
-import edu.zsc.ai.domain.model.entity.ai.AiMemoryCandidate;
+import edu.zsc.ai.domain.model.dto.request.base.PageRequest;
+import edu.zsc.ai.domain.model.dto.response.base.PageResponse;
+import edu.zsc.ai.domain.service.ai.model.MemoryMaintenanceReport;
 import edu.zsc.ai.domain.service.ai.model.MemorySearchResult;
+import edu.zsc.ai.domain.service.ai.model.MemoryWriteResult;
+import edu.zsc.ai.domain.service.ai.recall.MemoryRecallQuery;
 
 public interface MemoryService extends IService<AiMemory> {
 
     List<MemorySearchResult> searchActiveMemories(String queryText, int limit, double minScore);
 
-    AiMemory createFromCandidate(AiMemoryCandidate candidate);
+    List<MemorySearchResult> recallAccessibleMemories(Long conversationId, String queryText, double minScore);
 
-    /**
-     * Creates memory from candidate using a pre-computed embedding.
-     * Use this to avoid calling the embedding API inside a transaction.
-     */
-    AiMemory createFromCandidateWithEmbedding(AiMemoryCandidate candidate, Embedding embedding);
+    List<MemorySearchResult> recallAccessibleMemories(Long conversationId, String queryText, double minScore, String scope);
+
+    List<MemorySearchResult> recallAccessibleMemories(MemoryRecallQuery query);
+
+    PageResponse<AiMemory> pageCurrentUserMemories(PageRequest pageRequest,
+                                                   String keyword,
+                                                   String memoryType,
+                                                   Integer status,
+                                                   String scope);
+
+    AiMemory getByIdForCurrentUser(Long memoryId);
+
+    AiMemory createManualMemory(MemoryCreateRequest request);
+
+    AiMemory updateMemory(Long memoryId, MemoryUpdateRequest request);
+
+    MemoryWriteResult writeAgentMemory(MemoryWriteRequest request);
+
+    AiMemory archiveMemory(Long memoryId);
+
+    AiMemory restoreMemory(Long memoryId);
+
+    void deleteMemory(Long memoryId);
+
+    MemoryMaintenanceReport inspectCurrentUserMaintenance();
+
+    MemoryMaintenanceReport runCurrentUserMaintenance();
+
+    MemoryMaintenanceReport runGlobalMaintenance();
+
+    void recordMemoryAccess(List<Long> memoryIds);
+
+    void recordMemoryUsage(List<Long> memoryIds);
 }

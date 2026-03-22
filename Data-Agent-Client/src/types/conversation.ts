@@ -9,6 +9,14 @@ export interface Conversation {
   updatedAt: string;
 }
 
+export interface CompressConversationResponse {
+  compressed: boolean;
+  tokenCountBefore: number | null;
+  tokenCountAfter: number | null;
+  compressedMessageCount: number;
+  keptRecentCount: number;
+}
+
 export interface PageResponse<T> {
   current: number;
   size: number;

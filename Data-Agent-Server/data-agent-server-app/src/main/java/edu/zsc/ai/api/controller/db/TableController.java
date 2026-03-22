@@ -1,10 +1,15 @@
 package edu.zsc.ai.api.controller.db;
 
 import edu.zsc.ai.domain.model.context.DbContext;
+import edu.zsc.ai.domain.model.dto.request.db.DeleteTableRowRequest;
 import edu.zsc.ai.domain.model.dto.request.db.DeleteTableRequest;
+import edu.zsc.ai.domain.model.dto.request.db.InsertTableRowRequest;
+import edu.zsc.ai.domain.model.dto.request.db.TableRowValueRequest;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
+import edu.zsc.ai.domain.model.dto.response.db.ExecuteSqlResponse;
 import edu.zsc.ai.domain.model.dto.response.db.TableDataResponse;
 import edu.zsc.ai.domain.service.db.TableService;
+import edu.zsc.ai.plugin.model.db.TableRowValue;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -61,6 +67,27 @@ public class TableController {
         return ApiResponse.success(null);
     }
 
+    @PostMapping("/rows")
+    public ApiResponse<ExecuteSqlResponse> insertRow(@Valid @RequestBody InsertTableRowRequest request) {
+        log.info("Inserting table row: connectionId={}, tableName={}, catalog={}, schema={}",
+                request.getConnectionId(), request.getTableName(), request.getCatalog(), request.getSchema());
+        DbContext db = DbContext.from(request);
+        return ApiResponse.success(tableService.insertRow(db, request.getTableName(), toRowValues(request.getValues())));
+    }
+
+    @DeleteMapping("/rows")
+    public ApiResponse<ExecuteSqlResponse> deleteRow(@Valid @RequestBody DeleteTableRowRequest request) {
+        log.info("Deleting table row: connectionId={}, tableName={}, catalog={}, schema={}",
+                request.getConnectionId(), request.getTableName(), request.getCatalog(), request.getSchema());
+        DbContext db = DbContext.from(request);
+        return ApiResponse.success(tableService.deleteRow(
+                db,
+                request.getTableName(),
+                toRowValues(request.getMatchValues()),
+                request.isForce()
+        ));
+    }
+
     @GetMapping("/data")
     public ApiResponse<TableDataResponse> getTableData(
             @RequestParam @NotNull(message = "connectionId is required") Long connectionId,
@@ -82,5 +109,15 @@ public class TableController {
                         whereClause, orderByColumn, orderByDirection)
                 : tableService.getTableData(db, tableName, currentPage, pageSize);
         return ApiResponse.success(response);
+    }
+
+    private List<TableRowValue> toRowValues(List<TableRowValueRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            return List.of();
+        }
+        return requests.stream()
+                .filter(item -> item != null && item.getColumnName() != null)
+                .map(item -> new TableRowValue(item.getColumnName(), item.getValue()))
+                .toList();
     }
 }

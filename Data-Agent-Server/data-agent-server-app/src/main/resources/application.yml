@@ -1,6 +1,15 @@
 server:
   port: 8081
 
+db:
+  pool:
+    maximum-pool-size: 10
+    minimum-idle: 1
+    connection-timeout-ms: 30000
+    validation-timeout-ms: 5000
+    idle-timeout-ms: 600000
+    max-lifetime-ms: 1800000
+
 spring:
   application:
     name: DataAgent
@@ -126,6 +135,9 @@ memory:
   embedding:
     dimension: 1024
   retrieval:
-    preload-top-k: 6
-    candidate-top-k: 10
     min-score: 0.72
+  maintenance:
+    enabled: true
+    fixed-delay-ms: 3600000
+    archive-expired-enabled: true
+    hide-duplicate-enabled: true

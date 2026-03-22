@@ -1,6 +1,7 @@
 package edu.zsc.ai.observability.handler;
 
 import edu.zsc.ai.config.ai.AgentObservabilityProperties;
+import edu.zsc.ai.observability.AgentLogCategory;
 import edu.zsc.ai.observability.AgentLogEvent;
 import edu.zsc.ai.observability.AgentLogHandler;
 import edu.zsc.ai.observability.config.AgentObservabilityConfigProvider;
@@ -23,6 +24,9 @@ public class AgentConsoleHandler implements AgentLogHandler {
     public void handle(AgentLogEvent event) {
         AgentObservabilitySettings settings = configProvider.current();
         if (!settings.isEnabled() || !settings.isConsoleLogEnabled() || event == null) {
+            return;
+        }
+        if (event.getType() != null && event.getType().getCategory() == AgentLogCategory.PROMPT) {
             return;
         }
         String summary = String.format(

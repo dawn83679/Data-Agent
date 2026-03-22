@@ -42,6 +42,10 @@ public enum ToolNameEnum {
 
     // ── Skill ──
     ACTIVATE_SKILL("activateSkill"),
+
+    // ── Memory ──
+    READ_MEMORY("readMemory"),
+    WRITE_MEMORY("writeMemory"),
     ;
 
     private final String toolName;

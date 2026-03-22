@@ -27,3 +27,17 @@ export const FALLBACK_MODELS = [
   { modelName: ModelNames.GLM_5, supportThinking: true },
   { modelName: ModelNames.MINIMAX_M2_5, supportThinking: true },
 ];
+
+/** Mirrors backend ModelEnum.memoryThreshold values. */
+export const MODEL_MEMORY_THRESHOLDS: Record<ModelName, number> = {
+  [ModelNames.QWEN3_5_PLUS]: 120000,
+  [ModelNames.QWEN3_MAX]: 230000,
+  [ModelNames.QWEN3_MAX_THINKING]: 230000,
+  [ModelNames.QWEN_PLUS]: 900000,
+  [ModelNames.GLM_5]: 128000,
+  [ModelNames.MINIMAX_M2_5]: 150000,
+};
+
+export function getModelMemoryThreshold(modelName: string): number | null {
+  return MODEL_MEMORY_THRESHOLDS[modelName as ModelName] ?? null;
+}

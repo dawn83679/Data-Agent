@@ -9,6 +9,8 @@ import dev.langchain4j.service.tool.ToolExecutor;
 import edu.zsc.ai.agent.annotation.AgentTool;
 import edu.zsc.ai.agent.tool.ask.AskUserQuestionTool;
 import edu.zsc.ai.agent.tool.chart.ChartTool;
+import edu.zsc.ai.agent.tool.memory.ReadMemoryTool;
+import edu.zsc.ai.agent.tool.memory.WriteMemoryTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingExplorerTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingPlannerTool;
 import edu.zsc.ai.agent.tool.skill.ActivateSkillTool;
@@ -40,13 +42,17 @@ public class AgentToolConfig {
     private static final Map<ToolScope, Set<Class<?>>> TOOL_SCOPE_ALLOWLISTS = Map.of(
             ToolScope.MAIN_AGENT, Set.of(
                     GetEnvironmentOverviewTool.class,
+                    SearchObjectsTool.class,
+                    GetObjectDetailTool.class,
                     ExecuteSqlTool.class,
                     CallingExplorerTool.class,
                     CallingPlannerTool.class,
                     ChartTool.class,
                     AskUserQuestionTool.class,
                     TodoTool.class,
-                    ActivateSkillTool.class
+                    ActivateSkillTool.class,
+                    ReadMemoryTool.class,
+                    WriteMemoryTool.class
             ),
             ToolScope.MAIN_PLAN, Set.of(
                     GetEnvironmentOverviewTool.class,
@@ -59,12 +65,14 @@ public class AgentToolConfig {
             ToolScope.EXPLORER, Set.of(
                     TodoTool.class,
                     SearchObjectsTool.class,
-                    GetObjectDetailTool.class
+                    GetObjectDetailTool.class,
+                    ExecuteSqlTool.class
             ),
             ToolScope.PLANNER, Set.of(
                     TodoTool.class,
                     ActivateSkillTool.class,
-                    GetObjectDetailTool.class
+                    GetObjectDetailTool.class,
+                    ExecuteSqlTool.class
             )
     );
 

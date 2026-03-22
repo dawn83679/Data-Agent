@@ -78,6 +78,11 @@ public final class AgentRequestContext {
         return context != null ? context.getModelName() : null;
     }
 
+    public static String getLanguage() {
+        AgentRequestContextInfo context = peek();
+        return context != null ? context.getLanguage() : null;
+    }
+
     public static boolean isExplorerScope() {
         return StringUtils.equalsIgnoreCase(AgentTypeEnum.EXPLORER.getCode(), getAgentType());
     }
@@ -96,6 +101,7 @@ public final class AgentRequestContext {
         putIfNotNull(map, InvocationContextConstant.AGENT_TYPE, getAgentType());
         putIfNotNull(map, InvocationContextConstant.ALLOWED_CONNECTION_IDS, ConnectionIdUtil.toCsv(getAllowedConnectionIds()));
         putIfNotNull(map, InvocationContextConstant.MODEL_NAME, getModelName());
+        putIfNotNull(map, InvocationContextConstant.LANGUAGE, getLanguage());
         return map;
     }
 

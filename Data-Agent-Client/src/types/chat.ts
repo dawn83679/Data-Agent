@@ -1,7 +1,17 @@
 export interface ChatContext {
   connectionId?: number;
-  databaseName?: string;
+  catalogName?: string;
   schemaName?: string;
+}
+
+export interface ChatUserMention {
+  token: string;
+  objectType: string;
+  connectionId?: number;
+  connectionName: string;
+  catalogName?: string;
+  schemaName?: string;
+  objectName: string;
 }
 
 export interface ChatRequest {
@@ -14,8 +24,9 @@ export interface ChatRequest {
   agentType?: string;
   conversationId?: number;
   connectionId?: number;
-  databaseName?: string;
+  catalogName?: string;
   schemaName?: string;
+  userMentions?: ChatUserMention[];
 }
 
 /** Aligned with backend MessageBlockEnum */
@@ -74,6 +85,7 @@ export interface ChatMessage {
   id: string;
   role: MessageRole;
   content: string;
+  userMentions?: ChatUserMention[];
   blocks?: ChatResponseBlock[];
   doneMetadata?: DoneMetadata;
   createdAt?: Date;
@@ -84,6 +96,13 @@ export interface DoneMetadata {
   toolCounts?: Record<string, number>;
   totalTokens?: number;
   outputTokens?: number;
+  memoryCompressed?: boolean;
+  tokenCountBefore?: number;
+  tokenCountAfter?: number;
+  compressedMessageCount?: number;
+  keptRecentCount?: number;
+  compressionOutputTokens?: number;
+  compressionTotalTokens?: number;
 }
 
 export interface SubAgentEventData {

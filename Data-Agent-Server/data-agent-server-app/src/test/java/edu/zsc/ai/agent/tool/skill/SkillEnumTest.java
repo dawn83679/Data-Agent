@@ -37,10 +37,42 @@ class SkillEnumTest {
     }
 
     @Test
+    void memorySkill_exists() {
+        SkillEnum skill = SkillEnum.fromName("memory");
+        assertNotNull(skill);
+        assertEquals("memory", skill.getSkillName());
+        assertEquals("skills/memory.md", skill.getResourcePath());
+        assertFalse(skill.getDescription().isBlank());
+    }
+
+    @Test
+    void memorySkill_resourceLoadable() {
+        String content = PromptConfig.loadClassPathResource("skills/memory.md");
+        assertNotNull(content);
+        assertFalse(content.isBlank());
+        assertTrue(content.contains("readMemory"));
+        assertTrue(content.contains("writeMemory"));
+        assertTrue(content.contains("PREFERENCE"));
+        assertTrue(content.contains("WORKSPACE"));
+        assertTrue(content.contains("Scope selection guidance"));
+        assertTrue(content.contains("Workspace level selection guidance"));
+        assertTrue(content.contains("If you are unsure between two scopes, prefer the narrower one"));
+        assertTrue(content.contains("### USER"));
+        assertTrue(content.contains("### GLOBAL"));
+        assertTrue(content.contains("### PREFERENCE"));
+        assertTrue(content.contains("#### RESPONSE_STYLE"));
+        assertTrue(content.contains("Good:"));
+        assertTrue(content.contains("Bad:"));
+        assertTrue(content.contains("The orders table primary key is order_id."));
+        assertTrue(content.contains("Users prefer left joins."));
+    }
+
+    @Test
     void validNames_includesBothSkills() {
         String names = SkillEnum.validNames();
         assertTrue(names.contains("chart"));
         assertTrue(names.contains("sql-optimization"));
+        assertTrue(names.contains("memory"));
     }
 
     @Test

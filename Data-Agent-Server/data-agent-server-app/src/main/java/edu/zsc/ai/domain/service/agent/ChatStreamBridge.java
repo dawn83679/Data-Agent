@@ -2,6 +2,7 @@ package edu.zsc.ai.domain.service.agent;
 
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.service.TokenStream;
+import edu.zsc.ai.agent.memory.ChatMemoryCompressor;
 import edu.zsc.ai.agent.tool.AgentToolTracker;
 import edu.zsc.ai.common.enums.ai.ToolNameEnum;
 import edu.zsc.ai.context.AgentExecutionContext;
@@ -19,6 +20,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,6 +38,7 @@ public class ChatStreamBridge {
     private final SseEmitterRegistry sseEmitterRegistry;
     private final ApplicationEventPublisher eventPublisher;
     private final AgentLogService agentLogService;
+    private final ChatMemoryCompressor chatMemoryCompressor;
 
     /**
      * Start the agent chat from the given session and bridge the resulting
@@ -196,10 +200,10 @@ public class ChatStreamBridge {
                             "toolCount", toolTracker.getTotalCount(),
                             "outputTokens", response.tokenUsage() != null ? response.tokenUsage().outputTokenCount() : null,
                             "totalTokens", response.tokenUsage() != null ? response.tokenUsage().totalTokenCount() : null));
-            publishTokenUsageIfPresent(response, conversationId);
+            publishTokenUsageIfPresent(response, conversationId, emitDoneBlock || !enterPlanTriggered.get());
 
             if (emitDoneBlock) {
-                sink.tryEmitNext(ChatResponseBlock.doneBlock(toolTracker.toMetadata()));
+                sink.tryEmitNext(ChatResponseBlock.doneBlock(buildDoneMetadata(conversationId, toolTracker)));
             }
             sink.tryEmitComplete();
         });
@@ -226,7 +230,9 @@ public class ChatStreamBridge {
     }
 
     private void publishTokenUsageIfPresent(
-            dev.langchain4j.model.chat.response.ChatResponse response, Long conversationId) {
+            dev.langchain4j.model.chat.response.ChatResponse response,
+            Long conversationId,
+            boolean finalTurn) {
         if (Objects.isNull(response.tokenUsage())) {
             return;
         }
@@ -237,9 +243,15 @@ public class ChatStreamBridge {
             log.info("Chat completed for conversation {}: {} total tokens (output: {})",
                     conversationId, totalTokens, outputTokens);
             eventPublisher.publishEvent(
-                    new ChatCompletedEvent(this, conversationId, outputTokens, totalTokens));
+                    new ChatCompletedEvent(this, conversationId, outputTokens, totalTokens, finalTurn));
         } else {
             log.debug("No token usage available for conversation {}", conversationId);
         }
+    }
+
+    private Map<String, Object> buildDoneMetadata(Long conversationId, AgentToolTracker toolTracker) {
+        Map<String, Object> metadata = new LinkedHashMap<>(toolTracker.toMetadata());
+        metadata.putAll(chatMemoryCompressor.consumeDoneMetadata(conversationId));
+        return metadata;
     }
 }

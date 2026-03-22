@@ -1,0 +1,127 @@
+package edu.zsc.ai.plugin.mysql.constant;
+
+import static edu.zsc.ai.plugin.mysql.constant.MysqlRoutineConstants.*;
+import static edu.zsc.ai.plugin.mysql.constant.MysqlTriggerConstants.*;
+
+/**
+ * All SQL strings used by MySQL plugin.
+ */
+public final class MySqlTemplate {
+
+    // --- SHOW commands ---
+    /** %s = full table name (catalog.table or table) */
+    public static final String SQL_SHOW_CREATE_TABLE = "SHOW CREATE TABLE %s";
+    /** %s = full view name (catalog.view or view) */
+    public static final String SQL_SHOW_CREATE_VIEW = "SHOW CREATE VIEW %s";
+    /** %s = full function name (catalog.func or func) */
+    public static final String SQL_SHOW_CREATE_FUNCTION = "SHOW CREATE FUNCTION %s";
+    /** %s = full procedure name (catalog.proc or proc) */
+    public static final String SQL_SHOW_CREATE_PROCEDURE = "SHOW CREATE PROCEDURE %s";
+    /** %s = full trigger name (catalog.trigger or trigger) */
+    public static final String SQL_SHOW_CREATE_TRIGGER = "SHOW CREATE TRIGGER %s";
+
+    // --- DROP commands ---
+    /** %s = database name (escaped and quoted) */
+    public static final String SQL_DROP_DATABASE = "DROP DATABASE %s";
+    /** %s = full table name (catalog.table or table, escaped and quoted) */
+    public static final String SQL_DROP_TABLE = "DROP TABLE %s";
+    /** %s = full view name (catalog.view or view, escaped and quoted) */
+    public static final String SQL_DROP_VIEW = "DROP VIEW %s";
+    /** %s = full function name (catalog.func or func, escaped and quoted) */
+    public static final String SQL_DROP_FUNCTION = "DROP FUNCTION %s";
+    /** %s = full procedure name (catalog.proc or proc, escaped and quoted) */
+    public static final String SQL_DROP_PROCEDURE = "DROP PROCEDURE %s";
+    /** %s = full trigger name (catalog.trigger or trigger, escaped and quoted) */
+    public static final String SQL_DROP_TRIGGER = "DROP TRIGGER %s";
+
+    // --- information_schema.TRIGGERS ---
+    /** %s = escaped schema. Append SQL_TRIGGER_FILTER_BY_TABLE + escapedTable + "'" for table filter. */
+    public static final String SQL_LIST_TRIGGERS =
+            "SELECT " + TRIGGER_NAME + ", " + EVENT_OBJECT_TABLE + ", " + ACTION_TIMING + ", " + EVENT_MANIPULATION
+                    + " FROM information_schema.TRIGGERS"
+                    + " WHERE " + TRIGGER_SCHEMA + " = '%s'";
+    public static final String SQL_TRIGGER_FILTER_BY_TABLE = " AND " + EVENT_OBJECT_TABLE + " = '";
+
+    // --- information_schema.ROUTINES ---
+    /** %s = escaped schema */
+    public static final String SQL_LIST_FUNCTIONS =
+            "SELECT " + SPECIFIC_NAME + ", " + ROUTINE_NAME + ", " + DTD_IDENTIFIER
+                    + " FROM information_schema.ROUTINES"
+                    + " WHERE " + ROUTINE_SCHEMA + " = '%s'"
+                    + " AND " + ROUTINE_TYPE + " = '" + ROUTINE_TYPE_FUNCTION + "'";
+    /** %s = escaped schema */
+    public static final String SQL_LIST_PROCEDURES =
+            "SELECT " + SPECIFIC_NAME + ", " + ROUTINE_NAME
+                    + " FROM information_schema.ROUTINES"
+                    + " WHERE " + ROUTINE_SCHEMA + " = '%s'"
+                    + " AND " + ROUTINE_TYPE + " = '" + ROUTINE_TYPE_PROCEDURE + "'";
+
+    // --- information_schema object count ---
+    public static final String SQL_COUNT_TABLES =
+            "SELECT COUNT(*) AS total FROM information_schema.TABLES"
+                    + " WHERE TABLE_SCHEMA = ?"
+                    + " AND TABLE_TYPE = 'BASE TABLE'";
+    public static final String SQL_COUNT_VIEWS =
+            "SELECT COUNT(*) AS total FROM information_schema.TABLES"
+                    + " WHERE TABLE_SCHEMA = ?"
+                    + " AND TABLE_TYPE = 'VIEW'";
+    public static final String SQL_COUNT_FUNCTIONS =
+            "SELECT COUNT(*) AS total FROM information_schema.ROUTINES"
+                    + " WHERE ROUTINE_SCHEMA = ?"
+                    + " AND ROUTINE_TYPE = '" + ROUTINE_TYPE_FUNCTION + "'";
+    public static final String SQL_COUNT_PROCEDURES =
+            "SELECT COUNT(*) AS total FROM information_schema.ROUTINES"
+                    + " WHERE ROUTINE_SCHEMA = ?"
+                    + " AND ROUTINE_TYPE = '" + ROUTINE_TYPE_PROCEDURE + "'";
+    public static final String SQL_COUNT_TABLES_NAME_CLAUSE = " AND TABLE_NAME LIKE ?";
+    public static final String SQL_COUNT_ROUTINES_NAME_CLAUSE = " AND ROUTINE_NAME LIKE ?";
+
+    // --- information_schema.COLUMNS ---
+    /** %s = TABLE_SCHEMA, %s = TABLE_NAME. For tables and views. */
+    public static final String SQL_LIST_COLUMNS =
+            "SELECT " + MysqlColumnConstants.COLUMN_NAME + ", " + MysqlColumnConstants.ORDINAL_POSITION
+                    + ", " + MysqlColumnConstants.COLUMN_DEFAULT + ", " + MysqlColumnConstants.IS_NULLABLE
+                    + ", " + MysqlColumnConstants.DATA_TYPE + ", " + MysqlColumnConstants.COLUMN_TYPE
+                    + ", " + MysqlColumnConstants.COLUMN_KEY + ", " + MysqlColumnConstants.EXTRA
+                    + ", " + MysqlColumnConstants.COLUMN_COMMENT
+                    + ", " + MysqlColumnConstants.CHARACTER_MAXIMUM_LENGTH
+                    + ", " + MysqlColumnConstants.NUMERIC_PRECISION + ", " + MysqlColumnConstants.NUMERIC_SCALE
+                    + " FROM information_schema.COLUMNS"
+                    + " WHERE " + MysqlColumnConstants.TABLE_SCHEMA + " = '%s'"
+                    + " AND " + MysqlColumnConstants.TABLE_NAME + " = '%s'"
+                    + " ORDER BY " + MysqlColumnConstants.ORDINAL_POSITION;
+
+    // --- information_schema.PARAMETERS ---
+    /** %s = escaped schema, %s = IN clause (e.g. 'fn1','fn2') */
+    public static final String SQL_FETCH_PARAMETERS =
+            "SELECT " + SPECIFIC_NAME + ", " + PARAMETER_NAME + ", " + DTD_IDENTIFIER + ", " + ORDINAL_POSITION
+                    + " FROM information_schema.PARAMETERS"
+                    + " WHERE " + SPECIFIC_SCHEMA + " = '%s'"
+                    + " AND " + SPECIFIC_NAME + " IN (%s)"
+                    + " AND " + ORDINAL_POSITION + " > 0"
+                    + " AND " + PARAMETER_NAME + " IS NOT NULL";
+
+    // --- Table/View Data Query (with pagination) ---
+    /** %1$s = table/view name, %2$s = offset, %3$s = page size */
+    public static final String SQL_SELECT_TABLE_DATA =
+            "SELECT * FROM %s LIMIT %d OFFSET %d";
+
+    /** %1$s = table/view name */
+    public static final String SQL_COUNT_TABLE_DATA =
+            "SELECT COUNT(*) AS total FROM %s";
+
+    /** %1$s = full table name, %2$s = quoted columns joined by comma, %3$s = placeholders joined by comma */
+    public static final String SQL_INSERT_TABLE_ROW =
+            "INSERT INTO %s (%s) VALUES (%s)";
+
+    /** %1$s = full table name, %2$s = where clause without WHERE keyword */
+    public static final String SQL_DELETE_TABLE_ROW =
+            "DELETE FROM %s WHERE %s";
+
+    /** %1$s = full table name, %2$s = where clause without WHERE keyword */
+    public static final String SQL_COUNT_MATCHING_TABLE_ROWS =
+            "SELECT COUNT(*) AS total FROM %s WHERE %s";
+
+    private MySqlTemplate() {
+    }
+}
