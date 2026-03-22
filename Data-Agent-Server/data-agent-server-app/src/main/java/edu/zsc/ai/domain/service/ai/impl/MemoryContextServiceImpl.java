@@ -46,7 +46,6 @@ public class MemoryContextServiceImpl implements MemoryContextService {
                     .map(MemoryRecallItem::getId)
                     .toList();
             memoryService.recordMemoryAccess(memoryIds);
-            memoryService.recordMemoryUsage(memoryIds);
             log.info("Memory prompt recall: conversationId={}, recalledCount={}, memoryIds={}, summary={}",
                     conversationId,
                     memoryIds.size(),

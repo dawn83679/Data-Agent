@@ -19,9 +19,9 @@ public class SystemReminderPromptStrategy extends AbstractUserPromptHandler {
     protected String buildContent(UserPromptAssemblyContext context) {
         return """
 - %s defines what the user wants accomplished in this turn
-- %s contains durable preferences and reusable rules recalled for this turn
-- within %s, %s contains structured XML preference records and must be applied by default as a first-class instruction source for language, output format, and response style
-- LANGUAGE_PREFERENCE and other response constraints from %s override the incidental language or formatting inside %s
+- %s contains durable reusable rules recalled for this turn
+- %s contains top-level natural-language preference lines and must be applied by default as a first-class instruction source for language and response format
+- LANGUAGE_PREFERENCE and RESPONSE_FORMAT from %s override the incidental language or formatting inside %s
 - only an explicit instruction in this turn can override those response preferences; incidental English, SQL, object names, or tool names do not count as a language or format switch
 - before producing the final answer, re-check %s and make sure the final language, format, and visualization choices comply with those preferences
 - %s contains a structured JSON array of database objects explicitly referenced by the user via @
@@ -31,16 +31,15 @@ public class SystemReminderPromptStrategy extends AbstractUserPromptHandler {
                 .formatted(
                         UserPromptTagConstant.USER_QUESTION_OPEN,
                         UserPromptTagConstant.USER_MEMORY_OPEN,
-                        UserPromptTagConstant.USER_MEMORY_OPEN,
                         UserPromptTagConstant.USER_PREFERENCES_OPEN,
-                        UserPromptTagConstant.USER_MEMORY_OPEN,
+                        UserPromptTagConstant.USER_PREFERENCES_OPEN,
                         UserPromptTagConstant.USER_QUESTION_OPEN,
                         UserPromptTagConstant.USER_PREFERENCES_OPEN,
                         UserPromptTagConstant.USER_MENTION_OPEN,
                         UserPromptTagConstant.USER_MENTION_OPEN,
                         UserPromptTagConstant.USER_QUESTION_OPEN,
                         UserPromptTagConstant.USER_QUESTION_OPEN,
-                        UserPromptTagConstant.USER_MEMORY_OPEN
+                        UserPromptTagConstant.USER_PREFERENCES_OPEN
                 );
     }
 }

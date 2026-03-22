@@ -5,21 +5,16 @@ import {
   MEMORY_DEFAULT_MANUAL_SCOPE,
   MEMORY_DEFAULT_SOURCE_TYPE,
   MEMORY_DEFAULT_TYPE,
-  MEMORY_DEFAULT_CONFIDENCE_SCORE,
-  MEMORY_DEFAULT_SALIENCE_SCORE,
-  MEMORY_DIALOG_MODE,
+  MEMORY_ENABLE_TONE_CLASS_NAMES,
   MEMORY_SEARCH_RESULT_TONE_CLASS_NAME,
-  MEMORY_STATUS_TONE_CLASS_NAMES,
-  MEMORY_WORKSPACE_SCOPE,
 } from './memoryPageConstants';
 import {
   getDefaultMemorySubtype,
+  MEMORY_ENABLE,
   MEMORY_SCOPE_OPTIONS,
   MEMORY_SOURCE_TYPE_OPTIONS,
-  MEMORY_STATUS,
   MEMORY_SUBTYPE_OPTIONS_BY_TYPE,
   MEMORY_TYPE_OPTIONS,
-  MEMORY_WORKSPACE_LEVEL_OPTIONS,
   type Memory,
   type MemoryCreateRequest,
   type MemoryListParams,
@@ -47,25 +42,22 @@ export const defaultMemoryPage: MemoryPage = {
 export const defaultMemoryListParams: MemoryListParams = {
   current: 1,
   size: DEFAULT_MEMORY_PAGE_SIZE,
-  status: MEMORY_STATUS.ACTIVE,
+  enable: MEMORY_ENABLE.ENABLE,
 };
 
 export const emptyMaintenanceReport: MemoryMaintenanceReport = {
   generatedAt: '',
-  activeMemoryCount: 0,
-  archivedMemoryCount: 0,
-  hiddenMemoryCount: 0,
-  expiredActiveMemoryCount: 0,
-  duplicateActiveMemoryCount: 0,
-  processedArchivedCount: 0,
-  processedHiddenCount: 0,
+  enabledMemoryCount: 0,
+  disabledMemoryCount: 0,
+  duplicateEnabledMemoryCount: 0,
+  processedDisabledCount: 0,
 };
 
 export const defaultFilterFormState: FilterFormState = {
   keyword: '',
   memoryType: '',
   scope: '',
-  status: String(MEMORY_STATUS.ACTIVE),
+  enable: String(MEMORY_ENABLE.ENABLE),
 };
 
 export const createEmptyMemoryFormState = (): MemoryFormState => ({
@@ -77,15 +69,10 @@ export const createEmptyMemoryFormState = (): MemoryFormState => ({
   title: '',
   reason: '',
   content: '',
-  detailJson: '{}',
-  confidenceScore: MEMORY_DEFAULT_CONFIDENCE_SCORE,
-  salienceScore: MEMORY_DEFAULT_SALIENCE_SCORE,
-  expiresAt: '',
 });
 
 export const buildFallbackMemoryMetadata = (): MemoryMetadataResponse => ({
   scopes: [...MEMORY_SCOPE_OPTIONS],
-  workspaceLevels: [...MEMORY_WORKSPACE_LEVEL_OPTIONS],
   sourceTypes: [...MEMORY_SOURCE_TYPE_OPTIONS],
   memoryTypes: MEMORY_TYPE_OPTIONS.map((code) => ({
     code,
@@ -125,7 +112,6 @@ export const normalizeMemoryMetadata = (metadata: MemoryMetadataResponse): Memor
 
   return {
     scopes: normalizeOptionList(metadata.scopes, fallback.scopes),
-    workspaceLevels: normalizeOptionList(metadata.workspaceLevels, fallback.workspaceLevels),
     sourceTypes: normalizeOptionList(metadata.sourceTypes, fallback.sourceTypes),
     memoryTypes: normalizedTypes.length > 0 ? normalizedTypes : fallback.memoryTypes,
   };
@@ -150,17 +136,8 @@ export const buildFilterParams = (form: FilterFormState, size: number): MemoryLi
   keyword: form.keyword || undefined,
   memoryType: form.memoryType || undefined,
   scope: form.scope || undefined,
-  status: form.status === '' ? undefined : Number(form.status),
+  enable: Number(form.enable),
 });
-
-export const toDateTimeLocal = (value?: string | null): string => (value ? value.slice(0, 16) : '');
-
-export const toBackendDateTime = (value: string): string | null => {
-  if (!value) {
-    return null;
-  }
-  return value.length === 16 ? `${value}:00` : value;
-};
 
 export const mapMemoryToFormState = (memory: Memory): MemoryFormState => ({
   conversationId: memory.conversationId == null ? '' : String(memory.conversationId),
@@ -171,10 +148,6 @@ export const mapMemoryToFormState = (memory: Memory): MemoryFormState => ({
   title: memory.title || '',
   reason: memory.reason || '',
   content: memory.content || '',
-  detailJson: memory.detailJson || '{}',
-  confidenceScore: memory.confidenceScore == null ? '' : String(memory.confidenceScore),
-  salienceScore: memory.salienceScore == null ? '' : String(memory.salienceScore),
-  expiresAt: toDateTimeLocal(memory.expiresAt),
 });
 
 export const buildMemoryPayload = (form: MemoryFormState): MemoryCreateRequest => ({
@@ -186,15 +159,11 @@ export const buildMemoryPayload = (form: MemoryFormState): MemoryCreateRequest =
   title: form.title.trim() || undefined,
   reason: form.reason.trim() || undefined,
   content: form.content.trim(),
-  detailJson: form.detailJson.trim() || '{}',
-  confidenceScore: form.confidenceScore.trim() ? Number(form.confidenceScore) : undefined,
-  salienceScore: form.salienceScore.trim() ? Number(form.salienceScore) : undefined,
-  expiresAt: toBackendDateTime(form.expiresAt),
 });
 
 export const validateMemoryForm = (
   form: MemoryFormState,
-  dialogMode: MemoryDialogMode,
+  _dialogMode: MemoryDialogMode,
   subTypeOptionsByType: Record<string, MemorySubType[]>,
   t: TFunction,
 ): Record<string, string> => {
@@ -209,30 +178,11 @@ export const validateMemoryForm = (
   } else if (subTypesForType.length > 0 && !subTypesForType.includes(form.subType)) {
     errors.subType = t(I18N_KEYS.MEMORY_PAGE.VALIDATION_INVALID_SUB_TYPE);
   }
-  if (dialogMode === MEMORY_DIALOG_MODE.CREATE && form.scope === MEMORY_WORKSPACE_SCOPE) {
-    errors.scope = t(I18N_KEYS.MEMORY_PAGE.VALIDATION_MANUAL_WORKSPACE_SCOPE);
-  }
   if (!form.content.trim()) {
     errors.content = t(I18N_KEYS.MEMORY_PAGE.VALIDATION_REQUIRED_CONTENT);
   }
   if (form.conversationId.trim() && Number.isNaN(Number(form.conversationId.trim()))) {
     errors.conversationId = t(I18N_KEYS.MEMORY_PAGE.VALIDATION_CONVERSATION);
-  }
-
-  const numericScores = [form.confidenceScore, form.salienceScore]
-    .filter(Boolean)
-    .map((item) => Number(item));
-  if (numericScores.some((item) => Number.isNaN(item) || item < 0 || item > 1)) {
-    errors.confidenceScore = t(I18N_KEYS.MEMORY_PAGE.VALIDATION_SCORE_RANGE);
-    errors.salienceScore = t(I18N_KEYS.MEMORY_PAGE.VALIDATION_SCORE_RANGE);
-  }
-
-  if (form.detailJson.trim()) {
-    try {
-      JSON.parse(form.detailJson);
-    } catch {
-      errors.detailJson = t(I18N_KEYS.MEMORY_PAGE.VALIDATION_JSON);
-    }
   }
 
   return errors;
@@ -266,12 +216,9 @@ export const buildMemoryListItems = (
       getMemoryOptionLabel(t, memory.scope),
       ...(memory.subType ? [getMemoryOptionLabel(t, memory.subType)] : []),
     ],
-    statusLabel: t(getStatusLabelKey(memory.status)),
-    statusToneClassName: getStatusToneClassName(memory.status),
+    statusLabel: t(getEnableLabelKey(memory.enable)),
+    statusToneClassName: getEnableToneClassName(memory.enable),
     sourceLabel: `${t(I18N_KEYS.MEMORY_PAGE.META_SOURCE)}: ${getMemoryOptionLabel(t, memory.sourceType)}`,
-    workspaceBindingLabel: memory.scope === MEMORY_WORKSPACE_SCOPE
-      ? `${t(I18N_KEYS.MEMORY_PAGE.META_WORKSPACE_BINDING)}: ${formatWorkspaceBindingLabel(t, memory)}`
-      : undefined,
     updatedAtLabel: `${t(I18N_KEYS.MEMORY_PAGE.META_UPDATED)}: ${formatDateTime(memory.updatedAt)}`,
   }));
 };
@@ -322,38 +269,15 @@ export const formatDateTime = (value?: string | null): string => {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 };
 
-export const getStatusToneClassName = (status: number): string => {
-  return MEMORY_STATUS_TONE_CLASS_NAMES[status as keyof typeof MEMORY_STATUS_TONE_CLASS_NAMES]
-    ?? MEMORY_STATUS_TONE_CLASS_NAMES[MEMORY_STATUS.ACTIVE];
+export const getEnableToneClassName = (enable: number): string => {
+  return MEMORY_ENABLE_TONE_CLASS_NAMES[enable as keyof typeof MEMORY_ENABLE_TONE_CLASS_NAMES]
+    ?? MEMORY_ENABLE_TONE_CLASS_NAMES[MEMORY_ENABLE.ENABLE];
 };
 
-export const getStatusLabelKey = (status: number): string => {
-  switch (status) {
-    case MEMORY_STATUS.ARCHIVED:
-      return I18N_KEYS.MEMORY_PAGE.STATUS_ARCHIVED;
-    case MEMORY_STATUS.HIDDEN:
-      return I18N_KEYS.MEMORY_PAGE.STATUS_HIDDEN;
-    default:
-      return I18N_KEYS.MEMORY_PAGE.STATUS_ACTIVE;
-  }
-};
-
-export const formatWorkspaceBinding = (memory?: Memory | null): string => {
-  if (!memory || memory.scope !== MEMORY_WORKSPACE_SCOPE) {
-    return '--';
-  }
-  const level = formatLabel(memory.workspaceLevel);
-  const key = memory.workspaceContextKey || '--';
-  return `${level} / ${key}`;
-};
-
-export const formatWorkspaceBindingLabel = (t: TFunction, memory?: Memory | null): string => {
-  if (!memory || memory.scope !== MEMORY_WORKSPACE_SCOPE) {
-    return '--';
-  }
-  const level = getMemoryOptionLabel(t, memory.workspaceLevel);
-  const key = memory.workspaceContextKey || '--';
-  return `${level} / ${key}`;
+export const getEnableLabelKey = (enable: number): string => {
+  return enable === MEMORY_ENABLE.DISABLE
+    ? I18N_KEYS.MEMORY_PAGE.STATUS_DISABLED
+    : I18N_KEYS.MEMORY_PAGE.STATUS_ENABLED;
 };
 
 export const getDefaultMemorySubtypeByType = (memoryType?: MemoryType | null): MemorySubType | '' =>

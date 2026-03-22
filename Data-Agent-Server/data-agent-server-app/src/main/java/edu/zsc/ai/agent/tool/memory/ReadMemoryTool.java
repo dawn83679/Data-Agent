@@ -40,11 +40,11 @@ public class ReadMemoryTool {
     private final MemoryService memoryService;
 
     @Tool({
-            "Value: recalls durable memory across conversation, workspace, and user dimensions when prompt-injected memory is not enough.",
+            "Value: recalls durable memory across conversation and user dimensions when prompt-injected memory is not enough.",
             "Use When: call when the current task depends on durable context that is missing, insufficient, or ambiguous in the current prompt.",
-            "Common Cases: checking a stable user preference, a durable workflow rule, a validated workspace fact, or a reusable domain rule before deciding how to answer.",
+            "Common Cases: checking a stable user preference, a durable workflow rule, or a reusable domain rule before deciding how to answer.",
             "Preconditions: intent must describe the durable context you want; optional scope, memoryType, and subType should narrow recall to the smallest useful slice.",
-            "Scope Guidance: prefer the narrowest valid scope. Use USER for cross-conversation preferences, WORKSPACE for environment-specific durable rules, and CONVERSATION only for short-lived but reusable context within this conversation.",
+            "Scope Guidance: prefer the narrowest valid scope. Use USER for cross-conversation durable memory and CONVERSATION only for short-lived but reusable context within this conversation.",
             "Classification Guidance: use memoryType/subType only when you already know the likely class of memory. If unsure, leave filters empty rather than guessing wrong.",
             "Optional: activateSkill(\"memory\") only if you need the extended memory classification guide; the tool itself does not require that skill to run.",
             "After Success: use only the returned durable memory that directly helps the task; do not narrate the tool call itself to the user.",
@@ -53,7 +53,7 @@ public class ReadMemoryTool {
     })
     public AgentToolResult readMemory(
             @P("What durable context you want to recall") String intent,
-            @P(value = "Optional scope filter: USER/WORKSPACE/CONVERSATION", required = false) String scope,
+            @P(value = "Optional scope filter: USER/CONVERSATION", required = false) String scope,
             @P(value = "Optional memory type filter", required = false) String memoryType,
             @P(value = "Optional memory subType filter", required = false) String subType,
             InvocationParameters parameters) {
@@ -89,9 +89,6 @@ public class ReadMemoryTool {
                     .map(MemoryRecallItem::getId)
                     .toList();
             memoryService.recordMemoryAccess(memoryIds);
-            if (!memoryIds.isEmpty()) {
-                memoryService.recordMemoryUsage(memoryIds);
-            }
             log.info("[Tool done] readMemory, conversationId={}, scope={}, memoryType={}, subType={}, recalledCount={}, memoryIds={}, summary={}",
                     RequestContext.getConversationId(),
                     normalizedScope,
@@ -172,8 +169,6 @@ public class ReadMemoryTool {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put(MemoryRecallConstant.ITEM_MEMORY_ID, item.getId());
         payload.put(MemoryRecallConstant.ITEM_SCOPE, item.getScope());
-        payload.put(MemoryRecallConstant.ITEM_WORKSPACE_LEVEL, item.getWorkspaceLevel());
-        payload.put(MemoryRecallConstant.ITEM_WORKSPACE_CONTEXT_KEY, item.getWorkspaceContextKey());
         payload.put(MemoryRecallConstant.ITEM_MEMORY_TYPE, item.getMemoryType());
         payload.put(MemoryRecallConstant.ITEM_SUB_TYPE, item.getSubType());
         payload.put(MemoryRecallConstant.ITEM_TITLE, item.getTitle());

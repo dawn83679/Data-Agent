@@ -43,8 +43,8 @@ export const MemoryPaths = {
   MAINTENANCE_RUN: '/memories/maintenance/run',
   CREATE: '/memories',
   UPDATE: '/memories/:id',
-  ARCHIVE: '/memories/:id/archive',
-  RESTORE: '/memories/:id/restore',
+  DISABLE: '/memories/:id/disable',
+  ENABLE: '/memories/:id/enable',
   DELETE: '/memories/:id',
 } as const;
 

@@ -25,10 +25,6 @@ public class AiMemory {
 
     private Long conversationId;
 
-    private String workspaceContextKey;
-
-    private String workspaceLevel;
-
     private String scope;
 
     private String memoryType;
@@ -41,34 +37,16 @@ public class AiMemory {
 
     private String content;
 
-    private String normalizedContentKey;
-
     private String reason;
 
-    private String sourceMessageIds;
-
-    private String detailJson;
-
     /**
-     * SMALLINT: 0=ACTIVE, 1=ARCHIVED, 2=HIDDEN
+     * SMALLINT: 1=ENABLE, 0=DISABLE
      */
-    private Integer status;
-
-    private Double confidenceScore;
-
-    private Double salienceScore;
+    private Integer enable;
 
     private Integer accessCount;
 
-    private Integer useCount;
-
     private LocalDateTime lastAccessedAt;
-
-    private LocalDateTime lastUsedAt;
-
-    private LocalDateTime expiresAt;
-
-    private LocalDateTime archivedAt;
 
     private LocalDateTime createdAt;
 

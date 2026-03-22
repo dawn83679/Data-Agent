@@ -12,7 +12,7 @@ export interface FilterFormState {
   keyword: string;
   memoryType: MemoryType | '';
   scope: MemoryScope | '';
-  status: string;
+  enable: string;
 }
 
 export interface MemoryFormState {
@@ -24,8 +24,4 @@ export interface MemoryFormState {
   title: string;
   reason: string;
   content: string;
-  detailJson: string;
-  confidenceScore: string;
-  salienceScore: string;
-  expiresAt: string;
 }

@@ -1,5 +1,5 @@
 import type { ChangeEvent, FormEvent } from 'react';
-import { Archive, RotateCcw, Trash2 } from 'lucide-react';
+import { Ban, RotateCcw, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../../../components/ui/Button';
 import { WORKBENCH_DIALOG_BODY_CLASS, WORKBENCH_DIALOG_CHROME_CLASS } from '../../../constants/uiLayout';
@@ -13,19 +13,14 @@ import {
 import { Input } from '../../../components/ui/Input';
 import { I18N_KEYS } from '../../../constants/i18nKeys';
 import { cn } from '../../../lib/utils';
-import { MEMORY_STATUS, type Memory, type MemoryScope, type MemorySubType } from '../../../types/memory';
-import {
-  MEMORY_DETAIL_CONTENT_MIN_HEIGHT_CLASS,
-  MEMORY_SCORE_INPUT_STEP,
-  MEMORY_WORKSPACE_SCOPE,
-} from '../memoryPageConstants';
+import { MEMORY_ENABLE, type Memory, type MemoryScope, type MemorySubType } from '../../../types/memory';
+import { MEMORY_DETAIL_CONTENT_MIN_HEIGHT_CLASS } from '../memoryPageConstants';
 import type { MemoryFormState } from '../memoryPageModels';
 import {
   formatDateTime,
-  formatWorkspaceBindingLabel,
+  getEnableLabelKey,
+  getEnableToneClassName,
   getMemoryOptionLabel,
-  getStatusLabelKey,
-  getStatusToneClassName,
   MEMORY_FORM_SELECT_CLASS_NAME,
   MEMORY_FORM_TEXTAREA_CLASS_NAME,
 } from '../memoryPageUtils';
@@ -49,8 +44,8 @@ interface MemoryDetailDialogProps {
     field: keyof MemoryFormState,
   ) => (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
   onSubmit: (event: FormEvent) => void | Promise<void>;
-  onArchive: () => void | Promise<void>;
-  onRestore: () => void | Promise<void>;
+  onDisable: () => void | Promise<void>;
+  onEnable: () => void | Promise<void>;
   onDelete: () => void | Promise<void>;
 }
 
@@ -71,8 +66,8 @@ export function MemoryDetailDialog({
   onClose,
   onInputChange,
   onSubmit,
-  onArchive,
-  onRestore,
+  onDisable,
+  onEnable,
   onDelete,
 }: MemoryDetailDialogProps) {
   const { t } = useTranslation();
@@ -87,18 +82,15 @@ export function MemoryDetailDialog({
         [t(I18N_KEYS.MEMORY_PAGE.META_SOURCE), getMemoryOptionLabel(t, selectedMemory.sourceType)],
         [t(I18N_KEYS.MEMORY_PAGE.FIELD_SUB_TYPE), getMemoryOptionLabel(t, selectedMemory.subType)],
         [t(I18N_KEYS.MEMORY_PAGE.META_SCOPE), getMemoryOptionLabel(t, selectedMemory.scope)],
-        [t(I18N_KEYS.MEMORY_PAGE.META_WORKSPACE_BINDING), formatWorkspaceBindingLabel(t, selectedMemory)],
         [
           t(I18N_KEYS.MEMORY_PAGE.META_CONVERSATION),
           selectedMemory.conversationId == null ? '--' : String(selectedMemory.conversationId),
         ],
-        [t(I18N_KEYS.MEMORY_PAGE.FIELD_EXPIRES_AT), formatDateTime(selectedMemory.expiresAt)],
       ].map(([label, value]) => (
         <div
           key={label}
           className={cn(
             'rounded-xl bg-[color:var(--bg-panel)]/60 p-3',
-            label === t(I18N_KEYS.MEMORY_PAGE.FIELD_EXPIRES_AT) && 'sm:col-span-2',
           )}
         >
           <div className="text-xs uppercase tracking-wide theme-text-secondary">{label}</div>
@@ -122,8 +114,8 @@ export function MemoryDetailDialog({
               </DialogDescription>
             </div>
             {isEditing && selectedMemory ? (
-              <span className={cn('rounded-full border px-3 py-1 text-xs font-medium', getStatusToneClassName(selectedMemory.status))}>
-                {t(getStatusLabelKey(selectedMemory.status))}
+              <span className={cn('rounded-full border px-3 py-1 text-xs font-medium', getEnableToneClassName(selectedMemory.enable))}>
+                {t(getEnableLabelKey(selectedMemory.enable))}
               </span>
             ) : null}
           </div>
@@ -181,7 +173,7 @@ export function MemoryDetailDialog({
                       className={MEMORY_FORM_SELECT_CLASS_NAME}
                       value={memoryForm.scope}
                       onChange={onInputChange('scope')}
-                      disabled={metadataLoading || (isEditing && selectedMemory?.scope === MEMORY_WORKSPACE_SCOPE)}
+                      disabled={metadataLoading}
                     >
                       {editorScopeOptions.map((option) => (
                         <option key={option} value={option}>
@@ -197,7 +189,7 @@ export function MemoryDetailDialog({
                       className={MEMORY_FORM_SELECT_CLASS_NAME}
                       value={memoryForm.sourceType}
                       onChange={onInputChange('sourceType')}
-                      disabled={metadataLoading || (isEditing && selectedMemory?.scope === MEMORY_WORKSPACE_SCOPE)}
+                      disabled={metadataLoading}
                     >
                       {sourceTypeOptions.map((option) => (
                         <option key={option} value={option}>
@@ -206,23 +198,6 @@ export function MemoryDetailDialog({
                       ))}
                     </select>
                   </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="text-sm font-medium theme-text-primary">{t(I18N_KEYS.MEMORY_PAGE.FIELD_EXPIRES_AT)}</label>
-                    <Input type="datetime-local" value={memoryForm.expiresAt} onChange={onInputChange('expiresAt')} />
-                  </div>
-
-                  {selectedMemory?.scope === MEMORY_WORKSPACE_SCOPE ? (
-                    <>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium theme-text-primary">{t(I18N_KEYS.MEMORY_PAGE.FIELD_WORKSPACE_LEVEL)}</label>
-                        <Input value={getMemoryOptionLabel(t, selectedMemory.workspaceLevel)} readOnly />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium theme-text-primary">{t(I18N_KEYS.MEMORY_PAGE.FIELD_WORKSPACE_CONTEXT)}</label>
-                        <Input value={selectedMemory.workspaceContextKey || '--'} readOnly />
-                      </div>
-                    </>
-                  ) : null}
 
                   <div className="space-y-2 md:col-span-2">
                     <label className="text-sm font-medium theme-text-primary">{t(I18N_KEYS.MEMORY_PAGE.FIELD_TITLE)}</label>
@@ -241,39 +216,6 @@ export function MemoryDetailDialog({
                     />
                     {formErrors.content ? <p className="text-sm text-destructive">{formErrors.content}</p> : null}
                   </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="text-sm font-medium theme-text-primary">{t(I18N_KEYS.MEMORY_PAGE.FIELD_DETAIL_JSON)}</label>
-                    <textarea
-                      className={cn(MEMORY_FORM_TEXTAREA_CLASS_NAME, 'font-mono')}
-                      value={memoryForm.detailJson}
-                      onChange={onInputChange('detailJson')}
-                    />
-                    {formErrors.detailJson ? <p className="text-sm text-destructive">{formErrors.detailJson}</p> : null}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium theme-text-primary">{t(I18N_KEYS.MEMORY_PAGE.FIELD_CONFIDENCE)}</label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="1"
-                      step={MEMORY_SCORE_INPUT_STEP}
-                      value={memoryForm.confidenceScore}
-                      onChange={onInputChange('confidenceScore')}
-                    />
-                    {formErrors.confidenceScore ? <p className="text-sm text-destructive">{formErrors.confidenceScore}</p> : null}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium theme-text-primary">{t(I18N_KEYS.MEMORY_PAGE.FIELD_SALIENCE)}</label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="1"
-                      step={MEMORY_SCORE_INPUT_STEP}
-                      value={memoryForm.salienceScore}
-                      onChange={onInputChange('salienceScore')}
-                    />
-                    {formErrors.salienceScore ? <p className="text-sm text-destructive">{formErrors.salienceScore}</p> : null}
-                  </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2 border-t theme-border pt-4">
@@ -283,16 +225,16 @@ export function MemoryDetailDialog({
                   <Button type="button" variant="outline" disabled={submitting} onClick={onClose}>
                     {t(I18N_KEYS.COMMON.CLOSE)}
                   </Button>
-                  {selectedMemory && selectedMemory.status === MEMORY_STATUS.ACTIVE ? (
-                    <Button type="button" variant="outline" disabled={submitting} onClick={() => void onArchive()}>
-                      <Archive className="mr-2 h-4 w-4" />
-                      {t(I18N_KEYS.MEMORY_PAGE.ARCHIVE)}
+                  {selectedMemory && selectedMemory.enable === MEMORY_ENABLE.ENABLE ? (
+                    <Button type="button" variant="outline" disabled={submitting} onClick={() => void onDisable()}>
+                      <Ban className="mr-2 h-4 w-4" />
+                      {t(I18N_KEYS.MEMORY_PAGE.DISABLE)}
                     </Button>
                   ) : null}
-                  {selectedMemory && selectedMemory.status === MEMORY_STATUS.ARCHIVED ? (
-                    <Button type="button" variant="outline" disabled={submitting} onClick={() => void onRestore()}>
+                  {selectedMemory && selectedMemory.enable === MEMORY_ENABLE.DISABLE ? (
+                    <Button type="button" variant="outline" disabled={submitting} onClick={() => void onEnable()}>
                       <RotateCcw className="mr-2 h-4 w-4" />
-                      {t(I18N_KEYS.MEMORY_PAGE.RESTORE)}
+                      {t(I18N_KEYS.MEMORY_PAGE.ENABLE)}
                     </Button>
                   ) : null}
                   {selectedMemoryId != null ? (

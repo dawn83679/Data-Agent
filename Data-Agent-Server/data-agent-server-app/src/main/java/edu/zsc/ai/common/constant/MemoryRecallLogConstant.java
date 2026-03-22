@@ -37,6 +37,7 @@ public final class MemoryRecallLogConstant {
 
     public static final String EXECUTION_PATH_BROWSE = "browse";
     public static final String EXECUTION_PATH_SEMANTIC = "semantic";
+    public static final String EXECUTION_PATH_SEMANTIC_EMPTY_BROWSE_FALLBACK = "semantic_empty_browse_fallback";
     public static final String EXECUTION_PATH_HYBRID_SEMANTIC = "hybrid_semantic";
     public static final String EXECUTION_PATH_HYBRID_BROWSE_FALLBACK = "hybrid_browse_fallback";
     public static final String EXECUTION_PATH_SEMANTIC_EXCEPTION_FALLBACK = "semantic_exception_fallback";

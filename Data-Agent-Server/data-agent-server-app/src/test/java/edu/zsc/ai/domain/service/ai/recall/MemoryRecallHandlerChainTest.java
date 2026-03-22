@@ -16,9 +16,9 @@ class MemoryRecallHandlerChainTest {
     void handle_dispatchesToTheSingleMatchingHandler() {
         MemoryRecallHandlerChain chain = new MemoryRecallHandlerChain(List.of(
                 new TestMemoryRecallHandler(MemoryScopeEnum.USER.getCode(), 1L),
-                new TestMemoryRecallHandler(MemoryScopeEnum.WORKSPACE.getCode(), 2L)));
+                new TestMemoryRecallHandler(MemoryScopeEnum.CONVERSATION.getCode(), 2L)));
 
-        List<MemoryRecallItem> items = chain.handle(query(MemoryScopeEnum.WORKSPACE.getCode()));
+        List<MemoryRecallItem> items = chain.handle(query(MemoryScopeEnum.CONVERSATION.getCode()));
 
         assertEquals(1, items.size());
         assertEquals(2L, items.get(0).getId());
@@ -30,9 +30,9 @@ class MemoryRecallHandlerChainTest {
                 new TestMemoryRecallHandler(MemoryScopeEnum.USER.getCode(), 1L)));
 
         IllegalStateException exception = assertThrows(IllegalStateException.class,
-                () -> chain.handle(query(MemoryScopeEnum.WORKSPACE.getCode())));
+                () -> chain.handle(query(MemoryScopeEnum.CONVERSATION.getCode())));
 
-        assertEquals("No handler matched input: " + query(MemoryScopeEnum.WORKSPACE.getCode()), exception.getMessage());
+        assertEquals("No handler matched input: " + query(MemoryScopeEnum.CONVERSATION.getCode()), exception.getMessage());
     }
 
     @Test

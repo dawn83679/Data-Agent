@@ -59,19 +59,12 @@ export function useMemoryCrudActions({
       const saved = isEditing
         ? await memoryService.update(selectedMemoryId as number, {
             memoryType: payload.memoryType,
-            workspaceContextKey: payload.workspaceContextKey,
-            workspaceLevel: payload.workspaceLevel,
             scope: payload.scope,
             subType: payload.subType,
             sourceType: payload.sourceType,
             title: payload.title,
             reason: payload.reason,
             content: payload.content,
-            detailJson: payload.detailJson,
-            sourceMessageIds: payload.sourceMessageIds,
-            confidenceScore: payload.confidenceScore,
-            salienceScore: payload.salienceScore,
-            expiresAt: payload.expiresAt,
           })
         : await memoryService.create(payload);
 
@@ -88,37 +81,37 @@ export function useMemoryCrudActions({
     }
   };
 
-  const handleArchive = async () => {
+  const handleDisable = async () => {
     if (!selectedMemoryId) {
       return;
     }
     setSubmitting(true);
     try {
-      const memory = await memoryService.archive(selectedMemoryId);
+      const memory = await memoryService.disable(selectedMemoryId);
       setSelectedMemory(memory);
       setMemoryForm(mapMemoryToFormState(memory));
-      toast.success(t(I18N_KEYS.MEMORY_PAGE.ARCHIVE_SUCCESS));
+      toast.success(t(I18N_KEYS.MEMORY_PAGE.DISABLE_SUCCESS));
       await reloadMemories();
     } catch (error) {
-      toast.error(resolveErrorMessage(error, t(I18N_KEYS.MEMORY_PAGE.ARCHIVE_FAILED)));
+      toast.error(resolveErrorMessage(error, t(I18N_KEYS.MEMORY_PAGE.DISABLE_FAILED)));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleRestore = async () => {
+  const handleEnable = async () => {
     if (!selectedMemoryId) {
       return;
     }
     setSubmitting(true);
     try {
-      const memory = await memoryService.restore(selectedMemoryId);
+      const memory = await memoryService.enable(selectedMemoryId);
       setSelectedMemory(memory);
       setMemoryForm(mapMemoryToFormState(memory));
-      toast.success(t(I18N_KEYS.MEMORY_PAGE.RESTORE_SUCCESS));
+      toast.success(t(I18N_KEYS.MEMORY_PAGE.ENABLE_SUCCESS));
       await reloadMemories();
     } catch (error) {
-      toast.error(resolveErrorMessage(error, t(I18N_KEYS.MEMORY_PAGE.RESTORE_FAILED)));
+      toast.error(resolveErrorMessage(error, t(I18N_KEYS.MEMORY_PAGE.ENABLE_FAILED)));
     } finally {
       setSubmitting(false);
     }
@@ -147,8 +140,8 @@ export function useMemoryCrudActions({
 
   return {
     handleSubmit,
-    handleArchive,
-    handleRestore,
+    handleDisable,
+    handleEnable,
     handleDelete,
   };
 }

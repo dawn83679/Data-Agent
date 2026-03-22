@@ -144,5 +144,4 @@ memory:
   maintenance:
     enabled: true
     fixed-delay-ms: 3600000
-    archive-expired-enabled: true
-    hide-duplicate-enabled: true
+    disable-duplicate-enabled: true

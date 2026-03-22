@@ -108,8 +108,8 @@ export default function Memories() {
         onClose={workbench.closeDetailDialog}
         onInputChange={workbench.handleFormInputChange}
         onSubmit={workbench.handleSubmit}
-        onArchive={workbench.handleArchive}
-        onRestore={workbench.handleRestore}
+        onDisable={workbench.handleDisable}
+        onEnable={workbench.handleEnable}
         onDelete={workbench.handleDelete}
       />
     </div>

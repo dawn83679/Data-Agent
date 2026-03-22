@@ -5,9 +5,9 @@ Use this skill to manage durable memory that improves future turns. Good memory 
 
 ## Write Only When The Information Is Durable
 You may write memory when the conversation reveals one of these:
-- Stable user preferences about response style, output structure, or interaction style
+- Stable user preferences about language or response format
 - Durable workflow constraints, review rules, implementation constraints, or approval rules
-- Business rules or product/domain rules that will likely matter again in this workspace
+- Business rules or product/domain rules that will likely matter again for this user or this conversation
 - Validated knowledge that has been confirmed through repeated correction, code inspection, or verified SQL results
 - Reusable high-value SQL patterns that are safe to recall later
 
@@ -23,7 +23,7 @@ Never write memory for:
 Most turns should rely on prompt-injected memory already present in the runtime prompt.
 Use explicit memory recall only when:
 - The current task clearly depends on durable context that is probably not already injected
-- You need to check a specific memory dimension such as a workflow rule, preference, or validated workspace fact
+- You need to check a specific memory dimension such as a workflow rule, preference, or validated fact
 - The prompt-injected memory looks insufficient or ambiguous
 
 Do not call explicit memory recall mechanically on every turn.
@@ -33,7 +33,7 @@ Choose the narrowest valid classification.
 
 Think in two steps before calling `writeMemory`:
 1. Decide whether the conclusion is durable enough to survive beyond this turn.
-2. Decide the narrowest scope and workspace level that still preserves the truth of the memory.
+2. Decide the narrowest scope that still preserves the truth of the memory.
 
 ## Scope
 
@@ -55,72 +55,15 @@ Good:
 Bad:
 - "User said wait a second before the next message, so persist that as a durable rule."
 
-### WORKSPACE
-Use for durable project, schema, catalog, naming, SQL, domain, or governance facts tied to the current data environment.
-
-Good:
-- "In analytics, use catalogName terminology and avoid databaseName wording."
-
-Bad:
-- "User likes concise answers, so store that as a workspace rule."
-
 Scope selection guidance:
 - Choose `USER` only when the memory is about the person, not about the current database or task
 - Choose `CONVERSATION` when the rule or conclusion is useful later in this conversation but should not leak into future conversations
-- Choose `WORKSPACE` when the memory is about the current data environment, naming conventions, SQL patterns, schema facts, or project rules
 - If you are unsure between two scopes, prefer the narrower one
-
-## Workspace Level
-When `scope = WORKSPACE`, you must also choose the narrowest safe `workspaceLevel`.
-
-### GLOBAL
-Applies to all database work in this product context.
-
-Good:
-- "Across this product, explain storage hierarchy with catalogName instead of databaseName."
-
-Bad:
-- "Orders in analytics.public use paid_at for revenue, so store that as GLOBAL."
-
-### CONNECTION
-Applies across the current connection.
-
-Good:
-- "For connection 12, avoid write SQL unless the user explicitly asks for execution."
-
-Bad:
-- "Only analytics catalog stores money in cents, so store that as CONNECTION."
-
-### CATALOG
-Applies across the current catalog only.
-
-Good:
-- "In analytics catalog, money fields are stored in cents and must be divided by 100.0."
-
-Bad:
-- "Only analytics.public.orders uses paid_at for revenue, so store that as CATALOG."
-
-### SCHEMA
-Applies only to the current schema.
-
-Good:
-- "In analytics.public, revenue metrics are based on paid_at rather than created_at."
-
-Bad:
-- "Every schema in analytics follows this revenue rule, but still store it as SCHEMA."
-
-Workspace level selection guidance:
-- Choose `SCHEMA` when the fact or rule is tied to specific objects, tables, metrics, or conventions inside one schema
-- Choose `CATALOG` when it holds across multiple schemas in the same catalog
-- Choose `CONNECTION` when it holds across the whole connection regardless of catalog
-- Choose `GLOBAL` only for very broad rules that truly apply everywhere in this product context
-- Never widen the level just because broader recall feels convenient
-- If the evidence only supports the current schema, do not write `CATALOG` or `CONNECTION`
 
 ## Memory Types
 
 ### PREFERENCE
-What it is: a stable user preference about style, format, interaction, or decision framing.
+What it is: a stable user preference about language or response format.
 
 Good:
 - "User prefers concise answers with SQL in fenced code blocks."
@@ -168,35 +111,17 @@ Bad:
 
 ### PREFERENCE
 
-#### RESPONSE_STYLE
+#### RESPONSE_FORMAT
 Good:
-- "User prefers concise direct answers over long explanations."
+- "User wants final answers in concise bullet points."
 Bad:
 - "Orders become active only after payment."
-
-#### OUTPUT_FORMAT
-Good:
-- "User wants final SQL wrapped in a fenced code block."
-Bad:
-- "For this one reply, add a code block."
 
 #### LANGUAGE_PREFERENCE
 Good:
 - "User prefers Chinese for future interaction unless they switch languages."
 Bad:
 - "The user wrote one Chinese sentence in this turn, so always persist Chinese as a preference."
-
-#### INTERACTION_STYLE
-Good:
-- "User prefers that you explain assumptions before taking action."
-Bad:
-- "In analytics catalog, cents must be divided by 100.0."
-
-#### DECISION_STYLE
-Good:
-- "When offering multiple options, user wants a recommended option first."
-Bad:
-- "The user asked for two choices in this single message."
 
 ### BUSINESS_RULE
 
@@ -320,7 +245,7 @@ When you revise memory:
 - Do not create parallel memories that disagree unless the disagreement itself is the durable fact
 
 ## Tool Usage
-When the current turn establishes a durable preference, reusable workflow rule, validated workspace fact, or reusable SQL pattern, you should actively consider writing memory instead of just replying and moving on.
+When the current turn establishes a durable preference, reusable workflow rule, validated fact, or reusable SQL pattern, you should actively consider writing memory instead of just replying and moving on.
 
 When durable context is missing, use `readMemory` with a focused intent and optional filters.
 - Prefer a short intent that states what durable fact you need
@@ -331,10 +256,3 @@ When the memory is worth storing, call `writeMemory` directly.
 - Do not ask the user for confirmation before writing
 - Do not announce memory creation as part of the normal user-facing answer
 - Do not call `writeMemory` for weak or low-confidence candidates
-- When `scope = WORKSPACE`, pass the explicit binding fields required by that level:
-  - `GLOBAL`: no extra binding fields
-  - `CONNECTION`: `workspaceConnectionId`
-  - `CATALOG`: `workspaceConnectionId` + `workspaceCatalogName`
-  - `SCHEMA`: `workspaceConnectionId` + `workspaceCatalogName` + `workspaceSchemaName`
-- Do not rely on hidden runtime context to decide the workspace binding
-- Do not guess broader workspace scope than the evidence supports

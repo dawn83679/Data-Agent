@@ -3,20 +3,18 @@ import { Button } from "../../../components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/Card";
 
 export interface MemoryMaintenanceStats {
-  activeCount: number;
-  archivedCount: number;
-  hiddenCount: number;
-  duplicateCount: number;
+  enabledCount: number;
+  disabledCount: number;
+  duplicateEnabledCount: number;
   generatedAt: string;
 }
 
 export interface MemoryMaintenancePanelProps {
   title: string;
   description: string;
-  activeLabel: string;
-  archivedLabel: string;
-  hiddenLabel: string;
-  duplicateLabel: string;
+  enabledLabel: string;
+  disabledLabel: string;
+  duplicateEnabledLabel: string;
   generatedAtLabel: string;
   runLabel: string;
   refreshLabel?: string;
@@ -29,10 +27,9 @@ export interface MemoryMaintenancePanelProps {
 export function MemoryMaintenancePanel({
   title,
   description,
-  activeLabel,
-  archivedLabel,
-  hiddenLabel,
-  duplicateLabel,
+  enabledLabel,
+  disabledLabel,
+  duplicateEnabledLabel,
   generatedAtLabel,
   runLabel,
   refreshLabel,
@@ -57,20 +54,16 @@ export function MemoryMaintenancePanel({
       <CardContent className="space-y-3">
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-lg border theme-border theme-bg-main p-2">
-            <p className="text-[11px] uppercase tracking-wide theme-text-secondary">{activeLabel}</p>
-            <p className="mt-1 text-lg font-semibold theme-text-primary">{stats.activeCount}</p>
+            <p className="text-[11px] uppercase tracking-wide theme-text-secondary">{enabledLabel}</p>
+            <p className="mt-1 text-lg font-semibold theme-text-primary">{stats.enabledCount}</p>
           </div>
           <div className="rounded-lg border theme-border theme-bg-main p-2">
-            <p className="text-[11px] uppercase tracking-wide theme-text-secondary">{archivedLabel}</p>
-            <p className="mt-1 text-lg font-semibold theme-text-primary">{stats.archivedCount}</p>
+            <p className="text-[11px] uppercase tracking-wide theme-text-secondary">{disabledLabel}</p>
+            <p className="mt-1 text-lg font-semibold theme-text-primary">{stats.disabledCount}</p>
           </div>
           <div className="rounded-lg border theme-border theme-bg-main p-2">
-            <p className="text-[11px] uppercase tracking-wide theme-text-secondary">{hiddenLabel}</p>
-            <p className="mt-1 text-lg font-semibold theme-text-primary">{stats.hiddenCount}</p>
-          </div>
-          <div className="rounded-lg border theme-border theme-bg-main p-2">
-            <p className="text-[11px] uppercase tracking-wide theme-text-secondary">{duplicateLabel}</p>
-            <p className="mt-1 text-lg font-semibold theme-text-primary">{stats.duplicateCount}</p>
+            <p className="text-[11px] uppercase tracking-wide theme-text-secondary">{duplicateEnabledLabel}</p>
+            <p className="mt-1 text-lg font-semibold theme-text-primary">{stats.duplicateEnabledCount}</p>
           </div>
         </div>
         <div className="rounded-lg border border-dashed theme-border p-2 text-xs theme-text-secondary">

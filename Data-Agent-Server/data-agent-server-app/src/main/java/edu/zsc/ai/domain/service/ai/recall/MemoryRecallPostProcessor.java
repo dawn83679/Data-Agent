@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 import edu.zsc.ai.common.constant.MemoryRecallConstant;
 import edu.zsc.ai.common.constant.MemoryConstant;
 import edu.zsc.ai.common.enums.ai.MemoryScopeEnum;
-import edu.zsc.ai.common.enums.ai.MemoryWorkspaceLevelEnum;
 
 @Component
 public class MemoryRecallPostProcessor {
@@ -84,7 +83,6 @@ public class MemoryRecallPostProcessor {
 
     private Comparator<MemoryRecallItem> recallComparator() {
         return Comparator.comparingInt(this::scopePriority)
-                .thenComparing(Comparator.comparingInt(this::workspacePriority).reversed())
                 .thenComparing(Comparator.comparingDouble(MemoryRecallItem::getScore).reversed())
                 .thenComparing(MemoryRecallItem::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(MemoryRecallItem::getId, Comparator.nullsLast(Comparator.reverseOrder()));
@@ -95,21 +93,9 @@ public class MemoryRecallPostProcessor {
         return scope == null ? Integer.MAX_VALUE : scope.getPriority();
     }
 
-    private int workspacePriority(MemoryRecallItem item) {
-        MemoryWorkspaceLevelEnum level = MemoryWorkspaceLevelEnum.fromCode(item.getWorkspaceLevel());
-        return level == null ? -1 : level.getPriority();
-    }
-
     private String dedupKey(MemoryRecallItem item) {
         return StringUtils.defaultIfBlank(item.getMemoryType(), "")
                 + "|" + StringUtils.defaultIfBlank(item.getSubType(), "")
-                + "|" + StringUtils.defaultIfBlank(normalizedContent(item), "");
-    }
-
-    private String normalizedContent(MemoryRecallItem item) {
-        if (StringUtils.isNotBlank(item.getNormalizedContentKey())) {
-            return item.getNormalizedContentKey();
-        }
-        return StringUtils.normalizeSpace(Objects.toString(item.getContent(), "")).toLowerCase();
+                + "|" + StringUtils.defaultIfBlank(Objects.toString(item.getContent(), ""), "");
     }
 }

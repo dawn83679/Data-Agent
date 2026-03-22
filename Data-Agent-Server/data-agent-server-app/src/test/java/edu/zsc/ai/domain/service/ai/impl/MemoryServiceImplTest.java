@@ -2,7 +2,6 @@ package edu.zsc.ai.domain.service.ai.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -31,7 +30,7 @@ import dev.langchain4j.store.embedding.EmbeddingSearchResult;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import edu.zsc.ai.common.constant.MemoryLogConstant;
 import edu.zsc.ai.common.constant.MemoryRecallLogConstant;
-import edu.zsc.ai.common.enums.ai.MemoryStatusEnum;
+import edu.zsc.ai.common.enums.ai.MemoryEnableEnum;
 import edu.zsc.ai.common.enums.ai.MemoryToolActionEnum;
 import edu.zsc.ai.config.ai.MemoryProperties;
 import edu.zsc.ai.context.RequestContext;
@@ -42,6 +41,7 @@ import edu.zsc.ai.domain.model.dto.request.ai.MemoryUpdateRequest;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryWriteRequest;
 import edu.zsc.ai.domain.model.entity.ai.AiMemory;
 import edu.zsc.ai.domain.service.ai.model.MemoryMaintenanceReport;
+import edu.zsc.ai.domain.service.ai.model.MemorySearchResult;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallMode;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallQuery;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallQueryStrategy;
@@ -64,8 +64,7 @@ class MemoryServiceImplTest {
         when(embeddingModel.embed(any(String.class))).thenReturn(Response.from(Embedding.from(new float[]{1.0f, 2.0f})));
 
         MemoryProperties memoryProperties = new MemoryProperties();
-        memoryProperties.getMaintenance().setArchiveExpiredEnabled(true);
-        memoryProperties.getMaintenance().setHideDuplicateEnabled(true);
+        memoryProperties.getMaintenance().setDisableDuplicateEnabled(true);
 
         agentLogService = new CaptureAgentLogService();
         service = new InMemoryMemoryService(store, embeddingModel, memoryProperties, agentLogService);
@@ -78,11 +77,11 @@ class MemoryServiceImplTest {
     }
 
     @Test
-    void createUpdateArchiveRestoreAndDeleteMemory() {
+    void createUpdateDisableEnableAndDeleteMemory() {
         MemoryCreateRequest createRequest = new MemoryCreateRequest();
         createRequest.setConversationId(7L);
         createRequest.setMemoryType("preference");
-        createRequest.setSubType("output_format");
+        createRequest.setSubType("response_format");
         createRequest.setContent("User prefers concise SQL explanations.");
         createRequest.setScope("user");
 
@@ -91,7 +90,7 @@ class MemoryServiceImplTest {
         assertNotNull(created.getId());
         assertEquals("PREFERENCE", created.getMemoryType());
         assertEquals("USER", created.getScope());
-        assertEquals(MemoryStatusEnum.ACTIVE.getCode(), created.getStatus());
+        assertEquals(MemoryEnableEnum.ENABLE.getCode(), created.getEnable());
         verify(embeddingStore, atLeastOnce()).addAll(anyList(), anyList(), anyList());
 
         MemoryUpdateRequest updateRequest = new MemoryUpdateRequest();
@@ -100,110 +99,122 @@ class MemoryServiceImplTest {
         updateRequest.setContent("Always confirm write SQL against production-like databases.");
         updateRequest.setScope("conversation");
         updateRequest.setSourceType("manual");
-        updateRequest.setConfidenceScore(0.88);
-        updateRequest.setSalienceScore(0.77);
-        updateRequest.setExpiresAt(LocalDateTime.of(2026, 4, 1, 0, 0));
 
         AiMemory updated = service.updateMemory(created.getId(), updateRequest);
 
         assertEquals("BUSINESS_RULE", updated.getMemoryType());
         assertEquals("CONVERSATION", updated.getScope());
-        assertEquals(0.88, updated.getConfidenceScore());
-        assertNotNull(updated.getExpiresAt());
         verify(embeddingStore, atLeastOnce()).remove(String.valueOf(created.getId()));
 
-        AiMemory archived = service.archiveMemory(created.getId());
-        assertEquals(MemoryStatusEnum.ARCHIVED.getCode(), archived.getStatus());
-        assertNotNull(archived.getArchivedAt());
+        AiMemory disabled = service.disableMemory(created.getId());
+        assertEquals(MemoryEnableEnum.DISABLE.getCode(), disabled.getEnable());
 
-        AiMemory restored = service.restoreMemory(created.getId());
-        assertEquals(MemoryStatusEnum.ACTIVE.getCode(), restored.getStatus());
-        assertNull(restored.getArchivedAt());
+        AiMemory enabled = service.enableMemory(created.getId());
+        assertEquals(MemoryEnableEnum.ENABLE.getCode(), enabled.getEnable());
 
         service.deleteMemory(created.getId());
         assertThrows(BusinessException.class, () -> service.getByIdForCurrentUser(created.getId()));
         assertEquals(List.of(
                         MemoryLogConstant.EVENT_MEMORY_MANUAL_CREATE,
                         MemoryLogConstant.EVENT_MEMORY_MANUAL_UPDATE,
-                        MemoryLogConstant.EVENT_MEMORY_ARCHIVE,
-                        MemoryLogConstant.EVENT_MEMORY_RESTORE,
+                        MemoryLogConstant.EVENT_MEMORY_DISABLE,
+                        MemoryLogConstant.EVENT_MEMORY_ENABLE,
                         MemoryLogConstant.EVENT_MEMORY_DELETE),
                 agentLogService.eventNames());
     }
 
     @Test
-    void writeAgentMemory_upsertsExistingActiveMemoryByNormalizedKey() {
+    void writeAgentMemory_alwaysCreatesNewMemory() {
         RequestContext.set(RequestContextInfo.builder()
                 .userId(42L)
                 .conversationId(7L)
-                .connectionId(9L)
-                .catalog("analytics")
-                .schema("public")
                 .build());
 
         MemoryWriteResult created = service.writeAgentMemory(MemoryWriteRequest.builder()
-                .scope("workspace")
-                .workspaceLevel("schema")
-                .workspaceConnectionId(9L)
-                .workspaceCatalogName("analytics")
-                .workspaceSchemaName("public")
+                .scope("user")
                 .memoryType("workflow_constraint")
                 .subType("implementation_constraint")
                 .title("Memory V1")
                 .content("Always use catalogName instead of databaseName.")
                 .reason("User explicitly corrected the naming.")
-                .confidence(0.93)
-                .sourceMessageIds(List.of("msg-1"))
                 .build());
 
         MemoryWriteResult updated = service.writeAgentMemory(MemoryWriteRequest.builder()
-                .scope("workspace")
-                .workspaceLevel("schema")
-                .workspaceConnectionId(9L)
-                .workspaceCatalogName("analytics")
-                .workspaceSchemaName("public")
+                .scope("user")
                 .memoryType("workflow_constraint")
                 .subType("implementation_constraint")
                 .title("Memory V2")
                 .content("Always use catalogName instead of databaseName!")
                 .reason("The latest correction should overwrite the earlier phrasing.")
-                .confidence(0.98)
-                .sourceMessageIds(List.of("msg-1", "msg-2"))
                 .build());
 
-        assertEquals(created.getMemory().getId(), updated.getMemory().getId());
-        assertEquals(1, service.memoryStoreSize());
+        assertEquals(2, service.memoryStoreSize());
         assertEquals("CREATED", created.getAction().getCode());
-        assertEquals("UPDATED", updated.getAction().getCode());
-        assertEquals("WORKSPACE", updated.getMemory().getScope());
+        assertEquals("CREATED", updated.getAction().getCode());
+        assertEquals("USER", updated.getMemory().getScope());
         assertEquals("WORKFLOW_CONSTRAINT", updated.getMemory().getMemoryType());
         assertEquals("IMPLEMENTATION_CONSTRAINT", updated.getMemory().getSubType());
         assertEquals("AGENT", updated.getMemory().getSourceType());
-        assertEquals("SCHEMA", updated.getMemory().getWorkspaceLevel());
-        assertEquals("9:analytics:public", updated.getMemory().getWorkspaceContextKey());
-        assertEquals("always use catalogname instead of databasename", updated.getMemory().getNormalizedContentKey());
         assertEquals("Memory V2", updated.getMemory().getTitle());
         assertEquals("Always use catalogName instead of databaseName!", updated.getMemory().getContent());
-        assertEquals("[\"msg-1\",\"msg-2\"]", updated.getMemory().getSourceMessageIds());
-        assertEquals(0.98, updated.getMemory().getConfidenceScore());
         assertEquals(List.of(MemoryLogConstant.EVENT_MEMORY_AGENT_WRITE, MemoryLogConstant.EVENT_MEMORY_AGENT_WRITE),
                 agentLogService.eventNames());
         assertEquals(MemoryToolActionEnum.CREATED.getCode(),
                 agentLogService.event(0).getPayload().get(MemoryLogConstant.FIELD_ACTION));
-        assertEquals(MemoryToolActionEnum.UPDATED.getCode(),
+        assertEquals(MemoryToolActionEnum.CREATED.getCode(),
                 agentLogService.event(1).getPayload().get(MemoryLogConstant.FIELD_ACTION));
     }
 
     @Test
-    void writeAgentMemory_requiresWorkspaceLevelForWorkspaceScope() {
+    void writeAgentMemory_overwritesExistingPreferenceSubtype() {
         RequestContext.set(RequestContextInfo.builder()
                 .userId(42L)
                 .conversationId(7L)
-                .connectionId(9L)
-                .catalog("analytics")
-                .schema("public")
                 .build());
 
+        MemoryWriteResult created = service.writeAgentMemory(MemoryWriteRequest.builder()
+                .scope("user")
+                .memoryType("preference")
+                .subType("language_preference")
+                .title("语言偏好")
+                .content("用户偏好使用中文回答。")
+                .reason("用户明确要求后续用中文回答。")
+                .build());
+
+        MemoryWriteResult updated = service.writeAgentMemory(MemoryWriteRequest.builder()
+                .scope("user")
+                .memoryType("preference")
+                .subType("language_preference")
+                .title("语言偏好更新")
+                .content("用户默认希望使用简体中文回答。")
+                .reason("用户再次明确了中文偏好。")
+                .build());
+
+        assertEquals(1, service.memoryStoreSize());
+        assertEquals(created.getMemory().getId(), updated.getMemory().getId());
+        assertEquals(MemoryToolActionEnum.CREATED.getCode(), created.getAction().getCode());
+        assertEquals(MemoryToolActionEnum.UPDATED.getCode(), updated.getAction().getCode());
+        assertEquals("USER", updated.getMemory().getScope());
+        assertEquals("PREFERENCE", updated.getMemory().getMemoryType());
+        assertEquals("LANGUAGE_PREFERENCE", updated.getMemory().getSubType());
+        assertEquals("用户默认希望使用简体中文回答。", updated.getMemory().getContent());
+    }
+
+    @Test
+    void writeAgentMemory_rejectsPreferenceConversationScope() {
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.writeAgentMemory(
+                MemoryWriteRequest.builder()
+                        .scope("conversation")
+                        .memoryType("preference")
+                        .subType("language_preference")
+                        .content("用户偏好使用中文回答。")
+                        .build()));
+
+        assertEquals("PREFERENCE memories must use USER scope.", exception.getMessage());
+    }
+
+    @Test
+    void writeAgentMemory_rejectsUnsupportedWorkspaceScope() {
         BusinessException exception = assertThrows(BusinessException.class, () -> service.writeAgentMemory(
                 MemoryWriteRequest.builder()
                         .scope("workspace")
@@ -212,40 +223,32 @@ class MemoryServiceImplTest {
                         .content("Always use catalogName instead of databaseName.")
                         .build()));
 
-        assertEquals("workspaceLevel is required for WORKSPACE scope.", exception.getMessage());
+        assertEquals("Unsupported scope 'workspace'. Valid values: CONVERSATION, USER", exception.getMessage());
     }
 
     @Test
-    void writeAgentMemory_resolvesCatalogBindingFromExplicitWorkspaceFields() {
-        MemoryWriteResult created = service.writeAgentMemory(MemoryWriteRequest.builder()
-                .scope("workspace")
-                .workspaceLevel("catalog")
-                .workspaceConnectionId(9L)
-                .workspaceCatalogName("analytics")
-                .memoryType("business_rule")
-                .subType("domain_rule")
-                .title("Catalog rule")
-                .content("Analytics uses cents for money.")
-                .build());
+    void createManualMemory_overwritesExistingPreferenceSubtype() {
+        MemoryCreateRequest first = new MemoryCreateRequest();
+        first.setConversationId(7L);
+        first.setMemoryType("preference");
+        first.setSubType("response_format");
+        first.setContent("用户偏好简洁回答。");
+        first.setScope("user");
 
-        assertEquals("CATALOG", created.getMemory().getWorkspaceLevel());
-        assertEquals("9:analytics", created.getMemory().getWorkspaceContextKey());
-    }
+        AiMemory created = service.createManualMemory(first);
 
-    @Test
-    void writeAgentMemory_requiresExplicitWorkspaceBindingForSchemaLevel() {
-        BusinessException exception = assertThrows(BusinessException.class, () -> service.writeAgentMemory(
-                MemoryWriteRequest.builder()
-                        .scope("workspace")
-                        .workspaceLevel("schema")
-                        .workspaceConnectionId(9L)
-                        .workspaceCatalogName("analytics")
-                        .memoryType("knowledge_point")
-                        .subType("object_knowledge")
-                        .content("Orders live in public schema.")
-                        .build()));
+        MemoryCreateRequest second = new MemoryCreateRequest();
+        second.setConversationId(7L);
+        second.setMemoryType("preference");
+        second.setSubType("response_format");
+        second.setContent("用户偏好分点、简洁回答。");
+        second.setScope("user");
 
-        assertEquals("workspaceSchemaName is required for WORKSPACE level SCHEMA.", exception.getMessage());
+        AiMemory overwritten = service.createManualMemory(second);
+
+        assertEquals(1, service.memoryStoreSize());
+        assertEquals(created.getId(), overwritten.getId());
+        assertEquals("用户偏好分点、简洁回答。", overwritten.getContent());
     }
 
     @Test
@@ -257,7 +260,20 @@ class MemoryServiceImplTest {
 
         BusinessException exception = assertThrows(BusinessException.class, () -> service.createManualMemory(request));
 
-        assertEquals("Manual memory creation does not support WORKSPACE scope.", exception.getMessage());
+        assertEquals("Unsupported scope 'workspace'. Valid values: CONVERSATION, USER", exception.getMessage());
+    }
+
+    @Test
+    void createManualMemory_rejectsPreferenceConversationScope() {
+        MemoryCreateRequest request = new MemoryCreateRequest();
+        request.setMemoryType("preference");
+        request.setSubType("language_preference");
+        request.setScope("conversation");
+        request.setContent("用户偏好使用中文回答。");
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.createManualMemory(request));
+
+        assertEquals("PREFERENCE memories must use USER scope.", exception.getMessage());
     }
 
     @Test
@@ -270,32 +286,13 @@ class MemoryServiceImplTest {
 
         BusinessException exception = assertThrows(BusinessException.class, () -> service.createManualMemory(request));
 
-        assertEquals("subType 'domain_rule' does not belong to memoryType 'PREFERENCE'. Valid subTypes: RESPONSE_STYLE, OUTPUT_FORMAT, LANGUAGE_PREFERENCE, INTERACTION_STYLE, DECISION_STYLE",
+        assertEquals("subType 'domain_rule' does not belong to memoryType 'PREFERENCE'. Valid subTypes: RESPONSE_FORMAT, LANGUAGE_PREFERENCE",
                 exception.getMessage());
     }
 
     @Test
-    void runCurrentUserMaintenanceArchivesExpiresAndHidesDuplicates() {
+    void runCurrentUserMaintenance_keepsDuplicatesUntouched() {
         LocalDateTime now = LocalDateTime.now();
-
-        service.seedMemory(AiMemory.builder()
-                .userId(42L)
-                .conversationId(7L)
-                .scope("USER")
-                .memoryType("PREFERENCE")
-                .subType("OUTPUT_FORMAT")
-                .sourceType("MANUAL")
-                .title("Expired")
-                .content("Remember the legacy billing exception")
-                .normalizedContentKey("remember the legacy billing exception")
-                .detailJson("{}")
-                .status(MemoryStatusEnum.ACTIVE.getCode())
-                .confidenceScore(0.9)
-                .salienceScore(0.6)
-                .expiresAt(now.minusDays(1))
-                .createdAt(now.minusDays(10))
-                .updatedAt(now.minusDays(2))
-                .build());
 
         service.seedMemory(AiMemory.builder()
                 .userId(42L)
@@ -306,11 +303,7 @@ class MemoryServiceImplTest {
                 .sourceType("MANUAL")
                 .title("Duplicate older")
                 .content("Always verify write SQL on staging first")
-                .normalizedContentKey("always verify write sql on staging first")
-                .detailJson("{}")
-                .status(MemoryStatusEnum.ACTIVE.getCode())
-                .confidenceScore(0.9)
-                .salienceScore(0.7)
+                .enable(MemoryEnableEnum.ENABLE.getCode())
                 .createdAt(now.minusDays(8))
                 .updatedAt(now.minusDays(8))
                 .build());
@@ -324,11 +317,7 @@ class MemoryServiceImplTest {
                 .sourceType("MANUAL")
                 .title("Duplicate newer")
                 .content("Always verify write SQL on staging first")
-                .normalizedContentKey("always verify write sql on staging first")
-                .detailJson("{}")
-                .status(MemoryStatusEnum.ACTIVE.getCode())
-                .confidenceScore(0.95)
-                .salienceScore(0.8)
+                .enable(MemoryEnableEnum.ENABLE.getCode())
                 .createdAt(now.minusDays(4))
                 .updatedAt(now.minusDays(1))
                 .build());
@@ -342,51 +331,38 @@ class MemoryServiceImplTest {
                 .sourceType("MANUAL")
                 .title("Healthy")
                 .content("The revenue table is partitioned by day")
-                .normalizedContentKey("the revenue table is partitioned by day")
-                .detailJson("{}")
-                .status(MemoryStatusEnum.ACTIVE.getCode())
-                .confidenceScore(0.8)
-                .salienceScore(0.6)
+                .enable(MemoryEnableEnum.ENABLE.getCode())
                 .createdAt(now.minusDays(3))
                 .updatedAt(now.minusDays(1))
                 .build());
 
         MemoryMaintenanceReport preview = service.inspectCurrentUserMaintenance();
-        assertEquals(4, preview.getActiveMemoryCount());
-        assertEquals(1, preview.getExpiredActiveMemoryCount());
-        assertEquals(1, preview.getDuplicateActiveMemoryCount());
+        assertEquals(3, preview.getEnabledMemoryCount());
+        assertEquals(0, preview.getDuplicateEnabledMemoryCount());
 
         MemoryMaintenanceReport report = service.runCurrentUserMaintenance();
 
-        assertEquals(1, report.getProcessedArchivedCount());
-        assertEquals(1, report.getProcessedHiddenCount());
-        assertEquals(2, report.getActiveMemoryCount());
-        assertEquals(1, report.getArchivedMemoryCount());
-        assertEquals(1, report.getHiddenMemoryCount());
-        assertEquals(0, report.getExpiredActiveMemoryCount());
-        assertEquals(0, report.getDuplicateActiveMemoryCount());
+        assertEquals(0, report.getProcessedDisabledCount());
+        assertEquals(3, report.getEnabledMemoryCount());
+        assertEquals(0, report.getDisabledMemoryCount());
+        assertEquals(0, report.getDuplicateEnabledMemoryCount());
         AgentLogEvent event = agentLogService.lastEvent();
         assertEquals(MemoryLogConstant.EVENT_MEMORY_MAINTENANCE_RUN, event.getPayload().get("eventName"));
-        assertEquals(1, event.getPayload().get(MemoryLogConstant.FIELD_PROCESSED_ARCHIVED_COUNT));
-        assertEquals(1, event.getPayload().get(MemoryLogConstant.FIELD_PROCESSED_HIDDEN_COUNT));
+        assertEquals(0, event.getPayload().get(MemoryLogConstant.FIELD_PROCESSED_DISABLED_COUNT));
     }
 
     @Test
-    void recordMemoryAccessAndUsage_updatesCounters() {
+    void recordMemoryAccess_updatesCounters() {
         AiMemory memory = service.createManualMemory(buildCreateRequest());
 
         service.recordMemoryAccess(List.of(memory.getId(), memory.getId()));
-        service.recordMemoryUsage(List.of(memory.getId()));
 
         AiMemory updated = service.getById(memory.getId());
         assertEquals(1, updated.getAccessCount());
-        assertEquals(1, updated.getUseCount());
         assertNotNull(updated.getLastAccessedAt());
-        assertNotNull(updated.getLastUsedAt());
         assertEquals(List.of(
                         MemoryLogConstant.EVENT_MEMORY_MANUAL_CREATE,
-                        MemoryLogConstant.EVENT_MEMORY_ACCESS_RECORDED,
-                        MemoryLogConstant.EVENT_MEMORY_USAGE_RECORDED),
+                        MemoryLogConstant.EVENT_MEMORY_ACCESS_RECORDED),
                 agentLogService.eventNames());
         assertEquals(List.of(memory.getId()),
                 agentLogService.event(1).getPayload().get(MemoryLogConstant.FIELD_MEMORY_IDS));
@@ -394,7 +370,7 @@ class MemoryServiceImplTest {
     }
 
     @Test
-    void searchActiveMemories_recordsSearchEvent() {
+    void searchEnabledMemories_recordsSearchEvent() {
         @SuppressWarnings("unchecked")
         EmbeddingSearchResult<TextSegment> searchResult = mock(EmbeddingSearchResult.class);
         when(searchResult.matches()).thenReturn(List.of());
@@ -402,7 +378,7 @@ class MemoryServiceImplTest {
 
         AiMemory memory = service.createManualMemory(buildCreateRequest());
 
-        List<?> results = service.searchActiveMemories("concise output", 5, 0.2D);
+        List<?> results = service.searchEnabledMemories("concise output", 5, 0.2D);
 
         assertEquals(1, results.size());
         AgentLogEvent event = agentLogService.lastEvent();
@@ -419,12 +395,10 @@ class MemoryServiceImplTest {
                 .conversationId(7L)
                 .scope("USER")
                 .memoryType("PREFERENCE")
-                .subType("OUTPUT_FORMAT")
+                .subType("RESPONSE_FORMAT")
                 .sourceType("MANUAL")
                 .content("User prefers concise output.")
-                .normalizedContentKey("user prefers concise output")
-                .detailJson("{}")
-                .status(MemoryStatusEnum.ACTIVE.getCode())
+                .enable(MemoryEnableEnum.ENABLE.getCode())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build());
@@ -436,7 +410,7 @@ class MemoryServiceImplTest {
                 7L,
                 "preference",
                 "PREFERENCE",
-                "OUTPUT_FORMAT",
+                "RESPONSE_FORMAT",
                 0.3D,
                 MemoryRecallMode.PROMPT,
                 MemoryRecallQueryStrategy.BROWSE,
@@ -462,12 +436,10 @@ class MemoryServiceImplTest {
                 .conversationId(7L)
                 .scope("USER")
                 .memoryType("PREFERENCE")
-                .subType("OUTPUT_FORMAT")
+                .subType("RESPONSE_FORMAT")
                 .sourceType("MANUAL")
                 .content("User prefers concise output.")
-                .normalizedContentKey("user prefers concise output")
-                .detailJson("{}")
-                .status(MemoryStatusEnum.ACTIVE.getCode())
+                .enable(MemoryEnableEnum.ENABLE.getCode())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build());
@@ -479,7 +451,7 @@ class MemoryServiceImplTest {
                 7L,
                 "preference",
                 "PREFERENCE",
-                "OUTPUT_FORMAT",
+                "RESPONSE_FORMAT",
                 0.3D,
                 MemoryRecallMode.PROMPT,
                 MemoryRecallQueryStrategy.SEMANTIC,
@@ -493,11 +465,107 @@ class MemoryServiceImplTest {
         assertEquals(false, event.getPayload().get(MemoryRecallLogConstant.FIELD_USED_FALLBACK));
     }
 
+    @Test
+    void recallAccessibleMemories_toolSemanticFallsBackToBrowseWhenSemanticMisses() {
+        @SuppressWarnings("unchecked")
+        EmbeddingSearchResult<TextSegment> searchResult = mock(EmbeddingSearchResult.class);
+        when(searchResult.matches()).thenReturn(List.of());
+        when(embeddingStore.search(any())).thenReturn(searchResult);
+
+        service.seedMemory(AiMemory.builder()
+                .userId(42L)
+                .conversationId(7L)
+                .scope("USER")
+                .memoryType("PREFERENCE")
+                .subType("LANGUAGE_PREFERENCE")
+                .sourceType("MANUAL")
+                .title("语言偏好")
+                .content("用户偏好使用中文回答。")
+                .enable(MemoryEnableEnum.ENABLE.getCode())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build());
+
+        @SuppressWarnings("unchecked")
+        List<MemorySearchResult> results = (List<MemorySearchResult>) (List<?>) service.recallAccessibleMemories(new MemoryRecallQuery(
+                "semantic_tool",
+                "semantic_tool_test",
+                "USER",
+                7L,
+                "查询用户的偏好设置，包括回复格式、回复语言等个人偏好",
+                "PREFERENCE",
+                null,
+                0.0D,
+                MemoryRecallMode.TOOL,
+                MemoryRecallQueryStrategy.SEMANTIC,
+                0));
+
+        assertEquals(1, results.size());
+        assertEquals("LANGUAGE_PREFERENCE", results.get(0).getSubType());
+        AgentLogEvent event = agentLogService.lastEvent();
+        assertEquals(MemoryRecallLogConstant.EXECUTION_PATH_SEMANTIC_EMPTY_BROWSE_FALLBACK,
+                event.getPayload().get(MemoryRecallLogConstant.FIELD_EXECUTION_PATH));
+        assertEquals(true, event.getPayload().get(MemoryRecallLogConstant.FIELD_USED_FALLBACK));
+    }
+
+    @Test
+    void browseRecallPrefersMoreFrequentlyAccessedMemoryWhenOtherSignalsMatch() {
+        LocalDateTime now = LocalDateTime.now();
+
+        service.seedMemory(AiMemory.builder()
+                .userId(42L)
+                .conversationId(7L)
+                .scope("USER")
+                .memoryType("PREFERENCE")
+                .subType("RESPONSE_FORMAT")
+                .sourceType("MANUAL")
+                .title("Less accessed")
+                .content("User prefers bullet summaries.")
+                .enable(MemoryEnableEnum.ENABLE.getCode())
+                .accessCount(1)
+                .createdAt(now.minusDays(1))
+                .updatedAt(now)
+                .build());
+
+        service.seedMemory(AiMemory.builder()
+                .userId(42L)
+                .conversationId(7L)
+                .scope("USER")
+                .memoryType("PREFERENCE")
+                .subType("RESPONSE_FORMAT")
+                .sourceType("MANUAL")
+                .title("More accessed")
+                .content("User prefers concise output.")
+                .enable(MemoryEnableEnum.ENABLE.getCode())
+                .accessCount(5)
+                .createdAt(now.minusDays(1))
+                .updatedAt(now)
+                .build());
+
+        @SuppressWarnings("unchecked")
+        List<MemorySearchResult> results = (List<MemorySearchResult>) (List<?>) service.recallAccessibleMemories(new MemoryRecallQuery(
+                "browse",
+                "browse_access_priority",
+                "USER",
+                7L,
+                "preference",
+                "PREFERENCE",
+                "RESPONSE_FORMAT",
+                0.0D,
+                MemoryRecallMode.PROMPT,
+                MemoryRecallQueryStrategy.BROWSE,
+                0));
+
+        assertEquals(2, results.size());
+        assertEquals("More accessed", results.get(0).getTitle());
+        assertEquals(5, results.get(0).getAccessCount());
+    }
+
     private MemoryCreateRequest buildCreateRequest() {
         MemoryCreateRequest request = new MemoryCreateRequest();
         request.setConversationId(7L);
         request.setMemoryType("preference");
-        request.setSubType("output_format");
+        request.setSubType("response_format");
         request.setContent("User prefers concise SQL explanations.");
         request.setScope("user");
         return request;
@@ -554,8 +622,8 @@ class MemoryServiceImplTest {
         @Override
         public AiMemory getOne(Wrapper<AiMemory> queryWrapper, boolean throwEx) {
             return store.stream()
-                    .filter(memory -> memory.getStatus() != null
-                            && memory.getStatus() == MemoryStatusEnum.ACTIVE.getCode())
+                    .filter(memory -> memory.getEnable() != null
+                            && memory.getEnable() == MemoryEnableEnum.ENABLE.getCode())
                     .findFirst()
                     .orElse(null);
         }
@@ -563,8 +631,8 @@ class MemoryServiceImplTest {
         @Override
         public long count(Wrapper<AiMemory> queryWrapper) {
             return store.stream()
-                    .filter(memory -> memory.getStatus() != null
-                            && memory.getStatus() == MemoryStatusEnum.ACTIVE.getCode())
+                    .filter(memory -> memory.getEnable() != null
+                            && memory.getEnable() == MemoryEnableEnum.ENABLE.getCode())
                     .count();
         }
 
@@ -583,11 +651,6 @@ class MemoryServiceImplTest {
             return store.stream()
                     .filter(memory -> userId == null || userId.equals(memory.getUserId()))
                     .toList();
-        }
-
-        @Override
-        protected void persistMaintenanceMemory(AiMemory memory) {
-            updateById(memory);
         }
 
         private void seedMemory(AiMemory memory) {

@@ -62,7 +62,7 @@ class ReadMemoryToolTest {
                         .id(5L)
                         .scope(MemoryScopeEnum.USER.getCode())
                         .memoryType(MemoryTypeEnum.PREFERENCE.getCode())
-                        .subType(MemorySubTypeEnum.OUTPUT_FORMAT.getCode())
+                        .subType(MemorySubTypeEnum.RESPONSE_FORMAT.getCode())
                         .content("User prefers concise output.")
                         .build()))
                 .build());
@@ -71,7 +71,7 @@ class ReadMemoryToolTest {
                 "remember the user's output preference",
                 MemoryScopeEnum.USER.getCode(),
                 MemoryTypeEnum.PREFERENCE.getCode(),
-                MemorySubTypeEnum.OUTPUT_FORMAT.getCode(),
+                MemorySubTypeEnum.RESPONSE_FORMAT.getCode(),
                 InvocationParameters.from(Map.of()));
 
         assertTrue(result.isSuccess());
@@ -79,7 +79,6 @@ class ReadMemoryToolTest {
         assertEquals("Recalled 1 durable memory item(s) across USER.", payload.get(MemoryRecallConstant.RESULT_SUMMARY));
         assertEquals(1, ((List<?>) payload.get(MemoryRecallConstant.RESULT_ITEMS)).size());
         verify(memoryService).recordMemoryAccess(List.of(5L));
-        verify(memoryService).recordMemoryUsage(List.of(5L));
     }
 
     @Test
@@ -101,7 +100,7 @@ class ReadMemoryToolTest {
     }
 
     @Test
-    void emptyReadMemoryDoesNotRecordUsage() {
+    void emptyReadMemoryStillRecordsEmptyAccessList() {
         AgentRequestContext.set(AgentRequestContextInfo.builder()
                 .agentType("main")
                 .agentMode("agent")
@@ -116,7 +115,6 @@ class ReadMemoryToolTest {
 
         assertTrue(result.isSuccess());
         verify(memoryService).recordMemoryAccess(List.of());
-        verify(memoryService, never()).recordMemoryUsage(List.of());
     }
 
     @Test

@@ -17,7 +17,7 @@ import edu.zsc.ai.domain.service.ai.recall.MemoryRecallQuery;
 
 public interface MemoryService extends IService<AiMemory> {
 
-    List<MemorySearchResult> searchActiveMemories(String queryText, int limit, double minScore);
+    List<MemorySearchResult> searchEnabledMemories(String queryText, int limit, double minScore);
 
     List<MemorySearchResult> recallAccessibleMemories(Long conversationId, String queryText, double minScore);
 
@@ -28,7 +28,7 @@ public interface MemoryService extends IService<AiMemory> {
     PageResponse<AiMemory> pageCurrentUserMemories(PageRequest pageRequest,
                                                    String keyword,
                                                    String memoryType,
-                                                   Integer status,
+                                                   Integer enable,
                                                    String scope);
 
     AiMemory getByIdForCurrentUser(Long memoryId);
@@ -39,9 +39,9 @@ public interface MemoryService extends IService<AiMemory> {
 
     MemoryWriteResult writeAgentMemory(MemoryWriteRequest request);
 
-    AiMemory archiveMemory(Long memoryId);
+    AiMemory disableMemory(Long memoryId);
 
-    AiMemory restoreMemory(Long memoryId);
+    AiMemory enableMemory(Long memoryId);
 
     void deleteMemory(Long memoryId);
 
@@ -52,6 +52,4 @@ public interface MemoryService extends IService<AiMemory> {
     MemoryMaintenanceReport runGlobalMaintenance();
 
     void recordMemoryAccess(List<Long> memoryIds);
-
-    void recordMemoryUsage(List<Long> memoryIds);
 }

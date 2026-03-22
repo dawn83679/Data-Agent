@@ -18,17 +18,11 @@ public class MemoryMaintenanceReport {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime generatedAt;
 
-    private Integer activeMemoryCount;
+    private Integer enabledMemoryCount;
 
-    private Integer archivedMemoryCount;
+    private Integer disabledMemoryCount;
 
-    private Integer hiddenMemoryCount;
+    private Integer duplicateEnabledMemoryCount;
 
-    private Integer expiredActiveMemoryCount;
-
-    private Integer duplicateActiveMemoryCount;
-
-    private Integer processedArchivedCount;
-
-    private Integer processedHiddenCount;
+    private Integer processedDisabledCount;
 }

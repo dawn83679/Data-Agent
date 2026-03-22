@@ -10,7 +10,6 @@ import {
   MEMORY_DEFAULT_SOURCE_TYPE,
   MEMORY_DEFAULT_TYPE,
   MEMORY_DIALOG_MODE,
-  MEMORY_WORKSPACE_SCOPE,
 } from './memoryPageConstants';
 import type { MemoryDialogMode, MemoryFormState } from './memoryPageModels';
 import {
@@ -56,20 +55,15 @@ export function useMemoryEditorFormState({
     () => appendOptionIfMissing(memoryMetadata.sourceTypes, memoryForm.sourceType),
     [memoryForm.sourceType, memoryMetadata.sourceTypes],
   );
-  const manualScopeOptions = useMemo(() => {
-    const options = scopeOptions.filter((option) => option !== MEMORY_WORKSPACE_SCOPE);
-    return options.length > 0 ? options : [MEMORY_DEFAULT_MANUAL_SCOPE];
-  }, [scopeOptions]);
+  const manualScopeOptions = useMemo(
+    () => (scopeOptions.length > 0 ? scopeOptions : [MEMORY_DEFAULT_MANUAL_SCOPE]),
+    [scopeOptions],
+  );
   const availableSubTypeOptions = useMemo(() => {
     const baseOptions = subTypeOptionsByType[memoryForm.memoryType] ?? [];
     return appendOptionIfMissing(baseOptions, memoryForm.subType);
   }, [memoryForm.memoryType, memoryForm.subType, subTypeOptionsByType]);
-  const editorScopeOptions = useMemo(() => {
-    if (isEditing && selectedMemory?.scope === MEMORY_WORKSPACE_SCOPE) {
-      return [MEMORY_WORKSPACE_SCOPE];
-    }
-    return manualScopeOptions;
-  }, [isEditing, manualScopeOptions, selectedMemory?.scope]);
+  const editorScopeOptions = manualScopeOptions;
 
   useEffect(() => {
     const allowedMemoryTypes = memoryMetadata.memoryTypes.map((item) => item.code);
@@ -84,11 +78,9 @@ export function useMemoryEditorFormState({
       const nextSubType = prev.subType && nextSubTypeOptions.includes(prev.subType)
         ? prev.subType
         : (nextSubTypeOptions[0] ?? getDefaultMemorySubtypeByType(nextMemoryType));
-      const nextScope = (isEditing && selectedMemory?.scope === MEMORY_WORKSPACE_SCOPE)
-        ? MEMORY_WORKSPACE_SCOPE
-        : allowedScopes.includes(prev.scope) && prev.scope !== MEMORY_WORKSPACE_SCOPE
-          ? prev.scope
-          : (allowedScopes.find((scope) => scope !== MEMORY_WORKSPACE_SCOPE) ?? MEMORY_DEFAULT_MANUAL_SCOPE);
+      const nextScope = allowedScopes.includes(prev.scope)
+        ? prev.scope
+        : (allowedScopes[0] ?? MEMORY_DEFAULT_MANUAL_SCOPE);
       const nextSourceType = allowedSourceTypes.includes(prev.sourceType)
         ? prev.sourceType
         : (allowedSourceTypes[0] ?? MEMORY_DEFAULT_SOURCE_TYPE);
@@ -108,7 +100,7 @@ export function useMemoryEditorFormState({
         sourceType: nextSourceType,
       };
     });
-  }, [isEditing, memoryMetadata, selectedMemory?.scope, subTypeOptionsByType]);
+  }, [memoryMetadata, subTypeOptionsByType]);
 
   const closeDetailDialog = useCallback(() => {
     setDetailDialogMode(MEMORY_DIALOG_MODE.CLOSED);

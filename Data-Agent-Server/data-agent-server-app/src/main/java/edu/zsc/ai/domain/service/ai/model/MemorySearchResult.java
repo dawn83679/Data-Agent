@@ -17,10 +17,6 @@ public class MemorySearchResult {
 
     private String scope;
 
-    private String workspaceLevel;
-
-    private String workspaceContextKey;
-
     private String memoryType;
 
     private String subType;
@@ -29,13 +25,13 @@ public class MemorySearchResult {
 
     private String content;
 
-    private String normalizedContentKey;
-
     private String reason;
 
     private String sourceType;
 
     private double score;
+
+    private Integer accessCount;
 
     private Long conversationId;
 

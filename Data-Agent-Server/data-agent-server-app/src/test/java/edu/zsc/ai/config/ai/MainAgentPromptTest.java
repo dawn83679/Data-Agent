@@ -79,7 +79,7 @@ class MainAgentPromptTest {
 
     @Test
     void workflow_prioritizesMemoryLanguageAndMentionGrounding() {
-        assertTrue(promptContent.contains("user_memory 里的 <user_preferences> 是结构化 XML 偏好记录，也是默认有效的回答协议"),
+        assertTrue(promptContent.contains("<user_preferences> 是顶层自然语言偏好区块，也是默认有效的回答协议"),
                 "Prompt should keep durable language/output preferences active by default");
         assertTrue(promptContent.contains("只有用户在本轮明确要求切换时才覆盖"),
                 "Prompt should require explicit override for response preferences");
@@ -109,8 +109,14 @@ class MainAgentPromptTest {
                 "Prompt should include abstract examples");
         assertTrue(promptContent.contains("示例 A：作用域缺失"),
                 "Prompt should teach scope reduction through examples");
-        assertTrue(promptContent.contains("示例 D：局部结果"),
-                "Prompt should teach how to treat local evidence through examples");
+        assertTrue(promptContent.contains("示例 C：候选不唯一"),
+                "Prompt should teach how to handle ambiguous candidates");
+        assertTrue(promptContent.contains("示例 D：偏好约束"),
+                "Prompt should include a preference-constrained delivery example");
+        assertTrue(promptContent.contains("示例 E：读取记忆"),
+                "Prompt should include an example about targeted memory recall");
+        assertTrue(promptContent.contains("示例 F：写入记忆"),
+                "Prompt should include an example about writing durable memory");
     }
 
     @Test

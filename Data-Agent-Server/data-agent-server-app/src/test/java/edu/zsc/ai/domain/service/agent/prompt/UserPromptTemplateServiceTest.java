@@ -17,6 +17,7 @@ import edu.zsc.ai.domain.service.agent.prompt.strategy.SystemContextPromptStrate
 import edu.zsc.ai.domain.service.agent.prompt.strategy.SystemReminderPromptStrategy;
 import edu.zsc.ai.domain.service.agent.prompt.strategy.UserMemoryPromptStrategy;
 import edu.zsc.ai.domain.service.agent.prompt.strategy.UserMentionPromptStrategy;
+import edu.zsc.ai.domain.service.agent.prompt.strategy.UserPreferencesPromptStrategy;
 import edu.zsc.ai.domain.service.agent.prompt.strategy.UserQuestionPromptStrategy;
 import edu.zsc.ai.domain.service.ai.model.MemoryPromptContext;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallItem;
@@ -30,6 +31,7 @@ class UserPromptTemplateServiceTest {
                 new SystemContextPromptStrategy(),
                 new SystemReminderPromptStrategy(),
                 new UserMemoryPromptStrategy(),
+                new UserPreferencesPromptStrategy(),
                 new UserMentionPromptStrategy(),
                 new UserQuestionPromptStrategy()));
         UserPromptManager manager = new UserPromptManager(
@@ -49,13 +51,13 @@ class UserPromptTemplateServiceTest {
                                         MemoryRecallItem.builder()
                                                 .id(1L)
                                                 .memoryType("PREFERENCE")
-                                                .content("User prefers concise explanations with SQL examples.")
+                                                .subType("RESPONSE_FORMAT")
+                                                .content("Use concise explanations with SQL examples.")
                                                 .score(0.95)
                                                 .build(),
                                         MemoryRecallItem.builder()
                                                 .id(2L)
-                                                .scope("WORKSPACE")
-                                                .workspaceLevel("SCHEMA")
+                                                .scope("USER")
                                                 .memoryType("BUSINESS_RULE")
                                                 .subType("DOMAIN_RULE")
                                                 .content("Always confirm write SQL against production-like databases.")
@@ -90,14 +92,15 @@ class UserPromptTemplateServiceTest {
         assertTrue(prompt.contains(UserPromptTagConstant.SYSTEM_CONTEXT_OPEN));
         assertTrue(prompt.contains(UserPromptTagConstant.SYSTEM_REMIDER_OPEN));
         assertTrue(prompt.contains(UserPromptTagConstant.USER_MEMORY_OPEN));
+        assertTrue(prompt.contains(UserPromptTagConstant.USER_PREFERENCES_OPEN));
         assertTrue(prompt.contains(UserPromptTagConstant.USER_MENTION_OPEN));
         assertTrue(prompt.contains("today: 2026-03-18"));
         assertTrue(prompt.contains("timezone: Asia/Shanghai"));
         assertTrue(prompt.contains("language: en"));
         assertTrue(prompt.contains("agent_mode: normal"));
         assertTrue(prompt.contains("model_name: qwen3-max"));
-        assertTrue(prompt.contains("User prefers concise explanations with SQL examples."));
-        assertTrue(prompt.contains("[WORKSPACE/SCHEMA · BUSINESS_RULE/DOMAIN_RULE]"));
+        assertTrue(prompt.contains("Preferred response format: Use concise explanations with SQL examples."));
+        assertTrue(prompt.contains("[USER · BUSINESS_RULE/DOMAIN_RULE]"));
         assertTrue(prompt.contains("Always confirm write SQL against production-like databases."));
         assertTrue(prompt.contains("\"token\":\"@orders\""));
         assertTrue(prompt.contains("\"objectType\":\"TABLE\""));
@@ -109,17 +112,22 @@ class UserPromptTemplateServiceTest {
         assertTrue(prompt.contains("\"objectType\":\"VIEW\""));
         assertTrue(prompt.contains("contains a structured JSON array of database objects explicitly referenced by the user via @"));
         assertTrue(prompt.contains("Please design a safer SQL migration plan"));
+        assertTrue(prompt.lastIndexOf(UserPromptTagConstant.USER_MEMORY_OPEN) < prompt.lastIndexOf(UserPromptTagConstant.USER_PREFERENCES_OPEN));
+        assertTrue(prompt.contains(UserPromptTagConstant.USER_MEMORY_OPEN
+                + "\n- [USER · BUSINESS_RULE/DOMAIN_RULE] Always confirm write SQL against production-like databases.\n"
+                + UserPromptTagConstant.USER_MEMORY_CLOSE));
         assertTrue(result.estimatedTokens() > 0);
         assertEquals("Please design a safer SQL migration plan",
                 edu.zsc.ai.agent.memory.MemoryUtil.stripInjectedWrapper(prompt));
     }
 
     @Test
-    void render_marksLanguagePreferenceMemoryAsHighPriorityConstraint() {
+    void render_placesNaturalLanguagePreferencesInTopLevelSection() {
         UserPromptHandlerChain chain = new UserPromptHandlerChain(List.of(
                 new SystemContextPromptStrategy(),
                 new SystemReminderPromptStrategy(),
                 new UserMemoryPromptStrategy(),
+                new UserPreferencesPromptStrategy(),
                 new UserMentionPromptStrategy(),
                 new UserQuestionPromptStrategy()));
         UserPromptManager manager = new UserPromptManager(
@@ -150,18 +158,16 @@ class UserPromptTemplateServiceTest {
         String prompt = manager.render(context).renderedPrompt();
 
         assertTrue(prompt.contains(UserPromptTagConstant.USER_PREFERENCES_OPEN));
-        assertTrue(prompt.contains("<preference>"));
-        assertTrue(prompt.contains("<sub_type>LANGUAGE_PREFERENCE</sub_type>"));
-        assertTrue(prompt.contains("<priority>HIGH_PRIORITY_RESPONSE_CONSTRAINT</priority>"));
-        assertTrue(prompt.contains("<content>用户偏好使用中文进行交互</content>"));
-        assertTrue(prompt.contains("用户偏好使用中文进行交互"));
-        assertTrue(prompt.contains("within "
-                + UserPromptTagConstant.USER_MEMORY_OPEN
-                + ", "
+        assertTrue(prompt.contains("Preferred response language: 用户偏好使用中文进行交互"));
+        assertTrue(prompt.contains(UserPromptTagConstant.USER_PREFERENCES_OPEN
+                + "\nPreferred response language: 用户偏好使用中文进行交互\n"
+                + UserPromptTagConstant.USER_PREFERENCES_CLOSE));
+        assertTrue(prompt.contains(UserPromptTagConstant.USER_MEMORY_OPEN
+                + "\n" + PromptConstant.NONE + "\n"
+                + UserPromptTagConstant.USER_MEMORY_CLOSE));
+        assertTrue(!prompt.contains("<preference>"));
+        assertTrue(prompt.contains("LANGUAGE_PREFERENCE and RESPONSE_FORMAT from "
                 + UserPromptTagConstant.USER_PREFERENCES_OPEN
-                + " contains structured XML preference records and must be applied by default"));
-        assertTrue(prompt.contains("LANGUAGE_PREFERENCE and other response constraints from "
-                + UserPromptTagConstant.USER_MEMORY_OPEN
                 + " override the incidental language or formatting inside "
                 + UserPromptTagConstant.USER_QUESTION_OPEN));
         assertTrue(prompt.contains("only an explicit instruction in this turn can override those response preferences"));
@@ -175,6 +181,7 @@ class UserPromptTemplateServiceTest {
                 new SystemContextPromptStrategy(),
                 new SystemReminderPromptStrategy(),
                 new UserMemoryPromptStrategy(),
+                new UserPreferencesPromptStrategy(),
                 new UserMentionPromptStrategy(),
                 new UserQuestionPromptStrategy()));
         UserPromptManager manager = new UserPromptManager(
@@ -195,6 +202,9 @@ class UserPromptTemplateServiceTest {
         assertTrue(prompt.contains(UserPromptTagConstant.USER_MEMORY_OPEN
                 + "\n" + PromptConstant.NONE + "\n"
                 + UserPromptTagConstant.USER_MEMORY_CLOSE));
+        assertTrue(prompt.contains(UserPromptTagConstant.USER_PREFERENCES_OPEN
+                + "\n" + PromptConstant.NONE + "\n"
+                + UserPromptTagConstant.USER_PREFERENCES_CLOSE));
         assertTrue(prompt.contains(UserPromptTagConstant.USER_MENTION_OPEN
                 + "\n" + PromptConstant.NONE + "\n"
                 + UserPromptTagConstant.USER_MENTION_CLOSE));
@@ -206,6 +216,7 @@ class UserPromptTemplateServiceTest {
                 new SystemContextPromptStrategy(),
                 new SystemReminderPromptStrategy(),
                 new UserMemoryPromptStrategy(),
+                new UserPreferencesPromptStrategy(),
                 new UserMentionPromptStrategy()));
         UserPromptManager manager = new UserPromptManager(
                 chain,

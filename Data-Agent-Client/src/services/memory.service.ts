@@ -22,7 +22,7 @@ export const memoryService = {
         size: params.size ?? 20,
         keyword: params.keyword || undefined,
         memoryType: params.memoryType || undefined,
-        status: params.status,
+        enable: params.enable,
         scope: params.scope || undefined,
       },
     });
@@ -64,13 +64,13 @@ export const memoryService = {
     return response.data;
   },
 
-  archive: async (id: number): Promise<Memory> => {
-    const response = await http.post<Memory>(buildMemoryPath(MemoryPaths.ARCHIVE, id));
+  disable: async (id: number): Promise<Memory> => {
+    const response = await http.post<Memory>(buildMemoryPath(MemoryPaths.DISABLE, id));
     return response.data;
   },
 
-  restore: async (id: number): Promise<Memory> => {
-    const response = await http.post<Memory>(buildMemoryPath(MemoryPaths.RESTORE, id));
+  enable: async (id: number): Promise<Memory> => {
+    const response = await http.post<Memory>(buildMemoryPath(MemoryPaths.ENABLE, id));
     return response.data;
   },
 

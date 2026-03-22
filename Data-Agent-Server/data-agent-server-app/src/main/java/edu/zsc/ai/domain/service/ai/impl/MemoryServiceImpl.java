@@ -4,14 +4,10 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -30,6 +26,7 @@ import dev.langchain4j.store.embedding.EmbeddingSearchResult;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.filter.MetadataFilterBuilder;
 import edu.zsc.ai.common.constant.MemoryConstant;
+import edu.zsc.ai.common.converter.ai.MemoryMutationConverter;
 import edu.zsc.ai.common.constant.MemoryLogConstant;
 import edu.zsc.ai.common.constant.MemoryMetadataConstant;
 import edu.zsc.ai.common.constant.MemoryRecallLogConstant;
@@ -39,8 +36,7 @@ import edu.zsc.ai.common.enums.ai.MemorySourceTypeEnum;
 import edu.zsc.ai.common.enums.ai.MemorySubTypeEnum;
 import edu.zsc.ai.common.enums.ai.MemoryToolActionEnum;
 import edu.zsc.ai.common.enums.ai.MemoryTypeEnum;
-import edu.zsc.ai.common.enums.ai.MemoryWorkspaceLevelEnum;
-import edu.zsc.ai.common.enums.ai.MemoryStatusEnum;
+import edu.zsc.ai.common.enums.ai.MemoryEnableEnum;
 import edu.zsc.ai.config.ai.MemoryProperties;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.domain.exception.BusinessException;
@@ -55,12 +51,12 @@ import edu.zsc.ai.domain.service.ai.MemoryService;
 import edu.zsc.ai.domain.service.ai.model.MemoryMaintenanceReport;
 import edu.zsc.ai.domain.service.ai.model.MemorySearchResult;
 import edu.zsc.ai.domain.service.ai.model.MemoryWriteResult;
+import edu.zsc.ai.domain.service.ai.recall.MemoryRecallMode;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallQuery;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallQueryStrategy;
 import edu.zsc.ai.observability.AgentLogFields;
 import edu.zsc.ai.observability.AgentLogService;
 import edu.zsc.ai.observability.AgentLogType;
-import edu.zsc.ai.util.JsonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -69,14 +65,10 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> implements MemoryService {
 
-    private static final int ACTIVE_MEMORY_STATUS = MemoryStatusEnum.ACTIVE.getCode();
+    private static final int ENABLED_MEMORY_VALUE = MemoryEnableEnum.ENABLE.getCode();
     private static final String DEFAULT_SCOPE = MemoryConstant.DEFAULT_SCOPE;
-    private static final String DEFAULT_WORKSPACE_CONTEXT_KEY = MemoryConstant.DEFAULT_WORKSPACE_CONTEXT_KEY;
     private static final String DEFAULT_SOURCE_TYPE = MemorySourceTypeEnum.MANUAL.getCode();
     private static final String AGENT_SOURCE_TYPE = MemorySourceTypeEnum.AGENT.getCode();
-    private static final double DEFAULT_CONFIDENCE = 0.90;
-    private static final double DEFAULT_SALIENCE = 0.60;
-    private static final String DEFAULT_DETAIL_JSON = MemoryConstant.EMPTY_DETAIL_JSON;
 
     private final EmbeddingStore<TextSegment> memoryEmbeddingStore;
     private final EmbeddingModel embeddingModel;
@@ -84,7 +76,7 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
     private final AgentLogService agentLogService;
 
     @Override
-    public List<MemorySearchResult> searchActiveMemories(String queryText, int limit, double minScore) {
+    public List<MemorySearchResult> searchEnabledMemories(String queryText, int limit, double minScore) {
         int safeLimit = Math.max(1, limit);
         List<MemorySearchResult> results = recallAccessibleMemories(RequestContext.getConversationId(), queryText, minScore).stream()
                 .limit(safeLimit)
@@ -129,14 +121,13 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
             return List.of();
         }
         Long conversationId = query.conversationId();
-        List<String> workspaceChain = currentWorkspaceContextChain();
         String normalizedScope = StringUtils.isBlank(query.targetScope()) ? null : query.targetScope().trim().toUpperCase();
         String queryText = query.queryText();
         double minScore = query.minScore() == null ? 0.0D : query.minScore();
         MemoryRecallQueryStrategy strategy = query.queryStrategy() == null ? MemoryRecallQueryStrategy.HYBRID : query.queryStrategy();
 
         RecallExecutionResult executionResult = recallByStrategy(
-                strategy, userId, conversationId, workspaceChain, normalizedScope, queryText, minScore);
+                strategy, userId, conversationId, normalizedScope, queryText, minScore, query.recallMode());
         recordRecallQueryResult(query, executionResult.results(), strategy, normalizedScope, queryText,
                 executionResult.usedFallback(), executionResult.executionPath());
         return executionResult.results();
@@ -145,40 +136,39 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
     private RecallExecutionResult recallByStrategy(MemoryRecallQueryStrategy strategy,
                                                    Long userId,
                                                    Long conversationId,
-                                                   List<String> workspaceChain,
                                                    String normalizedScope,
                                                    String queryText,
-                                                   double minScore) {
+                                                   double minScore,
+                                                   MemoryRecallMode recallMode) {
         return switch (strategy) {
-            case BROWSE -> browseRecall(userId, conversationId, workspaceChain, normalizedScope);
-            case SEMANTIC -> semanticRecall(userId, conversationId, workspaceChain, normalizedScope, queryText, minScore);
-            case HYBRID -> hybridRecall(userId, conversationId, workspaceChain, normalizedScope, queryText, minScore);
+            case BROWSE -> browseRecall(userId, conversationId, normalizedScope);
+            case SEMANTIC -> semanticRecall(userId, conversationId, normalizedScope, queryText, minScore, recallMode);
+            case HYBRID -> hybridRecall(userId, conversationId, normalizedScope, queryText, minScore, recallMode);
         };
     }
 
     private RecallExecutionResult browseRecall(Long userId,
                                                Long conversationId,
-                                               List<String> workspaceChain,
                                                String normalizedScope) {
         return new RecallExecutionResult(
-                listVisibleActiveMemories(userId, conversationId, workspaceChain, normalizedScope),
+                listVisibleEnabledMemories(userId, conversationId, normalizedScope),
                 MemoryRecallLogConstant.EXECUTION_PATH_BROWSE,
                 false);
     }
 
     private RecallExecutionResult hybridRecall(Long userId,
                                                Long conversationId,
-                                               List<String> workspaceChain,
                                                String normalizedScope,
                                                String queryText,
-                                               double minScore) {
+                                               double minScore,
+                                               MemoryRecallMode recallMode) {
         if (StringUtils.isBlank(queryText)) {
             return new RecallExecutionResult(
-                    browseRecall(userId, conversationId, workspaceChain, normalizedScope).results(),
+                    browseRecall(userId, conversationId, normalizedScope).results(),
                     MemoryRecallLogConstant.EXECUTION_PATH_HYBRID_BROWSE_FALLBACK,
                     true);
         }
-        RecallExecutionResult semanticResult = semanticRecall(userId, conversationId, workspaceChain, normalizedScope, queryText, minScore);
+        RecallExecutionResult semanticResult = semanticRecall(userId, conversationId, normalizedScope, queryText, minScore, recallMode);
         if (!semanticResult.results().isEmpty()) {
             return new RecallExecutionResult(
                     semanticResult.results(),
@@ -186,27 +176,27 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
                     false);
         }
         return new RecallExecutionResult(
-                browseRecall(userId, conversationId, workspaceChain, normalizedScope).results(),
+                browseRecall(userId, conversationId, normalizedScope).results(),
                 MemoryRecallLogConstant.EXECUTION_PATH_HYBRID_BROWSE_FALLBACK,
                 true);
     }
 
     private RecallExecutionResult semanticRecall(Long userId,
                                                  Long conversationId,
-                                                 List<String> workspaceChain,
                                                  String normalizedScope,
                                                  String queryText,
-                                                 double minScore) {
+                                                 double minScore,
+                                                 MemoryRecallMode recallMode) {
         if (StringUtils.isBlank(queryText)) {
             return new RecallExecutionResult(
-                    browseRecall(userId, conversationId, workspaceChain, normalizedScope).results(),
+                    browseRecall(userId, conversationId, normalizedScope).results(),
                     MemoryRecallLogConstant.EXECUTION_PATH_SEMANTIC_EXCEPTION_FALLBACK,
                     true);
         }
         try {
             Embedding queryEmbedding = embeddingModel.embed(queryText).content();
             var baseFilter = MetadataFilterBuilder.metadataKey(MemoryMetadataConstant.USER_ID).isEqualTo(userId)
-                    .and(MetadataFilterBuilder.metadataKey(MemoryMetadataConstant.STATUS).isEqualTo(ACTIVE_MEMORY_STATUS));
+                    .and(MetadataFilterBuilder.metadataKey(MemoryMetadataConstant.ENABLE).isEqualTo(ENABLED_MEMORY_VALUE));
             var filter = StringUtils.isBlank(normalizedScope)
                     ? baseFilter
                     : baseFilter.and(MetadataFilterBuilder.metadataKey(MemoryMetadataConstant.SCOPE).isEqualTo(normalizedScope));
@@ -219,18 +209,26 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
                     .build();
 
             EmbeddingSearchResult<TextSegment> searchResult = memoryEmbeddingStore.search(request);
-            return new RecallExecutionResult(searchResult.matches().stream()
+            List<MemorySearchResult> results = searchResult.matches().stream()
                     .map(this::toMemorySearchResult)
                     .filter(result -> matchesScope(result, normalizedScope))
-                    .filter(result -> isVisibleToCurrentContext(result, conversationId, workspaceChain))
+                    .filter(result -> isVisibleToCurrentContext(result, conversationId))
                     .sorted(promptMemoryComparator())
-                    .toList(),
+                    .toList();
+            if (results.isEmpty() && recallMode == MemoryRecallMode.TOOL) {
+                return new RecallExecutionResult(
+                        browseRecall(userId, conversationId, normalizedScope).results(),
+                        MemoryRecallLogConstant.EXECUTION_PATH_SEMANTIC_EMPTY_BROWSE_FALLBACK,
+                        true);
+            }
+            return new RecallExecutionResult(
+                    results,
                     MemoryRecallLogConstant.EXECUTION_PATH_SEMANTIC,
                     false);
         } catch (Exception e) {
-            log.warn("Failed to recall memory by embedding, fallback to visible active memories", e);
+            log.warn("Failed to recall memory by embedding, fallback to visible enabled memories", e);
             return new RecallExecutionResult(
-                    browseRecall(userId, conversationId, workspaceChain, normalizedScope).results(),
+                    browseRecall(userId, conversationId, normalizedScope).results(),
                     MemoryRecallLogConstant.EXECUTION_PATH_SEMANTIC_EXCEPTION_FALLBACK,
                     true);
         }
@@ -264,11 +262,13 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
     public PageResponse<AiMemory> pageCurrentUserMemories(PageRequest pageRequest,
                                                           String keyword,
                                                           String memoryType,
-                                                          Integer status,
+                                                          Integer enable,
                                                           String scope) {
         Long userId = requireUserId();
+        int enableFilter = resolveMemoryEnable(enable);
         LambdaQueryWrapper<AiMemory> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(AiMemory::getUserId, userId)
+                .eq(AiMemory::getEnable, enableFilter)
                 .orderByDesc(AiMemory::getUpdatedAt)
                 .orderByDesc(AiMemory::getId);
 
@@ -279,9 +279,6 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         }
         if (StringUtils.isNotBlank(memoryType)) {
             wrapper.eq(AiMemory::getMemoryType, resolveMemoryType(memoryType));
-        }
-        if (status != null) {
-            wrapper.eq(AiMemory::getStatus, status);
         }
         if (StringUtils.isNotBlank(scope)) {
             wrapper.eq(AiMemory::getScope, scope.trim().toUpperCase());
@@ -307,33 +304,33 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         Long userId = requireUserId();
         LocalDateTime now = LocalDateTime.now();
         String content = StringUtils.trimToEmpty(request.getContent());
-        String scope = normalizeOrDefault(request.getScope(), DEFAULT_SCOPE);
-        BusinessException.assertTrue(!MemoryScopeEnum.WORKSPACE.matches(scope),
-                "Manual memory creation does not support WORKSPACE scope.");
-        AiMemory memory = AiMemory.builder()
-                .userId(userId)
-                .conversationId(request.getConversationId())
-                .workspaceContextKey(null)
-                .workspaceLevel(null)
-                .scope(scope)
-                .memoryType(resolveMemoryType(request.getMemoryType()))
-                .subType(resolveMemorySubType(request.getMemoryType(), request.getSubType()))
-                .sourceType(resolveSourceTypeOrDefault(request.getSourceType(), DEFAULT_SOURCE_TYPE))
-                .title(resolveTitle(request.getTitle(), content))
-                .content(content)
-                .normalizedContentKey(normalizeContentKey(content))
-                .reason(StringUtils.trimToNull(request.getReason()))
-                .sourceMessageIds(normalizeSourceMessageIds(request.getSourceMessageIds()))
-                .detailJson(StringUtils.defaultIfBlank(request.getDetailJson(), DEFAULT_DETAIL_JSON))
-                .status(ACTIVE_MEMORY_STATUS)
-                .confidenceScore(defaultDouble(request.getConfidenceScore(), DEFAULT_CONFIDENCE))
-                .salienceScore(defaultDouble(request.getSalienceScore(), DEFAULT_SALIENCE))
-                .accessCount(0)
-                .useCount(0)
-                .expiresAt(request.getExpiresAt())
-                .createdAt(now)
-                .updatedAt(now)
-                .build();
+        String scope = resolveScopeOrDefault(request.getScope(), DEFAULT_SCOPE);
+        String memoryType = resolveMemoryType(request.getMemoryType());
+        String subType = resolveMemorySubType(request.getMemoryType(), request.getSubType());
+        validatePreferenceScope(scope, memoryType);
+        MemoryMutationConverter.Mutation mutation = new MemoryMutationConverter.Mutation(
+                request.getConversationId(),
+                scope,
+                memoryType,
+                subType,
+                resolveSourceTypeOrDefault(request.getSourceType(), DEFAULT_SOURCE_TYPE),
+                resolveTitle(request.getTitle(), content),
+                content,
+                StringUtils.trimToNull(request.getReason()),
+                ENABLED_MEMORY_VALUE,
+                0,
+                now
+        );
+        AiMemory existingPreference = findLatestEnabledPreferenceMemory(userId, memoryType, subType, null);
+        if (existingPreference != null) {
+            MemoryMutationConverter.apply(existingPreference, mutation);
+            updateById(existingPreference);
+            disableConflictingEnabledPreferenceMemories(userId, subType, existingPreference.getId(), now);
+            rebuildEmbedding(existingPreference);
+            recordMemoryMutation(MemoryLogConstant.EVENT_MEMORY_MANUAL_UPDATE, existingPreference, null);
+            return existingPreference;
+        }
+        AiMemory memory = MemoryMutationConverter.create(userId, mutation);
         save(memory);
         rebuildEmbedding(memory);
         recordMemoryMutation(MemoryLogConstant.EVENT_MEMORY_MANUAL_CREATE, memory, null);
@@ -344,30 +341,27 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
     public AiMemory updateMemory(Long memoryId, MemoryUpdateRequest request) {
         AiMemory memory = getByIdForCurrentUser(memoryId);
         String content = StringUtils.trimToEmpty(request.getContent());
-        String targetScope = normalizeOrDefault(request.getScope(), StringUtils.defaultIfBlank(memory.getScope(), DEFAULT_SCOPE));
-        validateManualScopeTransition(memory.getScope(), targetScope);
-        memory.setScope(targetScope);
-        if (!MemoryScopeEnum.WORKSPACE.matches(targetScope)) {
-            memory.setWorkspaceLevel(null);
-            memory.setWorkspaceContextKey(null);
-        }
-        memory.setMemoryType(resolveMemoryType(request.getMemoryType()));
-        memory.setSubType(resolveMemorySubType(request.getMemoryType(), request.getSubType()));
-        memory.setSourceType(resolveSourceTypeOrDefault(request.getSourceType(),
-                StringUtils.defaultIfBlank(memory.getSourceType(), DEFAULT_SOURCE_TYPE)));
-        memory.setTitle(resolveTitle(request.getTitle(), content));
-        memory.setContent(content);
-        memory.setNormalizedContentKey(normalizeContentKey(content));
-        memory.setReason(StringUtils.trimToNull(request.getReason()));
-        memory.setSourceMessageIds(normalizeSourceMessageIds(request.getSourceMessageIds()));
-        memory.setDetailJson(StringUtils.defaultIfBlank(request.getDetailJson(), DEFAULT_DETAIL_JSON));
-        memory.setConfidenceScore(defaultDouble(request.getConfidenceScore(),
-                defaultDouble(memory.getConfidenceScore(), DEFAULT_CONFIDENCE)));
-        memory.setSalienceScore(defaultDouble(request.getSalienceScore(),
-                defaultDouble(memory.getSalienceScore(), DEFAULT_SALIENCE)));
-        memory.setExpiresAt(request.getExpiresAt());
-        memory.setUpdatedAt(LocalDateTime.now());
+        String targetScope = resolveScopeOrDefault(request.getScope(), StringUtils.defaultIfBlank(memory.getScope(), DEFAULT_SCOPE));
+        String memoryType = resolveMemoryType(request.getMemoryType());
+        String subType = resolveMemorySubType(request.getMemoryType(), request.getSubType());
+        validatePreferenceScope(targetScope, memoryType);
+        MemoryMutationConverter.Mutation mutation = new MemoryMutationConverter.Mutation(
+                memory.getConversationId(),
+                targetScope,
+                memoryType,
+                subType,
+                resolveSourceTypeOrDefault(request.getSourceType(),
+                        StringUtils.defaultIfBlank(memory.getSourceType(), DEFAULT_SOURCE_TYPE)),
+                resolveTitle(request.getTitle(), content),
+                content,
+                StringUtils.trimToNull(request.getReason()),
+                memory.getEnable(),
+                memory.getAccessCount(),
+                LocalDateTime.now()
+        );
+        MemoryMutationConverter.apply(memory, mutation);
         updateById(memory);
+        disableConflictingEnabledPreferenceMemories(memory.getUserId(), subType, memory.getId(), memory.getUpdatedAt());
         rebuildEmbedding(memory);
         recordMemoryMutation(MemoryLogConstant.EVENT_MEMORY_MANUAL_UPDATE, memory, null);
         return memory;
@@ -382,101 +376,64 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
             throw BusinessException.badRequest("memory content is required");
         }
 
-        String scope = normalizeOrDefault(request.getScope(), DEFAULT_SCOPE);
-        WorkspaceBinding workspaceBinding = resolveAgentWorkspaceBinding(scope, request);
+        String scope = resolveScopeOrDefault(request.getScope(), DEFAULT_SCOPE);
         String memoryType = resolveMemoryType(request.getMemoryType());
         String subType = resolveMemorySubType(request.getMemoryType(), request.getSubType());
-        String normalizedContentKey = normalizeContentKey(content);
-        BusinessException.assertTrue(StringUtils.isNotBlank(normalizedContentKey), "normalized content key is required");
-
-        LambdaQueryWrapper<AiMemory> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(AiMemory::getUserId, userId)
-                .eq(AiMemory::getScope, scope)
-                .eq(AiMemory::getMemoryType, memoryType)
-                .eq(AiMemory::getNormalizedContentKey, normalizedContentKey)
-                .eq(AiMemory::getStatus, ACTIVE_MEMORY_STATUS)
-                .last("LIMIT 1");
-        applyNullableStringCondition(wrapper, AiMemory::getWorkspaceContextKey, workspaceBinding.workspaceContextKey());
-        applyNullableStringCondition(wrapper, AiMemory::getSubType, subType);
-        AiMemory existing = getOne(wrapper, false);
-
+        validatePreferenceScope(scope, memoryType);
         LocalDateTime now = LocalDateTime.now();
-        boolean created = existing == null;
-        if (existing == null) {
-            existing = AiMemory.builder()
-                    .userId(userId)
-                    .conversationId(RequestContext.getConversationId())
-                    .workspaceContextKey(workspaceBinding.workspaceContextKey())
-                    .workspaceLevel(workspaceBinding.workspaceLevel())
-                    .scope(scope)
-                    .memoryType(memoryType)
-                    .subType(subType)
-                    .sourceType(AGENT_SOURCE_TYPE)
-                    .title(resolveTitle(request.getTitle(), content))
-                    .content(content)
-                    .normalizedContentKey(normalizedContentKey)
-                    .reason(StringUtils.trimToNull(request.getReason()))
-                    .sourceMessageIds(normalizeSourceMessageIds(request.getSourceMessageIds()))
-                    .detailJson(DEFAULT_DETAIL_JSON)
-                    .status(ACTIVE_MEMORY_STATUS)
-                    .confidenceScore(defaultDouble(request.getConfidence(), DEFAULT_CONFIDENCE))
-                    .salienceScore(DEFAULT_SALIENCE)
-                    .accessCount(0)
-                    .useCount(0)
-                    .createdAt(now)
-                    .updatedAt(now)
-                    .build();
-            save(existing);
+        MemoryMutationConverter.Mutation mutation = new MemoryMutationConverter.Mutation(
+                RequestContext.getConversationId(),
+                scope,
+                memoryType,
+                subType,
+                AGENT_SOURCE_TYPE,
+                resolveTitle(request.getTitle(), content),
+                content,
+                StringUtils.trimToNull(request.getReason()),
+                ENABLED_MEMORY_VALUE,
+                0,
+                now
+        );
+        AiMemory memory = findLatestEnabledPreferenceMemory(userId, memoryType, subType, null);
+        MemoryToolActionEnum action = MemoryToolActionEnum.CREATED;
+        if (memory == null) {
+            memory = MemoryMutationConverter.create(userId, mutation);
+            save(memory);
         } else {
-            existing.setConversationId(RequestContext.getConversationId());
-            existing.setWorkspaceContextKey(workspaceBinding.workspaceContextKey());
-            existing.setWorkspaceLevel(workspaceBinding.workspaceLevel());
-            existing.setScope(scope);
-            existing.setMemoryType(memoryType);
-            existing.setSubType(subType);
-            existing.setSourceType(AGENT_SOURCE_TYPE);
-            existing.setTitle(resolveTitle(request.getTitle(), content));
-            existing.setContent(content);
-            existing.setNormalizedContentKey(normalizedContentKey);
-            existing.setReason(StringUtils.trimToNull(request.getReason()));
-            existing.setSourceMessageIds(normalizeSourceMessageIds(request.getSourceMessageIds()));
-            existing.setConfidenceScore(defaultDouble(request.getConfidence(),
-                    defaultDouble(existing.getConfidenceScore(), DEFAULT_CONFIDENCE)));
-            existing.setUpdatedAt(now);
-            updateById(existing);
+            MemoryMutationConverter.apply(memory, mutation);
+            updateById(memory);
+            action = MemoryToolActionEnum.UPDATED;
         }
-
-        rebuildEmbedding(existing);
-        MemoryToolActionEnum action = created ? MemoryToolActionEnum.CREATED : MemoryToolActionEnum.UPDATED;
-        recordMemoryMutation(MemoryLogConstant.EVENT_MEMORY_AGENT_WRITE, existing,
+        disableConflictingEnabledPreferenceMemories(userId, subType, memory.getId(), now);
+        rebuildEmbedding(memory);
+        recordMemoryMutation(MemoryLogConstant.EVENT_MEMORY_AGENT_WRITE, memory,
                 AgentLogFields.of(MemoryLogConstant.FIELD_ACTION, action.getCode()));
         return MemoryWriteResult.builder()
-                .memory(existing)
+                .memory(memory)
                 .action(action)
                 .build();
     }
 
     @Override
-    public AiMemory archiveMemory(Long memoryId) {
+    public AiMemory disableMemory(Long memoryId) {
         AiMemory memory = getByIdForCurrentUser(memoryId);
-        memory.setStatus(MemoryStatusEnum.ARCHIVED.getCode());
-        memory.setArchivedAt(LocalDateTime.now());
+        memory.setEnable(MemoryEnableEnum.DISABLE.getCode());
         memory.setUpdatedAt(LocalDateTime.now());
         updateById(memory);
         removeEmbeddingQuietly(memory.getId());
-        recordMemoryMutation(MemoryLogConstant.EVENT_MEMORY_ARCHIVE, memory, null);
+        recordMemoryMutation(MemoryLogConstant.EVENT_MEMORY_DISABLE, memory, null);
         return memory;
     }
 
     @Override
-    public AiMemory restoreMemory(Long memoryId) {
+    public AiMemory enableMemory(Long memoryId) {
         AiMemory memory = getByIdForCurrentUser(memoryId);
-        memory.setStatus(ACTIVE_MEMORY_STATUS);
-        memory.setArchivedAt(null);
+        memory.setEnable(ENABLED_MEMORY_VALUE);
         memory.setUpdatedAt(LocalDateTime.now());
         updateById(memory);
+        disableConflictingEnabledPreferenceMemories(memory.getUserId(), memory.getSubType(), memory.getId(), memory.getUpdatedAt());
         rebuildEmbedding(memory);
-        recordMemoryMutation(MemoryLogConstant.EVENT_MEMORY_RESTORE, memory, null);
+        recordMemoryMutation(MemoryLogConstant.EVENT_MEMORY_ENABLE, memory, null);
         return memory;
     }
 
@@ -513,14 +470,8 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
 
     @Override
     public void recordMemoryAccess(List<Long> memoryIds) {
-        int processedCount = touchMemories(memoryIds, false);
+        int processedCount = touchMemories(memoryIds);
         recordTouchEvent(MemoryLogConstant.EVENT_MEMORY_ACCESS_RECORDED, memoryIds, processedCount);
-    }
-
-    @Override
-    public void recordMemoryUsage(List<Long> memoryIds) {
-        int processedCount = touchMemories(memoryIds, true);
-        recordTouchEvent(MemoryLogConstant.EVENT_MEMORY_USAGE_RECORDED, memoryIds, processedCount);
     }
 
     @Override
@@ -535,16 +486,14 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         return MemorySearchResult.builder()
                 .id(metadata.getLong(MemoryMetadataConstant.MEMORY_ID))
                 .scope(blankToNull(metadata.getString(MemoryMetadataConstant.SCOPE)))
-                .workspaceLevel(blankToNull(metadata.getString(MemoryMetadataConstant.WORKSPACE_LEVEL)))
-                .workspaceContextKey(blankToNull(metadata.getString(MemoryMetadataConstant.WORKSPACE_CONTEXT_KEY)))
                 .memoryType(metadata.getString(MemoryMetadataConstant.MEMORY_TYPE))
                 .subType(blankToNull(metadata.getString(MemoryMetadataConstant.SUB_TYPE)))
                 .title(blankToNull(metadata.getString(MemoryMetadataConstant.TITLE)))
                 .content(segment.text())
-                .normalizedContentKey(blankToNull(metadata.getString(MemoryMetadataConstant.NORMALIZED_CONTENT_KEY)))
                 .reason(blankToNull(metadata.getString(MemoryMetadataConstant.REASON)))
                 .sourceType(blankToNull(metadata.getString(MemoryMetadataConstant.SOURCE_TYPE)))
                 .score(match.score())
+                .accessCount(longToInt(metadata.getLong(MemoryMetadataConstant.ACCESS_COUNT)))
                 .conversationId(metadata.getLong(MemoryMetadataConstant.CONVERSATION_ID))
                 .updatedAt(parseDateTime(metadata.getString(MemoryMetadataConstant.UPDATED_AT)))
                 .build();
@@ -554,16 +503,14 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         return MemorySearchResult.builder()
                 .id(memory.getId())
                 .scope(memory.getScope())
-                .workspaceLevel(memory.getWorkspaceLevel())
-                .workspaceContextKey(memory.getWorkspaceContextKey())
                 .memoryType(memory.getMemoryType())
                 .subType(memory.getSubType())
                 .title(memory.getTitle())
                 .content(memory.getContent())
-                .normalizedContentKey(memory.getNormalizedContentKey())
                 .reason(memory.getReason())
                 .sourceType(memory.getSourceType())
                 .score(score)
+                .accessCount(defaultInt(memory.getAccessCount(), 0))
                 .conversationId(memory.getConversationId())
                 .updatedAt(memory.getUpdatedAt())
                 .build();
@@ -571,95 +518,59 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
 
     private MemoryMaintenanceReport inspectMaintenance(Long userId, LocalDateTime now) {
         List<AiMemory> memories = listMemoriesForMaintenance(userId);
-        List<AiMemory> activeMemories = memories.stream()
-                .filter(this::isActiveMemory)
+        List<AiMemory> enabledMemories = memories.stream()
+                .filter(this::isEnabledMemory)
                 .toList();
 
         return MemoryMaintenanceReport.builder()
                 .generatedAt(now)
-                .activeMemoryCount((int) activeMemories.size())
-                .archivedMemoryCount((int) memories.stream().filter(this::isArchivedMemory).count())
-                .hiddenMemoryCount((int) memories.stream().filter(this::isHiddenMemory).count())
-                .expiredActiveMemoryCount(findExpiredActiveMemories(activeMemories, now).size())
-                .duplicateActiveMemoryCount(findDuplicateLosers(activeMemories).size())
-                .processedArchivedCount(0)
-                .processedHiddenCount(0)
+                .enabledMemoryCount((int) enabledMemories.size())
+                .disabledMemoryCount((int) memories.stream().filter(this::isDisabledMemory).count())
+                .duplicateEnabledMemoryCount(0)
+                .processedDisabledCount(0)
                 .build();
     }
 
     private MemoryMaintenanceReport executeMaintenance(Long userId, LocalDateTime now) {
         List<AiMemory> memories = listMemoriesForMaintenance(userId);
 
-        int archivedCount = 0;
-        int hiddenCount = 0;
-
-        if (memoryProperties.getMaintenance().isArchiveExpiredEnabled()) {
-            List<AiMemory> expiredActiveMemories = findExpiredActiveMemories(memories.stream()
-                    .filter(this::isActiveMemory)
-                    .toList(), now);
-            for (AiMemory memory : expiredActiveMemories) {
-                archiveMemoryForMaintenance(memory, now);
-                archivedCount++;
-            }
-            memories = listMemoriesForMaintenance(userId);
-        }
-
-        if (memoryProperties.getMaintenance().isHideDuplicateEnabled()) {
-            List<AiMemory> duplicateLosers = findDuplicateLosers(memories.stream()
-                    .filter(this::isActiveMemory)
-                    .toList());
-            for (AiMemory duplicate : duplicateLosers) {
-                hideMemoryForMaintenance(duplicate, now);
-                hiddenCount++;
-            }
-            memories = listMemoriesForMaintenance(userId);
-        }
-
-        List<AiMemory> activeMemories = memories.stream()
-                .filter(this::isActiveMemory)
+        List<AiMemory> enabledMemories = memories.stream()
+                .filter(this::isEnabledMemory)
                 .toList();
 
         MemoryMaintenanceReport report = MemoryMaintenanceReport.builder()
                 .generatedAt(now)
-                .activeMemoryCount((int) activeMemories.size())
-                .archivedMemoryCount((int) memories.stream().filter(this::isArchivedMemory).count())
-                .hiddenMemoryCount((int) memories.stream().filter(this::isHiddenMemory).count())
-                .expiredActiveMemoryCount(findExpiredActiveMemories(activeMemories, now).size())
-                .duplicateActiveMemoryCount(findDuplicateLosers(activeMemories).size())
-                .processedArchivedCount(archivedCount)
-                .processedHiddenCount(hiddenCount)
+                .enabledMemoryCount((int) enabledMemories.size())
+                .disabledMemoryCount((int) memories.stream().filter(this::isDisabledMemory).count())
+                .duplicateEnabledMemoryCount(0)
+                .processedDisabledCount(0)
                 .build();
-        log.info("Memory maintenance summary: userId={}, archivedProcessed={}, hiddenProcessed={}, activeCount={}, archivedCount={}, hiddenCount={}, expiredActiveCount={}, duplicateActiveCount={}",
+        log.info("Memory maintenance summary: userId={}, disabledProcessed={}, enabledCount={}, disabledCount={}, duplicateEnabledCount={}",
                 userId,
-                report.getProcessedArchivedCount(),
-                report.getProcessedHiddenCount(),
-                report.getActiveMemoryCount(),
-                report.getArchivedMemoryCount(),
-                report.getHiddenMemoryCount(),
-                report.getExpiredActiveMemoryCount(),
-                report.getDuplicateActiveMemoryCount());
+                report.getProcessedDisabledCount(),
+                report.getEnabledMemoryCount(),
+                report.getDisabledMemoryCount(),
+                report.getDuplicateEnabledMemoryCount());
         return report;
     }
 
     private void rebuildEmbedding(AiMemory memory) {
         removeEmbeddingQuietly(memory.getId());
-        if (!Objects.equals(memory.getStatus(), ACTIVE_MEMORY_STATUS) || StringUtils.isBlank(memory.getContent())) {
+        if (!Objects.equals(memory.getEnable(), ENABLED_MEMORY_VALUE) || StringUtils.isBlank(memory.getContent())) {
             return;
         }
         try {
             Embedding embedding = embeddingModel.embed(memory.getContent()).content();
             Metadata metadata = new Metadata()
                     .put(MemoryMetadataConstant.USER_ID, memory.getUserId())
-                    .put(MemoryMetadataConstant.STATUS, memory.getStatus())
+                    .put(MemoryMetadataConstant.ENABLE, memory.getEnable())
                     .put(MemoryMetadataConstant.SCOPE, StringUtils.defaultString(memory.getScope()))
-                    .put(MemoryMetadataConstant.WORKSPACE_LEVEL, StringUtils.defaultString(memory.getWorkspaceLevel()))
-                    .put(MemoryMetadataConstant.WORKSPACE_CONTEXT_KEY, StringUtils.defaultString(memory.getWorkspaceContextKey()))
                     .put(MemoryMetadataConstant.MEMORY_TYPE, memory.getMemoryType())
                     .put(MemoryMetadataConstant.SUB_TYPE, StringUtils.defaultString(memory.getSubType()))
                     .put(MemoryMetadataConstant.TITLE, StringUtils.defaultString(memory.getTitle()))
-                    .put(MemoryMetadataConstant.NORMALIZED_CONTENT_KEY, StringUtils.defaultString(memory.getNormalizedContentKey()))
                     .put(MemoryMetadataConstant.REASON, StringUtils.defaultString(memory.getReason()))
                     .put(MemoryMetadataConstant.SOURCE_TYPE, StringUtils.defaultString(memory.getSourceType()))
+                    .put(MemoryMetadataConstant.ACCESS_COUNT, defaultInt(memory.getAccessCount(), 0))
                     .put(MemoryMetadataConstant.UPDATED_AT, memory.getUpdatedAt() == null ? "" : memory.getUpdatedAt().toString())
                     .put(MemoryMetadataConstant.CONVERSATION_ID, memory.getConversationId())
                     .put(MemoryMetadataConstant.MEMORY_ID, memory.getId());
@@ -709,90 +620,21 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         return StringUtils.defaultIfBlank(value, defaultValue).trim().toUpperCase();
     }
 
-    private String normalizeWorkspaceLevel(String value) {
-        MemoryWorkspaceLevelEnum level = MemoryWorkspaceLevelEnum.fromCode(value);
-        return level == null ? null : level.getCode();
+    private String resolveScopeOrDefault(String value, String defaultValue) {
+        String normalized = normalizeOrDefault(value, defaultValue);
+        MemoryScopeEnum scope = MemoryScopeEnum.fromCode(normalized);
+        if (scope == null) {
+            throw BusinessException.badRequest("Unsupported scope '%s'. Valid values: %s",
+                    value, MemoryScopeEnum.validCodes());
+        }
+        return scope.getCode();
     }
 
-    private WorkspaceBinding resolveAgentWorkspaceBinding(String scope, MemoryWriteRequest request) {
-        if (!MemoryScopeEnum.WORKSPACE.matches(scope)) {
-            BusinessException.assertTrue(StringUtils.isBlank(request.getWorkspaceLevel()),
-                    "workspaceLevel is only allowed for WORKSPACE scope.");
-            BusinessException.assertTrue(request.getWorkspaceConnectionId() == null,
-                    "workspaceConnectionId is only allowed for WORKSPACE scope.");
-            BusinessException.assertTrue(StringUtils.isBlank(request.getWorkspaceCatalogName()),
-                    "workspaceCatalogName is only allowed for WORKSPACE scope.");
-            BusinessException.assertTrue(StringUtils.isBlank(request.getWorkspaceSchemaName()),
-                    "workspaceSchemaName is only allowed for WORKSPACE scope.");
-            return new WorkspaceBinding(null, null);
+    private void validatePreferenceScope(String scope, String memoryType) {
+        if (MemoryTypeEnum.PREFERENCE.matches(memoryType)) {
+            BusinessException.assertTrue(MemoryScopeEnum.USER.matches(scope),
+                    "PREFERENCE memories must use USER scope.");
         }
-
-        MemoryWorkspaceLevelEnum level = MemoryWorkspaceLevelEnum.fromCode(request.getWorkspaceLevel());
-        BusinessException.assertTrue(level != null, "workspaceLevel is required for WORKSPACE scope.");
-        return new WorkspaceBinding(level.getCode(), resolveWorkspaceContextKey(
-                level,
-                request.getWorkspaceConnectionId(),
-                request.getWorkspaceCatalogName(),
-                request.getWorkspaceSchemaName()));
-    }
-
-    private String resolveWorkspaceContextKey(MemoryWorkspaceLevelEnum workspaceLevel,
-                                             Long workspaceConnectionId,
-                                             String workspaceCatalogName,
-                                             String workspaceSchemaName) {
-        return switch (workspaceLevel) {
-            case GLOBAL -> DEFAULT_WORKSPACE_CONTEXT_KEY;
-            case CONNECTION -> {
-                BusinessException.assertTrue(workspaceConnectionId != null,
-                        "workspaceConnectionId is required for WORKSPACE level CONNECTION.");
-                yield String.valueOf(workspaceConnectionId);
-            }
-            case CATALOG -> {
-                BusinessException.assertTrue(workspaceConnectionId != null,
-                        "workspaceConnectionId is required for WORKSPACE level CATALOG.");
-                String catalog = StringUtils.trimToNull(workspaceCatalogName);
-                BusinessException.assertTrue(StringUtils.isNotBlank(catalog),
-                        "workspaceCatalogName is required for WORKSPACE level CATALOG.");
-                yield workspaceConnectionId + ":" + catalog;
-            }
-            case SCHEMA -> {
-                BusinessException.assertTrue(workspaceConnectionId != null,
-                        "workspaceConnectionId is required for WORKSPACE level SCHEMA.");
-                String catalog = StringUtils.trimToNull(workspaceCatalogName);
-                String schema = StringUtils.trimToNull(workspaceSchemaName);
-                BusinessException.assertTrue(StringUtils.isNotBlank(catalog),
-                        "workspaceCatalogName is required for WORKSPACE level SCHEMA.");
-                BusinessException.assertTrue(StringUtils.isNotBlank(schema),
-                        "workspaceSchemaName is required for WORKSPACE level SCHEMA.");
-                yield workspaceConnectionId + ":" + catalog + ":" + schema;
-            }
-        };
-    }
-
-    private List<String> currentWorkspaceContextChain() {
-        List<String> chain = new ArrayList<>();
-        String connection = RequestContext.getConnectionId() == null ? null : String.valueOf(RequestContext.getConnectionId());
-        String catalog = StringUtils.trimToNull(RequestContext.getCatalog());
-        String schema = StringUtils.trimToNull(RequestContext.getSchema());
-
-        if (StringUtils.isNotBlank(connection) && StringUtils.isNotBlank(catalog) && StringUtils.isNotBlank(schema)) {
-            chain.add(connection + ":" + catalog + ":" + schema);
-        }
-        if (StringUtils.isNotBlank(connection) && StringUtils.isNotBlank(catalog)) {
-            chain.add(connection + ":" + catalog);
-        }
-        if (StringUtils.isNotBlank(connection)) {
-            chain.add(connection);
-        }
-        chain.add(DEFAULT_WORKSPACE_CONTEXT_KEY);
-        return chain.stream().distinct().toList();
-    }
-
-    private String normalizeContentKey(String value) {
-        return StringUtils.normalizeSpace(StringUtils.defaultString(value))
-                .replaceAll("[\\p{Punct}]", " ")
-                .trim()
-                .toLowerCase();
     }
 
     private String resolveMemoryType(String value) {
@@ -836,6 +678,14 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         return resolveSourceType(StringUtils.defaultIfBlank(value, defaultValue));
     }
 
+    private int resolveMemoryEnable(Integer value) {
+        try {
+            return MemoryEnableEnum.fromCode(value).getCode();
+        } catch (IllegalArgumentException e) {
+            throw BusinessException.badRequest("Unsupported enable value '%s'. Valid values: 0, 1", value);
+        }
+    }
+
     private void recordMemoryMutation(String eventName, AiMemory memory, Map<String, Object> extraFields) {
         if (memory == null) {
             return;
@@ -845,12 +695,10 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
                 MemoryLogConstant.FIELD_USER_ID, memory.getUserId(),
                 MemoryLogConstant.FIELD_CONVERSATION_ID, memory.getConversationId(),
                 MemoryLogConstant.FIELD_SCOPE, memory.getScope(),
-                MemoryLogConstant.FIELD_WORKSPACE_LEVEL, memory.getWorkspaceLevel(),
-                MemoryLogConstant.FIELD_WORKSPACE_CONTEXT_KEY, memory.getWorkspaceContextKey(),
                 MemoryLogConstant.FIELD_MEMORY_TYPE, memory.getMemoryType(),
                 MemoryLogConstant.FIELD_SUB_TYPE, memory.getSubType(),
                 MemoryLogConstant.FIELD_SOURCE_TYPE, memory.getSourceType(),
-                MemoryLogConstant.FIELD_STATUS, memory.getStatus());
+                MemoryLogConstant.FIELD_ENABLE, memory.getEnable());
         if (extraFields != null && !extraFields.isEmpty()) {
             fields.putAll(extraFields);
         }
@@ -864,13 +712,10 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         agentLogService.recordDebug(MemoryLogConstant.LOGGER_NAME, eventName,
                 AgentLogFields.of(
                         MemoryLogConstant.FIELD_USER_ID, userId,
-                        MemoryLogConstant.FIELD_ACTIVE_MEMORY_COUNT, report.getActiveMemoryCount(),
-                        MemoryLogConstant.FIELD_ARCHIVED_MEMORY_COUNT, report.getArchivedMemoryCount(),
-                        MemoryLogConstant.FIELD_HIDDEN_MEMORY_COUNT, report.getHiddenMemoryCount(),
-                        MemoryLogConstant.FIELD_EXPIRED_ACTIVE_MEMORY_COUNT, report.getExpiredActiveMemoryCount(),
-                        MemoryLogConstant.FIELD_DUPLICATE_ACTIVE_MEMORY_COUNT, report.getDuplicateActiveMemoryCount(),
-                        MemoryLogConstant.FIELD_PROCESSED_ARCHIVED_COUNT, report.getProcessedArchivedCount(),
-                        MemoryLogConstant.FIELD_PROCESSED_HIDDEN_COUNT, report.getProcessedHiddenCount()));
+                        MemoryLogConstant.FIELD_ENABLED_MEMORY_COUNT, report.getEnabledMemoryCount(),
+                        MemoryLogConstant.FIELD_DISABLED_MEMORY_COUNT, report.getDisabledMemoryCount(),
+                        MemoryLogConstant.FIELD_DUPLICATE_ENABLED_MEMORY_COUNT, report.getDuplicateEnabledMemoryCount(),
+                        MemoryLogConstant.FIELD_PROCESSED_DISABLED_COUNT, report.getProcessedDisabledCount()));
     }
 
     private void recordTouchEvent(String eventName, List<Long> memoryIds, int processedCount) {
@@ -885,35 +730,6 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
                         MemoryLogConstant.FIELD_PROCESSED_COUNT, processedCount));
     }
 
-    private String normalizeSourceMessageIds(List<String> sourceMessageIds) {
-        if (sourceMessageIds == null || sourceMessageIds.isEmpty()) {
-            return MemoryConstant.EMPTY_SOURCE_MESSAGE_IDS_JSON;
-        }
-        List<String> sanitized = sourceMessageIds.stream()
-                .map(StringUtils::trimToNull)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
-        return JsonUtil.object2json(sanitized);
-    }
-
-    private String normalizeSourceMessageIds(String sourceMessageIds) {
-        if (StringUtils.isBlank(sourceMessageIds)) {
-            return MemoryConstant.EMPTY_SOURCE_MESSAGE_IDS_JSON;
-        }
-        try {
-            List<String> values = JsonUtil.json2Object(sourceMessageIds, new TypeReference<List<String>>() {
-            });
-            return normalizeSourceMessageIds(values);
-        } catch (RuntimeException ignore) {
-            List<String> values = java.util.Arrays.stream(sourceMessageIds.split(","))
-                    .map(StringUtils::trimToNull)
-                    .filter(Objects::nonNull)
-                    .toList();
-            return normalizeSourceMessageIds(values);
-        }
-    }
-
     private String resolveTitle(String title, String content) {
         String trimmedTitle = StringUtils.trimToNull(title);
         if (trimmedTitle != null) {
@@ -923,13 +739,8 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         return normalized.length() <= 120 ? normalized : normalized.substring(0, 120) + "...";
     }
 
-    private double defaultDouble(Double value, double defaultValue) {
-        return value == null ? defaultValue : value;
-    }
-
     private boolean isVisibleToCurrentContext(MemorySearchResult result,
-                                              Long conversationId,
-                                              List<String> workspaceChain) {
+                                              Long conversationId) {
         String scope = normalizeOrDefault(result.getScope(), DEFAULT_SCOPE);
         if (MemoryScopeEnum.USER.matches(scope)) {
             return true;
@@ -937,18 +748,14 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         if (MemoryScopeEnum.CONVERSATION.matches(scope)) {
             return conversationId != null && Objects.equals(conversationId, result.getConversationId());
         }
-        if (MemoryScopeEnum.WORKSPACE.matches(scope)) {
-            return StringUtils.isNotBlank(result.getWorkspaceContextKey())
-                    && workspaceChain.contains(result.getWorkspaceContextKey());
-        }
         return false;
     }
 
     private Comparator<MemorySearchResult> promptMemoryComparator() {
         return Comparator
                 .comparingInt(this::scopePriority)
-                .thenComparing(Comparator.comparingInt(this::workspacePriority).reversed())
                 .thenComparing(Comparator.comparingDouble(MemorySearchResult::getScore).reversed())
+                .thenComparing(Comparator.comparingInt(this::accessPriority).reversed())
                 .thenComparing(MemorySearchResult::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(MemorySearchResult::getId, Comparator.nullsLast(Comparator.reverseOrder()));
     }
@@ -958,19 +765,8 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         return scope == null ? Integer.MAX_VALUE : scope.getPriority();
     }
 
-    private int workspacePriority(MemorySearchResult result) {
-        MemoryWorkspaceLevelEnum level = MemoryWorkspaceLevelEnum.fromCode(result.getWorkspaceLevel());
-        return level == null ? -1 : level.getPriority();
-    }
-
-    private void validateManualScopeTransition(String currentScope, String targetScope) {
-        String normalizedCurrentScope = normalizeOrDefault(currentScope, DEFAULT_SCOPE);
-        if (MemoryScopeEnum.WORKSPACE.matches(normalizedCurrentScope) && !MemoryScopeEnum.WORKSPACE.matches(targetScope)) {
-            throw BusinessException.badRequest("Manual editing cannot move WORKSPACE memories to another scope.");
-        }
-        if (!MemoryScopeEnum.WORKSPACE.matches(normalizedCurrentScope) && MemoryScopeEnum.WORKSPACE.matches(targetScope)) {
-            throw BusinessException.badRequest("Manual memory editing cannot convert records into WORKSPACE scope.");
-        }
+    private int accessPriority(MemorySearchResult result) {
+        return result.getAccessCount() == null ? 0 : result.getAccessCount();
     }
 
     private void applyNullableStringCondition(LambdaQueryWrapper<AiMemory> wrapper,
@@ -1001,7 +797,7 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
     private int resolveRecallCandidateLimit(Long userId) {
         LambdaQueryWrapper<AiMemory> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(AiMemory::getUserId, userId)
-                .eq(AiMemory::getStatus, ACTIVE_MEMORY_STATUS);
+                .eq(AiMemory::getEnable, ENABLED_MEMORY_VALUE);
         long candidateCount = count(wrapper);
         if (candidateCount <= 0) {
             return 1;
@@ -1009,13 +805,12 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         return candidateCount >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) candidateCount;
     }
 
-    private List<MemorySearchResult> listVisibleActiveMemories(Long userId,
-                                                               Long conversationId,
-                                                               List<String> workspaceChain,
-                                                               String scope) {
+    private List<MemorySearchResult> listVisibleEnabledMemories(Long userId,
+                                                                Long conversationId,
+                                                                String scope) {
         LambdaQueryWrapper<AiMemory> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(AiMemory::getUserId, userId)
-                .eq(AiMemory::getStatus, ACTIVE_MEMORY_STATUS)
+                .eq(AiMemory::getEnable, ENABLED_MEMORY_VALUE)
                 .orderByDesc(AiMemory::getUpdatedAt)
                 .orderByDesc(AiMemory::getId);
         if (StringUtils.isNotBlank(scope)) {
@@ -1024,7 +819,7 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         return list(wrapper).stream()
                 .map(memory -> toMemorySearchResult(memory, 0.0D))
                 .filter(result -> matchesScope(result, scope))
-                .filter(result -> isVisibleToCurrentContext(result, conversationId, workspaceChain))
+                .filter(result -> isVisibleToCurrentContext(result, conversationId))
                 .sorted(promptMemoryComparator())
                 .toList();
     }
@@ -1042,76 +837,60 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         return list(wrapper);
     }
 
-    protected void persistMaintenanceMemory(AiMemory memory) {
-        updateById(memory);
+    private AiMemory findLatestEnabledPreferenceMemory(Long userId,
+                                                       String memoryType,
+                                                       String subType,
+                                                       Long excludeId) {
+        if (!MemoryTypeEnum.PREFERENCE.matches(memoryType) || StringUtils.isBlank(subType) || userId == null) {
+            return null;
+        }
+        return listMemoriesForMaintenance(userId).stream()
+                .filter(this::isEnabledMemory)
+                .filter(memory -> userId.equals(memory.getUserId()))
+                .filter(memory -> MemoryTypeEnum.PREFERENCE.matches(memory.getMemoryType()))
+                .filter(memory -> StringUtils.equals(subType, memory.getSubType()))
+                .filter(memory -> excludeId == null || !excludeId.equals(memory.getId()))
+                .sorted(preferenceMemoryComparator())
+                .findFirst()
+                .orElse(null);
     }
 
-    private void archiveMemoryForMaintenance(AiMemory memory, LocalDateTime now) {
-        memory.setStatus(MemoryStatusEnum.ARCHIVED.getCode());
-        memory.setArchivedAt(now);
-        memory.setUpdatedAt(now);
-        persistMaintenanceMemory(memory);
-        removeEmbeddingQuietly(memory.getId());
+    private void disableConflictingEnabledPreferenceMemories(Long userId,
+                                                             String subType,
+                                                             Long keepId,
+                                                             LocalDateTime now) {
+        if (userId == null || StringUtils.isBlank(subType)) {
+            return;
+        }
+        listMemoriesForMaintenance(userId).stream()
+                .filter(this::isEnabledMemory)
+                .filter(memory -> userId.equals(memory.getUserId()))
+                .filter(memory -> MemoryTypeEnum.PREFERENCE.matches(memory.getMemoryType()))
+                .filter(memory -> StringUtils.equals(subType, memory.getSubType()))
+                .filter(memory -> keepId == null || !keepId.equals(memory.getId()))
+                .forEach(memory -> {
+                    memory.setEnable(MemoryEnableEnum.DISABLE.getCode());
+                    memory.setUpdatedAt(now == null ? LocalDateTime.now() : now);
+                    updateById(memory);
+                    removeEmbeddingQuietly(memory.getId());
+                });
     }
 
-    private void hideMemoryForMaintenance(AiMemory memory, LocalDateTime now) {
-        memory.setStatus(MemoryStatusEnum.HIDDEN.getCode());
-        memory.setUpdatedAt(now);
-        persistMaintenanceMemory(memory);
-        removeEmbeddingQuietly(memory.getId());
-    }
-
-    private List<AiMemory> findExpiredActiveMemories(List<AiMemory> activeMemories, LocalDateTime now) {
-        return activeMemories.stream()
-                .filter(memory -> memory.getExpiresAt() != null && memory.getExpiresAt().isBefore(now))
-                .toList();
-    }
-
-    private List<AiMemory> findDuplicateLosers(List<AiMemory> activeMemories) {
-        Map<String, List<AiMemory>> groups = activeMemories.stream()
-                .filter(memory -> StringUtils.isNotBlank(memory.getContent()))
-                .collect(Collectors.groupingBy(this::duplicateKey, LinkedHashMap::new, Collectors.toList()));
-
-        return groups.values().stream()
-                .filter(group -> group.size() > 1)
-                .flatMap(group -> group.stream()
-                        .sorted(memoryMaintenanceComparator())
-                        .skip(1))
-                .toList();
-    }
-
-    private Comparator<AiMemory> memoryMaintenanceComparator() {
+    private Comparator<AiMemory> preferenceMemoryComparator() {
         return Comparator.comparing(AiMemory::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(AiMemory::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(AiMemory::getId, Comparator.nullsLast(Comparator.reverseOrder()));
     }
 
-    private String duplicateKey(AiMemory memory) {
-        return StringUtils.defaultString(memory.getUserId() == null ? null : String.valueOf(memory.getUserId()))
-                + "|" + StringUtils.defaultString(memory.getWorkspaceContextKey())
-                + "|" + StringUtils.defaultString(memory.getScope())
-                + "|" + StringUtils.defaultString(memory.getMemoryType())
-                + "|" + StringUtils.defaultString(memory.getSubType())
-                + "|" + StringUtils.defaultString(memory.getNormalizedContentKey(), normalizeDuplicateContent(memory.getContent()));
+    private boolean isEnabledMemory(AiMemory memory) {
+        return Objects.equals(memory.getEnable(), MemoryEnableEnum.ENABLE.getCode());
     }
 
-    private String normalizeDuplicateContent(String value) {
-        return StringUtils.normalizeSpace(StringUtils.defaultString(value)).toLowerCase();
+    private boolean isDisabledMemory(AiMemory memory) {
+        return Objects.equals(memory.getEnable(), MemoryEnableEnum.DISABLE.getCode());
     }
 
-    private boolean isActiveMemory(AiMemory memory) {
-        return Objects.equals(memory.getStatus(), MemoryStatusEnum.ACTIVE.getCode());
-    }
-
-    private boolean isArchivedMemory(AiMemory memory) {
-        return Objects.equals(memory.getStatus(), MemoryStatusEnum.ARCHIVED.getCode());
-    }
-
-    private boolean isHiddenMemory(AiMemory memory) {
-        return Objects.equals(memory.getStatus(), MemoryStatusEnum.HIDDEN.getCode());
-    }
-
-    private int touchMemories(List<Long> memoryIds, boolean markUse) {
+    private int touchMemories(List<Long> memoryIds) {
         Long userId = RequestContext.getUserId();
         if (userId == null || memoryIds == null || memoryIds.isEmpty()) {
             return 0;
@@ -1126,13 +905,8 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
             if (memory == null || !userId.equals(memory.getUserId())) {
                 continue;
             }
-            if (markUse) {
-                memory.setUseCount(defaultInt(memory.getUseCount(), 0) + 1);
-                memory.setLastUsedAt(now);
-            } else {
-                memory.setAccessCount(defaultInt(memory.getAccessCount(), 0) + 1);
-                memory.setLastAccessedAt(now);
-            }
+            memory.setAccessCount(defaultInt(memory.getAccessCount(), 0) + 1);
+            memory.setLastAccessedAt(now);
             updateById(memory);
             processedCount++;
         }
@@ -1141,6 +915,10 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
 
     private int defaultInt(Integer value, int defaultValue) {
         return value == null ? defaultValue : value;
+    }
+
+    private Integer longToInt(Long value) {
+        return value == null ? null : Math.toIntExact(value);
     }
 
     private static final class PromptSafeText {
@@ -1154,6 +932,4 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         }
     }
 
-    private record WorkspaceBinding(String workspaceLevel, String workspaceContextKey) {
-    }
 }

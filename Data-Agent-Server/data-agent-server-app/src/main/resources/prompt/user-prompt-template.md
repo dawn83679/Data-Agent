@@ -10,6 +10,10 @@
 {{USER_MEMORY}}
 </user_memory>
 
+<user_preferences>
+{{USER_PREFERENCES}}
+</user_preferences>
+
 <user_mention>
 {{USER_MENTION}}
 </user_mention>

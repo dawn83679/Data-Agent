@@ -119,7 +119,6 @@ public class MemoryRecallQueryPlanner {
     private String reorderReason(MemoryScopeEnum preferredScope) {
         return switch (preferredScope) {
             case USER -> MemoryRecallPlanningConstant.REASON_SUBTYPE_REORDERED_TO_USER;
-            case WORKSPACE -> MemoryRecallPlanningConstant.REASON_SUBTYPE_REORDERED_TO_WORKSPACE;
             case CONVERSATION -> MemoryRecallPlanningConstant.REASON_SUBTYPE_REORDERED_TO_CONVERSATION;
         };
     }

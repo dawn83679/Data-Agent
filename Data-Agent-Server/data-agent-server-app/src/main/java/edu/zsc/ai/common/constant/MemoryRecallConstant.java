@@ -14,8 +14,6 @@ public final class MemoryRecallConstant {
 
     public static final String ITEM_MEMORY_ID = "memoryId";
     public static final String ITEM_SCOPE = "scope";
-    public static final String ITEM_WORKSPACE_LEVEL = "workspaceLevel";
-    public static final String ITEM_WORKSPACE_CONTEXT_KEY = "workspaceContextKey";
     public static final String ITEM_MEMORY_TYPE = "memoryType";
     public static final String ITEM_SUB_TYPE = "subType";
     public static final String ITEM_TITLE = "title";

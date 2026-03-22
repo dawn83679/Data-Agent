@@ -12,8 +12,7 @@ import lombok.RequiredArgsConstructor;
 public enum MemoryScopeEnum {
 
     CONVERSATION("CONVERSATION", 0),
-    WORKSPACE("WORKSPACE", 1),
-    USER("USER", 2);
+    USER("USER", 1);
 
     private final String code;
     private final int priority;

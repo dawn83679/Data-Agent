@@ -35,8 +35,6 @@ public class MemoryProperties {
 
         private long fixedDelayMs = 3_600_000L;
 
-        private boolean archiveExpiredEnabled = true;
-
-        private boolean hideDuplicateEnabled = true;
+        private boolean disableDuplicateEnabled = true;
     }
 }

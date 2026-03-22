@@ -7,7 +7,6 @@ import edu.zsc.ai.common.enums.ai.MemoryScopeEnum;
 import edu.zsc.ai.common.enums.ai.MemorySourceTypeEnum;
 import edu.zsc.ai.common.enums.ai.MemorySubTypeEnum;
 import edu.zsc.ai.common.enums.ai.MemoryTypeEnum;
-import edu.zsc.ai.common.enums.ai.MemoryWorkspaceLevelEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,8 +20,6 @@ public class MemoryMetadataResponse {
 
     private List<String> scopes;
 
-    private List<String> workspaceLevels;
-
     private List<String> sourceTypes;
 
     private List<MemoryTypeMetadata> memoryTypes;
@@ -31,9 +28,6 @@ public class MemoryMetadataResponse {
         return MemoryMetadataResponse.builder()
                 .scopes(Arrays.stream(MemoryScopeEnum.values())
                         .map(MemoryScopeEnum::getCode)
-                        .toList())
-                .workspaceLevels(Arrays.stream(MemoryWorkspaceLevelEnum.values())
-                        .map(MemoryWorkspaceLevelEnum::getCode)
                         .toList())
                 .sourceTypes(Arrays.stream(MemorySourceTypeEnum.values())
                         .map(MemorySourceTypeEnum::getCode)

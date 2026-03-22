@@ -27,7 +27,7 @@ class MemoryRecallQueryPlannerTest {
 
         assertEquals(List.of(
                         MemoryScopeEnum.CONVERSATION.getCode(),
-                        MemoryScopeEnum.WORKSPACE.getCode()),
+                        MemoryScopeEnum.USER.getCode()),
                 queries.stream().map(MemoryRecallQuery::targetScope).toList());
         assertEquals(MemoryRecallQueryStrategy.HYBRID, queries.get(0).queryStrategy());
         assertEquals(MemoryRecallQueryStrategy.BROWSE, queries.get(1).queryStrategy());
@@ -59,22 +59,22 @@ class MemoryRecallQueryPlannerTest {
                         .scope("INVALID")
                         .build()));
 
-        assertEquals("Unsupported scope 'INVALID'. Valid values: CONVERSATION, WORKSPACE, USER", exception.getMessage());
+        assertEquals("Unsupported scope 'INVALID'. Valid values: CONVERSATION, USER", exception.getMessage());
     }
 
     @Test
     void plan_prefersUserScopeForPreferenceSubType() {
         List<MemoryRecallQuery> queries = planner.plan(MemoryRecallContext.builder()
                 .conversationId(7L)
-                .queryText("find output preference")
+                .queryText("find response format preference")
                 .memoryType("PREFERENCE")
-                .subType("OUTPUT_FORMAT")
+                .subType("RESPONSE_FORMAT")
                 .recallMode(MemoryRecallMode.PROMPT)
                 .build());
 
         assertEquals(List.of(MemoryScopeEnum.USER.getCode(), MemoryScopeEnum.CONVERSATION.getCode()),
                 queries.stream().map(MemoryRecallQuery::targetScope).toList());
-        assertEquals(MemoryRecallQueryStrategy.SEMANTIC, queries.get(0).queryStrategy());
+        assertEquals(MemoryRecallQueryStrategy.BROWSE, queries.get(0).queryStrategy());
         assertEquals(MemoryRecallQueryStrategy.BROWSE, queries.get(1).queryStrategy());
         assertEquals(0, queries.get(0).priority());
         assertEquals(1, queries.get(1).priority());
@@ -92,11 +92,10 @@ class MemoryRecallQueryPlannerTest {
 
         assertEquals(List.of(
                         MemoryScopeEnum.CONVERSATION.getCode(),
-                        MemoryScopeEnum.WORKSPACE.getCode(),
                         MemoryScopeEnum.USER.getCode()),
                 queries.stream().map(MemoryRecallQuery::targetScope).toList());
         assertEquals(MemoryRecallPlanningConstant.REASON_FALLBACK_DEFAULT_SCOPE_PLAN, queries.get(0).planningReason());
         assertEquals(MemoryRecallQueryStrategy.HYBRID, queries.get(0).queryStrategy());
-        assertEquals(MemoryRecallQueryStrategy.BROWSE, queries.get(2).queryStrategy());
+        assertEquals(MemoryRecallQueryStrategy.BROWSE, queries.get(1).queryStrategy());
     }
 }

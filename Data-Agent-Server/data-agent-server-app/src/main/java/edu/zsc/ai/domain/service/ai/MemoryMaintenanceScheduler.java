@@ -22,14 +22,11 @@ public class MemoryMaintenanceScheduler {
         }
         try {
             var report = memoryService.runGlobalMaintenance();
-            log.info("Memory maintenance summary: archivedProcessed={}, hiddenProcessed={}, activeCount={}, archivedCount={}, hiddenCount={}, expiredActiveCount={}, duplicateActiveCount={}",
-                    report.getProcessedArchivedCount(),
-                    report.getProcessedHiddenCount(),
-                    report.getActiveMemoryCount(),
-                    report.getArchivedMemoryCount(),
-                    report.getHiddenMemoryCount(),
-                    report.getExpiredActiveMemoryCount(),
-                    report.getDuplicateActiveMemoryCount());
+            log.info("Memory maintenance summary: disabledProcessed={}, enabledCount={}, disabledCount={}, duplicateEnabledCount={}",
+                    report.getProcessedDisabledCount(),
+                    report.getEnabledMemoryCount(),
+                    report.getDisabledMemoryCount(),
+                    report.getDuplicateEnabledMemoryCount());
         } catch (Exception e) {
             log.warn("Scheduled memory maintenance failed", e);
         }

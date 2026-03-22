@@ -73,6 +73,5 @@ class MemoryContextServiceImplTest {
         assertEquals(1, context.getMemories().size());
         assertEquals("User prefers concise output.", context.getMemories().get(0).getContent());
         verify(memoryService).recordMemoryAccess(List.of(1L));
-        verify(memoryService).recordMemoryUsage(List.of(1L));
     }
 }

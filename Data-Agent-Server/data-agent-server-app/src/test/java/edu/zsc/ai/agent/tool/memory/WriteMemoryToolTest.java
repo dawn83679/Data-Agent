@@ -9,7 +9,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.AfterEach;
@@ -50,7 +49,7 @@ class WriteMemoryToolTest {
                         .id(7L)
                         .scope("USER")
                         .memoryType("PREFERENCE")
-                        .subType("OUTPUT_FORMAT")
+                        .subType("RESPONSE_FORMAT")
                         .title("Structured output")
                         .content("User prefers structured output.")
                         .createdAt(LocalDateTime.of(2026, 3, 19, 10, 0))
@@ -61,17 +60,11 @@ class WriteMemoryToolTest {
 
         AgentToolResult result = tool.writeMemory(
                 "USER",
-                null,
-                null,
-                null,
-                null,
                 "PREFERENCE",
-                "OUTPUT_FORMAT",
+                "RESPONSE_FORMAT",
                 "Structured output",
                 "User prefers structured output.",
                 "The preference was repeated explicitly.",
-                0.92,
-                List.of("msg-1", "msg-2"),
                 InvocationParameters.from(Map.of()));
 
         assertTrue(result.isSuccess());
@@ -89,7 +82,7 @@ class WriteMemoryToolTest {
                         .id(8L)
                         .scope("USER")
                         .memoryType("PREFERENCE")
-                        .subType("OUTPUT_FORMAT")
+                        .subType("RESPONSE_FORMAT")
                         .createdAt(LocalDateTime.of(2026, 3, 19, 10, 0))
                         .updatedAt(LocalDateTime.of(2026, 3, 19, 10, 0))
                         .build())
@@ -98,17 +91,11 @@ class WriteMemoryToolTest {
 
         AgentToolResult result = tool.writeMemory(
                 "USER",
-                null,
-                null,
-                null,
-                null,
                 "PREFERENCE",
-                "OUTPUT_FORMAT",
+                "RESPONSE_FORMAT",
                 "Structured output",
                 "User prefers structured output.",
                 null,
-                null,
-                List.of(),
                 InvocationParameters.from(Map.of()));
 
         assertTrue(result.isSuccess());
@@ -124,17 +111,11 @@ class WriteMemoryToolTest {
 
         AgentToolResult result = tool.writeMemory(
                 "USER",
-                null,
-                null,
-                null,
-                null,
                 "PREFERENCE",
-                "OUTPUT_FORMAT",
+                "RESPONSE_FORMAT",
                 "Structured output",
                 "User prefers structured output.",
                 null,
-                null,
-                List.of(),
                 InvocationParameters.from(Map.of()));
 
         assertFalse(result.isSuccess());
@@ -159,17 +140,11 @@ class WriteMemoryToolTest {
 
         AgentToolResult result = proxy.writeMemory(
                 "USER",
-                null,
-                null,
-                null,
-                null,
                 "PREFERENCE",
                 "LANGUAGE_PREFERENCE",
                 "用户语言偏好",
                 "用户偏好使用中文进行交互",
                 "用户明确表达了中文交互的偏好",
-                1.0,
-                List.of(),
                 InvocationParameters.from(Map.of(
                         InvocationContextConstant.USER_ID, "42",
                         InvocationContextConstant.AGENT_TYPE, "main",

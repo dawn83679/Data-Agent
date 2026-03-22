@@ -5,7 +5,7 @@ import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { I18N_KEYS } from '../../../constants/i18nKeys';
 import { cn } from '../../../lib/utils';
-import { MEMORY_STATUS, type MemoryScope, type MemoryType } from '../../../types/memory';
+import { MEMORY_ENABLE, type MemoryScope, type MemoryType } from '../../../types/memory';
 import { getMemoryOptionLabel, MEMORY_FORM_SELECT_CLASS_NAME } from '../memoryPageUtils';
 import { MemoryControlCenter } from './MemoryControlCenter';
 import type { FilterFormState } from '../memoryPageModels';
@@ -123,13 +123,11 @@ export function MemoryFilterWorkbench({
           </label>
           <select
             className={MEMORY_FORM_SELECT_CLASS_NAME}
-            value={filterForm.status}
-            onChange={onFilterInputChange('status')}
+            value={filterForm.enable}
+            onChange={onFilterInputChange('enable')}
           >
-            <option value="">{t(I18N_KEYS.MEMORY_PAGE.PRESET_ALL)}</option>
-            <option value={String(MEMORY_STATUS.ACTIVE)}>{t(I18N_KEYS.MEMORY_PAGE.STATUS_ACTIVE)}</option>
-            <option value={String(MEMORY_STATUS.ARCHIVED)}>{t(I18N_KEYS.MEMORY_PAGE.STATUS_ARCHIVED)}</option>
-            <option value={String(MEMORY_STATUS.HIDDEN)}>{t(I18N_KEYS.MEMORY_PAGE.STATUS_HIDDEN)}</option>
+            <option value={String(MEMORY_ENABLE.ENABLE)}>{t(I18N_KEYS.MEMORY_PAGE.STATUS_ENABLED)}</option>
+            <option value={String(MEMORY_ENABLE.DISABLE)}>{t(I18N_KEYS.MEMORY_PAGE.STATUS_DISABLED)}</option>
           </select>
         </div>
 

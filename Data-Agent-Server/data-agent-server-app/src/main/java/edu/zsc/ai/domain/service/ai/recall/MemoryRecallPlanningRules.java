@@ -16,7 +16,7 @@ public class MemoryRecallPlanningRules {
         if (memoryType == null) {
             return new MemoryRecallPlanningRule(
                     MemoryRecallPlanningConstant.REASON_FALLBACK_DEFAULT_SCOPE_PLAN,
-                    List.of(MemoryScopeEnum.CONVERSATION, MemoryScopeEnum.WORKSPACE, MemoryScopeEnum.USER),
+                    List.of(MemoryScopeEnum.CONVERSATION, MemoryScopeEnum.USER),
                     MemoryRecallQueryStrategy.HYBRID,
                     MemoryRecallQueryStrategy.BROWSE);
         }
@@ -25,26 +25,26 @@ public class MemoryRecallPlanningRules {
             case PREFERENCE -> new MemoryRecallPlanningRule(
                     MemoryRecallPlanningConstant.REASON_MEMORY_TYPE_PREFERENCE_DEFAULT,
                     List.of(MemoryScopeEnum.USER, MemoryScopeEnum.CONVERSATION),
-                    MemoryRecallQueryStrategy.SEMANTIC,
+                    MemoryRecallQueryStrategy.BROWSE,
                     MemoryRecallQueryStrategy.BROWSE);
             case BUSINESS_RULE -> new MemoryRecallPlanningRule(
                     MemoryRecallPlanningConstant.REASON_MEMORY_TYPE_BUSINESS_RULE_DEFAULT,
-                    List.of(MemoryScopeEnum.WORKSPACE, MemoryScopeEnum.USER),
+                    List.of(MemoryScopeEnum.USER, MemoryScopeEnum.CONVERSATION),
                     MemoryRecallQueryStrategy.HYBRID,
                     MemoryRecallQueryStrategy.BROWSE);
             case KNOWLEDGE_POINT -> new MemoryRecallPlanningRule(
                     MemoryRecallPlanningConstant.REASON_MEMORY_TYPE_KNOWLEDGE_POINT_DEFAULT,
-                    List.of(MemoryScopeEnum.WORKSPACE, MemoryScopeEnum.USER),
+                    List.of(MemoryScopeEnum.USER, MemoryScopeEnum.CONVERSATION),
                     MemoryRecallQueryStrategy.HYBRID,
                     MemoryRecallQueryStrategy.BROWSE);
             case GOLDEN_SQL_CASE -> new MemoryRecallPlanningRule(
                     MemoryRecallPlanningConstant.REASON_MEMORY_TYPE_GOLDEN_SQL_CASE_DEFAULT,
-                    List.of(MemoryScopeEnum.WORKSPACE, MemoryScopeEnum.USER),
+                    List.of(MemoryScopeEnum.USER, MemoryScopeEnum.CONVERSATION),
                     MemoryRecallQueryStrategy.HYBRID,
                     MemoryRecallQueryStrategy.BROWSE);
             case WORKFLOW_CONSTRAINT -> new MemoryRecallPlanningRule(
                     MemoryRecallPlanningConstant.REASON_MEMORY_TYPE_WORKFLOW_CONSTRAINT_DEFAULT,
-                    List.of(MemoryScopeEnum.CONVERSATION, MemoryScopeEnum.WORKSPACE),
+                    List.of(MemoryScopeEnum.CONVERSATION, MemoryScopeEnum.USER),
                     MemoryRecallQueryStrategy.HYBRID,
                     MemoryRecallQueryStrategy.BROWSE);
         };
@@ -55,11 +55,11 @@ public class MemoryRecallPlanningRules {
             return null;
         }
         return switch (subType) {
-            case RESPONSE_STYLE, OUTPUT_FORMAT, LANGUAGE_PREFERENCE, INTERACTION_STYLE, DECISION_STYLE -> MemoryScopeEnum.USER;
+            case RESPONSE_FORMAT, LANGUAGE_PREFERENCE -> MemoryScopeEnum.USER;
             case PRODUCT_RULE, DOMAIN_RULE, GOVERNANCE_RULE, SAFETY_RULE,
                     ARCHITECTURE_KNOWLEDGE, DOMAIN_KNOWLEDGE, OBJECT_KNOWLEDGE,
                     QUERY_PATTERN, JOIN_STRATEGY, VALIDATED_SQL, METRIC_CALCULATION,
-                    GLOSSARY -> MemoryScopeEnum.WORKSPACE;
+                    GLOSSARY -> MemoryScopeEnum.USER;
             case PROCESS_RULE, APPROVAL_RULE, IMPLEMENTATION_CONSTRAINT, REVIEW_CONSTRAINT -> MemoryScopeEnum.CONVERSATION;
         };
     }

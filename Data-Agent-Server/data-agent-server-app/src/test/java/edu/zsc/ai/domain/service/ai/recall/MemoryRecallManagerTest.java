@@ -42,15 +42,15 @@ class MemoryRecallManagerTest {
                 .build();
         MemoryRecallQuery userQuery = new MemoryRecallQuery("user", "planned_user", "USER", 7L, "find preference", null, null, null,
                 MemoryRecallMode.PROMPT, MemoryRecallQueryStrategy.HYBRID, 0);
-        MemoryRecallQuery workspaceQuery = new MemoryRecallQuery("workspace", "planned_workspace", "WORKSPACE", 7L, "find preference", null, null, null,
+        MemoryRecallQuery conversationQuery = new MemoryRecallQuery("conversation", "planned_conversation", "CONVERSATION", 7L, "find preference", null, null, null,
                 MemoryRecallMode.PROMPT, MemoryRecallQueryStrategy.BROWSE, 1);
         MemoryRecallItem userItem = MemoryRecallItem.builder().id(1L).scope("USER").content("User memory").build();
-        MemoryRecallItem workspaceItem = MemoryRecallItem.builder().id(2L).scope("WORKSPACE").content("Workspace memory").build();
-        MemoryRecallResult expected = MemoryRecallResult.builder().items(List.of(userItem, workspaceItem)).build();
+        MemoryRecallItem conversationItem = MemoryRecallItem.builder().id(2L).scope("CONVERSATION").content("Conversation memory").build();
+        MemoryRecallResult expected = MemoryRecallResult.builder().items(List.of(userItem, conversationItem)).build();
 
-        when(queryPlanner.plan(eq(context))).thenReturn(List.of(userQuery, workspaceQuery));
+        when(queryPlanner.plan(eq(context))).thenReturn(List.of(userQuery, conversationQuery));
         when(handlerChain.handle(userQuery)).thenReturn(List.of(userItem));
-        when(handlerChain.handle(workspaceQuery)).thenReturn(List.of(workspaceItem));
+        when(handlerChain.handle(conversationQuery)).thenReturn(List.of(conversationItem));
         when(postProcessor.process(eq(context), anyList())).thenReturn(expected);
 
         MemoryRecallResult result = manager.recall(context);
@@ -58,8 +58,8 @@ class MemoryRecallManagerTest {
         assertSame(expected, result);
         verify(queryPlanner).plan(context);
         verify(handlerChain).handle(userQuery);
-        verify(handlerChain).handle(workspaceQuery);
-        verify(postProcessor).process(eq(context), eq(List.of(userItem, workspaceItem)));
+        verify(handlerChain).handle(conversationQuery);
+        verify(postProcessor).process(eq(context), eq(List.of(userItem, conversationItem)));
         assertEquals(List.of(
                         MemoryRecallLogConstant.EVENT_RECALL_START,
                         MemoryRecallLogConstant.EVENT_RECALL_PLANNED,

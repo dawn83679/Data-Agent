@@ -46,13 +46,13 @@ public class MemoryController {
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer size,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String memoryType,
-            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Integer enable,
             @RequestParam(required = false) String scope) {
         PageResponse<AiMemory> page = memoryService.pageCurrentUserMemories(
                 PageRequest.builder().current(current).size(size).build(),
                 keyword,
                 memoryType,
-                status,
+                enable,
                 scope);
         PageResponse<MemoryResponse> body = PageResponse.<MemoryResponse>builder()
                 .current(page.getCurrent())
@@ -76,7 +76,7 @@ public class MemoryController {
 
     @PostMapping("/search")
     public ApiResponse<List<MemorySearchResult>> search(@Valid @RequestBody MemorySemanticSearchRequest request) {
-        List<MemorySearchResult> results = memoryService.searchActiveMemories(
+        List<MemorySearchResult> results = memoryService.searchEnabledMemories(
                 request.getQueryText(),
                 request.getLimit(),
                 request.getMinScore());
@@ -106,14 +106,14 @@ public class MemoryController {
         return ApiResponse.success(MemoryConverter.toMemoryResponse(updated));
     }
 
-    @PostMapping("/{id}/archive")
-    public ApiResponse<MemoryResponse> archive(@PathVariable @NotNull Long id) {
-        return ApiResponse.success(MemoryConverter.toMemoryResponse(memoryService.archiveMemory(id)));
+    @PostMapping("/{id}/disable")
+    public ApiResponse<MemoryResponse> disableMemory(@PathVariable @NotNull Long id) {
+        return ApiResponse.success(MemoryConverter.toMemoryResponse(memoryService.disableMemory(id)));
     }
 
-    @PostMapping("/{id}/restore")
-    public ApiResponse<MemoryResponse> restore(@PathVariable @NotNull Long id) {
-        return ApiResponse.success(MemoryConverter.toMemoryResponse(memoryService.restoreMemory(id)));
+    @PostMapping("/{id}/enable")
+    public ApiResponse<MemoryResponse> enableMemory(@PathVariable @NotNull Long id) {
+        return ApiResponse.success(MemoryConverter.toMemoryResponse(memoryService.enableMemory(id)));
     }
 
     @DeleteMapping("/{id}")

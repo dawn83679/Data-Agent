@@ -15,7 +15,6 @@ import edu.zsc.ai.common.enums.ai.MemoryScopeEnum;
 import edu.zsc.ai.common.enums.ai.MemorySourceTypeEnum;
 import edu.zsc.ai.common.enums.ai.MemorySubTypeEnum;
 import edu.zsc.ai.common.enums.ai.MemoryTypeEnum;
-import edu.zsc.ai.common.enums.ai.MemoryWorkspaceLevelEnum;
 import edu.zsc.ai.domain.model.dto.response.ai.MemoryMetadataResponse;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.service.ai.MemoryService;
@@ -34,7 +33,6 @@ class MemoryControllerTest {
         MemoryMetadataResponse body = response.getData();
 
         assertEquals(Arrays.stream(MemoryScopeEnum.values()).map(MemoryScopeEnum::getCode).toList(), body.getScopes());
-        assertEquals(Arrays.stream(MemoryWorkspaceLevelEnum.values()).map(MemoryWorkspaceLevelEnum::getCode).toList(), body.getWorkspaceLevels());
         assertEquals(Arrays.stream(MemorySourceTypeEnum.values()).map(MemorySourceTypeEnum::getCode).toList(), body.getSourceTypes());
 
         Map<String, MemoryMetadataResponse.MemoryTypeMetadata> metadataByType = body.getMemoryTypes().stream()

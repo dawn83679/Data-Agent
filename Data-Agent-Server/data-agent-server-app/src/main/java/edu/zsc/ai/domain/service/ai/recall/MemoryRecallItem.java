@@ -17,10 +17,6 @@ public class MemoryRecallItem {
 
     private String scope;
 
-    private String workspaceLevel;
-
-    private String workspaceContextKey;
-
     private String memoryType;
 
     private String subType;
@@ -28,8 +24,6 @@ public class MemoryRecallItem {
     private String title;
 
     private String content;
-
-    private String normalizedContentKey;
 
     private String reason;
 

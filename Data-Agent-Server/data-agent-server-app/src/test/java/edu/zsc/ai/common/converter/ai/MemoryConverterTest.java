@@ -22,14 +22,9 @@ class MemoryConverterTest {
                 .sourceType("MANUAL")
                 .title("Concise output")
                 .content("User prefers concise output.")
-                .detailJson("{}")
-                .status(0)
-                .confidenceScore(0.92)
-                .salienceScore(0.61)
+                .enable(1)
                 .accessCount(4)
                 .lastAccessedAt(now)
-                .expiresAt(now.plusDays(30))
-                .archivedAt(null)
                 .createdAt(now.minusDays(1))
                 .updatedAt(now)
                 .build();
@@ -40,7 +35,7 @@ class MemoryConverterTest {
         assertEquals(memory.getConversationId(), response.getConversationId());
         assertEquals(memory.getMemoryType(), response.getMemoryType());
         assertEquals(memory.getContent(), response.getContent());
-        assertEquals(memory.getConfidenceScore(), response.getConfidenceScore());
+        assertEquals(memory.getAccessCount(), response.getAccessCount());
         assertEquals(memory.getUpdatedAt(), response.getUpdatedAt());
     }
 }
