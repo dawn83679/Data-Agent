@@ -1,7 +1,7 @@
 import http from '../lib/http';
 import type { ChatMessage } from '../types/chat';
 import { MessageRole } from '../types/chat';
-import type { Conversation, PageResponse } from '../types/conversation';
+import type { CompressConversationResponse, Conversation, PageResponse } from '../types/conversation';
 
 export const conversationService = {
   /**
@@ -30,6 +30,11 @@ export const conversationService = {
    */
   updateTitle: async (id: number, body: { title: string }): Promise<Conversation> => {
     const response = await http.post<Conversation>(`/conversations/${id}`, body);
+    return response.data;
+  },
+
+  compress: async (id: number, body: { model: string }): Promise<CompressConversationResponse> => {
+    const response = await http.post<CompressConversationResponse>(`/conversations/${id}/compress`, body);
     return response.data;
   },
 

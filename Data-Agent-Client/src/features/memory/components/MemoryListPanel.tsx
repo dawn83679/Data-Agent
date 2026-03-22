@@ -32,6 +32,7 @@ export interface MemoryListPanelProps {
   totalPages: number;
   disablePrevious?: boolean;
   disableNext?: boolean;
+  showPagination?: boolean;
   onPrevious: () => void;
   onNext: () => void;
 }
@@ -54,6 +55,7 @@ export function MemoryListPanel({
   totalPages,
   disablePrevious,
   disableNext,
+  showPagination = true,
   onPrevious,
   onNext,
 }: MemoryListPanelProps) {
@@ -121,19 +123,21 @@ export function MemoryListPanel({
             ))}
           </div>
         )}
-        <div className="flex items-center justify-between gap-2 border-t theme-border pt-3">
-          <span className="text-xs theme-text-secondary">
-            {pageLabel}: {currentPage} / {Math.max(totalPages, 1)}
-          </span>
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="sm" disabled={disablePrevious} onClick={onPrevious}>
-              {previousLabel}
-            </Button>
-            <Button type="button" variant="outline" size="sm" disabled={disableNext} onClick={onNext}>
-              {nextLabel}
-            </Button>
+        {showPagination ? (
+          <div className="flex items-center justify-between gap-2 border-t theme-border pt-3">
+            <span className="text-xs theme-text-secondary">
+              {pageLabel}: {currentPage} / {Math.max(totalPages, 1)}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" size="sm" disabled={disablePrevious} onClick={onPrevious}>
+                {previousLabel}
+              </Button>
+              <Button type="button" variant="outline" size="sm" disabled={disableNext} onClick={onNext}>
+                {nextLabel}
+              </Button>
+            </div>
           </div>
-        </div>
+        ) : null}
       </CardContent>
     </Card>
   );

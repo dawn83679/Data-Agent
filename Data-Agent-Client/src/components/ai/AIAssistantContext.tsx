@@ -37,6 +37,8 @@ export interface AIAssistantContextValue {
   isLoading: boolean;
   /** Current conversation ID (null for new conversations) */
   conversationId: number | null;
+  /** Latest known tokenCount for the active conversation. */
+  conversationTokenCount: number | null;
   modelState: ModelState;
   agentState: AgentState;
   chatContextState: ChatContextState;

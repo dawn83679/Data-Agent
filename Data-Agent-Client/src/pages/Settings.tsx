@@ -3,6 +3,7 @@ import { User, Shield, Lock, ChevronRight, ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/utils';
 import { I18N_KEYS } from '../constants/i18nKeys';
+import { ROUTES } from '../constants/routes';
 import { Button } from '../components/ui/Button';
 
 const navItems = [
@@ -24,7 +25,7 @@ export default function Settings() {
                         <Button 
                             variant="ghost" 
                             size="sm" 
-                            onClick={() => navigate('/')}
+                            onClick={() => navigate(ROUTES.HOME)}
                             className="h-8 px-2 -ml-2 theme-text-secondary hover:theme-text-primary"
                         >
                             <ArrowLeft className="h-4 w-4 mr-1" />

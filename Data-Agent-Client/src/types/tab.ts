@@ -18,6 +18,7 @@ export interface ConsoleTabMetadata {
 export interface TableTabMetadata extends ConsoleTabMetadata {
   objectName: string;       // table or view name
   objectType: 'table' | 'view';
+  viewMode?: 'grid' | 'transpose';
   catalog?: string;
   schema?: string;
   currentPage?: number;

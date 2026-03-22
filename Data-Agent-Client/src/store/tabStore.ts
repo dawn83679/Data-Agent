@@ -1,5 +1,18 @@
 import { create } from 'zustand';
-import type { ConsoleTabMetadata, PlanTabMetadata, SubAgentConsoleTabMetadata } from '../types/tab';
+import type {
+  ConsoleTabMetadata,
+  PlanTabMetadata,
+  SubAgentConsoleTabMetadata,
+  TableTabMetadata,
+} from '../types/tab';
+
+export type WorkspaceTabMetadata =
+  | ConsoleTabMetadata
+  | TableTabMetadata
+  | PlanTabMetadata
+  | SubAgentConsoleTabMetadata;
+
+export type WorkspaceTabMetadataUpdate = Partial<ConsoleTabMetadata & TableTabMetadata>;
 
 export interface Tab {
   id: string;
@@ -8,7 +21,7 @@ export interface Tab {
   icon?: string;
   content?: string;
   active: boolean;
-  metadata?: ConsoleTabMetadata | PlanTabMetadata | SubAgentConsoleTabMetadata;
+  metadata?: WorkspaceTabMetadata;
 }
 
 interface TabState {
@@ -24,7 +37,7 @@ interface TabState {
   closeAllTabs: () => void;
   switchTab: (id: string) => void;
   updateTabContent: (id: string, content: string) => void;
-  updateTabMetadata: (id: string, metadata: Partial<ConsoleTabMetadata>) => void;
+  updateTabMetadata: (id: string, metadata: WorkspaceTabMetadataUpdate) => void;
   updatePlanPayload: (id: string, payload: PlanTabMetadata['planPayload']) => void;
   updateSubAgentConsole: (id: string, metadata: SubAgentConsoleTabMetadata) => void;
   reorderTabs: (sourceId: string, destinationId: string) => void;
@@ -121,7 +134,7 @@ export const useTabStore = create<TabState>((set) => ({
   updateTabMetadata: (id, metadata) =>
     set((state) => ({
       tabs: state.tabs.map((t) =>
-        t.id === id ? { ...t, metadata: { ...t.metadata, ...metadata } as ConsoleTabMetadata } : t
+        t.id === id ? { ...t, metadata: { ...t.metadata, ...metadata } as WorkspaceTabMetadata } : t
       ),
     })),
 

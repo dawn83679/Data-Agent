@@ -4,7 +4,7 @@ import { Button } from '../../../components/ui/Button';
 
 export interface MemoryOverviewHeroProps {
   title: string;
-  description: string;
+  description?: string;
   backLabel: string;
   onBack: () => void;
   actions?: ReactNode;
@@ -34,7 +34,7 @@ export function MemoryOverviewHero({
           </Button>
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold tracking-tight theme-text-primary">{title}</h1>
-            <p className="max-w-3xl text-sm theme-text-secondary">{description}</p>
+            {description ? <p className="max-w-3xl text-sm theme-text-secondary">{description}</p> : null}
           </div>
         </div>
         {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
