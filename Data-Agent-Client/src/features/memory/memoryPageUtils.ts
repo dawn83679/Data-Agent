@@ -1,5 +1,17 @@
 import type { TFunction } from 'i18next';
 import { I18N_KEYS } from '../../constants/i18nKeys';
+import type { MemoryListItemView } from './components/MemoryListPanel';
+import {
+  MEMORY_DEFAULT_MANUAL_SCOPE,
+  MEMORY_DEFAULT_SOURCE_TYPE,
+  MEMORY_DEFAULT_TYPE,
+  MEMORY_DEFAULT_CONFIDENCE_SCORE,
+  MEMORY_DEFAULT_SALIENCE_SCORE,
+  MEMORY_DIALOG_MODE,
+  MEMORY_SEARCH_RESULT_TONE_CLASS_NAME,
+  MEMORY_STATUS_TONE_CLASS_NAMES,
+  MEMORY_WORKSPACE_SCOPE,
+} from './memoryPageConstants';
 import {
   getDefaultMemorySubtype,
   MEMORY_SCOPE_OPTIONS,
@@ -15,11 +27,12 @@ import {
   type MemoryMetadataResponse,
   type MemoryMetadataTypeItem,
   type MemoryPage,
+  type MemorySearchResult,
   type MemoryScope,
   type MemorySubType,
   type MemoryType,
 } from '../../types/memory';
-import type { FilterFormState, MemoryFormState } from './memoryPageModels';
+import type { FilterFormState, MemoryDialogMode, MemoryFormState } from './memoryPageModels';
 
 export const DEFAULT_MEMORY_PAGE_SIZE = 20;
 
@@ -57,16 +70,16 @@ export const defaultFilterFormState: FilterFormState = {
 
 export const createEmptyMemoryFormState = (): MemoryFormState => ({
   conversationId: '',
-  memoryType: 'PREFERENCE',
-  subType: getDefaultMemorySubtype('PREFERENCE'),
-  scope: 'USER',
-  sourceType: 'MANUAL',
+  memoryType: MEMORY_DEFAULT_TYPE,
+  subType: getDefaultMemorySubtype(MEMORY_DEFAULT_TYPE),
+  scope: MEMORY_DEFAULT_MANUAL_SCOPE,
+  sourceType: MEMORY_DEFAULT_SOURCE_TYPE,
   title: '',
   reason: '',
   content: '',
   detailJson: '{}',
-  confidenceScore: '0.9',
-  salienceScore: '0.6',
+  confidenceScore: MEMORY_DEFAULT_CONFIDENCE_SCORE,
+  salienceScore: MEMORY_DEFAULT_SALIENCE_SCORE,
   expiresAt: '',
 });
 
@@ -151,10 +164,10 @@ export const toBackendDateTime = (value: string): string | null => {
 
 export const mapMemoryToFormState = (memory: Memory): MemoryFormState => ({
   conversationId: memory.conversationId == null ? '' : String(memory.conversationId),
-  memoryType: memory.memoryType || 'PREFERENCE',
+  memoryType: memory.memoryType || MEMORY_DEFAULT_TYPE,
   subType: memory.subType || '',
-  scope: memory.scope || 'USER',
-  sourceType: memory.sourceType || 'MANUAL',
+  scope: memory.scope || MEMORY_DEFAULT_MANUAL_SCOPE,
+  sourceType: memory.sourceType || MEMORY_DEFAULT_SOURCE_TYPE,
   title: memory.title || '',
   reason: memory.reason || '',
   content: memory.content || '',
@@ -179,15 +192,99 @@ export const buildMemoryPayload = (form: MemoryFormState): MemoryCreateRequest =
   expiresAt: toBackendDateTime(form.expiresAt),
 });
 
+export const validateMemoryForm = (
+  form: MemoryFormState,
+  dialogMode: MemoryDialogMode,
+  subTypeOptionsByType: Record<string, MemorySubType[]>,
+  t: TFunction,
+): Record<string, string> => {
+  const errors: Record<string, string> = {};
+  const subTypesForType = subTypeOptionsByType[form.memoryType] ?? [];
+
+  if (!form.memoryType.trim()) {
+    errors.memoryType = t(I18N_KEYS.MEMORY_PAGE.VALIDATION_REQUIRED_TYPE);
+  }
+  if (!form.subType.trim()) {
+    errors.subType = t(I18N_KEYS.MEMORY_PAGE.VALIDATION_REQUIRED_SUB_TYPE);
+  } else if (subTypesForType.length > 0 && !subTypesForType.includes(form.subType)) {
+    errors.subType = t(I18N_KEYS.MEMORY_PAGE.VALIDATION_INVALID_SUB_TYPE);
+  }
+  if (dialogMode === MEMORY_DIALOG_MODE.CREATE && form.scope === MEMORY_WORKSPACE_SCOPE) {
+    errors.scope = t(I18N_KEYS.MEMORY_PAGE.VALIDATION_MANUAL_WORKSPACE_SCOPE);
+  }
+  if (!form.content.trim()) {
+    errors.content = t(I18N_KEYS.MEMORY_PAGE.VALIDATION_REQUIRED_CONTENT);
+  }
+  if (form.conversationId.trim() && Number.isNaN(Number(form.conversationId.trim()))) {
+    errors.conversationId = t(I18N_KEYS.MEMORY_PAGE.VALIDATION_CONVERSATION);
+  }
+
+  const numericScores = [form.confidenceScore, form.salienceScore]
+    .filter(Boolean)
+    .map((item) => Number(item));
+  if (numericScores.some((item) => Number.isNaN(item) || item < 0 || item > 1)) {
+    errors.confidenceScore = t(I18N_KEYS.MEMORY_PAGE.VALIDATION_SCORE_RANGE);
+    errors.salienceScore = t(I18N_KEYS.MEMORY_PAGE.VALIDATION_SCORE_RANGE);
+  }
+
+  if (form.detailJson.trim()) {
+    try {
+      JSON.parse(form.detailJson);
+    } catch {
+      errors.detailJson = t(I18N_KEYS.MEMORY_PAGE.VALIDATION_JSON);
+    }
+  }
+
+  return errors;
+};
+
+export const buildMemoryListItems = (
+  pageRecords: Memory[],
+  semanticResults: MemorySearchResult[] | null,
+  t: TFunction,
+): MemoryListItemView[] => {
+  if (semanticResults != null) {
+    return semanticResults.map((result) => ({
+      id: result.id,
+      title: getMemoryOptionLabel(t, result.memoryType),
+      summary: result.content,
+      tags: [getMemoryOptionLabel(t, result.memoryType)],
+      statusLabel: `${t(I18N_KEYS.MEMORY_PAGE.SEARCH_SCORE)} ${result.score.toFixed(3)}`,
+      statusToneClassName: MEMORY_SEARCH_RESULT_TONE_CLASS_NAME,
+      sourceLabel: result.conversationId
+        ? `${t(I18N_KEYS.MEMORY_PAGE.META_CONVERSATION)}: ${result.conversationId}`
+        : undefined,
+    }));
+  }
+
+  return pageRecords.map((memory) => ({
+    id: memory.id,
+    title: memory.title || getMemoryOptionLabel(t, memory.memoryType),
+    summary: memory.content,
+    tags: [
+      getMemoryOptionLabel(t, memory.memoryType),
+      getMemoryOptionLabel(t, memory.scope),
+      ...(memory.subType ? [getMemoryOptionLabel(t, memory.subType)] : []),
+    ],
+    statusLabel: t(getStatusLabelKey(memory.status)),
+    statusToneClassName: getStatusToneClassName(memory.status),
+    sourceLabel: `${t(I18N_KEYS.MEMORY_PAGE.META_SOURCE)}: ${getMemoryOptionLabel(t, memory.sourceType)}`,
+    workspaceBindingLabel: memory.scope === MEMORY_WORKSPACE_SCOPE
+      ? `${t(I18N_KEYS.MEMORY_PAGE.META_WORKSPACE_BINDING)}: ${formatWorkspaceBindingLabel(t, memory)}`
+      : undefined,
+    updatedAtLabel: `${t(I18N_KEYS.MEMORY_PAGE.META_UPDATED)}: ${formatDateTime(memory.updatedAt)}`,
+  }));
+};
+
 export const getInitialCreateMemoryFormState = (
   metadata: MemoryMetadataResponse,
   subTypeOptionsByType: Record<string, MemorySubType[]>,
   manualScopeOptions: readonly MemoryScope[],
 ): MemoryFormState => {
-  const nextMemoryType = metadata.memoryTypes[0]?.code ?? 'PREFERENCE';
+  const nextMemoryType = metadata.memoryTypes[0]?.code ?? MEMORY_DEFAULT_TYPE;
   const nextSubType = subTypeOptionsByType[nextMemoryType]?.[0] ?? getDefaultMemorySubtype(nextMemoryType);
-  const nextScope = manualScopeOptions[0] ?? 'USER';
-  const nextSourceType = metadata.sourceTypes[0] ?? 'MANUAL';
+  const nextScope = manualScopeOptions[0] ?? MEMORY_DEFAULT_MANUAL_SCOPE;
+  const nextSourceType = metadata.sourceTypes[0] ?? MEMORY_DEFAULT_SOURCE_TYPE;
   return {
     ...createEmptyMemoryFormState(),
     memoryType: nextMemoryType,
@@ -226,14 +323,8 @@ export const formatDateTime = (value?: string | null): string => {
 };
 
 export const getStatusToneClassName = (status: number): string => {
-  switch (status) {
-    case MEMORY_STATUS.ARCHIVED:
-      return 'bg-amber-500/12 text-amber-300 border-amber-500/25';
-    case MEMORY_STATUS.HIDDEN:
-      return 'bg-slate-500/12 text-slate-300 border-slate-500/25';
-    default:
-      return 'bg-emerald-500/12 text-emerald-300 border-emerald-500/25';
-  }
+  return MEMORY_STATUS_TONE_CLASS_NAMES[status as keyof typeof MEMORY_STATUS_TONE_CLASS_NAMES]
+    ?? MEMORY_STATUS_TONE_CLASS_NAMES[MEMORY_STATUS.ACTIVE];
 };
 
 export const getStatusLabelKey = (status: number): string => {
@@ -248,7 +339,7 @@ export const getStatusLabelKey = (status: number): string => {
 };
 
 export const formatWorkspaceBinding = (memory?: Memory | null): string => {
-  if (!memory || memory.scope !== 'WORKSPACE') {
+  if (!memory || memory.scope !== MEMORY_WORKSPACE_SCOPE) {
     return '--';
   }
   const level = formatLabel(memory.workspaceLevel);
@@ -257,7 +348,7 @@ export const formatWorkspaceBinding = (memory?: Memory | null): string => {
 };
 
 export const formatWorkspaceBindingLabel = (t: TFunction, memory?: Memory | null): string => {
-  if (!memory || memory.scope !== 'WORKSPACE') {
+  if (!memory || memory.scope !== MEMORY_WORKSPACE_SCOPE) {
     return '--';
   }
   const level = getMemoryOptionLabel(t, memory.workspaceLevel);

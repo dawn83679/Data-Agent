@@ -1,5 +1,7 @@
 export * from './MemoryControlCenter';
+export * from './MemoryFilterWorkbench';
 export * from './MemoryControlSidebar';
+export * from './MemoryDetailDialog';
 export * from './MemoryDetailPanel';
 export * from './MemoryListPanel';
 export * from './MemoryMaintenancePanel';

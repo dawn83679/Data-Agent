@@ -12,9 +12,9 @@
 
 import { create } from 'zustand';
 import type { DbTypeOption } from '../types/dbType';
-import type { ConsoleTabMetadata, SubAgentConsoleTabMetadata } from '../types/tab';
+import type { SubAgentConsoleTabMetadata } from '../types/tab';
 import type { PreferenceState } from '../constants/workspacePreferences';
-import { useTabStore, type Tab } from './tabStore';
+import { useTabStore, type Tab, type WorkspaceTabMetadataUpdate } from './tabStore';
 import { usePreferenceStore } from './preferenceStore';
 import { useDbTypeStore } from './dbTypeStore';
 import { useUiStore } from './uiStore';
@@ -43,7 +43,7 @@ export interface WorkspaceState extends PreferenceState {
   closeAllTabs: () => void;
   switchTab: (id: string) => void;
   updateTabContent: (id: string, content: string) => void;
-  updateTabMetadata: (id: string, metadata: Partial<ConsoleTabMetadata>) => void;
+  updateTabMetadata: (id: string, metadata: WorkspaceTabMetadataUpdate) => void;
   updatePlanPayload: (id: string, payload: import('../components/ai/blocks/exitPlanModeTypes').ExitPlanPayload) => void;
   updateSubAgentConsole: (id: string, metadata: SubAgentConsoleTabMetadata) => void;
   reorderTabs: (sourceId: string, destinationId: string) => void;

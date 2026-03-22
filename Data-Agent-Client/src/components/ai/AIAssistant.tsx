@@ -16,7 +16,8 @@ import { DEFAULT_MODEL, FALLBACK_MODELS } from '../../constants/models';
 import { ROUTES } from '../../constants/routes';
 import { SLASH_COMMAND_IDS } from './slashCommands';
 import { I18N_KEYS } from '../../constants/i18nKeys';
-import type { ChatContext, ChatUserMention } from '../../types/chat';
+import type { ChatContext, ChatMessage, ChatUserMention } from '../../types/chat';
+import { MessageRole } from '../../types/chat';
 import type { ModelOption } from '../../types/ai';
 import { findMentionTokens } from './mentionTypes';
 import { chatMessagesToMessages } from './MessageList';
@@ -24,6 +25,13 @@ import { extractPlansFromMessages } from './blocks/exitPlanModeTypes';
 import { planTabId } from './blocks/ToolRunBlock';
 
 const DEFAULT_AGENT: AgentType = 'Agent';
+
+function formatTokenCount(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) {
+    return '--';
+  }
+  return Math.round(value).toLocaleString();
+}
 
 function filterMentionsByTokens(mentions: ChatUserMention[], tokens: string[]): ChatUserMention[] {
   if (mentions.length === 0 || tokens.length === 0) {
@@ -77,6 +85,7 @@ export function AIAssistant() {
 
   const {
     messages,
+    activeConversationTokenCount,
     isLoading,
     isWaiting,
     queue,
@@ -85,6 +94,8 @@ export function AIAssistant() {
     removeFromQueue,
     setActiveConversation,
     loadMessages,
+    setConversationTokenCount,
+    appendLocalAssistantMessage,
     activeConversationId,
     conversationTabs,
     closeConversationTab,
@@ -202,6 +213,13 @@ export function AIAssistant() {
     setModelState(DEFAULT_MODEL);
   }, []);
 
+  const buildLocalAssistantMessage = useCallback((content: string): ChatMessage => ({
+    id: crypto.randomUUID(),
+    role: MessageRole.ASSISTANT,
+    content,
+    createdAt: new Date(),
+  }), []);
+
   const contextValue = {
     input,
     setInput,
@@ -216,18 +234,58 @@ export function AIAssistant() {
     chatContextState: { chatContext, setChatContext },
     mentionState: { userMentions, setUserMentions },
     messages,
+    conversationTokenCount: activeConversationTokenCount,
     latestPlanTabId: latestPlanTabId_,
     onCommand: (id: string) => {
       if (id === SLASH_COMMAND_IDS.NEW) {
         resetToDefaults();
         setActiveConversation(null);
         loadMessages(null, []);
+        setConversationTokenCount(null, null);
       } else if (id === SLASH_COMMAND_IDS.HISTORY) {
         setIsHistoryOpen(true);
       } else if (id === SLASH_COMMAND_IDS.MEMORY) {
         setIsHistoryOpen(false);
         setIsSettingsOpen(false);
         navigate('/memories');
+      } else if (id === SLASH_COMMAND_IDS.COMPRESS) {
+        void (async () => {
+          const targetConversationId = persistedConversationId;
+          if (isLoading) {
+            appendLocalAssistantMessage(buildLocalAssistantMessage(
+              t(I18N_KEYS.AI.COMPRESS.IN_PROGRESS)
+            ));
+            return;
+          }
+          if (targetConversationId == null) {
+            appendLocalAssistantMessage(buildLocalAssistantMessage(
+              t(I18N_KEYS.AI.COMPRESS.NO_CONVERSATION)
+            ));
+            return;
+          }
+
+          try {
+            const result = await conversationService.compress(targetConversationId, { model });
+            const [conversation, list] = await Promise.all([
+              conversationService.getById(targetConversationId),
+              conversationService.getMessages(targetConversationId),
+            ]);
+            setConversationTokenCount(targetConversationId, conversation.tokenCount ?? null);
+            loadMessages(targetConversationId, list);
+            appendLocalAssistantMessage(buildLocalAssistantMessage(
+              result.compressed
+                ? t(I18N_KEYS.AI.COMPRESS.DONE, {
+                    before: formatTokenCount(result.tokenCountBefore),
+                    kept: result.keptRecentCount ?? 0,
+                  })
+                : t(I18N_KEYS.AI.COMPRESS.NOOP)
+            ), targetConversationId);
+          } catch {
+            appendLocalAssistantMessage(buildLocalAssistantMessage(
+              t(I18N_KEYS.AI.COMPRESS.FAILED)
+            ), targetConversationId);
+          }
+        })();
       } else if (id === SLASH_COMMAND_IDS.PLAN) {
         setIsPlanListOpen(true);
       } else if (id === SLASH_COMMAND_IDS.PERMISSION) {
@@ -269,8 +327,11 @@ export function AIAssistant() {
             try {
               const list = await conversationService.getMessages(id);
               loadMessages(id, list);
+              const conversation = await conversationService.getById(id);
+              setConversationTokenCount(id, conversation.tokenCount ?? null);
             } catch {
               loadMessages(id, []);
+              setConversationTokenCount(id, null);
             }
           }}
           onCloseTab={(id) => {
@@ -279,6 +340,7 @@ export function AIAssistant() {
           onSelectConversation={async (c) => {
             setActiveConversation(c.id);
             setConversationTabTitle(c.id, c.title);
+            setConversationTokenCount(c.id, c.tokenCount ?? null);
             try {
               const list = await conversationService.getMessages(c.id);
               loadMessages(c.id, list);
@@ -290,6 +352,7 @@ export function AIAssistant() {
             resetToDefaults();
             setActiveConversation(null);
             loadMessages(null, []);
+            setConversationTokenCount(null, null);
           }}
         />
 

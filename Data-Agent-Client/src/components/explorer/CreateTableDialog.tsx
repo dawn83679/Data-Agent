@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Plus,
@@ -31,47 +31,11 @@ import {
 } from '../ui/Dialog';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { ExplorerNodeType } from '../../constants/explorer';
 import { I18N_KEYS } from '../../constants/i18nKeys';
-import { tableService } from '../../services/table.service';
-import { useToast } from '../../hooks/useToast';
 import type { ExplorerNode } from '../../types/explorer';
 import type { DbConnection } from '../../types/connection';
-import { resolveErrorMessage } from '../../lib/errorMessage';
 import { cn } from '../../lib/utils';
-
-const COMMON_TYPES = [
-  'INT',
-  'BIGINT',
-  'VARCHAR(255)',
-  'TEXT',
-  'DATE',
-  'DATETIME',
-  'TIMESTAMP',
-  'DECIMAL(10,2)',
-  'BOOLEAN',
-  'FLOAT',
-  'DOUBLE',
-];
-
-export interface CreateTableColumn {
-  name: string;
-  type: string;
-  nullable: boolean;
-}
-
-export interface CreateTableForeignKey {
-  column: string;
-  refTable: string;
-  refColumn: string;
-}
-
-export interface CreateTableIndex {
-  name: string;
-  columns: string;
-}
-
-type TreeSectionId = 'columns' | 'keys' | 'foreign_keys' | 'indexes' | 'checks' | 'virtual_columns' | 'virtual_fk';
+import { useCreateTableDialogState, type TreeSectionId } from './useCreateTableDialogState';
 
 interface CreateTableDialogProps {
   open: boolean;
@@ -81,18 +45,7 @@ interface CreateTableDialogProps {
   onSuccess?: (node: ExplorerNode) => void;
 }
 
-function quoteIdentifier(name: string, dbType?: string): string {
-  if (!name.trim()) return name;
-  const isMysql = dbType?.toLowerCase().includes('mysql');
-  return isMysql ? `\`${name}\`` : `"${name.replace(/"/g, '""')}"`;
-}
-
-const MIN_WIDTH = 520;
-const MIN_HEIGHT = 400;
-const DEFAULT_WIDTH = 800;
-const DEFAULT_HEIGHT = 980;
-
-const TREE_ICONS: Record<TreeSectionId, React.ReactNode> = {
+const TREE_ICONS: Record<TreeSectionId, ReactNode> = {
   columns: <Square className="h-3.5 w-3.5 shrink-0 opacity-70" />,
   keys: <Key className="h-3.5 w-3.5 shrink-0 opacity-70" />,
   foreign_keys: <Link2 className="h-3.5 w-3.5 shrink-0 opacity-70" />,
@@ -102,6 +55,16 @@ const TREE_ICONS: Record<TreeSectionId, React.ReactNode> = {
   virtual_fk: <Layers className="h-3.5 w-3.5 shrink-0 opacity-70" />,
 };
 
+const TREE_SECTIONS: { id: TreeSectionId; labelKey: string; enabled: boolean }[] = [
+  { id: 'columns', labelKey: 'explorer.create_dialog_columns', enabled: true },
+  { id: 'keys', labelKey: 'explorer.create_dialog_keys', enabled: true },
+  { id: 'foreign_keys', labelKey: 'explorer.create_dialog_foreign_keys', enabled: true },
+  { id: 'indexes', labelKey: 'explorer.create_dialog_indexes', enabled: true },
+  { id: 'checks', labelKey: 'explorer.create_dialog_checks', enabled: false },
+  { id: 'virtual_columns', labelKey: 'explorer.create_dialog_virtual_columns', enabled: false },
+  { id: 'virtual_fk', labelKey: 'explorer.create_dialog_virtual_fk', enabled: false },
+];
+
 export function CreateTableDialog({
   open,
   onOpenChange,
@@ -110,291 +73,57 @@ export function CreateTableDialog({
   onSuccess,
 }: CreateTableDialogProps) {
   const { t } = useTranslation();
-  const toast = useToast();
-  const [tableName, setTableName] = useState('');
-  const [tableComment, setTableComment] = useState('');
-  const [selectedSection, setSelectedSection] = useState<TreeSectionId>('columns');
-  const [checkedSections, setCheckedSections] = useState<Set<TreeSectionId>>(
-    () => new Set(['columns', 'keys'])
-  );
-  const [columns, setColumns] = useState<CreateTableColumn[]>([
-    { name: 'id', type: 'BIGINT', nullable: false },
-  ]);
-  const [foreignKeys, setForeignKeys] = useState<CreateTableForeignKey[]>([]);
-  const [indexes, setIndexes] = useState<CreateTableIndex[]>([]);
-  const [previewExpanded, setPreviewExpanded] = useState(true);
-  const [isPending, setIsPending] = useState(false);
-  const [leftRootExpanded, setLeftRootExpanded] = useState(true);
-  const formScrollRef = useRef<HTMLDivElement>(null);
-
-  const handleFormWheel = (e: React.WheelEvent) => {
-    const el = formScrollRef.current;
-    if (!el || el.scrollHeight <= el.clientHeight) return;
-    const { deltaY } = e;
-    if (deltaY !== 0) {
-      el.scrollTop += deltaY;
-      e.preventDefault();
-    }
-  };
-
-  // Draggable state
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const dragRef = useRef<{ startX: number; startY: number; startLeft: number; startTop: number } | null>(null);
-
-  const connectionId = node?.connectionId ? String(node.connectionId) : undefined;
-  const catalog = node?.catalog ?? (node?.type === ExplorerNodeType.DB ? node.name : '');
-  const schema = node?.schema ?? undefined;
-  const conn = connections?.find((c) => String(c.id) === connectionId) ?? node?.dbConnection;
-  const dbType = conn?.dbType;
-  const connectionName = conn?.name ?? 'localhost';
-
-  const displayTableName = tableName.trim() || 'table_name';
-  const rootLabel = `${displayTableName} ${[catalog, schema].filter(Boolean).join('.') || ''} [${connectionName}]`.trim();
-
-  const [size, setSize] = useState({ width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT });
-  const resizeRef = useRef<{ startX: number; startY: number; startW: number; startH: number } | null>(null);
-
-  const initPosition = useCallback(() => {
-    setSize({ width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT });
-    const x = Math.max(0, (window.innerWidth - DEFAULT_WIDTH) / 2);
-    const y = Math.max(0, (window.innerHeight - DEFAULT_HEIGHT) / 2);
-    setPosition({ x, y });
-  }, []);
-
-  useEffect(() => {
-    if (open) initPosition();
-  }, [open, initPosition]);
-
-  const handleHeaderMouseDown = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('button, a, [role="button"]')) return;
-    setIsDragging(true);
-    dragRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      startLeft: position.x,
-      startTop: position.y,
-    };
-  };
-
-  useEffect(() => {
-    if (!isDragging) return;
-    const onMove = (e: MouseEvent) => {
-      if (!dragRef.current) return;
-      const dx = e.clientX - dragRef.current.startX;
-      const dy = e.clientY - dragRef.current.startY;
-      setPosition({
-        x: Math.max(0, dragRef.current.startLeft + dx),
-        y: Math.max(0, dragRef.current.startTop + dy),
-      });
-    };
-    const onUp = () => {
-      setIsDragging(false);
-      dragRef.current = null;
-    };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-    return () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    };
-  }, [isDragging]);
-
-  const handleResizeMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    resizeRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      startW: size.width,
-      startH: size.height,
-    };
-    const onMove = (e: MouseEvent) => {
-      if (!resizeRef.current) return;
-      const dw = e.clientX - resizeRef.current.startX;
-      const dh = e.clientY - resizeRef.current.startY;
-      setSize({
-        width: Math.max(MIN_WIDTH, resizeRef.current.startW + dw),
-        height: Math.max(MIN_HEIGHT, resizeRef.current.startH + dh),
-      });
-    };
-    const onUp = () => {
-      resizeRef.current = null;
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  };
-
-  const resetForm = () => {
-    setTableName('');
-    setTableComment('');
-    setSelectedSection('columns');
-    setCheckedSections(new Set(['columns', 'keys']));
-    setColumns([{ name: 'id', type: 'BIGINT', nullable: false }]);
-    setForeignKeys([]);
-    setIndexes([]);
-    setPreviewExpanded(true);
-    setLeftRootExpanded(true);
-  };
-
-  const handleClose = (openState: boolean) => {
-    if (!openState) resetForm();
-    onOpenChange(openState);
-  };
-
-  const addColumn = () => {
-    setColumns((prev) => [...prev, { name: '', type: 'VARCHAR(255)', nullable: true }]);
-  };
-
-  const removeColumn = (index: number) => {
-    setColumns((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const updateColumn = (index: number, field: keyof CreateTableColumn, value: string | boolean) => {
-    setColumns((prev) =>
-      prev.map((col, i) => (i === index ? { ...col, [field]: value } : col))
-    );
-  };
-
-  const addForeignKey = () => {
-    setForeignKeys((prev) => [...prev, { column: '', refTable: '', refColumn: '' }]);
-  };
-  const removeForeignKey = (index: number) => {
-    setForeignKeys((prev) => prev.filter((_, i) => i !== index));
-  };
-  const updateForeignKey = (index: number, field: keyof CreateTableForeignKey, value: string) => {
-    setForeignKeys((prev) =>
-      prev.map((fk, i) => (i === index ? { ...fk, [field]: value } : fk))
-    );
-  };
-  const addIndex = () => {
-    setIndexes((prev) => [...prev, { name: '', columns: '' }]);
-  };
-  const removeIndex = (index: number) => {
-    setIndexes((prev) => prev.filter((_, i) => i !== index));
-  };
-  const updateIndex = (index: number, field: keyof CreateTableIndex, value: string) => {
-    setIndexes((prev) =>
-      prev.map((idx, i) => (i === index ? { ...idx, [field]: value } : idx))
-    );
-  };
-
-  const moveColumn = (index: number, dir: 'up' | 'down') => {
-    const newIdx = dir === 'up' ? index - 1 : index + 1;
-    if (newIdx < 0 || newIdx >= columns.length) return;
-    setColumns((prev) => {
-      const arr = [...prev];
-      [arr[index], arr[newIdx]] = [arr[newIdx], arr[index]];
-      return arr;
-    });
-  };
-
-  const previewSql = useMemo(() => {
-    const q = (s: string) => quoteIdentifier(s, dbType);
-    const validCols = columns.filter((c) => c.name.trim());
-    const tblName = tableName.trim() || 'table_name';
-    if (validCols.length === 0) return `create table ${q(displayTableName)}\n(\n);`;
-    const hasKeys = checkedSections.has('keys');
-    const hasFk = checkedSections.has('foreign_keys');
-    const hasIdx = checkedSections.has('indexes');
-    const colDefs = validCols.map((c, idx) => {
-      const nullPart = c.nullable ? '' : ' NOT NULL';
-      const pkPart = hasKeys && idx === 0 && validCols[0].name.toLowerCase() === 'id' ? ' PRIMARY KEY' : '';
-      return `  ${q(c.name.trim())} ${c.type}${nullPart}${pkPart}`;
-    });
-    const parts = [...colDefs];
-    if (hasFk && foreignKeys.length > 0) {
-      foreignKeys
-        .filter((fk) => fk.column.trim() && fk.refTable.trim() && fk.refColumn.trim())
-        .forEach((fk, i) => {
-          parts.push(`  CONSTRAINT fk_${tblName}_${i + 1} FOREIGN KEY (${q(fk.column.trim())}) REFERENCES ${q(fk.refTable.trim())} (${q(fk.refColumn.trim())})`);
-        });
-    }
-    if (hasIdx && indexes.length > 0) {
-      indexes
-        .filter((idx) => idx.name.trim() && idx.columns.trim())
-        .forEach((idx) => {
-          const cols = idx.columns.trim().split(/\s*,\s*/).map((c) => q(c.trim())).join(', ');
-          parts.push(`  KEY ${q(idx.name.trim())} (${cols})`);
-        });
-    }
-    return `create table ${q(tblName)}\n(\n${parts.join(',\n')}\n)`;
-  }, [
+  const {
+    MIN_WIDTH,
+    MIN_HEIGHT,
+    COMMON_TYPES,
+    formScrollRef,
+    handleFormWheel,
     tableName,
+    setTableName,
+    tableComment,
+    setTableComment,
+    selectedSection,
+    setSelectedSection,
+    checkedSections,
+    setCheckedSections,
     columns,
     foreignKeys,
     indexes,
-    dbType,
+    previewExpanded,
+    setPreviewExpanded,
+    isPending,
+    leftRootExpanded,
+    setLeftRootExpanded,
+    position,
+    size,
+    handleHeaderMouseDown,
+    handleResizeMouseDown,
+    connectionId,
     displayTableName,
-    [...checkedSections].sort().join(','),
-  ]);
-
-  const buildCreateTableSql = (): string => previewSql;
-
-  const validateTableName = (name: string): boolean => {
-    return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name.trim());
-  };
-
-  const validateColumnName = (name: string): boolean => {
-    return name.trim().length > 0 && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name.trim());
-  };
-
-  const handleSubmit = async () => {
-    if (!connectionId || !tableName.trim()) return;
-    if (!validateTableName(tableName)) {
-      toast.error(t(I18N_KEYS.EXPLORER.CREATE_TABLE_FAILED) + ': ' + t(I18N_KEYS.EXPLORER.CREATE_TABLE_INVALID_NAME));
-      return;
-    }
-    const validCols = columns.filter((c) => c.name.trim());
-    if (validCols.length === 0) {
-      toast.error(t(I18N_KEYS.EXPLORER.CREATE_TABLE_FAILED) + ': ' + t('explorer.create_table_need_columns'));
-      return;
-    }
-    const invalidCol = validCols.find((c) => !validateColumnName(c.name));
-    if (invalidCol) {
-      toast.error(t(I18N_KEYS.EXPLORER.CREATE_TABLE_FAILED) + ': ' + t(I18N_KEYS.EXPLORER.CREATE_TABLE_INVALID_COLUMN, { name: invalidCol.name }));
-      return;
-    }
-
-    const createSql = buildCreateTableSql().replace(/^create table/i, 'CREATE TABLE');
-
-    setIsPending(true);
-    try {
-      const response = await tableService.createTable({
-        connectionId: Number(connectionId),
-        databaseName: catalog || undefined,
-        schemaName: schema ?? undefined,
-        sql: createSql,
-      });
-
-      if (response.type === 'ERROR' || !response.success) {
-        const errMsg = response.messages?.[0]?.message ?? response.errorMessage ?? 'Unknown error';
-        toast.error(t(I18N_KEYS.EXPLORER.CREATE_TABLE_FAILED) + ': ' + errMsg);
-        return;
-      }
-
-      toast.success(t(I18N_KEYS.EXPLORER.CREATE_TABLE_SUCCESS));
-      handleClose(false);
-      onSuccess?.(node!);
-    } catch (err) {
-      toast.error(t(I18N_KEYS.EXPLORER.CREATE_TABLE_FAILED) + ': ' + resolveErrorMessage(err, t(I18N_KEYS.EXPLORER.CREATE_TABLE_FAILED)));
-    } finally {
-      setIsPending(false);
-    }
-  };
+    rootLabel,
+    previewSql,
+    handleClose,
+    addColumn,
+    removeColumn,
+    updateColumn,
+    addForeignKey,
+    removeForeignKey,
+    updateForeignKey,
+    addIndex,
+    removeIndex,
+    updateIndex,
+    moveColumn,
+    handleSubmit,
+  } = useCreateTableDialogState({
+    open,
+    onOpenChange,
+    node,
+    connections,
+    onSuccess,
+  });
 
   if (!node) return null;
-
-  const treeSections: { id: TreeSectionId; labelKey: string; enabled: boolean }[] = [
-    { id: 'columns', labelKey: 'explorer.create_dialog_columns', enabled: true },
-    { id: 'keys', labelKey: 'explorer.create_dialog_keys', enabled: true },
-    { id: 'foreign_keys', labelKey: 'explorer.create_dialog_foreign_keys', enabled: true },
-    { id: 'indexes', labelKey: 'explorer.create_dialog_indexes', enabled: true },
-    { id: 'checks', labelKey: 'explorer.create_dialog_checks', enabled: false },
-    { id: 'virtual_columns', labelKey: 'explorer.create_dialog_virtual_columns', enabled: false },
-    { id: 'virtual_fk', labelKey: 'explorer.create_dialog_virtual_fk', enabled: false },
-  ];
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -405,8 +134,8 @@ export function CreateTableDialog({
           aria-modal="true"
           aria-labelledby="create-table-title"
           className={cn(
-            "fixed z-50 flex flex-col border border-border bg-background shadow-lg rounded-lg overflow-hidden",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+            'fixed z-50 flex flex-col overflow-hidden rounded-lg border border-border bg-background shadow-lg',
+            'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
           )}
           style={{
             left: position.x,
@@ -417,9 +146,8 @@ export function CreateTableDialog({
             minHeight: MIN_HEIGHT,
           }}
         >
-          {/* Header - drag handle */}
           <div
-            className="flex items-center justify-between px-4 py-2.5 pr-12 border-b border-border shrink-0 select-none"
+            className="flex shrink-0 select-none items-center justify-between border-b border-border px-4 py-2.5 pr-12"
             onMouseDown={handleHeaderMouseDown}
           >
             <h2 id="create-table-title" className="text-base font-semibold">
@@ -428,17 +156,19 @@ export function CreateTableDialog({
             <DialogClose asChild>
               <Button variant="ghost" size="icon" className="absolute right-2 top-2.5 h-8 w-8 rounded-sm opacity-70 hover:opacity-100">
                 <span className="sr-only">Close</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
               </Button>
             </DialogClose>
           </div>
 
-          {/* Toolbar - DataGrip style */}
-          <div className="flex items-center gap-0.5 px-3 py-1.5 border-b border-border shrink-0 bg-muted/5">
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded -ml-1" onClick={addColumn} title={t(I18N_KEYS.EXPLORER.CREATE_TABLE_ADD_COLUMN)}>
+          <div className="flex shrink-0 items-center gap-0.5 border-b border-border bg-muted/5 px-3 py-1.5">
+            <Button variant="ghost" size="icon" className="-ml-1 h-8 w-8 rounded" onClick={addColumn} title={t(I18N_KEYS.EXPLORER.CREATE_TABLE_ADD_COLUMN)}>
               <Plus className="h-5 w-5" />
             </Button>
-            <div className="w-px h-5 bg-border mx-0.5" />
+            <div className="mx-0.5 h-5 w-px bg-border" />
             <Button variant="ghost" size="icon" className="h-7 w-7 rounded" title={t(I18N_KEYS.EXPLORER.CREATE_TABLE_REMOVE_COLUMN)}>
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
@@ -454,78 +184,74 @@ export function CreateTableDialog({
             <Button variant="ghost" size="icon" className="h-7 w-7 rounded" title="下移">
               <ChevronDown className="h-3.5 w-3.5" />
             </Button>
-            <div className="w-px h-5 bg-border mx-0.5" />
+            <div className="mx-0.5 h-5 w-px bg-border" />
             <Button variant="ghost" size="icon" className="h-7 w-7 rounded">
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7 rounded">
               <ChevronRight className="h-3.5 w-3.5" />
             </Button>
-            <div className="flex items-center gap-1.5 ml-3">
-              <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+            <div className="ml-3 flex items-center gap-1.5">
+              <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span className="text-sm text-foreground">{displayTableName}</span>
             </div>
-            <div className="flex-1 min-w-2" />
+            <div className="min-w-2 flex-1" />
             <Button variant="ghost" size="icon" className="h-7 w-7 rounded">
               <MoreVertical className="h-4 w-4" />
             </Button>
           </div>
 
-          {/* Main: Left tree + Right form */}
-          <div className="create-table-dialog-form flex flex-1 min-h-0 overflow-hidden">
-            {/* Left: Tree panel */}
-            <div className="w-[220px] border-r border-border flex flex-col shrink-0 bg-muted/5">
+          <div className="create-table-dialog-form flex min-h-0 flex-1 overflow-hidden">
+            <div className="flex w-[220px] shrink-0 flex-col border-r border-border bg-muted/5">
               <button
                 type="button"
-                className="flex items-center gap-1.5 w-full px-3 py-2 text-left text-xs font-medium text-muted-foreground hover:bg-muted/50 truncate"
-                onClick={() => setLeftRootExpanded((e) => !e)}
+                className="flex w-full items-center gap-1.5 truncate px-3 py-2 text-left text-xs font-medium text-muted-foreground hover:bg-muted/50"
+                onClick={() => setLeftRootExpanded((expanded) => !expanded)}
               >
-                <ChevronDownIcon className={cn("h-4 w-4 shrink-0 transition-transform", !leftRootExpanded && "-rotate-90")} />
+                <ChevronDownIcon className={cn('h-4 w-4 shrink-0 transition-transform', !leftRootExpanded && '-rotate-90')} />
                 <span className="truncate" title={rootLabel}>{rootLabel}</span>
               </button>
-              {leftRootExpanded && (
-                <div className="flex-1 overflow-y-auto py-1 px-1 text-xs">
-                  {treeSections.map((s) => (
+              {leftRootExpanded ? (
+                <div className="flex-1 overflow-y-auto px-1 py-1 text-xs">
+                  {TREE_SECTIONS.map((section) => (
                     <div
-                      key={s.id}
+                      key={section.id}
                       className={cn(
-                        "flex items-center gap-2 py-1.5 px-2 rounded cursor-default",
-                        selectedSection === s.id ? "bg-primary/15 text-foreground" : "",
-                        !s.enabled ? "opacity-50" : "hover:bg-muted/80"
+                        'flex cursor-default items-center gap-2 rounded px-2 py-1.5',
+                        selectedSection === section.id ? 'bg-primary/15 text-foreground' : '',
+                        !section.enabled ? 'opacity-50' : 'hover:bg-muted/80',
                       )}
-                      onClick={() => s.enabled && setSelectedSection(s.id)}
+                      onClick={() => section.enabled && setSelectedSection(section.id)}
                     >
                       <input
                         type="checkbox"
-                        checked={checkedSections.has(s.id)}
-                        onChange={(e) => {
-                          e.stopPropagation();
+                        checked={checkedSections.has(section.id)}
+                        onChange={(event) => {
+                          event.stopPropagation();
                           setCheckedSections((prev) => {
                             const next = new Set(prev);
-                            if (next.has(s.id)) next.delete(s.id);
-                            else next.add(s.id);
+                            if (next.has(section.id)) next.delete(section.id);
+                            else next.add(section.id);
                             return next;
                           });
                         }}
-                        onClick={(e) => e.stopPropagation()}
-                        className=""
+                        onClick={(event) => event.stopPropagation()}
                       />
-                      {TREE_ICONS[s.id]}
-                      <span>{t(s.labelKey)}</span>
+                      {TREE_ICONS[section.id]}
+                      <span>{t(section.labelKey)}</span>
                     </div>
                   ))}
                 </div>
-              )}
+              ) : null}
             </div>
 
-            {/* Right: Form area */}
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-                <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+              <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+                <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span className="text-sm font-medium">{displayTableName}</span>
               </div>
               <div
-                className="flex-1 overflow-y-auto overflow-x-hidden p-3 overscroll-contain"
+                className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain p-3"
                 ref={formScrollRef}
                 onWheel={handleFormWheel}
               >
@@ -535,9 +261,9 @@ export function CreateTableDialog({
                     <div className="flex items-center gap-1">
                       <Input
                         value={tableName}
-                        onChange={(e) => setTableName(e.target.value)}
+                        onChange={(event) => setTableName(event.target.value)}
                         placeholder={t(I18N_KEYS.EXPLORER.CREATE_TABLE_NAME_PLACEHOLDER)}
-                        className="h-8 text-sm flex-1"
+                        className="h-8 flex-1 text-sm"
                       />
                       <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">...</Button>
                     </div>
@@ -546,224 +272,226 @@ export function CreateTableDialog({
                     <label className="text-xs text-muted-foreground">{t('explorer.create_dialog_comment')}</label>
                     <Input
                       value={tableComment}
-                      onChange={(e) => setTableComment(e.target.value)}
-                      placeholder=""
+                      onChange={(event) => setTableComment(event.target.value)}
                       className="h-8 text-sm"
                     />
                   </div>
                   <div className="grid grid-cols-[100px_1fr] items-center gap-x-3 gap-y-1">
                     <label className="text-xs text-muted-foreground">{t('explorer.create_dialog_persistence')}</label>
                     <div className="flex items-center gap-2">
-                      <select className="h-8 text-sm border rounded-md px-2 flex-1">
+                      <select className="h-8 flex-1 rounded-md border px-2 text-sm">
                         <option value="PERSISTENT">PERSISTENT</option>
                         <option value="UNLOGGED">UNLOGGED</option>
                         <option value="TEMPORARY">TEMPORARY</option>
                       </select>
-                      <label className="flex items-center gap-1.5 text-xs shrink-0">
+                      <label className="flex shrink-0 items-center gap-1.5 text-xs">
                         <input type="checkbox" className="rounded border border-border bg-muted/80 accent-primary" />
                         {t('explorer.create_dialog_has_oid')}
                       </label>
                     </div>
                   </div>
-                  {selectedSection === 'columns' && (
+
+                  {selectedSection === 'columns' ? (
                     <div className="grid grid-cols-[100px_1fr] items-start gap-x-3 gap-y-1">
-                      <label className="text-xs text-muted-foreground pt-1.5 leading-8">
+                      <label className="pt-1.5 text-xs leading-8 text-muted-foreground">
                         {t(I18N_KEYS.EXPLORER.CREATE_TABLE_COLUMNS)}
                       </label>
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                          <Button type="button" variant="outline" size="sm" className="h-8 text-xs shrink-0" onClick={addColumn}>
-                            <Plus className="w-3.5 h-3.5 mr-1" />
+                          <Button type="button" variant="outline" size="sm" className="h-8 shrink-0 text-xs" onClick={addColumn}>
+                            <Plus className="mr-1 h-3.5 w-3.5" />
                             {t(I18N_KEYS.EXPLORER.CREATE_TABLE_ADD_COLUMN)}
                           </Button>
                         </div>
-                        <div className="border border-input rounded-md divide-y divide-border overflow-y-auto max-h-44">
+                        <div className="max-h-44 overflow-y-auto rounded-md border border-input divide-y divide-border">
                           {columns.map((col, index) => (
-                            <div key={index} className="flex items-center gap-2 px-2 py-1 bg-muted/10 min-h-[36px]">
+                            <div key={index} className="flex min-h-[36px] items-center gap-2 bg-muted/10 px-2 py-1">
                               <Input
                                 value={col.name}
-                                onChange={(e) => updateColumn(index, 'name', e.target.value)}
+                                onChange={(event) => updateColumn(index, 'name', event.target.value)}
                                 placeholder={t(I18N_KEYS.EXPLORER.CREATE_TABLE_COLUMN_NAME)}
-                                className="h-8 text-sm flex-1 min-w-0 shrink-0"
+                                className="h-8 min-w-0 flex-1 shrink-0 text-sm"
                               />
                               <select
                                 value={col.type}
-                                onChange={(e) => updateColumn(index, 'type', e.target.value)}
-                                className="h-8 text-sm border rounded-md px-2.5 min-w-[110px] shrink-0"
+                                onChange={(event) => updateColumn(index, 'type', event.target.value)}
+                                className="h-8 min-w-[110px] shrink-0 rounded-md border px-2.5 text-sm"
                               >
                                 {COMMON_TYPES.map((type) => (
                                   <option key={type} value={type}>{type}</option>
                                 ))}
                               </select>
-                              <label className="flex items-center gap-1.5 shrink-0 text-sm cursor-default">
+                              <label className="flex shrink-0 cursor-default items-center gap-1.5 text-sm">
                                 <input
                                   type="checkbox"
                                   checked={col.nullable}
-                                  onChange={(e) => updateColumn(index, 'nullable', e.target.checked)}
-                                  className=""
+                                  onChange={(event) => updateColumn(index, 'nullable', event.target.checked)}
                                 />
                                 {t(I18N_KEYS.EXPLORER.CREATE_TABLE_COLUMN_NULLABLE)}
                               </label>
-                              <div className="flex items-center shrink-0 border-l border-border pl-1">
+                              <div className="flex shrink-0 items-center border-l border-border pl-1">
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveColumn(index, 'up')} disabled={index === 0}>
-                                  <ChevronUp className="w-3.5 h-3.5" />
+                                  <ChevronUp className="h-3.5 w-3.5" />
                                 </Button>
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveColumn(index, 'down')} disabled={index === columns.length - 1}>
-                                  <ChevronDown className="w-3.5 h-3.5" />
+                                  <ChevronDown className="h-3.5 w-3.5" />
                                 </Button>
                               </div>
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
+                                className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
                                 onClick={() => removeColumn(index)}
                                 disabled={columns.length <= 1}
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
                           ))}
                         </div>
                       </div>
                     </div>
-                  )}
-                  {selectedSection === 'foreign_keys' && (
+                  ) : null}
+
+                  {selectedSection === 'foreign_keys' ? (
                     <div className="grid grid-cols-[100px_1fr] items-start gap-x-3 gap-y-1">
-                      <label className="text-xs text-muted-foreground pt-1.5 leading-8">
+                      <label className="pt-1.5 text-xs leading-8 text-muted-foreground">
                         {t('explorer.create_dialog_foreign_keys')}
                       </label>
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                          <Button type="button" variant="outline" size="sm" className="h-8 text-xs shrink-0" onClick={addForeignKey}>
-                            <Plus className="w-3.5 h-3.5 mr-1" />
+                          <Button type="button" variant="outline" size="sm" className="h-8 shrink-0 text-xs" onClick={addForeignKey}>
+                            <Plus className="mr-1 h-3.5 w-3.5" />
                             {t('explorer.create_dialog_add_foreign_key')}
                           </Button>
                         </div>
-                        <div className="border border-input rounded-md divide-y divide-border overflow-y-auto max-h-44">
+                        <div className="max-h-44 overflow-y-auto rounded-md border border-input divide-y divide-border">
                           {foreignKeys.map((fk, index) => (
-                            <div key={index} className="flex items-center gap-2 px-2 py-1 bg-muted/10 min-h-[36px]">
+                            <div key={index} className="flex min-h-[36px] items-center gap-2 bg-muted/10 px-2 py-1">
                               <Input
                                 value={fk.column}
-                                onChange={(e) => updateForeignKey(index, 'column', e.target.value)}
+                                onChange={(event) => updateForeignKey(index, 'column', event.target.value)}
                                 placeholder={t('explorer.create_table_column_name')}
-                                className="h-8 text-sm flex-1 min-w-0"
+                                className="h-8 min-w-0 flex-1 text-sm"
                               />
-                              <span className="text-muted-foreground shrink-0">→</span>
+                              <span className="shrink-0 text-muted-foreground">→</span>
                               <Input
                                 value={fk.refTable}
-                                onChange={(e) => updateForeignKey(index, 'refTable', e.target.value)}
+                                onChange={(event) => updateForeignKey(index, 'refTable', event.target.value)}
                                 placeholder={t('explorer.create_dialog_fk_ref_table')}
-                                className="h-8 text-sm flex-1 min-w-0"
+                                className="h-8 min-w-0 flex-1 text-sm"
                               />
                               <Input
                                 value={fk.refColumn}
-                                onChange={(e) => updateForeignKey(index, 'refColumn', e.target.value)}
+                                onChange={(event) => updateForeignKey(index, 'refColumn', event.target.value)}
                                 placeholder="引用列"
-                                className="h-8 text-sm flex-1 min-w-0"
+                                className="h-8 min-w-0 flex-1 text-sm"
                               />
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 text-destructive shrink-0"
+                                className="h-7 w-7 shrink-0 text-destructive"
                                 onClick={() => removeForeignKey(index)}
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
                           ))}
-                          {foreignKeys.length === 0 && (
-                            <div className="py-4 px-2 text-center text-xs text-muted-foreground">
+                          {foreignKeys.length === 0 ? (
+                            <div className="px-2 py-4 text-center text-xs text-muted-foreground">
                               {t('explorer.create_dialog_no_content')}
                             </div>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                     </div>
-                  )}
-                  {selectedSection === 'indexes' && (
+                  ) : null}
+
+                  {selectedSection === 'indexes' ? (
                     <div className="grid grid-cols-[100px_1fr] items-start gap-x-3 gap-y-1">
-                      <label className="text-xs text-muted-foreground pt-1.5 leading-8">
+                      <label className="pt-1.5 text-xs leading-8 text-muted-foreground">
                         {t('explorer.create_dialog_indexes')}
                       </label>
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                          <Button type="button" variant="outline" size="sm" className="h-8 text-xs shrink-0" onClick={addIndex}>
-                            <Plus className="w-3.5 h-3.5 mr-1" />
+                          <Button type="button" variant="outline" size="sm" className="h-8 shrink-0 text-xs" onClick={addIndex}>
+                            <Plus className="mr-1 h-3.5 w-3.5" />
                             {t('explorer.create_dialog_add_index')}
                           </Button>
                         </div>
-                        <div className="border border-input rounded-md divide-y divide-border overflow-y-auto max-h-44">
+                        <div className="max-h-44 overflow-y-auto rounded-md border border-input divide-y divide-border">
                           {indexes.map((idx, index) => (
-                            <div key={index} className="flex items-center gap-2 px-2 py-1 bg-muted/10 min-h-[36px]">
+                            <div key={index} className="flex min-h-[36px] items-center gap-2 bg-muted/10 px-2 py-1">
                               <Input
                                 value={idx.name}
-                                onChange={(e) => updateIndex(index, 'name', e.target.value)}
+                                onChange={(event) => updateIndex(index, 'name', event.target.value)}
                                 placeholder={t('explorer.create_dialog_index_name')}
-                                className="h-8 text-sm flex-1 min-w-0"
+                                className="h-8 min-w-0 flex-1 text-sm"
                               />
                               <Input
                                 value={idx.columns}
-                                onChange={(e) => updateIndex(index, 'columns', e.target.value)}
+                                onChange={(event) => updateIndex(index, 'columns', event.target.value)}
                                 placeholder={t('explorer.create_dialog_index_columns')}
-                                className="h-8 text-sm flex-1 min-w-0"
+                                className="h-8 min-w-0 flex-1 text-sm"
                               />
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 text-destructive shrink-0"
+                                className="h-7 w-7 shrink-0 text-destructive"
                                 onClick={() => removeIndex(index)}
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
                           ))}
-                          {indexes.length === 0 && (
-                            <div className="py-4 px-2 text-center text-xs text-muted-foreground">
+                          {indexes.length === 0 ? (
+                            <div className="px-2 py-4 text-center text-xs text-muted-foreground">
                               {t('explorer.create_dialog_no_content')}
                             </div>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                     </div>
-                  )}
+                  ) : null}
+
                   <div className="grid grid-cols-[100px_1fr] items-center gap-x-3 gap-y-1">
                     <label className="text-xs text-muted-foreground">{t('explorer.create_dialog_partition_expression')}</label>
-                    <Input placeholder="" className="h-8 text-sm" />
+                    <Input className="h-8 text-sm" />
                   </div>
                   <div className="grid grid-cols-[100px_1fr] items-center gap-x-3 gap-y-1">
                     <label className="text-xs text-muted-foreground">{t('explorer.create_dialog_partition_key')}</label>
-                    <Input placeholder="" className="h-8 text-sm" />
+                    <Input className="h-8 text-sm" />
                   </div>
                   <div className="grid grid-cols-[100px_1fr] items-center gap-x-3 gap-y-1">
                     <label className="text-xs text-muted-foreground">{t('explorer.create_dialog_options')}</label>
                     <div className="flex items-center gap-1">
-                      <Input placeholder="" className="h-8 text-sm flex-1" />
+                      <Input className="h-8 flex-1 text-sm" />
                       <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 opacity-60">...</Button>
                     </div>
                   </div>
                   <div className="grid grid-cols-[100px_1fr] items-center gap-x-3 gap-y-1">
                     <label className="text-xs text-muted-foreground">{t('explorer.create_dialog_access_method')}</label>
-                    <select className="h-8 text-sm border rounded-md px-2 flex-1">
+                    <select className="h-8 flex-1 rounded-md border px-2 text-sm">
                       <option value="">-</option>
                     </select>
                   </div>
                   <div className="grid grid-cols-[100px_1fr] items-center gap-x-3 gap-y-1">
                     <label className="text-xs text-muted-foreground">{t('explorer.create_dialog_tablespace')}</label>
-                    <select className="h-8 text-sm border rounded-md px-2 flex-1">
+                    <select className="h-8 flex-1 rounded-md border px-2 text-sm">
                       <option value="">-</option>
                     </select>
                   </div>
                   <div className="grid grid-cols-[100px_1fr] items-center gap-x-3 gap-y-1">
                     <label className="text-xs text-muted-foreground">{t('explorer.create_dialog_owner')}</label>
-                    <select className="h-8 text-sm border rounded-md px-2 flex-1">
+                    <select className="h-8 flex-1 rounded-md border px-2 text-sm">
                       <option value="">-</option>
                     </select>
                   </div>
                   <div className="grid grid-cols-[100px_1fr] items-start gap-x-3 gap-y-1">
-                    <label className="text-xs text-muted-foreground pt-1.5">{t('explorer.create_dialog_authorization')}</label>
+                    <label className="pt-1.5 text-xs text-muted-foreground">{t('explorer.create_dialog_authorization')}</label>
                     <div className="space-y-1">
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7">
@@ -776,7 +504,7 @@ export function CreateTableDialog({
                           <ChevronDown className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                      <div className="rounded-md border border-dashed border-border py-6 px-4 text-center text-xs text-muted-foreground">
+                      <div className="rounded-md border border-dashed border-border px-4 py-6 text-center text-xs text-muted-foreground">
                         {t('explorer.create_dialog_no_content')}
                       </div>
                     </div>
@@ -786,16 +514,15 @@ export function CreateTableDialog({
             </div>
           </div>
 
-          {/* Bottom: SQL Preview */}
-          <div className="border-t border-border shrink-0">
+          <div className="shrink-0 border-t border-border">
             <button
               type="button"
-              className="w-full flex items-center justify-between px-4 py-2 hover:bg-muted/50 text-left text-sm"
-              onClick={() => setPreviewExpanded((e) => !e)}
+              className="flex w-full items-center justify-between px-4 py-2 text-left text-sm hover:bg-muted/50"
+              onClick={() => setPreviewExpanded((expanded) => !expanded)}
             >
               <span className="flex items-center gap-1">
                 {t('explorer.create_dialog_preview')}
-                <ChevronDownIcon className={cn("h-4 w-4 transition-transform", !previewExpanded && "-rotate-90")} />
+                <ChevronDownIcon className={cn('h-4 w-4 transition-transform', !previewExpanded && '-rotate-90')} />
               </span>
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="icon" className="h-6 w-6">
@@ -804,17 +531,16 @@ export function CreateTableDialog({
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
               </div>
             </button>
-            {previewExpanded && (
-              <div className="px-4 pb-3 shrink-0">
-                <pre className="text-xs bg-muted/30 rounded-md p-3 overflow-x-auto font-mono max-h-32 overflow-y-auto border border-border">
-                  {buildCreateTableSql()}
+            {previewExpanded ? (
+              <div className="shrink-0 px-4 pb-3">
+                <pre className="max-h-32 overflow-x-auto overflow-y-auto rounded-md border border-border bg-muted/30 p-3 font-mono text-xs">
+                  {previewSql}
                 </pre>
               </div>
-            )}
+            ) : null}
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-border shrink-0 relative">
+          <div className="relative flex shrink-0 items-center justify-between border-t border-border px-4 py-3">
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <HelpCircle className="h-4 w-4" />
             </Button>
@@ -822,19 +548,18 @@ export function CreateTableDialog({
               <Button variant="outline" onClick={() => handleClose(false)}>
                 {t(I18N_KEYS.CONNECTIONS.CANCEL)}
               </Button>
-              <Button disabled={isPending || !tableName.trim()} onClick={handleSubmit}>
+              <Button disabled={isPending || !tableName.trim() || !connectionId} onClick={handleSubmit}>
                 {isPending ? t(I18N_KEYS.CONNECTIONS.SAVING) : t(I18N_KEYS.EXPLORER.CREATE_DIALOG_CONFIRM)}
               </Button>
             </div>
           </div>
 
-          {/* Resize handle */}
           <div
-            className="absolute right-0 bottom-0 w-5 h-5 cursor-se-resize select-none flex items-end justify-end z-10"
+            className="absolute bottom-0 right-0 z-10 flex h-5 w-5 cursor-se-resize select-none items-end justify-end"
             onMouseDown={handleResizeMouseDown}
             title={t('explorer.create_dialog_resize')}
           >
-            <svg className="w-3.5 h-3.5 text-muted-foreground/40 mb-0.5 mr-0.5" viewBox="0 0 16 16">
+            <svg className="mb-0.5 mr-0.5 h-3.5 w-3.5 text-muted-foreground/40" viewBox="0 0 16 16">
               <path d="M14 14v-4M14 14h-4" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" />
             </svg>
           </div>

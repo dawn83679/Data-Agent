@@ -5,6 +5,7 @@ export const ApiPaths = {
   TABLES: '/tables',
   TABLES_DDL: '/tables/ddl',
   TABLE_DATA: '/tables/data',
+  TABLE_ROWS: '/tables/rows',
   VIEWS: '/views',
   VIEWS_DDL: '/views/ddl',
   VIEW_DATA: '/views/data',

@@ -1,4 +1,4 @@
-import { Send, Square, Mic, Paperclip, ChevronDown, Brain } from 'lucide-react';
+import { Send, Square, ChevronDown, Brain } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -109,20 +109,6 @@ export function ChatInputToolbar({
       </div>
 
       <div className="flex items-center space-x-2">
-        <button
-          type="button"
-          className="p-1.5 theme-text-secondary hover:theme-text-primary transition-colors"
-          aria-label="Microphone"
-        >
-          <Mic className="w-3.5 h-3.5" />
-        </button>
-        <button
-          type="button"
-          className="p-1.5 theme-text-secondary hover:theme-text-primary transition-colors"
-          aria-label="Attachment"
-        >
-          <Paperclip className="w-3.5 h-3.5" />
-        </button>
         <button
           type="button"
           onClick={isLoading ? (onStop ?? (() => {})) : onSend}

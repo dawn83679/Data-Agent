@@ -244,7 +244,7 @@ export const ChatInputArea = forwardRef<ChatInputAreaRef, ChatInputAreaProps>(
                     {hasMention && (
                         <div
                             ref={mirrorRef}
-                            className="chat-input-mirror absolute inset-0 overflow-y-auto text-xs p-3 whitespace-pre-wrap theme-text-primary"
+                            className="chat-input-mirror absolute inset-0 overflow-y-auto text-xs p-3 pr-14 whitespace-pre-wrap theme-text-primary"
                             aria-hidden="true"
                             style={{
                                 scrollbarWidth: 'none',
@@ -284,7 +284,7 @@ export const ChatInputArea = forwardRef<ChatInputAreaRef, ChatInputAreaProps>(
                         onCompositionStart={handleCompositionStart}
                         onCompositionEnd={handleCompositionEnd}
                         placeholder={t('ai.placeholder_mention')}
-                        className={`relative z-10 w-full bg-transparent text-xs p-3 focus:outline-none placeholder:text-muted-foreground/50 overflow-y-auto whitespace-pre-wrap ${agent === 'Agent' ? 'caret-violet-400' : 'caret-amber-400'}`}
+                        className={`relative z-10 w-full bg-transparent text-xs p-3 pr-14 focus:outline-none placeholder:text-muted-foreground/50 overflow-y-auto whitespace-pre-wrap ${agent === 'Agent' ? 'caret-violet-400' : 'caret-amber-400'}`}
                         style={{
                             resize: 'none',
                             minHeight: '96px',

@@ -1,9 +1,12 @@
+import { MEMORY_DIALOG_MODE } from './memoryPageConstants';
 import type {
   MemoryScope,
   MemorySourceType,
   MemorySubType,
   MemoryType,
 } from '../../types/memory';
+
+export type MemoryDialogMode = (typeof MEMORY_DIALOG_MODE)[keyof typeof MEMORY_DIALOG_MODE];
 
 export interface FilterFormState {
   keyword: string;

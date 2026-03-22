@@ -50,6 +50,7 @@ function readPrefsFromStorage(conversationId: number): ConversationPrefs | null 
 
 interface ConversationRuntime {
     conversationId: number | null;
+    tokenCount: number | null;
     messages: ChatMessage[];
     queue: QueuedMessage[];
     isLoading: boolean;
@@ -100,6 +101,8 @@ interface UseConversationRuntimeReturn {
     removeFromQueue: (index: number) => void;
     setActiveConversation: (id: number | null) => void;
     loadMessages: (id: number | null, messages: ChatMessage[]) => void;
+    setConversationTokenCount: (id: number | null, tokenCount: number | null) => void;
+    appendLocalAssistantMessage: (message: ChatMessage, id?: number | null) => void;
     closeConversationTab: (id: number | null) => void;
     setConversationTabTitle: (id: number, title: string | null) => void;
     /** Read the prefs of the currently active conversation. */
@@ -109,6 +112,7 @@ interface UseConversationRuntimeReturn {
 
     // Current conversation ID
     activeConversationId: number | null;
+    activeConversationTokenCount: number | null;
 
     // Conversation tabs (all in-memory runtimes)
     conversationTabs: ConversationTabSummary[];
@@ -228,6 +232,7 @@ export function useConversationRuntime(
             const now = Date.now();
             runtime = {
                 conversationId: id,
+                tokenCount: null,
                 messages: [],
                 queue: [],
                 isLoading: false,
@@ -352,6 +357,9 @@ export function useConversationRuntime(
                     if (block.done && block.data) {
                         try {
                             doneMetadata = JSON.parse(block.data) as DoneMetadata;
+                            if (doneMetadata.totalTokens != null && doneMetadata.totalTokens > 0) {
+                                runtime.tokenCount = doneMetadata.totalTokens;
+                            }
                         } catch {
                             console.warn("[SSE] doneMetadata parse failed", block.data);
                         }
@@ -594,6 +602,22 @@ export function useConversationRuntime(
         [getOrCreateRuntime, updateRuntimeMessages, touchRuntime]
     );
 
+    const setConversationTokenCount = useCallback((id: number | null, tokenCount: number | null) => {
+        const runtime = getOrCreateRuntime(id);
+        runtime.tokenCount = tokenCount;
+        touchRuntime(runtime);
+        if (runtime.conversationId === activeConversationIdRef.current) {
+            forceUpdate();
+        }
+    }, [forceUpdate, getOrCreateRuntime, touchRuntime]);
+
+    const appendLocalAssistantMessage = useCallback((message: ChatMessage, id?: number | null) => {
+        const targetId = id === undefined ? activeConversationIdRef.current : id;
+        const runtime = getOrCreateRuntime(targetId ?? null);
+        touchRuntime(runtime);
+        updateRuntimeMessages(runtime, [...runtime.messages, message]);
+    }, [getOrCreateRuntime, touchRuntime, updateRuntimeMessages]);
+
     const setActiveConversation = useCallback((id: number | null) => {
         const current = activeConversationIdRef.current;
         if (current !== id) {
@@ -691,6 +715,7 @@ export function useConversationRuntime(
 
     return {
         messages: activeRuntime.messages,
+        activeConversationTokenCount: activeRuntime.tokenCount,
         isLoading: activeRuntime.isLoading,
         isWaiting: activeRuntime.isWaiting,
         queue: activeRuntime.queue.map((item) => item.text),
@@ -699,6 +724,8 @@ export function useConversationRuntime(
         removeFromQueue,
         setActiveConversation,
         loadMessages,
+        setConversationTokenCount,
+        appendLocalAssistantMessage,
         closeConversationTab,
         setConversationTabTitle,
         getActivePrefs,

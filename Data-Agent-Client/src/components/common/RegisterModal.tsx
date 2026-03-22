@@ -8,6 +8,7 @@ import { Alert } from "../ui/Alert";
 import { useToast } from "../../hooks/useToast";
 import { resolveErrorMessage } from "../../lib/errorMessage";
 import { useTranslation } from "react-i18next";
+import { PASSWORD_POLICY } from "../../constants/authPolicy";
 import { I18N_KEYS } from "../../constants/i18nKeys";
 
 interface RegisterModalProps {
@@ -39,7 +40,7 @@ export function RegisterModal({ onSwitchToLogin }: RegisterModalProps) {
             return;
         }
 
-        if (password.length < 6) {
+        if (password.length < PASSWORD_POLICY.REGISTER_MIN_LENGTH) {
             setError(t(I18N_KEYS.AUTH.PASSWORD_MIN_LENGTH));
             return;
         }
