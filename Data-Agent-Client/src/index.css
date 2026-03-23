@@ -293,6 +293,68 @@
     color: var(--text-primary) !important;
   }
 
+  /* Light mode overrides for workspace AG Grid */
+  .light .workspace-ag-grid {
+    --workspace-ag-grid-surface: #ffffff;
+    --workspace-ag-grid-surface-muted: #f8f9fa;
+    --workspace-ag-grid-surface-elevated: #f2f2f2;
+    --workspace-ag-grid-surface-overlay: #ffffff;
+    --workspace-ag-grid-gutter: #f5f5f5;
+    --workspace-ag-grid-gutter-elevated: #ebebeb;
+    --workspace-ag-grid-border: rgba(0, 0, 0, 0.12);
+    --workspace-ag-grid-text: #1f2937;
+    --workspace-ag-grid-text-muted: #6b7280;
+    --workspace-ag-grid-hover: rgba(53, 116, 240, 0.08);
+    --workspace-ag-grid-selected: #e0e7ff;
+    --workspace-ag-grid-selected-strong: rgba(53, 116, 240, 0.5);
+    --workspace-ag-grid-selected-text: #1f2937;
+    color-scheme: light;
+  }
+
+  .light .workspace-ag-grid .workspace-ag-grid__transpose-field-cell {
+    color: #1f2937;
+    background-color: #f8f9fa;
+  }
+
+  .light .workspace-ag-grid .workspace-ag-grid__row-number-cell {
+    color: #6b7280;
+  }
+
+  .light .workspace-ag-grid .ag-row.ag-row-hover .workspace-ag-grid__row-number-cell,
+  .light .workspace-ag-grid .ag-row.ag-row-selected .workspace-ag-grid__row-number-cell,
+  .light .workspace-ag-grid .ag-row.ag-row-selected.ag-row-hover .workspace-ag-grid__row-number-cell {
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.08);
+  }
+
+  .light .workspace-ag-grid .ag-row.ag-row-selected .theme-text-primary,
+  .light .workspace-ag-grid .ag-row.ag-row-selected .theme-text-secondary,
+  .light .workspace-ag-grid .ag-row.ag-row-selected.ag-row-hover .theme-text-primary,
+  .light .workspace-ag-grid .ag-row.ag-row-selected.ag-row-hover .theme-text-secondary {
+    color: #1f2937;
+  }
+
+  .light .workspace-ag-grid .ag-row.ag-row-selected .ag-cell-value,
+  .light .workspace-ag-grid .ag-row.ag-row-selected.ag-row-hover .ag-cell-value {
+    color: #1f2937;
+  }
+
+  .light .workspace-ag-grid .ag-menu,
+  .light .workspace-ag-grid .ag-popup-child,
+  .light .workspace-ag-grid .ag-tooltip {
+    border-color: rgba(0, 0, 0, 0.12);
+    background: #ffffff;
+    color: #1f2937;
+  }
+
+  .light .workspace-ag-grid .ag-input-field-input,
+  .light .workspace-ag-grid input[class^='ag-'],
+  .light .workspace-ag-grid textarea[class^='ag-'],
+  .light .workspace-ag-grid select[class^='ag-'] {
+    background-color: #ffffff !important;
+    color: #1f2937 !important;
+    border-color: rgba(0, 0, 0, 0.12) !important;
+  }
+
   .workspace-ag-grid {
     --workspace-ag-grid-surface: #1f2126;
     --workspace-ag-grid-surface-muted: #23262c;

@@ -7,6 +7,7 @@ import type {
 } from 'ag-grid-community';
 import { AgGridReact } from 'ag-grid-react';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../hooks/useTheme';
 import { I18N_KEYS } from '../../constants/i18nKeys';
 import type { TableDataResponse } from '../../services/tableData.service';
 import {
@@ -46,7 +47,9 @@ export function TableDataGridAg({
   formatCellValue,
 }: TableDataGridAgProps) {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const gridApiRef = useRef<GridApi<TableDataGridAgRow> | null>(null);
+  const agThemeClass = theme === 'light' ? 'ag-theme-quartz' : 'ag-theme-quartz-dark';
   const syncingSelectionRef = useRef(false);
   const syncingSortRef = useRef(false);
   const isTransposeMode = viewMode === 'transpose';
@@ -192,7 +195,7 @@ export function TableDataGridAg({
   return (
     <div className="flex-1 min-h-0 overflow-hidden border-t theme-border">
       <div className="relative h-full min-h-0">
-        <div className="workspace-ag-grid ag-theme-quartz-dark h-full min-h-0 w-full">
+        <div className={`workspace-ag-grid ${agThemeClass} h-full min-h-0 w-full`}>
           <AgGridReact<TableDataGridAgRow>
             rowData={rowData}
             columnDefs={columnDefs}
