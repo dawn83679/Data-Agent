@@ -33,7 +33,7 @@ export function GenericToolRun({
       <button
         type="button"
         onClick={() => setCollapsed((c) => !c)}
-        className="w-full py-1.5 flex items-center gap-2 text-left rounded transition-colors theme-text-primary hover:bg-black/5 dark:hover:bg-white/5"
+        className="w-full py-1.5 flex items-center gap-2 text-left rounded transition-colors theme-text-primary hover:bg-[color:var(--bg-popup)]/55"
       >
         {responseError ? (
           <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" aria-label="Failed" />

@@ -59,7 +59,7 @@ export function SubAgentConsole({ metadata }: SubAgentConsoleProps) {
     ?? (isExplorer ? explorerResult?.summaryText : plannerResult?.summaryText);
 
   return (
-    <div className="flex-1 overflow-auto theme-bg-main p-6">
+    <div className="h-full min-h-0 overflow-auto theme-bg-main p-6">
       <div className="max-w-4xl mx-auto flex flex-col gap-4">
         <Section title="Overview">
           <div className="flex items-start gap-3">

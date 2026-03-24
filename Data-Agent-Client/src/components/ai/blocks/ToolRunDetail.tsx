@@ -19,6 +19,9 @@ export function ToolRunDetail({
 }: ToolRunDetailProps) {
   const { theme } = useTheme();
   const syntaxTheme = theme === 'dark' ? oneDark : oneLight;
+  const sectionShellClassName = theme === 'dark'
+    ? 'rounded-lg border border-white/8 bg-black/18'
+    : 'rounded-lg border border-slate-200 bg-slate-50/90';
 
   const highlighterProps = {
     language: 'json',
@@ -42,7 +45,7 @@ export function ToolRunDetail({
           {TOOL_RUN_SECTION_PARAMETERS}
           <span className="opacity-50" aria-hidden>☰</span>
         </div>
-        <div className="rounded bg-black/10 dark:bg-black/20 text-[11px] max-h-[220px] overflow-auto">
+        <div className={`${sectionShellClassName} text-[11px] max-h-[220px] overflow-auto`}>
           <SyntaxHighlighter {...highlighterProps}>
             {formattedParameters || TOOL_RUN_EMPTY_PLACEHOLDER}
           </SyntaxHighlighter>
@@ -52,7 +55,7 @@ export function ToolRunDetail({
         <div className="text-[10px] font-semibold uppercase tracking-wide opacity-90 mb-1">
           {TOOL_RUN_SECTION_RESPONSE}
         </div>
-        <div className="rounded bg-black/10 dark:bg-black/20 text-[11px] max-h-[220px] overflow-auto">
+        <div className={`${sectionShellClassName} text-[11px] max-h-[220px] overflow-auto`}>
           <SyntaxHighlighter {...highlighterProps}>
             {responseData || TOOL_RUN_EMPTY_PLACEHOLDER}
           </SyntaxHighlighter>

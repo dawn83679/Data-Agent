@@ -122,8 +122,8 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
 
   if (!isVisible) {
     return (
-      <PanelGroup orientation="vertical">
-        <Panel className="flex flex-col min-h-0 relative">
+      <PanelGroup orientation="vertical" className="h-full min-h-0">
+        <Panel className="flex flex-col min-h-0 relative theme-bg-main">
           {children}
         </Panel>
       </PanelGroup>
@@ -131,22 +131,22 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
   }
 
   return (
-    <PanelGroup orientation="vertical">
-      <Panel className="flex flex-col min-h-0 relative">
+    <PanelGroup orientation="vertical" className="h-full min-h-0">
+      <Panel className="flex flex-col min-h-0 relative theme-bg-main">
         {children}
       </Panel>
 
-      <PanelResizeHandle className="h-1 bg-border hover:bg-primary/50 transition-colors" />
+      <PanelResizeHandle className="h-1 bg-transparent hover:bg-primary/40 transition-colors" />
 
       <Panel defaultSize="30%" minSize="15%" className="theme-bg-panel flex flex-col shrink-0 border-t theme-border relative">
         {/* Toolbar */}
-        <div className="flex items-center h-9 px-2 border-b theme-border shrink-0">
+        <div className="flex items-center h-10 px-3 border-b theme-border shrink-0 bg-[var(--bg-main)]/40">
           <div className="flex space-x-1 h-full">
             {hasResultTab && (
               <button
                 onClick={() => setActiveTab('result')}
                 className={cn(
-                  "px-3 py-1 text-[11px] font-medium transition-colors relative h-full flex items-center",
+                  "px-3 py-1 text-[11px] font-medium transition-colors relative h-full flex items-center rounded-t-sm",
                   activeTab === 'result'
                     ? "theme-text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary"
                     : "theme-text-secondary hover:theme-text-primary"
@@ -158,7 +158,7 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
             <button
               onClick={() => setActiveTab('output')}
               className={cn(
-                "px-3 py-1 text-[11px] font-medium transition-colors relative h-full flex items-center",
+                "px-3 py-1 text-[11px] font-medium transition-colors relative h-full flex items-center rounded-t-sm",
                 (activeTab === 'output' || !hasResultTab)
                   ? "theme-text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary"
                   : "theme-text-secondary hover:theme-text-primary"
@@ -253,7 +253,7 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
             </div>
           ) : (
             // Output Log
-            <div className="p-3 font-sans text-[12px] leading-5 whitespace-pre-wrap space-y-1">
+            <div className="h-full overflow-auto p-3 font-sans text-[12px] leading-5 whitespace-pre-wrap space-y-1">
               {isRunning ? (
                 <div className="flex items-center space-x-2 text-amber-500">
                   <span className="animate-pulse">●</span>
@@ -305,7 +305,7 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
         </div>
 
         {/* Status Bar */}
-        <div className="h-6 border-t theme-border flex items-center px-2 text-[10px] theme-text-secondary justify-between shrink-0">
+        <div className="h-7 border-t theme-border flex items-center px-3 text-[10px] theme-text-secondary justify-between shrink-0 bg-[var(--bg-main)]/35">
           <div className="flex items-center space-x-2">
             <span className="flex items-center">
               <span className={cn('w-2 h-2 rounded-full mr-1.5', getStatusIndicatorColor())} />
@@ -321,4 +321,3 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
     </PanelGroup>
   );
 }
-

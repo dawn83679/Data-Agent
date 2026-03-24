@@ -1,4 +1,4 @@
-import { FileCode, ListTodo, Table as TableIcon, X, Zap } from 'lucide-react';
+import { Braces, Database, FileCode, ListTodo, Table as TableIcon, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
 import { useTabStore } from '../../store/tabStore';
@@ -89,16 +89,16 @@ function SortableTab({
   const isPlannerConsole = type === 'subagent-console' && subAgentType === SUB_AGENT_TYPES.PLANNER;
   const isFailedSubAgent = type === 'subagent-console' && subAgentStatus === 'error';
   const activeClass = isFailedSubAgent
-    ? 'border-red-500 bg-red-500/10 text-red-200'
+    ? 'border-red-500/70 bg-red-500/10 text-red-200'
     : isActive
       ? isPlannerConsole
-        ? 'border-purple-500 bg-tab-active theme-text-primary'
+        ? 'border-purple-500/70 bg-[var(--bg-main)] theme-text-primary shadow-sm'
         : type === 'subagent-console'
-          ? 'border-cyan-500 bg-tab-active theme-text-primary'
-          : 'border-primary bg-tab-active theme-text-primary'
+          ? 'border-cyan-500/70 bg-[var(--bg-main)] theme-text-primary shadow-sm'
+          : 'border-primary/70 bg-[var(--bg-main)] theme-text-primary shadow-sm'
       : isFailedSubAgent
         ? 'border-transparent bg-red-500/5 text-red-300 hover:bg-red-500/10'
-        : 'border-transparent theme-bg-panel theme-text-secondary hover:bg-accent/50';
+        : 'border-transparent theme-text-secondary hover:theme-text-primary hover:bg-[var(--bg-main)]/70';
 
   const subAgentIconClass = isFailedSubAgent
     ? 'text-red-400'
@@ -116,7 +116,7 @@ function SortableTab({
               style={style}
               onClick={() => onSwitch(tabId)}
               className={cn(
-                'flex items-center px-3 text-[11px] min-w-[120px] max-w-[220px] group select-none border-b-2 transition-colors relative cursor-pointer shrink-0',
+                'h-8 flex items-center px-3 text-[11px] min-w-[120px] max-w-[220px] group select-none border rounded-md transition-colors relative cursor-pointer shrink-0',
                 activeClass,
                 isDragging && 'opacity-40'
               )}
@@ -127,7 +127,11 @@ function SortableTab({
                 {type === 'plan' ? (
                   <ListTodo className="w-3 h-3 text-amber-400" />
                 ) : type === 'subagent-console' ? (
-                  <Zap className={cn('w-3 h-3', subAgentIconClass)} />
+                  isPlannerConsole ? (
+                    <Braces className={cn('w-3 h-3', subAgentIconClass)} />
+                  ) : (
+                    <Database className={cn('w-3 h-3', subAgentIconClass)} />
+                  )
                 ) : type === 'file' ? (
                   <FileCode className="w-3 h-3 text-blue-400" />
                 ) : (
@@ -202,7 +206,7 @@ export function TabBar() {
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
-        <div className="h-9 theme-bg-panel flex items-stretch overflow-x-auto no-scrollbar border-b theme-border shrink-0">
+        <div className="h-10 px-2 py-1.5 theme-bg-panel flex items-stretch overflow-x-auto no-scrollbar border-b theme-border shrink-0">
           <SortableContext
             items={tabs.map((tab) => tab.id)}
             strategy={horizontalListSortingStrategy}

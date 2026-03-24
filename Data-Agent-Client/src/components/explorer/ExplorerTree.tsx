@@ -59,22 +59,24 @@ export function ExplorerTree({
   };
 
   return (
-    <div className="flex-1 overflow-hidden py-1">
+    <div className="flex-1 min-h-0 overflow-hidden">
       {data.length === 0 && !isLoading ? (
-        <div className="p-4 text-center text-xs theme-text-secondary opacity-50">{t(I18N_KEYS.COMMON.NO_CONNECTIONS)}</div>
+        <div className="p-4 text-center text-xs theme-text-secondary opacity-60">{t(I18N_KEYS.COMMON.NO_CONNECTIONS)}</div>
       ) : (
-        <ArboristTree
-          data={data}
-          openByDefault={false}
-          width="100%"
-          height={ExplorerTreeConfig.HEIGHT}
-          indent={ExplorerTreeConfig.INDENT}
-          rowHeight={ExplorerTreeConfig.ROW_HEIGHT}
-          searchTerm={searchTerm}
-          searchMatch={(node, term) => node.data.name.toLowerCase().includes(term.toLowerCase())}
-        >
-          {renderNode}
-        </ArboristTree>
+        <div className="h-full overflow-y-auto pr-1">
+          <ArboristTree
+            data={data}
+            openByDefault={false}
+            width="100%"
+            height={ExplorerTreeConfig.HEIGHT}
+            indent={ExplorerTreeConfig.INDENT}
+            rowHeight={ExplorerTreeConfig.ROW_HEIGHT}
+            searchTerm={searchTerm}
+            searchMatch={(node, term) => node.data.name.toLowerCase().includes(term.toLowerCase())}
+          >
+            {renderNode}
+          </ArboristTree>
+        </div>
       )}
     </div>
   );

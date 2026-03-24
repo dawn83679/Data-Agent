@@ -6,48 +6,50 @@
 
 @layer base {
   :root {
-    /* Dark Theme (Default in Prototype, but we map to Shadcn structure) */
-    --background: 222 10% 13%; /* #1e1f22 */
-    --foreground: 220 10% 75%; /* #bcbec4 */
+    /* Dark Theme aligned with design/overview.html */
+    --background: 228 22% 9%; /* #12141c */
+    --foreground: 214 32% 91%; /* #e2e8f0 */
 
-    --card: 222 10% 13%;
-    --card-foreground: 220 10% 75%;
+    --card: 226 18% 14%; /* #1e212b */
+    --card-foreground: 214 32% 91%;
 
-    --popover: 222 10% 18%; /* #2b2d30 */
-    --popover-foreground: 220 10% 75%;
+    --popover: 224 15% 19%; /* #2a2e39 */
+    --popover-foreground: 214 32% 91%;
 
-    --primary: 220 88% 58%; /* #3574f0 */
+    --primary: 217 91% 60%; /* #3b82f6 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 222 10% 18%; /* #2b2d30 */
-    --secondary-foreground: 220 5% 50%; /* #7c7f84 */
+    --secondary: 224 15% 19%; /* #2a2e39 */
+    --secondary-foreground: 215 20% 65%; /* #94a3b8 */
 
-    --muted: 222 10% 18%;
-    --muted-foreground: 220 5% 50%;
+    --muted: 224 15% 19%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 222 10% 20%; /* #2e2f33 */
-    --accent-foreground: 220 10% 75%;
+    --accent: 224 15% 19%; /* #2a2e39 */
+    --accent-foreground: 214 32% 91%;
 
     --destructive: 0 91% 71%; /* #f87171 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 212 5% 32%; /* #4e5155 */
-    --input: 212 5% 32%;
-    --ring: 220 88% 58%;
+    --border: 215 25% 27%; /* #334155 */
+    --input: 215 25% 27%;
+    --ring: 217 91% 60%;
 
     --radius: 0.5rem;
 
-    /* Prototype Specific Variables */
-    --bg-main: #1e1f22;
-    --bg-panel: #2b2d30;
-    --bg-popup: #2b2d30;
-    --bg-hover: #2e2f33;
-    --bg-selected: #2e436e;
-    --border-color: #4e5155;
-    --text-primary: #bcbec4;
-    --text-secondary: #7c7f84;
-    --accent-blue: #3574f0;
-    --accent-hover: #3369d6;
+    /* Workbench Variables */
+    --bg-main: #12141c;
+    --bg-panel: #1e212b;
+    --bg-popup: #2a2e39;
+    --bg-toolbar: #151720;
+    --bg-hover: #2a2e39;
+    --bg-selected: rgba(59, 130, 246, 0.18);
+    --border-color: #334155;
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --accent-blue: #3b82f6;
+    --accent-blue-subtle: #60a5fa;
+    --accent-hover: #60a5fa;
 
     /* Syntax Highlighting (Dark) */
     --syntax-keyword: #cc7832;
@@ -65,57 +67,59 @@
     --bg-row-hover: rgba(30, 58, 138, 0.3);
 
     /* Markdown / AI Chat (Dark) */
-    --bg-code-block: #1e1f22;
+    --bg-code-block: #12141c;
     --bg-inline-code: rgba(255, 255, 255, 0.1);
     --text-markdown-strong: #ffffff;
-    --border-markdown-block: #4e5155;
+    --border-markdown-block: #334155;
 
     /* User Message Bubble (Dark) - with background */
     --user-bubble-bg: rgba(255, 255, 255, 0.05);
-    --user-bubble-text: 220 10% 92%;
-    --user-bubble-border: 212 5% 32%;
+    --user-bubble-text: 214 32% 91%;
+    --user-bubble-border: 215 25% 27%;
   }
 
   .light {
-    --background: 0 0% 100%; /* #ffffff */
-    --foreground: 215 25% 17%; /* #1f2937 */
+    --background: 214 33% 97%; /* #f4f7fb */
+    --foreground: 221 39% 16%; /* #172133 */
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 17%;
+    --card-foreground: 221 39% 16%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 17%;
+    --popover: 210 43% 96%; /* #eef3f9 */
+    --popover-foreground: 221 39% 16%;
 
-    --primary: 220 88% 58%; /* #3574f0 */
+    --primary: 221 83% 53%; /* #2563eb */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 20% 95%; /* #f2f2f2 */
-    --secondary-foreground: 215 16% 47%; /* #6b7280 */
+    --secondary: 210 43% 96%; /* #eef3f9 */
+    --secondary-foreground: 215 18% 44%; /* #5f6f86 */
 
-    --muted: 210 20% 95%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 210 43% 96%;
+    --muted-foreground: 215 18% 44%;
 
-    --accent: 214 32% 91%; /* #e2e6ec */
-    --accent-foreground: 215 25% 17%;
+    --accent: 210 43% 96%; /* #eef3f9 */
+    --accent-foreground: 221 39% 16%;
 
     --destructive: 0 72% 51%; /* #dc2626 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 85%; /* #d1d5db */
-    --input: 214 32% 85%;
-    --ring: 220 88% 58%;
+    --border: 214 30% 88%; /* #d8e1eb */
+    --input: 214 30% 88%;
+    --ring: 221 83% 53%;
 
-    /* Prototype Specific Variables (Light) */
-    --bg-main: #ffffff;
-    --bg-panel: #f2f2f2;
-    --bg-popup: #ffffff;
-    --bg-hover: #e2e6ec;
-    --bg-selected: #b4d1f5;
-    --border-color: #d1d5db;
-    --text-primary: #1f2937;
-    --text-secondary: #6b7280;
-    --accent-blue: #3574f0;
-    --accent-hover: #265cc2;
+    /* Workbench Variables (Light redesign) */
+    --bg-main: #f4f7fb;
+    --bg-panel: #ffffff;
+    --bg-popup: #eef3f9;
+    --bg-toolbar: #f8fafc;
+    --bg-hover: #e8eef6;
+    --bg-selected: rgba(37, 99, 235, 0.12);
+    --border-color: #d8e1eb;
+    --text-primary: #172133;
+    --text-secondary: #5f6f86;
+    --accent-blue: #2563eb;
+    --accent-blue-subtle: #3b82f6;
+    --accent-hover: #1d4ed8;
 
     /* Syntax Highlighting (Light) */
     --syntax-keyword: #0033b3;
@@ -133,15 +137,15 @@
     --bg-row-hover: #e0e7ff;
 
     /* Markdown / AI Chat (Light) */
-    --bg-code-block: #f5f5f5;
+    --bg-code-block: #f5f7fb;
     --bg-inline-code: rgba(0, 0, 0, 0.05);
     --text-markdown-strong: #000000;
-    --border-markdown-block: #d1d5db;
+    --border-markdown-block: #d8e1eb;
 
     /* User Message Bubble (Light) - with background */
-    --user-bubble-bg: rgba(0, 0, 0, 0.03);
-    --user-bubble-text: 215 25% 17%;
-    --user-bubble-border: 214 32% 85%;
+    --user-bubble-bg: rgba(37, 99, 235, 0.06);
+    --user-bubble-text: 221 39% 16%;
+    --user-bubble-border: 214 30% 88%;
   }
 }
 
@@ -174,22 +178,21 @@
 
   /* Custom Scrollbar */
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    background: var(--bg-main);
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--border-color);
-    border-radius: 5px;
-    border: 2px solid var(--bg-main);
+    background: color-mix(in srgb, var(--border-color) 88%, #64748b);
+    border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #6e7175;
+    background: color-mix(in srgb, var(--text-secondary) 85%, transparent);
   }
 
   /* Splitter Resizer */
@@ -221,6 +224,57 @@
   .theme-row-hover:hover { background-color: var(--bg-row-hover); }
   .theme-bg-selected { background-color: var(--bg-selected); }
   .theme-border-accent { border-color: var(--accent-blue); }
+
+  /* Workbench Shell */
+  .workbench-shell {
+    @apply flex overflow-hidden p-2;
+    background: var(--bg-main);
+  }
+
+  .workbench-shell__group {
+    @apply flex-1 min-h-0;
+  }
+
+  .workbench-panel {
+    @apply min-h-0 overflow-hidden rounded-[14px] border;
+    background-color: var(--bg-panel);
+    border-color: var(--border-color);
+  }
+
+  .workbench-panel--sidebar,
+  .workbench-panel--assistant {
+    background-color: var(--bg-panel);
+  }
+
+  .workbench-panel--main {
+    background-color: var(--bg-panel);
+  }
+
+  .workbench-resize-handle {
+    @apply relative w-2 shrink-0;
+    background: transparent;
+  }
+
+  .workbench-resize-handle::before {
+    content: '';
+    @apply absolute left-1/2 top-0 h-full -translate-x-1/2 rounded-full transition-colors duration-200;
+    width: 1px;
+    background: transparent;
+  }
+
+  .workbench-resize-handle::after {
+    content: '';
+    @apply absolute -left-1 -right-1 top-0 bottom-0 cursor-col-resize;
+  }
+
+  .workbench-resize-handle:hover::before,
+  .workbench-resize-handle[data-resize-handle-state="hover"]::before {
+    background: color-mix(in srgb, var(--border-color) 72%, transparent);
+  }
+
+  .workbench-resize-handle[data-resize-handle-state="drag"]::before {
+    background: var(--accent-blue);
+  }
 
   /* Tab Styles */
   .tab-active {

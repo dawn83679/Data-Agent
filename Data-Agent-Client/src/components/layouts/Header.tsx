@@ -35,64 +35,71 @@ export function Header({ onLoginClick, onToggleAI }: HeaderProps) {
     const userInitial = user?.username?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "?";
 
     return (
-        <header className="h-10 theme-bg-panel flex items-center px-4 border-b theme-border justify-between select-none shrink-0">
-            <div className="flex items-center gap-2">
-                <span className="text-sm font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent cursor-pointer" onClick={() => navigate("/")}>
+        <header className="h-12 border-b theme-border bg-[color:var(--bg-toolbar)] px-4 select-none shrink-0">
+            <div className="relative h-full flex items-center justify-between">
+                <div className="flex-1 min-w-0" />
+
+                <button
+                    onClick={() => navigate("/")}
+                    className="absolute left-1/2 -translate-x-1/2 px-3 py-1 rounded-md text-sm font-medium theme-text-primary hover:bg-white/5 transition-colors"
+                    title={t(I18N_KEYS.AI.BOT_NAME)}
+                    aria-label={t(I18N_KEYS.AI.BOT_NAME)}
+                    type="button"
+                >
                     {t(I18N_KEYS.AI.BOT_NAME)}
-                </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-                {accessToken ? (
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => navigate("/profile")}
-                            className="flex items-center gap-2 px-2 py-1 rounded-md theme-bg-hover transition-colors group"
-                            title={t(I18N_KEYS.COMMON.PROFILE)}
-                        >
-                            {user?.avatarUrl ? (
-                                <img src={user.avatarUrl} alt={user.username} className="h-5 w-5 rounded-full object-cover" />
-                            ) : (
-                                <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
-                                    {userInitial}
-                                </div>
-                            )}
-                            <span className="text-xs font-medium hidden sm:inline-block max-w-[100px] truncate theme-text-secondary group-hover:theme-text-primary">
-                                {user?.username || user?.email}
-                            </span>
-                        </button>
-
-                        <button 
-                            onClick={handleLogout}
-                            className="p-1.5 rounded theme-bg-hover theme-text-secondary hover:text-red-400 transition-colors"
-                            title={t(I18N_KEYS.COMMON.LOGOUT)}
-                        >
-                            <LogOut className="h-3.5 w-3.5" />
-                        </button>
-                    </div>
-                ) : (
-                    <Button variant="ghost" size="sm" onClick={onLoginClick} className="h-7 text-xs">
-                        {t(I18N_KEYS.COMMON.LOGIN)}
-                    </Button>
-                )}
-                
-                <div className="w-px h-4 bg-border mx-1" />
-                
-                <button 
-                    onClick={onToggleAI}
-                    className="w-7 h-7 flex items-center justify-center rounded theme-bg-hover text-purple-400 transition-colors"
-                    title={`${t(I18N_KEYS.COMMON.AI_ASSISTANT)} (Cmd+B)`}
-                >
-                    <Wand2 className="h-4 w-4" />
                 </button>
-                
-                <button 
-                    onClick={() => setSettingsModalOpen(true)}
-                    className="w-7 h-7 flex items-center justify-center rounded theme-bg-hover theme-text-secondary hover:theme-text-primary transition-colors"
-                    title={`${t(I18N_KEYS.COMMON.SETTINGS)} (Cmd+Shift+,)`}
-                >
-                    <Settings className="h-4 w-4" />
-                </button>
+
+                <div className="flex flex-1 justify-end items-center gap-3 theme-text-secondary min-w-0">
+                    {accessToken ? (
+                        <div className="flex items-center gap-3 min-w-0">
+                            <button
+                                onClick={() => navigate("/profile")}
+                                className="flex items-center justify-center rounded-full hover:theme-text-primary transition-colors"
+                                title={t(I18N_KEYS.COMMON.PROFILE)}
+                                type="button"
+                            >
+                                {user?.avatarUrl ? (
+                                    <img src={user.avatarUrl} alt={user.username} className="h-5 w-5 rounded-full object-cover" />
+                                ) : (
+                                    <div className="h-6 w-6 rounded-full border theme-border bg-[color:var(--bg-popup)] flex items-center justify-center text-[10px] font-bold theme-text-primary">
+                                        {userInitial}
+                                    </div>
+                                )}
+                            </button>
+
+                            <button
+                                onClick={handleLogout}
+                                className="flex items-center justify-center hover:theme-text-primary transition-colors"
+                                title={t(I18N_KEYS.COMMON.LOGOUT)}
+                                type="button"
+                            >
+                                <LogOut className="h-3.5 w-3.5" />
+                            </button>
+                        </div>
+                    ) : (
+                        <Button variant="ghost" size="sm" onClick={onLoginClick} className="h-7 text-xs px-2.5">
+                            {t(I18N_KEYS.COMMON.LOGIN)}
+                        </Button>
+                    )}
+
+                    <button
+                        onClick={onToggleAI}
+                        className="flex items-center justify-center hover:theme-text-primary transition-colors"
+                        title={`${t(I18N_KEYS.COMMON.AI_ASSISTANT)} (Cmd+B)`}
+                        type="button"
+                    >
+                        <Wand2 className="h-4 w-4 text-[var(--accent-blue)]" />
+                    </button>
+
+                    <button
+                        onClick={() => setSettingsModalOpen(true)}
+                        className="flex items-center justify-center hover:theme-text-primary transition-colors"
+                        title={`${t(I18N_KEYS.COMMON.SETTINGS)} (Cmd+Shift+,)`}
+                        type="button"
+                    >
+                        <Settings className="h-4 w-4" />
+                    </button>
+                </div>
             </div>
         </header>
     );

@@ -130,17 +130,17 @@ export function ExplorerTreeNode({
   const rowContent = (
     <>
       <span
-        className="w-4 flex items-center justify-center mr-1 hover:bg-accent rounded-sm"
+        className="flex h-4 w-4 items-center justify-center rounded-sm theme-text-secondary transition-colors group-hover:theme-text-primary"
         onClick={handleToggle}
       >
         {node.isInternal && (node.isOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />)}
       </span>
-      <span className="mr-2">
+      <span className="shrink-0">
         <ExplorerNodeIcon node={node.data} />
       </span>
       <span
         className={cn(
-          'flex-1 min-w-0 truncate flex items-baseline gap-1.5',
+          'flex min-w-0 flex-1 items-baseline gap-1.5 truncate',
           node.data.type === ExplorerNodeType.EMPTY ? 'theme-text-secondary opacity-60 italic' : ''
         )}
       >
@@ -178,8 +178,9 @@ export function ExplorerTreeNode({
   );
 
   const rowClassName = cn(
-    'flex items-center py-1 px-2 hover:bg-accent/50 cursor-pointer group select-none text-xs',
-    node.isSelected && 'bg-accent/30'
+    'group flex h-full cursor-pointer select-none items-center gap-2 rounded-md px-2 text-sm transition-colors',
+    'hover:bg-[var(--bg-popup)]/70',
+    node.isSelected && 'bg-[var(--bg-popup)]/85'
   );
 
   // Show context menu for all connected nodes and nodes with available actions
@@ -283,4 +284,3 @@ function RootNodeActions({
     </div>
   );
 }
-

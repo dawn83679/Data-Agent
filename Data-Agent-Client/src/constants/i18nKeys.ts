@@ -29,6 +29,7 @@ export const I18N_KEYS = {
     CLOSE_EXPLORER: 'common.close_explorer',
     TOGGLE_AI: 'common.toggle_ai',
     DRAG_HINT: 'common.drag_hint',
+    KEYBOARD_SHORTCUTS: 'common.keyboard_shortcuts',
     DATA_SOURCES: 'common.data_sources',
     DEFAULT: 'common.default',
     PROFILE: 'common.profile',

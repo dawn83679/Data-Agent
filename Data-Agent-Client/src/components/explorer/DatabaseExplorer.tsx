@@ -97,7 +97,7 @@ export function DatabaseExplorer() {
 
   return (
     <div
-      className="flex flex-col h-full overflow-hidden"
+      className="flex h-full flex-col overflow-hidden"
       {...{ [DataAttributes.EXPLORER_TREE]: true }}
       onContextMenu={(e) => e.preventDefault()}
     >
@@ -114,20 +114,22 @@ export function DatabaseExplorer() {
         }}
       />
 
-      <ExplorerTree
-        data={treeDataState}
-        searchTerm={searchTerm}
-        isLoading={isConnectionsLoading}
-        onLoadData={loadNodeData}
-        onDisconnect={handleDisconnect}
-        onEditConnection={openEditModal}
-        onDeleteConnection={(id) => setDeleteConfirmId(id)}
-        onViewDdl={handleViewDdl}
-        onViewData={handleViewData}
-        onDelete={handleDelete}
-        onOpenQueryConsole={handleOpenQueryConsole}
-        onCreateTable={handleCreateTable}
-      />
+      <div className="flex-1 min-h-0 px-2 pb-2 overflow-hidden">
+        <ExplorerTree
+          data={treeDataState}
+          searchTerm={searchTerm}
+          isLoading={isConnectionsLoading}
+          onLoadData={loadNodeData}
+          onDisconnect={handleDisconnect}
+          onEditConnection={openEditModal}
+          onDeleteConnection={(id) => setDeleteConfirmId(id)}
+          onViewDdl={handleViewDdl}
+          onViewData={handleViewData}
+          onDelete={handleDelete}
+          onOpenQueryConsole={handleOpenQueryConsole}
+          onCreateTable={handleCreateTable}
+        />
+      </div>
 
       <ExplorerDialogs
         connectionModalOpen={connectionModalOpen}

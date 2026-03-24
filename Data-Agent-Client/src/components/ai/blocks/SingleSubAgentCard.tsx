@@ -1,5 +1,6 @@
 import { Braces, CheckCircle, Database, Loader2, XCircle } from 'lucide-react';
 import { cn } from '../../../lib/utils';
+import { useTheme } from '../../../hooks/useTheme';
 import { getAgentTheming } from './subAgentDataHelpers';
 
 export interface SingleSubAgentCardProps {
@@ -21,7 +22,8 @@ export function SingleSubAgentCard({
   elapsedText,
   onOpenConsole,
 }: SingleSubAgentCardProps) {
-  const { isExplorer, borderColor, bgColor, iconColor } = getAgentTheming(agentType, isError);
+  const { theme } = useTheme();
+  const { isExplorer, borderColor, bgColor, iconColor } = getAgentTheming(agentType, isError, theme);
   const AgentIcon = isExplorer ? Database : Braces;
   const shouldShowStatusText = !isComplete || isError;
   const content = (
@@ -56,7 +58,7 @@ export function SingleSubAgentCard({
         type="button"
         onClick={onOpenConsole}
         className={cn(
-          'mb-2 w-full rounded-lg border overflow-hidden text-left transition-opacity hover:opacity-90',
+          'mb-2 w-full rounded-lg border overflow-hidden text-left shadow-[0_1px_2px_rgba(15,23,42,0.06),0_8px_24px_rgba(15,23,42,0.04)] transition-colors hover:shadow-[0_1px_2px_rgba(15,23,42,0.08),0_10px_28px_rgba(15,23,42,0.06)]',
           borderColor,
           bgColor,
         )}
@@ -66,5 +68,5 @@ export function SingleSubAgentCard({
     );
   }
 
-  return <div className={cn('mb-2 rounded-lg border overflow-hidden', borderColor, bgColor)}>{content}</div>;
+  return <div className={cn('mb-2 rounded-lg border overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.06),0_8px_24px_rgba(15,23,42,0.04)]', borderColor, bgColor)}>{content}</div>;
 }

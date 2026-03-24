@@ -11,23 +11,24 @@ export interface AgentTheming {
   iconColor: string;
 }
 
-export function getAgentTheming(agentType: string, isError: boolean): AgentTheming {
+export function getAgentTheming(agentType: string, isError: boolean, theme: 'light' | 'dark'): AgentTheming {
   const isExplorer = agentType.toUpperCase() === 'EXPLORER' || agentType === 'explorer';
+  const isDark = theme === 'dark';
   const borderColor = isError
-    ? 'border-red-300 dark:border-red-700'
+    ? (isDark ? 'border-red-700/70' : 'border-rose-300')
     : isExplorer
-      ? 'border-cyan-300 dark:border-cyan-700'
-      : 'border-purple-300 dark:border-purple-700';
+      ? (isDark ? 'border-cyan-700/70' : 'border-cyan-300')
+      : (isDark ? 'border-purple-700/70' : 'border-violet-300');
   const bgColor = isError
-    ? 'bg-red-50/50 dark:bg-red-900/10'
+    ? (isDark ? 'bg-red-950/20' : 'bg-gradient-to-r from-rose-50 via-white to-white')
     : isExplorer
-      ? 'bg-cyan-50/50 dark:bg-cyan-900/10'
-      : 'bg-purple-50/50 dark:bg-purple-900/10';
+      ? (isDark ? 'bg-cyan-950/20' : 'bg-gradient-to-r from-cyan-50 via-white to-white')
+      : (isDark ? 'bg-purple-950/20' : 'bg-gradient-to-r from-violet-50 via-white to-white');
   const iconColor = isError
     ? 'text-red-500'
     : isExplorer
-      ? 'text-cyan-600 dark:text-cyan-400'
-      : 'text-purple-600 dark:text-purple-400';
+      ? (isDark ? 'text-cyan-400' : 'text-cyan-600')
+      : (isDark ? 'text-purple-400' : 'text-violet-600');
   return { isExplorer, borderColor, bgColor, iconColor };
 }
 

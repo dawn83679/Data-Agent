@@ -51,13 +51,13 @@ export function ChatInputToolbar({
   const currentOption = modelOptions.find((m) => m.modelName === model);
 
   return (
-    <div className="flex items-center justify-between px-2 pb-2">
-      <div className="flex items-center space-x-2">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className={`flex items-center space-x-1.5 text-[10px] theme-text-primary border rounded-full px-2 py-0.5 transition-colors ${AGENT_COLORS[agent].bg} ${AGENT_COLORS[agent].border} border hover:opacity-90`}
+              className={`h-7 px-2 rounded-lg border text-xs transition-colors flex items-center gap-1.5 ${AGENT_COLORS[agent].bg} ${AGENT_COLORS[agent].border} theme-text-secondary hover:theme-text-primary`}
             >
               <CurrentAgentIcon className={`w-3 h-3 ${AGENT_COLORS[agent].icon}`} />
               <span className="font-medium">{agents.find((a) => a.type === agent)?.label}</span>
@@ -82,7 +82,7 @@ export function ChatInputToolbar({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="text-[10px] theme-text-secondary hover:theme-text-primary transition-colors flex items-center gap-1.5"
+              className="h-7 px-2 rounded-lg border border-[color:var(--border-color)] bg-[color:var(--bg-panel)] text-xs theme-text-secondary hover:theme-text-primary transition-colors flex items-center gap-1.5"
             >
               <span>{currentOption ? modelDisplayLabel(currentOption) : model}</span>
               {currentOption?.supportThinking && (
@@ -112,7 +112,7 @@ export function ChatInputToolbar({
         <button
           type="button"
           onClick={isLoading ? (onStop ?? (() => {})) : onSend}
-          className={`p-1.5 transition-colors ${AGENT_COLORS[agent].sendBtn}`}
+          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${AGENT_COLORS[agent].sendBtn}`}
           aria-label={isLoading ? 'Stop' : 'Send'}
         >
           {isLoading ? (
