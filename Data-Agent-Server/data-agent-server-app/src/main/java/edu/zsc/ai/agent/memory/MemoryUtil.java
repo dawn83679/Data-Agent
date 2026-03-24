@@ -20,7 +20,6 @@ public final class MemoryUtil {
     public static final String TAG_USER_QUESTION_OPEN = UserPromptTagConstant.USER_QUESTION_OPEN;
     public static final String TAG_USER_QUESTION_CLOSE = UserPromptTagConstant.USER_QUESTION_CLOSE;
     public static final String TAG_SYSTEM_CONTEXT_OPEN = UserPromptTagConstant.SYSTEM_CONTEXT_OPEN;
-    public static final String TAG_SYSTEM_REMIDER_OPEN = UserPromptTagConstant.SYSTEM_REMIDER_OPEN;
     public static final String TAG_USER_MEMORY_OPEN = UserPromptTagConstant.USER_MEMORY_OPEN;
     public static final String TAG_USER_MENTION_OPEN = UserPromptTagConstant.USER_MENTION_OPEN;
 
@@ -77,7 +76,6 @@ public final class MemoryUtil {
             return false;
         }
         return trimmed.startsWith(TAG_SYSTEM_CONTEXT_OPEN)
-                || trimmed.startsWith(TAG_SYSTEM_REMIDER_OPEN)
                 || trimmed.startsWith(TAG_USER_MEMORY_OPEN)
                 || trimmed.startsWith(TAG_USER_MENTION_OPEN);
     }

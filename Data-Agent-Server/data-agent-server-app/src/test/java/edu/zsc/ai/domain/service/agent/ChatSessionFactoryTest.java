@@ -233,11 +233,6 @@ class ChatSessionFactoryTest {
                 "<system_context>\ntoday: 2026-03-19\n</system_context>",
                 true,
                 Map.of("source", "system")));
-        sections.put(UserPromptSection.SYSTEM_REMINDER, new PromptSectionResult<>(
-                UserPromptSection.SYSTEM_REMINDER,
-                "",
-                false,
-                Map.of()));
         sections.put(UserPromptSection.USER_MEMORY, new PromptSectionResult<>(
                 UserPromptSection.USER_MEMORY,
                 "<user_memory>\n- prefers chinese\n</user_memory>",

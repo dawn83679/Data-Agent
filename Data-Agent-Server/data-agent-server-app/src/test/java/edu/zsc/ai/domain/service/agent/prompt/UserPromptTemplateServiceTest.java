@@ -14,7 +14,6 @@ import edu.zsc.ai.common.constant.PromptConstant;
 import edu.zsc.ai.common.constant.UserPromptTagConstant;
 import edu.zsc.ai.config.ai.PromptConfig;
 import edu.zsc.ai.domain.service.agent.prompt.strategy.SystemContextPromptStrategy;
-import edu.zsc.ai.domain.service.agent.prompt.strategy.SystemReminderPromptStrategy;
 import edu.zsc.ai.domain.service.agent.prompt.strategy.UserMemoryPromptStrategy;
 import edu.zsc.ai.domain.service.agent.prompt.strategy.UserMentionPromptStrategy;
 import edu.zsc.ai.domain.service.agent.prompt.strategy.UserPreferencesPromptStrategy;
@@ -29,7 +28,6 @@ class UserPromptTemplateServiceTest {
     void render_buildsMarkdownTemplateWithMinimalBlocks_andStripReturnsOriginalQuestion() {
         UserPromptHandlerChain chain = new UserPromptHandlerChain(List.of(
                 new SystemContextPromptStrategy(),
-                new SystemReminderPromptStrategy(),
                 new UserMemoryPromptStrategy(),
                 new UserPreferencesPromptStrategy(),
                 new UserMentionPromptStrategy(),
@@ -90,15 +88,14 @@ class UserPromptTemplateServiceTest {
         String prompt = result.renderedPrompt();
 
         assertTrue(prompt.contains(UserPromptTagConstant.SYSTEM_CONTEXT_OPEN));
-        assertTrue(prompt.contains(UserPromptTagConstant.SYSTEM_REMIDER_OPEN));
         assertTrue(prompt.contains(UserPromptTagConstant.USER_MEMORY_OPEN));
         assertTrue(prompt.contains(UserPromptTagConstant.USER_PREFERENCES_OPEN));
         assertTrue(prompt.contains(UserPromptTagConstant.USER_MENTION_OPEN));
         assertTrue(prompt.contains("today: 2026-03-18"));
         assertTrue(prompt.contains("timezone: Asia/Shanghai"));
-        assertTrue(prompt.contains("language: en"));
-        assertTrue(prompt.contains("agent_mode: normal"));
-        assertTrue(prompt.contains("model_name: qwen3-max"));
+        assertTrue(!prompt.contains("language: en"));
+        assertTrue(!prompt.contains("agent_mode: normal"));
+        assertTrue(!prompt.contains("model_name: qwen3-max"));
         assertTrue(prompt.contains("Preferred response format: Use concise explanations with SQL examples."));
         assertTrue(prompt.contains("[USER · BUSINESS_RULE/DOMAIN_RULE]"));
         assertTrue(prompt.contains("Always confirm write SQL against production-like databases."));
@@ -110,7 +107,6 @@ class UserPromptTemplateServiceTest {
         assertTrue(prompt.contains("\"objectName\":\"orders\""));
         assertTrue(prompt.contains("\"token\":\"@active_users\""));
         assertTrue(prompt.contains("\"objectType\":\"VIEW\""));
-        assertTrue(prompt.contains("contains a structured JSON array of database objects explicitly referenced by the user via @"));
         assertTrue(prompt.contains("Please design a safer SQL migration plan"));
         assertTrue(prompt.lastIndexOf(UserPromptTagConstant.USER_MEMORY_OPEN) < prompt.lastIndexOf(UserPromptTagConstant.USER_PREFERENCES_OPEN));
         assertTrue(prompt.contains(UserPromptTagConstant.USER_MEMORY_OPEN
@@ -125,7 +121,6 @@ class UserPromptTemplateServiceTest {
     void render_placesNaturalLanguagePreferencesInTopLevelSection() {
         UserPromptHandlerChain chain = new UserPromptHandlerChain(List.of(
                 new SystemContextPromptStrategy(),
-                new SystemReminderPromptStrategy(),
                 new UserMemoryPromptStrategy(),
                 new UserPreferencesPromptStrategy(),
                 new UserMentionPromptStrategy(),
@@ -166,20 +161,13 @@ class UserPromptTemplateServiceTest {
                 + "\n" + PromptConstant.NONE + "\n"
                 + UserPromptTagConstant.USER_MEMORY_CLOSE));
         assertTrue(!prompt.contains("<preference>"));
-        assertTrue(prompt.contains("LANGUAGE_PREFERENCE and RESPONSE_FORMAT from "
-                + UserPromptTagConstant.USER_PREFERENCES_OPEN
-                + " override the incidental language or formatting inside "
-                + UserPromptTagConstant.USER_QUESTION_OPEN));
-        assertTrue(prompt.contains("only an explicit instruction in this turn can override those response preferences"));
-        assertTrue(prompt.contains("before producing the final answer, re-check "
-                + UserPromptTagConstant.USER_PREFERENCES_OPEN));
+        assertTrue(!prompt.contains("LANGUAGE_PREFERENCE and RESPONSE_FORMAT from "));
     }
 
     @Test
     void render_usesStableNoneFallbacksForEmptyMemoryAndMentionBlocks() {
         UserPromptHandlerChain chain = new UserPromptHandlerChain(List.of(
                 new SystemContextPromptStrategy(),
-                new SystemReminderPromptStrategy(),
                 new UserMemoryPromptStrategy(),
                 new UserPreferencesPromptStrategy(),
                 new UserMentionPromptStrategy(),
@@ -214,7 +202,6 @@ class UserPromptTemplateServiceTest {
     void render_throwsWhenSectionHandlerIsMissing() {
         UserPromptHandlerChain chain = new UserPromptHandlerChain(List.of(
                 new SystemContextPromptStrategy(),
-                new SystemReminderPromptStrategy(),
                 new UserMemoryPromptStrategy(),
                 new UserPreferencesPromptStrategy(),
                 new UserMentionPromptStrategy()));

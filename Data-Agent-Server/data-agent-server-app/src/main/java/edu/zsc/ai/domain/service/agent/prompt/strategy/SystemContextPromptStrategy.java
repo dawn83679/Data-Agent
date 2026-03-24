@@ -21,10 +21,7 @@ public class SystemContextPromptStrategy extends AbstractUserPromptHandler {
         builder.append("today: ")
                 .append(PromptTextUtil.escape(context.getCurrentDate() == null ? "" : context.getCurrentDate().toString()))
                 .append('\n');
-        builder.append("timezone: ").append(PromptTextUtil.escape(context.getTimezone())).append('\n');
-        builder.append("language: ").append(PromptTextUtil.escape(context.getLanguage())).append('\n');
-        builder.append("agent_mode: ").append(PromptTextUtil.escape(context.getAgentMode())).append('\n');
-        builder.append("model_name: ").append(PromptTextUtil.escape(context.getModelName()));
+        builder.append("timezone: ").append(PromptTextUtil.escape(context.getTimezone()));
         return builder.toString();
     }
 }
