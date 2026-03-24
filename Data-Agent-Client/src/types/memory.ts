@@ -100,6 +100,8 @@ export interface MemorySearchRequest {
   queryText: string;
   limit?: number;
   minScore?: number;
+  memoryType?: MemoryType;
+  scope?: MemoryScope;
 }
 
 export interface MemorySearchResult {

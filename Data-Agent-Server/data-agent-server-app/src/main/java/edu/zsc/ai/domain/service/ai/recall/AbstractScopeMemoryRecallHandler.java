@@ -52,6 +52,9 @@ public abstract class AbstractScopeMemoryRecallHandler extends AbstractHandler<M
                 .reason(candidate.getReason())
                 .sourceType(candidate.getSourceType())
                 .score(candidate.getScore())
+                .queryStrategy(candidate.getQueryStrategy())
+                .executionPath(candidate.getExecutionPath())
+                .usedFallback(candidate.isUsedFallback())
                 .conversationId(candidate.getConversationId())
                 .updatedAt(candidate.getUpdatedAt())
                 .build();

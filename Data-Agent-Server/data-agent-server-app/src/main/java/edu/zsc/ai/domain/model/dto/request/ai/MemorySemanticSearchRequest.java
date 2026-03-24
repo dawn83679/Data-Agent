@@ -1,5 +1,7 @@
 package edu.zsc.ai.domain.model.dto.request.ai;
 
+import edu.zsc.ai.common.enums.ai.MemoryScopeEnum;
+import edu.zsc.ai.common.enums.ai.MemoryTypeEnum;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
@@ -20,4 +22,8 @@ public class MemorySemanticSearchRequest {
     @DecimalMin(value = "0.0", message = "minScore must be between 0 and 1")
     @DecimalMax(value = "1.0", message = "minScore must be between 0 and 1")
     private Double minScore = 0.72;
+
+    private MemoryTypeEnum memoryType;
+
+    private MemoryScopeEnum scope;
 }

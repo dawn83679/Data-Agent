@@ -15,10 +15,12 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 
@@ -92,6 +94,9 @@ class MemoryServiceImplTest {
         assertEquals("USER", created.getScope());
         assertEquals(MemoryEnableEnum.ENABLE.getCode(), created.getEnable());
         verify(embeddingStore, atLeastOnce()).addAll(anyList(), anyList(), anyList());
+        ArgumentCaptor<List<String>> addIdsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(embeddingStore, atLeastOnce()).addAll(addIdsCaptor.capture(), anyList(), anyList());
+        UUID.fromString(addIdsCaptor.getValue().get(0));
 
         MemoryUpdateRequest updateRequest = new MemoryUpdateRequest();
         updateRequest.setMemoryType("business_rule");
@@ -104,7 +109,9 @@ class MemoryServiceImplTest {
 
         assertEquals("BUSINESS_RULE", updated.getMemoryType());
         assertEquals("CONVERSATION", updated.getScope());
-        verify(embeddingStore, atLeastOnce()).remove(String.valueOf(created.getId()));
+        ArgumentCaptor<String> removeIdCaptor = ArgumentCaptor.forClass(String.class);
+        verify(embeddingStore, atLeastOnce()).remove(removeIdCaptor.capture());
+        UUID.fromString(removeIdCaptor.getValue());
 
         AiMemory disabled = service.disableMemory(created.getId());
         assertEquals(MemoryEnableEnum.DISABLE.getCode(), disabled.getEnable());
@@ -378,14 +385,40 @@ class MemoryServiceImplTest {
 
         AiMemory memory = service.createManualMemory(buildCreateRequest());
 
-        List<?> results = service.searchEnabledMemories("concise output", 5, 0.2D);
+        List<?> results = service.searchEnabledMemories("concise output", 5, 0.2D, null, null);
 
-        assertEquals(1, results.size());
+        assertEquals(0, results.size());
         AgentLogEvent event = agentLogService.lastEvent();
         assertEquals(MemoryLogConstant.EVENT_MEMORY_SEARCH, event.getPayload().get("eventName"));
         assertEquals(true, event.getPayload().get(MemoryLogConstant.FIELD_QUERY_TEXT_PRESENT));
         assertEquals(5, event.getPayload().get(MemoryLogConstant.FIELD_LIMIT));
-        assertEquals(List.of(memory.getId()), event.getPayload().get(MemoryLogConstant.FIELD_MEMORY_IDS));
+        assertEquals(List.of(), event.getPayload().get(MemoryLogConstant.FIELD_MEMORY_IDS));
+    }
+
+    @Test
+    void searchEnabledMemories_filtersByMemoryType() {
+        @SuppressWarnings("unchecked")
+        EmbeddingSearchResult<TextSegment> searchResult = mock(EmbeddingSearchResult.class);
+        when(searchResult.matches()).thenReturn(List.of());
+        when(embeddingStore.search(any())).thenReturn(searchResult);
+
+        service.seedMemory(AiMemory.builder()
+                .userId(42L)
+                .conversationId(7L)
+                .scope("USER")
+                .memoryType("PREFERENCE")
+                .subType("LANGUAGE_PREFERENCE")
+                .sourceType("AGENT")
+                .title("中文偏好")
+                .content("用户偏好使用中文进行交流")
+                .enable(MemoryEnableEnum.ENABLE.getCode())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build());
+
+        List<MemorySearchResult> results = service.searchEnabledMemories("用户", 8, 0.6D, "KNOWLEDGE_POINT", null);
+
+        assertEquals(0, results.size());
     }
 
     @Test
@@ -466,7 +499,7 @@ class MemoryServiceImplTest {
     }
 
     @Test
-    void recallAccessibleMemories_toolSemanticFallsBackToBrowseWhenSemanticMisses() {
+    void recallAccessibleMemories_toolSemanticDoesNotFallBackToBrowseWhenSemanticMisses() {
         @SuppressWarnings("unchecked")
         EmbeddingSearchResult<TextSegment> searchResult = mock(EmbeddingSearchResult.class);
         when(searchResult.matches()).thenReturn(List.of());
@@ -500,12 +533,53 @@ class MemoryServiceImplTest {
                 MemoryRecallQueryStrategy.SEMANTIC,
                 0));
 
-        assertEquals(1, results.size());
-        assertEquals("LANGUAGE_PREFERENCE", results.get(0).getSubType());
+        assertEquals(0, results.size());
         AgentLogEvent event = agentLogService.lastEvent();
-        assertEquals(MemoryRecallLogConstant.EXECUTION_PATH_SEMANTIC_EMPTY_BROWSE_FALLBACK,
+        assertEquals(MemoryRecallLogConstant.EXECUTION_PATH_SEMANTIC,
                 event.getPayload().get(MemoryRecallLogConstant.FIELD_EXECUTION_PATH));
-        assertEquals(true, event.getPayload().get(MemoryRecallLogConstant.FIELD_USED_FALLBACK));
+        assertEquals(false, event.getPayload().get(MemoryRecallLogConstant.FIELD_USED_FALLBACK));
+    }
+
+    @Test
+    void recallAccessibleMemories_promptHybridDoesNotFallBackToBrowseWhenSemanticMisses() {
+        @SuppressWarnings("unchecked")
+        EmbeddingSearchResult<TextSegment> searchResult = mock(EmbeddingSearchResult.class);
+        when(searchResult.matches()).thenReturn(List.of());
+        when(embeddingStore.search(any())).thenReturn(searchResult);
+
+        service.seedMemory(AiMemory.builder()
+                .userId(42L)
+                .conversationId(7L)
+                .scope("USER")
+                .memoryType("KNOWLEDGE_POINT")
+                .subType("OBJECT_KNOWLEDGE")
+                .sourceType("MANUAL")
+                .title("注册表")
+                .content("Use enterprise_gateway_dev.chat2db_user for registration analysis.")
+                .enable(MemoryEnableEnum.ENABLE.getCode())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build());
+
+        @SuppressWarnings("unchecked")
+        List<MemorySearchResult> results = (List<MemorySearchResult>) (List<?>) service.recallAccessibleMemories(new MemoryRecallQuery(
+                "prompt_hybrid",
+                "prompt_hybrid_test",
+                "USER",
+                7L,
+                "Analyze gas consumption by currency in 2012",
+                null,
+                null,
+                0.0D,
+                MemoryRecallMode.PROMPT,
+                MemoryRecallQueryStrategy.HYBRID,
+                0));
+
+        assertEquals(0, results.size());
+        AgentLogEvent event = agentLogService.lastEvent();
+        assertEquals(MemoryRecallLogConstant.EXECUTION_PATH_HYBRID_SEMANTIC,
+                event.getPayload().get(MemoryRecallLogConstant.FIELD_EXECUTION_PATH));
+        assertEquals(false, event.getPayload().get(MemoryRecallLogConstant.FIELD_USED_FALLBACK));
     }
 
     @Test

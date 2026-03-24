@@ -31,6 +31,12 @@ public class MemorySearchResult {
 
     private double score;
 
+    private String queryStrategy;
+
+    private String executionPath;
+
+    private boolean usedFallback;
+
     private Integer accessCount;
 
     private Long conversationId;

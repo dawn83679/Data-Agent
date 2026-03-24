@@ -53,13 +53,15 @@ export function useMemoryListState(memoryMetadata: MemoryMetadataResponse) {
     void loadMemories();
   }, [loadMemories]);
 
-  const runSemanticSearch = useCallback(async (query: string) => {
+  const runSemanticSearch = useCallback(async (query: string, filters: FilterFormState) => {
     setSemanticLoading(true);
     try {
       const results = await memoryService.search({
         queryText: query,
         limit: MEMORY_SEMANTIC_SEARCH_LIMIT,
         minScore: MEMORY_SEMANTIC_SEARCH_MIN_SCORE,
+        memoryType: filters.memoryType || undefined,
+        scope: filters.scope || undefined,
       });
       setSemanticResults(results);
     } catch (error) {
@@ -71,11 +73,11 @@ export function useMemoryListState(memoryMetadata: MemoryMetadataResponse) {
 
   const refreshWorkspace = useCallback(async () => {
     if (semanticResults != null && filterForm.keyword.trim()) {
-      await runSemanticSearch(filterForm.keyword.trim());
+      await runSemanticSearch(filterForm.keyword.trim(), filterForm);
       return;
     }
     await loadMemories();
-  }, [filterForm.keyword, loadMemories, runSemanticSearch, semanticResults]);
+  }, [filterForm, loadMemories, runSemanticSearch, semanticResults]);
 
   const handleFilterInputChange =
     (field: keyof FilterFormState) =>
@@ -86,7 +88,7 @@ export function useMemoryListState(memoryMetadata: MemoryMetadataResponse) {
   const handleApplyFilters = (event: FormEvent) => {
     event.preventDefault();
     if (semanticSearchEnabled && filterForm.keyword.trim()) {
-      void runSemanticSearch(filterForm.keyword.trim());
+      void runSemanticSearch(filterForm.keyword.trim(), filterForm);
       return;
     }
     setSemanticResults(null);

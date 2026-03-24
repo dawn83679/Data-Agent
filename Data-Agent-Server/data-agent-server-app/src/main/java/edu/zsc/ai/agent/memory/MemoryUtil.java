@@ -65,7 +65,7 @@ public final class MemoryUtil {
         }
         Matcher taskMatcher = TASK_PATTERN.matcher(trimmed);
         if (taskMatcher.find()) {
-            return StringUtils.trimToEmpty(taskMatcher.group(1));
+            return normalizeTaskContent(taskMatcher.group(1));
         }
         Matcher matcher = USER_QUESTION_PATTERN.matcher(trimmed);
         if (!matcher.find()) {
@@ -82,5 +82,12 @@ public final class MemoryUtil {
         }
         return MODERN_WRAPPER_PREFIX.matcher(trimmed).find()
                 || LEGACY_WRAPPER_PREFIX.matcher(trimmed).find();
+    }
+
+    private static String normalizeTaskContent(String taskContent) {
+        String normalized = StringUtils.trimToEmpty(taskContent);
+        normalized = normalized.replaceFirst("(?m)^\\s*(Current task:|当前任务：)\\s*\\R?", "");
+        normalized = normalized.replaceFirst("(?m)^\\s*-\\s*", "");
+        return StringUtils.trimToEmpty(normalized);
     }
 }

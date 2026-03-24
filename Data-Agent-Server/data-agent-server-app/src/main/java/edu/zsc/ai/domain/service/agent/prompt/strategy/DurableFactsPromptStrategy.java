@@ -20,7 +20,7 @@ public class DurableFactsPromptStrategy extends AbstractUserPromptHandler {
     @Override
     protected String buildContent(UserPromptAssemblyContext context) {
         List<MemoryRecallItem> durableFactMemories = context.getMemoryPromptContext().getMemories().stream()
-                .filter(memory -> !MemoryPromptProjectionSupport.isPreferenceMemory(memory))
+                .filter(MemoryPromptProjectionSupport::isPromptInjectableNonPreferenceMemory)
                 .filter(memory -> !MemoryPromptProjectionSupport.isScopeHintMemory(memory))
                 .toList();
         return UserPromptBlockSupport.title(

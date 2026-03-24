@@ -27,7 +27,7 @@ public class MemoryRecallQueryPlanner {
 
         MemoryTypeEnum memoryType = resolveMemoryType(context);
         MemorySubTypeEnum subType = resolveMemorySubType(context);
-        MemoryRecallPlanningRule rule = planningRules.resolveRule(memoryType);
+        MemoryRecallPlanningRule rule = planningRules.resolveRule(memoryType, context.getRecallMode());
 
         if (StringUtils.isNotBlank(context.getScope())) {
             MemoryScopeEnum targetScope = MemoryScopeEnum.fromCode(context.getScope());

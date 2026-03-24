@@ -30,7 +30,7 @@ class MemoryRecallQueryPlannerTest {
                         MemoryScopeEnum.USER.getCode()),
                 queries.stream().map(MemoryRecallQuery::targetScope).toList());
         assertEquals(MemoryRecallQueryStrategy.HYBRID, queries.get(0).queryStrategy());
-        assertEquals(MemoryRecallQueryStrategy.BROWSE, queries.get(1).queryStrategy());
+        assertEquals(MemoryRecallQueryStrategy.HYBRID, queries.get(1).queryStrategy());
         assertEquals(MemoryRecallPlanningConstant.REASON_SUBTYPE_REORDERED_TO_CONVERSATION, queries.get(0).planningReason());
         assertEquals(MemoryRecallPlanningConstant.REASON_MEMORY_TYPE_WORKFLOW_CONSTRAINT_DEFAULT, queries.get(1).planningReason());
     }
@@ -96,6 +96,6 @@ class MemoryRecallQueryPlannerTest {
                 queries.stream().map(MemoryRecallQuery::targetScope).toList());
         assertEquals(MemoryRecallPlanningConstant.REASON_FALLBACK_DEFAULT_SCOPE_PLAN, queries.get(0).planningReason());
         assertEquals(MemoryRecallQueryStrategy.HYBRID, queries.get(0).queryStrategy());
-        assertEquals(MemoryRecallQueryStrategy.BROWSE, queries.get(1).queryStrategy());
+        assertEquals(MemoryRecallQueryStrategy.HYBRID, queries.get(1).queryStrategy());
     }
 }

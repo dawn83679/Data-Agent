@@ -31,6 +31,12 @@ public class MemoryRecallItem {
 
     private double score;
 
+    private String queryStrategy;
+
+    private String executionPath;
+
+    private boolean usedFallback;
+
     private Long conversationId;
 
     private LocalDateTime updatedAt;

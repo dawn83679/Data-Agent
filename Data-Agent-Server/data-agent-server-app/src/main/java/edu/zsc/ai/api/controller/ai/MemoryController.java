@@ -79,7 +79,9 @@ public class MemoryController {
         List<MemorySearchResult> results = memoryService.searchEnabledMemories(
                 request.getQueryText(),
                 request.getLimit(),
-                request.getMinScore());
+                request.getMinScore(),
+                request.getMemoryType() == null ? null : request.getMemoryType().getCode(),
+                request.getScope() == null ? null : request.getScope().getCode());
         return ApiResponse.success(results);
     }
 

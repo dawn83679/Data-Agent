@@ -10,6 +10,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import edu.zsc.ai.api.model.request.ChatUserMention;
+import edu.zsc.ai.common.constant.MemoryRecallLogConstant;
 import edu.zsc.ai.common.constant.PromptConstant;
 import edu.zsc.ai.common.constant.UserPromptTagConstant;
 import edu.zsc.ai.config.ai.PromptConfig;
@@ -55,6 +56,7 @@ class UserPromptTemplateServiceTest {
                                                 .subType("OBJECT_KNOWLEDGE")
                                                 .content("Use analytics catalog orders table rather than staging_orders.")
                                                 .score(0.92)
+                                                .executionPath(MemoryRecallLogConstant.EXECUTION_PATH_HYBRID_SEMANTIC)
                                                 .build(),
                                         MemoryRecallItem.builder()
                                                 .id(3L)
@@ -63,6 +65,7 @@ class UserPromptTemplateServiceTest {
                                                 .subType("DOMAIN_RULE")
                                                 .content("Always confirm write SQL against production-like databases.")
                                                 .score(0.91)
+                                                .executionPath(MemoryRecallLogConstant.EXECUTION_PATH_SEMANTIC)
                                                 .build()))
                                 .build())
                         .build())
@@ -183,6 +186,64 @@ class UserPromptTemplateServiceTest {
         assertTrue(prompt.contains("请优先按以下范围理解和检索：\n- none"));
         assertTrue(prompt.contains("已知事实：\n- none"));
         assertTrue(prompt.contains("本轮用户显式引用：\n- none"));
+    }
+
+    @Test
+    void render_excludesBrowseOnlyNonPreferenceMemoriesFromPromptScopeAndFacts() {
+        UserPromptManager manager = new UserPromptManager(
+                createChain(),
+                PromptConfig.loadClassPathResource(UserPromptManager.TEMPLATE_PATH));
+
+        UserPromptAssemblyContext context = UserPromptAssemblyContext.builder()
+                .userMessage("Please analyze 2013 monthly revenue")
+                .language("en")
+                .agentMode("normal")
+                .modelName("qwen3-max")
+                .currentDate(LocalDate.of(2026, 3, 24))
+                .timezone("Asia/Shanghai")
+                .memoryPromptContext(MemoryPromptContext.builder()
+                        .recallResult(MemoryRecallResult.builder()
+                                .items(List.of(
+                                        MemoryRecallItem.builder()
+                                                .id(1L)
+                                                .memoryType("PREFERENCE")
+                                                .subType("RESPONSE_FORMAT")
+                                                .content("Use charts with short explanations.")
+                                                .score(0.98)
+                                                .executionPath(MemoryRecallLogConstant.EXECUTION_PATH_BROWSE)
+                                                .usedFallback(false)
+                                                .build(),
+                                        MemoryRecallItem.builder()
+                                                .id(2L)
+                                                .scope("USER")
+                                                .memoryType("KNOWLEDGE_POINT")
+                                                .subType("OBJECT_KNOWLEDGE")
+                                                .content("Use enterprise_gateway_dev.chat2db_user for registration analysis.")
+                                                .score(0.0)
+                                                .executionPath(MemoryRecallLogConstant.EXECUTION_PATH_BROWSE)
+                                                .usedFallback(false)
+                                                .build(),
+                                        MemoryRecallItem.builder()
+                                                .id(3L)
+                                                .scope("USER")
+                                                .memoryType("BUSINESS_RULE")
+                                                .subType("DOMAIN_RULE")
+                                                .content("Registration queries should stay in test3.")
+                                                .score(0.0)
+                                                .executionPath(MemoryRecallLogConstant.EXECUTION_PATH_HYBRID_BROWSE_FALLBACK)
+                                                .usedFallback(true)
+                                                .build()))
+                                .build())
+                        .build())
+                .build();
+
+        String prompt = manager.render(context).renderedPrompt();
+
+        assertTrue(prompt.contains("- Use charts with short explanations."));
+        assertTrue(prompt.contains("Use the following scope guidance first:\n- none"));
+        assertTrue(prompt.contains("Known durable facts:\n- none"));
+        assertTrue(!prompt.contains("enterprise_gateway_dev.chat2db_user"));
+        assertTrue(!prompt.contains("Registration queries should stay in test3."));
     }
 
     @Test

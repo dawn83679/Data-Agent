@@ -5,6 +5,7 @@ import java.util.Locale;
 
 import org.apache.commons.lang3.StringUtils;
 
+import edu.zsc.ai.common.constant.MemoryRecallLogConstant;
 import edu.zsc.ai.common.constant.MemoryConstant;
 import edu.zsc.ai.common.constant.PromptConstant;
 import edu.zsc.ai.common.enums.ai.MemorySubTypeEnum;
@@ -27,6 +28,11 @@ final class MemoryPromptProjectionSupport {
             "查询", "使用", "应使用", "不要", "避免", "优先", "范围", "存储在", "位于", "而非"
     );
 
+    private static final List<String> SEMANTIC_EXECUTION_PATHS = List.of(
+            MemoryRecallLogConstant.EXECUTION_PATH_SEMANTIC,
+            MemoryRecallLogConstant.EXECUTION_PATH_HYBRID_SEMANTIC
+    );
+
     private MemoryPromptProjectionSupport() {
     }
 
@@ -44,6 +50,16 @@ final class MemoryPromptProjectionSupport {
         boolean mentionsScopeTarget = SCOPE_TARGET_KEYWORDS.stream().anyMatch(normalized::contains);
         boolean containsDirective = SCOPE_DIRECTIVE_KEYWORDS.stream().anyMatch(normalized::contains);
         return mentionsScopeTarget && containsDirective;
+    }
+
+    static boolean isPromptInjectableNonPreferenceMemory(MemoryRecallItem memory) {
+        if (memory == null || isPreferenceMemory(memory)) {
+            return false;
+        }
+        if (memory.isUsedFallback()) {
+            return false;
+        }
+        return SEMANTIC_EXECUTION_PATHS.contains(StringUtils.defaultString(memory.getExecutionPath()));
     }
 
     static String renderMemoryList(List<MemoryRecallItem> memories) {

@@ -12,13 +12,14 @@ import edu.zsc.ai.common.enums.ai.MemoryTypeEnum;
 @Component
 public class MemoryRecallPlanningRules {
 
-    public MemoryRecallPlanningRule resolveRule(MemoryTypeEnum memoryType) {
+    public MemoryRecallPlanningRule resolveRule(MemoryTypeEnum memoryType, MemoryRecallMode recallMode) {
+        boolean promptMode = recallMode == MemoryRecallMode.PROMPT;
         if (memoryType == null) {
             return new MemoryRecallPlanningRule(
                     MemoryRecallPlanningConstant.REASON_FALLBACK_DEFAULT_SCOPE_PLAN,
                     List.of(MemoryScopeEnum.CONVERSATION, MemoryScopeEnum.USER),
                     MemoryRecallQueryStrategy.HYBRID,
-                    MemoryRecallQueryStrategy.BROWSE);
+                    promptMode ? MemoryRecallQueryStrategy.HYBRID : MemoryRecallQueryStrategy.BROWSE);
         }
 
         return switch (memoryType) {
@@ -31,22 +32,22 @@ public class MemoryRecallPlanningRules {
                     MemoryRecallPlanningConstant.REASON_MEMORY_TYPE_BUSINESS_RULE_DEFAULT,
                     List.of(MemoryScopeEnum.USER, MemoryScopeEnum.CONVERSATION),
                     MemoryRecallQueryStrategy.HYBRID,
-                    MemoryRecallQueryStrategy.BROWSE);
+                    promptMode ? MemoryRecallQueryStrategy.HYBRID : MemoryRecallQueryStrategy.BROWSE);
             case KNOWLEDGE_POINT -> new MemoryRecallPlanningRule(
                     MemoryRecallPlanningConstant.REASON_MEMORY_TYPE_KNOWLEDGE_POINT_DEFAULT,
                     List.of(MemoryScopeEnum.USER, MemoryScopeEnum.CONVERSATION),
                     MemoryRecallQueryStrategy.HYBRID,
-                    MemoryRecallQueryStrategy.BROWSE);
+                    promptMode ? MemoryRecallQueryStrategy.HYBRID : MemoryRecallQueryStrategy.BROWSE);
             case GOLDEN_SQL_CASE -> new MemoryRecallPlanningRule(
                     MemoryRecallPlanningConstant.REASON_MEMORY_TYPE_GOLDEN_SQL_CASE_DEFAULT,
                     List.of(MemoryScopeEnum.USER, MemoryScopeEnum.CONVERSATION),
                     MemoryRecallQueryStrategy.HYBRID,
-                    MemoryRecallQueryStrategy.BROWSE);
+                    promptMode ? MemoryRecallQueryStrategy.HYBRID : MemoryRecallQueryStrategy.BROWSE);
             case WORKFLOW_CONSTRAINT -> new MemoryRecallPlanningRule(
                     MemoryRecallPlanningConstant.REASON_MEMORY_TYPE_WORKFLOW_CONSTRAINT_DEFAULT,
                     List.of(MemoryScopeEnum.CONVERSATION, MemoryScopeEnum.USER),
                     MemoryRecallQueryStrategy.HYBRID,
-                    MemoryRecallQueryStrategy.BROWSE);
+                    promptMode ? MemoryRecallQueryStrategy.HYBRID : MemoryRecallQueryStrategy.BROWSE);
         };
     }
 

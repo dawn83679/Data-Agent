@@ -20,6 +20,7 @@ public class ScopeHintsPromptStrategy extends AbstractUserPromptHandler {
     @Override
     protected String buildContent(UserPromptAssemblyContext context) {
         List<MemoryRecallItem> scopeHintMemories = context.getMemoryPromptContext().getMemories().stream()
+                .filter(MemoryPromptProjectionSupport::isPromptInjectableNonPreferenceMemory)
                 .filter(MemoryPromptProjectionSupport::isScopeHintMemory)
                 .toList();
         return UserPromptBlockSupport.title(

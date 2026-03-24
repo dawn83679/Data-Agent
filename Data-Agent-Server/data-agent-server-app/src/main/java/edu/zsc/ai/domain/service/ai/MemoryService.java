@@ -17,7 +17,7 @@ import edu.zsc.ai.domain.service.ai.recall.MemoryRecallQuery;
 
 public interface MemoryService extends IService<AiMemory> {
 
-    List<MemorySearchResult> searchEnabledMemories(String queryText, int limit, double minScore);
+    List<MemorySearchResult> searchEnabledMemories(String queryText, int limit, double minScore, String memoryType, String scope);
 
     List<MemorySearchResult> recallAccessibleMemories(Long conversationId, String queryText, double minScore);
 
