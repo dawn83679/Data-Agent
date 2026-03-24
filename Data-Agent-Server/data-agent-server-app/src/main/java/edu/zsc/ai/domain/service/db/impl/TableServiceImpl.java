@@ -6,7 +6,7 @@ import edu.zsc.ai.domain.model.dto.response.db.ExecuteSqlResponse;
 import edu.zsc.ai.domain.model.dto.response.db.TableDataResponse;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.TableService;
-import edu.zsc.ai.plugin.capability.TableProvider;
+import edu.zsc.ai.plugin.capability.TableManager;
 import edu.zsc.ai.plugin.manager.DefaultPluginManager;
 import edu.zsc.ai.plugin.model.command.sql.SqlCommandResult;
 import edu.zsc.ai.plugin.model.db.TableRowValue;
@@ -27,9 +27,9 @@ public class TableServiceImpl implements TableService {
     public List<String> getTables(DbContext db) {
         connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-        TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
-        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getOwnedConnection(db);
+        TableManager provider = DefaultPluginManager.getInstance().getTableManagerByPluginId(active.pluginId());
+        try (ActiveConnectionRegistry.BorrowedConnection borrowed = active.borrowConnection()) {
             return provider.getTableNames(borrowed.connection(), db.catalog(), db.schema());
         }
     }
@@ -38,9 +38,9 @@ public class TableServiceImpl implements TableService {
     public List<String> searchTables(DbContext db, String tableNamePattern) {
         connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-        TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
-        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getOwnedConnection(db);
+        TableManager provider = DefaultPluginManager.getInstance().getTableManagerByPluginId(active.pluginId());
+        try (ActiveConnectionRegistry.BorrowedConnection borrowed = active.borrowConnection()) {
             return provider.searchTables(borrowed.connection(), db.catalog(), db.schema(), tableNamePattern);
         }
     }
@@ -49,9 +49,9 @@ public class TableServiceImpl implements TableService {
     public long countTables(DbContext db, String tableNamePattern) {
         connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-        TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
-        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getOwnedConnection(db);
+        TableManager provider = DefaultPluginManager.getInstance().getTableManagerByPluginId(active.pluginId());
+        try (ActiveConnectionRegistry.BorrowedConnection borrowed = active.borrowConnection()) {
             return provider.countTables(borrowed.connection(), db.catalog(), db.schema(), tableNamePattern);
         }
     }
@@ -60,9 +60,9 @@ public class TableServiceImpl implements TableService {
     public String getTableDdl(DbContext db, String tableName) {
         connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-        TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
-        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getOwnedConnection(db);
+        TableManager provider = DefaultPluginManager.getInstance().getTableManagerByPluginId(active.pluginId());
+        try (ActiveConnectionRegistry.BorrowedConnection borrowed = active.borrowConnection()) {
             return provider.getTableDdl(borrowed.connection(), db.catalog(), db.schema(), tableName);
         }
     }
@@ -71,9 +71,9 @@ public class TableServiceImpl implements TableService {
     public long countTableRows(DbContext db, String tableName) {
         connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-        TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
-        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getOwnedConnection(db);
+        TableManager provider = DefaultPluginManager.getInstance().getTableManagerByPluginId(active.pluginId());
+        try (ActiveConnectionRegistry.BorrowedConnection borrowed = active.borrowConnection()) {
             return provider.getTableDataCount(borrowed.connection(), db.catalog(), db.schema(), tableName);
         }
     }
@@ -82,9 +82,9 @@ public class TableServiceImpl implements TableService {
     public void deleteTable(DbContext db, String tableName) {
         connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-        TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
-        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getOwnedConnection(db);
+        TableManager provider = DefaultPluginManager.getInstance().getTableManagerByPluginId(active.pluginId());
+        try (ActiveConnectionRegistry.BorrowedConnection borrowed = active.borrowConnection()) {
             provider.deleteTable(borrowed.connection(), db.catalog(), db.schema(), tableName);
         }
 
@@ -96,10 +96,10 @@ public class TableServiceImpl implements TableService {
     public ExecuteSqlResponse insertRow(DbContext db, String tableName, List<TableRowValue> values) {
         connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-        TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getOwnedConnection(db);
+        TableManager provider = DefaultPluginManager.getInstance().getTableManagerByPluginId(active.pluginId());
         SqlCommandResult result;
-        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+        try (ActiveConnectionRegistry.BorrowedConnection borrowed = active.borrowConnection()) {
             result = provider.insertRow(borrowed.connection(), db.catalog(), db.schema(), tableName, values);
         }
         return toExecuteSqlResponse(result, db);
@@ -109,10 +109,10 @@ public class TableServiceImpl implements TableService {
     public ExecuteSqlResponse deleteRow(DbContext db, String tableName, List<TableRowValue> matchValues, boolean force) {
         connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-        TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getOwnedConnection(db);
+        TableManager provider = DefaultPluginManager.getInstance().getTableManagerByPluginId(active.pluginId());
         SqlCommandResult result;
-        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+        try (ActiveConnectionRegistry.BorrowedConnection borrowed = active.borrowConnection()) {
             result = provider.deleteRow(borrowed.connection(), db.catalog(), db.schema(), tableName, matchValues, force);
         }
         return toExecuteSqlResponse(result, db);
@@ -123,12 +123,12 @@ public class TableServiceImpl implements TableService {
                                           Integer currentPage, Integer pageSize) {
         connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-        TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getOwnedConnection(db);
+        TableManager provider = DefaultPluginManager.getInstance().getTableManagerByPluginId(active.pluginId());
         int offset = (currentPage - 1) * pageSize;
         long totalCount;
         SqlCommandResult result;
-        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+        try (ActiveConnectionRegistry.BorrowedConnection borrowed = active.borrowConnection()) {
             totalCount = provider.getTableDataCount(borrowed.connection(), db.catalog(), db.schema(), tableName);
             result = provider.getTableData(borrowed.connection(), db.catalog(), db.schema(), tableName, offset, pageSize);
         }
@@ -150,12 +150,12 @@ public class TableServiceImpl implements TableService {
             Integer currentPage, Integer pageSize, String whereClause, String orderByColumn, String orderByDirection) {
         connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-        TableProvider provider = DefaultPluginManager.getInstance().getTableProviderByPluginId(active.pluginId());
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getOwnedConnection(db);
+        TableManager provider = DefaultPluginManager.getInstance().getTableManagerByPluginId(active.pluginId());
         int offset = (currentPage - 1) * pageSize;
         long totalCount;
         SqlCommandResult result;
-        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+        try (ActiveConnectionRegistry.BorrowedConnection borrowed = active.borrowConnection()) {
             totalCount = provider.getTableDataCount(borrowed.connection(), db.catalog(), db.schema(), tableName, whereClause);
             result = provider.getTableData(borrowed.connection(), db.catalog(), db.schema(), tableName, offset, pageSize,
                     whereClause, orderByColumn, orderByDirection);

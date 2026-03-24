@@ -4,7 +4,7 @@ import edu.zsc.ai.plugin.connection.ConnectionConfig;
 
 import java.sql.*;
 
-public interface ConnectionProvider {
+public interface ConnectionManager {
 
     Connection connect(ConnectionConfig config);
 

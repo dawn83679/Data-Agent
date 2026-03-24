@@ -1,19 +1,19 @@
 package edu.zsc.ai.plugin.manager;
 
 import edu.zsc.ai.plugin.Plugin;
-import edu.zsc.ai.plugin.capability.ColumnProvider;
+import edu.zsc.ai.plugin.capability.ColumnManager;
 import edu.zsc.ai.plugin.capability.CommandExecutor;
-import edu.zsc.ai.plugin.capability.FunctionProvider;
-import edu.zsc.ai.plugin.capability.IndexProvider;
-import edu.zsc.ai.plugin.capability.ProcedureProvider;
+import edu.zsc.ai.plugin.capability.FunctionManager;
+import edu.zsc.ai.plugin.capability.IndexManager;
+import edu.zsc.ai.plugin.capability.ProcedureManager;
 import edu.zsc.ai.plugin.capability.SqlSplitter;
 import edu.zsc.ai.plugin.capability.SqlValidator;
-import edu.zsc.ai.plugin.capability.TriggerProvider;
-import edu.zsc.ai.plugin.capability.ConnectionProvider;
-import edu.zsc.ai.plugin.capability.DatabaseProvider;
-import edu.zsc.ai.plugin.capability.SchemaProvider;
-import edu.zsc.ai.plugin.capability.TableProvider;
-import edu.zsc.ai.plugin.capability.ViewProvider;
+import edu.zsc.ai.plugin.capability.TriggerManager;
+import edu.zsc.ai.plugin.capability.ConnectionManager;
+import edu.zsc.ai.plugin.capability.DatabaseManager;
+import edu.zsc.ai.plugin.capability.SchemaManager;
+import edu.zsc.ai.plugin.capability.TableManager;
+import edu.zsc.ai.plugin.capability.ViewManager;
 import edu.zsc.ai.plugin.model.command.sql.SqlCommandRequest;
 import edu.zsc.ai.plugin.model.command.sql.SqlCommandResult;
 import edu.zsc.ai.plugin.enums.DbType;
@@ -31,59 +31,59 @@ public interface PluginManager {
 
     MavenCoordinates getMavenCoordinatesByDbTypeAndVersion(@NotNull DbType dbType, String driverVersion);
 
-    List<ConnectionProvider> getConnectionProviderByDbType(@NotBlank String dbTypeCode);
+    List<ConnectionManager> getConnectionManagerByDbType(@NotBlank String dbTypeCode);
 
-    ConnectionProvider getConnectionProviderByPluginId(@NotBlank String pluginId);
+    ConnectionManager getConnectionManagerByPluginId(@NotBlank String pluginId);
 
-    ConnectionProvider getConnectionProviderByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion);
+    ConnectionManager getConnectionManagerByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion);
 
-    List<DatabaseProvider> getDatabaseProviderByDbType(@NotBlank String dbTypeCode);
+    List<DatabaseManager> getDatabaseManagerByDbType(@NotBlank String dbTypeCode);
 
-    DatabaseProvider getDatabaseProviderByPluginId(@NotBlank String pluginId);
+    DatabaseManager getDatabaseManagerByPluginId(@NotBlank String pluginId);
 
-    DatabaseProvider getDatabaseProviderByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion);
+    DatabaseManager getDatabaseManagerByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion);
 
-    List<SchemaProvider> getSchemaProviderByDbType(@NotBlank String dbTypeCode);
+    List<SchemaManager> getSchemaManagerByDbType(@NotBlank String dbTypeCode);
 
-    SchemaProvider getSchemaProviderByPluginId(@NotBlank String pluginId);
+    SchemaManager getSchemaManagerByPluginId(@NotBlank String pluginId);
 
-    SchemaProvider getSchemaProviderByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion);
+    SchemaManager getSchemaManagerByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion);
 
-    List<TableProvider> getTableProviderByDbType(@NotBlank String dbTypeCode);
+    List<TableManager> getTableManagerByDbType(@NotBlank String dbTypeCode);
 
-    TableProvider getTableProviderByPluginId(@NotBlank String pluginId);
+    TableManager getTableManagerByPluginId(@NotBlank String pluginId);
 
-    TableProvider getTableProviderByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion);
+    TableManager getTableManagerByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion);
 
-    List<ViewProvider> getViewProviderByDbType(@NotBlank String dbTypeCode);
+    List<ViewManager> getViewManagerByDbType(@NotBlank String dbTypeCode);
 
-    ViewProvider getViewProviderByPluginId(@NotBlank String pluginId);
+    ViewManager getViewManagerByPluginId(@NotBlank String pluginId);
 
-    ViewProvider getViewProviderByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion);
+    ViewManager getViewManagerByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion);
 
-    List<ColumnProvider> getColumnProviderByDbType(@NotBlank String dbTypeCode);
+    List<ColumnManager> getColumnManagerByDbType(@NotBlank String dbTypeCode);
 
-    ColumnProvider getColumnProviderByPluginId(@NotBlank String pluginId);
+    ColumnManager getColumnManagerByPluginId(@NotBlank String pluginId);
 
-    ColumnProvider getColumnProviderByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion);
+    ColumnManager getColumnManagerByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion);
 
-    List<IndexProvider> getIndexProviderByDbType(@NotBlank String dbTypeCode);
+    List<IndexManager> getIndexManagerByDbType(@NotBlank String dbTypeCode);
 
-    IndexProvider getIndexProviderByPluginId(@NotBlank String pluginId);
+    IndexManager getIndexManagerByPluginId(@NotBlank String pluginId);
 
-    IndexProvider getIndexProviderByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion);
+    IndexManager getIndexManagerByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion);
 
-    List<FunctionProvider> getFunctionProviderByDbType(@NotBlank String dbTypeCode);
+    List<FunctionManager> getFunctionManagerByDbType(@NotBlank String dbTypeCode);
 
-    FunctionProvider getFunctionProviderByPluginId(@NotBlank String pluginId);
+    FunctionManager getFunctionManagerByPluginId(@NotBlank String pluginId);
 
-    List<ProcedureProvider> getProcedureProviderByDbType(@NotBlank String dbTypeCode);
+    List<ProcedureManager> getProcedureManagerByDbType(@NotBlank String dbTypeCode);
 
-    ProcedureProvider getProcedureProviderByPluginId(@NotBlank String pluginId);
+    ProcedureManager getProcedureManagerByPluginId(@NotBlank String pluginId);
 
-    List<TriggerProvider> getTriggerProviderByDbType(@NotBlank String dbTypeCode);
+    List<TriggerManager> getTriggerManagerByDbType(@NotBlank String dbTypeCode);
 
-    TriggerProvider getTriggerProviderByPluginId(@NotBlank String pluginId);
+    TriggerManager getTriggerManagerByPluginId(@NotBlank String pluginId);
 
     CommandExecutor<SqlCommandRequest, SqlCommandResult> getSqlCommandExecutorByPluginId(@NotBlank String pluginId);
 

@@ -11,9 +11,9 @@ import edu.zsc.ai.domain.model.entity.db.DbConnection;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.DbConnectionService;
 import edu.zsc.ai.domain.service.db.ManagedDataSourceFactory;
-import edu.zsc.ai.domain.service.db.support.ConnectionProviderChain;
+import edu.zsc.ai.domain.service.db.support.ConnectionManagerChain;
 import edu.zsc.ai.plugin.Plugin;
-import edu.zsc.ai.plugin.capability.ConnectionProvider;
+import edu.zsc.ai.plugin.capability.ConnectionManager;
 import edu.zsc.ai.plugin.connection.ConnectionConfig;
 import edu.zsc.ai.plugin.manager.DefaultPluginManager;
 import edu.zsc.ai.domain.exception.BusinessException;
@@ -37,13 +37,13 @@ public class ConnectionServiceImpl implements ConnectionService {
     public ConnectionTestResponse testConnection(ConnectRequest request) {
         long startTime = System.currentTimeMillis();
 
-        List<ConnectionProvider> providers = DefaultPluginManager.getInstance()
-                .getConnectionProviderByDbType(request.getDbType());
+        List<ConnectionManager> managers = DefaultPluginManager.getInstance()
+                .getConnectionManagerByDbType(request.getDbType());
 
         ConnectionConfig config = ConnectionConverter.convertToConfig(request);
 
-        ConnectionProviderChain.ConnectionProviderHandleResult<Connection> res =
-                ConnectionProviderChain.fromProviders(providers, ConnectionProvider::connect).handle(config);
+        ConnectionManagerChain.ConnectionManagerHandleResult<Connection> res =
+                ConnectionManagerChain.fromManagers(managers, ConnectionManager::connect).handle(config);
 
         BusinessException.assertNotNull(res,
                 String.format("Database type %s was trying to run connection test but no plugin succeeded",
@@ -52,11 +52,11 @@ public class ConnectionServiceImpl implements ConnectionService {
         long ping = System.currentTimeMillis() - startTime;
 
         try {
-            ConnectionProvider provider = res.provider();
+            ConnectionManager manager = res.manager();
             Connection connection = res.result();
 
-            String dbmsInfo = provider.getDbmsInfo(connection);
-            String driverInfo = provider.getDriverInfo(connection);
+            String dbmsInfo = manager.getDbmsInfo(connection);
+            String driverInfo = manager.getDriverInfo(connection);
 
             return ConnectionTestResponse.builder()
                     .status(ConnectionTestStatuEnum.SUCCEEDED)
@@ -66,7 +66,7 @@ public class ConnectionServiceImpl implements ConnectionService {
                     .build();
         } finally {
             try {
-                res.provider().closeConnection(res.result());
+                res.manager().closeConnection(res.result());
             } catch (Exception e) {
                 log.warn("Failed to close connection", e);
             }
@@ -90,26 +90,26 @@ public class ConnectionServiceImpl implements ConnectionService {
             config.setSchema(db.schema());
         }
 
-        List<ConnectionProvider> providers = DefaultPluginManager.getInstance()
-                .getConnectionProviderByDbType(dbConnection.getDbType());
+        List<ConnectionManager> managers = DefaultPluginManager.getInstance()
+                .getConnectionManagerByDbType(dbConnection.getDbType());
 
-        ConnectionManager.getOrCreateConnection(
+        ActiveConnectionRegistry.getOrCreateConnection(
                 db,
-                () -> buildPooledConnection(db, dbConnection, config, providers)
+                () -> buildPooledConnection(db, dbConnection, config, managers)
         );
 
         return Boolean.TRUE;
     }
 
-    private ConnectionManager.ActiveConnection buildPooledConnection(DbContext db,
+    private ActiveConnectionRegistry.ActiveConnection buildPooledConnection(DbContext db,
                                                                      DbConnection dbConnection,
                                                                      ConnectionConfig config,
-                                                                     List<ConnectionProvider> providers) {
-        ConnectionProviderChain.ConnectionProviderHandleResult<javax.sql.DataSource> res =
-                ConnectionProviderChain.fromProviders(
-                        providers,
-                        (provider, ignored) -> managedDataSourceFactory.create(
-                                provider,
+                                                                     List<ConnectionManager> managers) {
+        ConnectionManagerChain.ConnectionManagerHandleResult<javax.sql.DataSource> res =
+                ConnectionManagerChain.fromManagers(
+                        managers,
+                        (manager, ignored) -> managedDataSourceFactory.create(
+                                manager,
                                 config,
                                 new ManagedDataSourceFactory.ManagedDataSourceRequest(
                                         db.connectionId(),
@@ -122,12 +122,12 @@ public class ConnectionServiceImpl implements ConnectionService {
 
         BusinessException.assertNotNull(res, ResponseCode.PARAM_ERROR, ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE);
 
-        return new ConnectionManager.ActiveConnection(
+        return new ActiveConnectionRegistry.ActiveConnection(
                 res.result(),
                 dbConnection.getUserId(),
                 db.connectionId(),
                 dbConnection.getDbType(),
-                ((Plugin) res.provider()).getPluginId(),
+                ((Plugin) res.manager()).getPluginId(),
                 db.catalog(),
                 db.schema(),
                 LocalDateTime.now(),
@@ -139,6 +139,6 @@ public class ConnectionServiceImpl implements ConnectionService {
     public void closeConnection(Long connectionId) {
         // Check ownership before closing
         dbConnectionService.getOwnedById(connectionId);
-        ConnectionManager.closeAllConnections(connectionId);
+        ActiveConnectionRegistry.closeAllConnections(connectionId);
     }
 }

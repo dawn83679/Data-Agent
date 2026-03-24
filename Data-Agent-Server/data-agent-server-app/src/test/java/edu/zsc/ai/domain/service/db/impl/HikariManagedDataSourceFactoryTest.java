@@ -3,7 +3,7 @@ package edu.zsc.ai.domain.service.db.impl;
 import com.zaxxer.hikari.HikariDataSource;
 import edu.zsc.ai.config.db.ConnectionPoolProperties;
 import edu.zsc.ai.domain.service.db.ManagedDataSourceFactory;
-import edu.zsc.ai.plugin.capability.ConnectionProvider;
+import edu.zsc.ai.plugin.capability.ConnectionManager;
 import edu.zsc.ai.plugin.connection.ConnectionConfig;
 import org.junit.jupiter.api.Test;
 
@@ -32,11 +32,11 @@ class HikariManagedDataSourceFactoryTest {
         properties.setMaxLifetimeMs(180_000L);
 
         HikariManagedDataSourceFactory factory = new HikariManagedDataSourceFactory(properties);
-        ConnectionProvider provider = mock(ConnectionProvider.class);
+        ConnectionManager manager = mock(ConnectionManager.class);
         Connection connection = mock(Connection.class);
         when(connection.isClosed()).thenReturn(false);
         when(connection.isValid(anyInt())).thenReturn(true);
-        when(provider.connect(any())).thenReturn(connection);
+        when(manager.connect(any())).thenReturn(connection);
 
         ConnectionConfig config = new ConnectionConfig();
         config.setHost("127.0.0.1");
@@ -48,7 +48,7 @@ class HikariManagedDataSourceFactoryTest {
         ManagedDataSourceFactory.ManagedDataSourceRequest request =
                 new ManagedDataSourceFactory.ManagedDataSourceRequest(9L, "mysql", "demo", null);
 
-        HikariDataSource dataSource = assertInstanceOf(HikariDataSource.class, factory.create(provider, config, request));
+        HikariDataSource dataSource = assertInstanceOf(HikariDataSource.class, factory.create(manager, config, request));
         try {
             assertEquals("mysql-9-demo-default", dataSource.getPoolName());
             assertEquals(7, dataSource.getMaximumPoolSize());
@@ -66,8 +66,8 @@ class HikariManagedDataSourceFactoryTest {
     void create_failsWhenInitialConnectionCannotBeEstablished() {
         ConnectionPoolProperties properties = new ConnectionPoolProperties();
         HikariManagedDataSourceFactory factory = new HikariManagedDataSourceFactory(properties);
-        ConnectionProvider provider = mock(ConnectionProvider.class);
-        when(provider.connect(any())).thenThrow(new RuntimeException("boom"));
+        ConnectionManager manager = mock(ConnectionManager.class);
+        when(manager.connect(any())).thenThrow(new RuntimeException("boom"));
 
         ConnectionConfig config = new ConnectionConfig();
         config.setHost("127.0.0.1");
@@ -76,7 +76,7 @@ class HikariManagedDataSourceFactoryTest {
 
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
-                () -> factory.create(provider, config, request)
+                () -> factory.create(manager, config, request)
         );
 
         assertNotNull(exception.getMessage());

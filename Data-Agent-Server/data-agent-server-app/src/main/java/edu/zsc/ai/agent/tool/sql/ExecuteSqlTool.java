@@ -20,7 +20,7 @@ import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.response.db.ExecuteSqlResponse;
 import edu.zsc.ai.domain.service.permission.PermissionRuleService;
 import edu.zsc.ai.domain.service.db.SqlExecutionService;
-import edu.zsc.ai.domain.service.db.impl.ConnectionManager;
+import edu.zsc.ai.domain.service.db.impl.ActiveConnectionRegistry;
 import edu.zsc.ai.plugin.capability.SqlValidator;
 import edu.zsc.ai.plugin.manager.DefaultPluginManager;
 import lombok.RequiredArgsConstructor;
@@ -174,8 +174,8 @@ public class ExecuteSqlTool {
 
     private boolean allReadOnly(List<String> sqls, Long connectionId) {
         if (Objects.isNull(sqls) || sqls.isEmpty()) return false;
-        String pluginId = ConnectionManager.getAnyActiveConnection(connectionId)
-                .map(ConnectionManager.ActiveConnection::pluginId)
+        String pluginId = ActiveConnectionRegistry.getAnyActiveConnection(connectionId)
+                .map(ActiveConnectionRegistry.ActiveConnection::pluginId)
                 .orElse(null);
         SqlValidator validator = DefaultPluginManager.getInstance()
                 .getSqlValidatorByPluginId(Objects.nonNull(pluginId) ? pluginId : "");

@@ -31,11 +31,11 @@ public class SqlExecutionServiceImpl implements SqlExecutionService {
 
         connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getOwnedConnection(db);
         CommandExecutor<SqlCommandRequest, SqlCommandResult> executor = DefaultPluginManager.getInstance()
                 .getSqlCommandExecutorByPluginId(active.pluginId());
         SqlCommandResult result;
-        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+        try (ActiveConnectionRegistry.BorrowedConnection borrowed = active.borrowConnection()) {
             SqlCommandRequest pluginRequest = new SqlCommandRequest();
             pluginRequest.setConnection(borrowed.connection());
             pluginRequest.setOriginalSql(sql);
@@ -58,12 +58,12 @@ public class SqlExecutionServiceImpl implements SqlExecutionService {
     public List<ExecuteSqlResponse> executeBatchSql(DbContext db, List<String> sqls) {
         connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getOwnedConnection(db);
         CommandExecutor<SqlCommandRequest, SqlCommandResult> executor = DefaultPluginManager.getInstance()
                 .getSqlCommandExecutorByPluginId(active.pluginId());
 
         List<ExecuteSqlResponse> responses = new ArrayList<>(sqls.size());
-        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+        try (ActiveConnectionRegistry.BorrowedConnection borrowed = active.borrowConnection()) {
             for (String sql : sqls) {
                 try {
                     SqlCommandRequest pluginRequest = new SqlCommandRequest();

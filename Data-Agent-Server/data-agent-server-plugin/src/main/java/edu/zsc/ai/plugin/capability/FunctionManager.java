@@ -15,7 +15,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public interface FunctionProvider {
+public interface FunctionManager {
 
     default List<FunctionMetadata> getFunctions(Connection connection, String catalog, String schema) {
         return searchFunctions(connection, catalog, schema, null);

@@ -9,14 +9,14 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public interface SchemaProvider {
+public interface DatabaseManager {
 
-    default List<String> getSchemas(Connection connection, String catalog) {
+    default List<String> getDatabases(Connection connection) {
         try {
             List<String> list = new ArrayList<>();
-            try (ResultSet rs = connection.getMetaData().getSchemas(catalog, null)) {
+            try (ResultSet rs = connection.getMetaData().getCatalogs()) {
                 while (rs.next()) {
-                    String name = rs.getString(JdbcMetaDataConstants.TABLE_SCHEM);
+                    String name = rs.getString(JdbcMetaDataConstants.TABLE_CAT);
                     if (StringUtils.isNotBlank(name)) {
                         list.add(name);
                     }
@@ -24,7 +24,11 @@ public interface SchemaProvider {
             }
             return list;
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to list schemas: " + e.getMessage(), e);
+            throw new RuntimeException("Failed to list databases: " + e.getMessage(), e);
         }
+    }
+
+    default void deleteDatabase(Connection connection, String catalog) {
+        throw new UnsupportedOperationException("Plugin does not support deleting database");
     }
 }

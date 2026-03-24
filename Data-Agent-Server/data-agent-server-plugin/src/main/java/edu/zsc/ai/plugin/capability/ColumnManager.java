@@ -7,12 +7,9 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-public interface ColumnProvider {
+public interface ColumnManager {
 
     default List<ColumnMetadata> getColumns(Connection connection, String catalog, String schema, String tableOrViewName) {
         try {
@@ -58,7 +55,7 @@ public interface ColumnProvider {
                     ));
                 }
             }
-            list.sort((a, b) -> Integer.compare(a.ordinalPosition(), b.ordinalPosition()));
+            list.sort(Comparator.comparingInt(ColumnMetadata::ordinalPosition));
             return list;
         } catch (SQLException e) {
             throw new RuntimeException("Failed to list columns for " + tableOrViewName + ": " + e.getMessage(), e);

@@ -2,6 +2,7 @@ package edu.zsc.ai.plugin.mysql;
 
 import edu.zsc.ai.plugin.model.command.sql.SqlCommandResult;
 import edu.zsc.ai.plugin.model.db.TableRowValue;
+import edu.zsc.ai.plugin.mysql.support.MysqlRowWriteSupport;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;

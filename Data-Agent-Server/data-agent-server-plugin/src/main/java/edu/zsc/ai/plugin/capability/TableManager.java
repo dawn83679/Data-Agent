@@ -11,7 +11,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public interface TableProvider {
+public interface TableManager {
 
     default List<String> getTableNames(Connection connection, String catalog, String schema) {
         return searchTables(connection, catalog, schema, null);

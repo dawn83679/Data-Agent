@@ -2,43 +2,45 @@ package edu.zsc.ai.plugin.mysql;
 
 import edu.zsc.ai.plugin.base.AbstractDatabasePlugin;
 import edu.zsc.ai.plugin.capability.*;
-import edu.zsc.ai.plugin.model.sql.SqlType;
-import edu.zsc.ai.plugin.model.sql.SqlValidationResult;
-import edu.zsc.ai.plugin.mysql.validator.MySqlSqlValidator;
-import edu.zsc.ai.plugin.sql.DefaultSqlSplitter;
 import edu.zsc.ai.plugin.connection.ConnectionConfig;
-import edu.zsc.ai.plugin.connection.JdbcConnectionBuilder;
-import edu.zsc.ai.plugin.constant.DatabaseObjectTypeEnum;
-import edu.zsc.ai.plugin.constant.IsNullableEnum;
-import edu.zsc.ai.plugin.driver.DriverLoader;
 import edu.zsc.ai.plugin.driver.MavenCoordinates;
 import edu.zsc.ai.plugin.model.command.sql.SqlCommandRequest;
 import edu.zsc.ai.plugin.model.command.sql.SqlCommandResult;
 import edu.zsc.ai.plugin.model.db.TableRowValue;
 import edu.zsc.ai.plugin.model.metadata.*;
-import edu.zsc.ai.plugin.mysql.connection.MysqlJdbcConnectionBuilder;
-import edu.zsc.ai.plugin.mysql.constant.*;
+import edu.zsc.ai.plugin.model.sql.SqlType;
+import edu.zsc.ai.plugin.model.sql.SqlValidationResult;
 import edu.zsc.ai.plugin.mysql.executor.MySQLSqlExecutor;
-import edu.zsc.ai.plugin.mysql.util.MysqlIdentifierBuilder;
-import edu.zsc.ai.plugin.mysql.value.MySQLDataTypeEnum;
-import org.apache.commons.lang3.StringUtils;
-import java.sql.*;
-import java.util.*;
-import java.util.logging.Logger;
+import edu.zsc.ai.plugin.mysql.manager.*;
+import edu.zsc.ai.plugin.mysql.support.MysqlCapabilitySupport;
+import edu.zsc.ai.plugin.mysql.validator.MySqlSqlValidator;
+import edu.zsc.ai.plugin.sql.DefaultSqlSplitter;
+
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.util.List;
 
 public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
-        implements ConnectionProvider, CommandExecutor<SqlCommandRequest, SqlCommandResult>, DatabaseProvider,
-        SchemaProvider, TableProvider, ViewProvider, ColumnProvider, IndexProvider,
-        FunctionProvider, ProcedureProvider, TriggerProvider, SqlSplitter, SqlValidator {
+        implements ConnectionManager, CommandExecutor<SqlCommandRequest, SqlCommandResult>, DatabaseManager,
+        TableManager, ViewManager, ColumnManager, IndexManager,
+        FunctionManager, ProcedureManager, TriggerManager, SqlSplitter, SqlValidator {
 
-    private static final Logger logger = Logger.getLogger(DefaultMysqlPlugin.class.getName());
-
-    private final JdbcConnectionBuilder connectionBuilder = new MysqlJdbcConnectionBuilder();
-
+    private final ConnectionManager connectionManager = new MysqlConnectionManager(
+            this::getDriverClassName,
+            this::getJdbcUrlTemplate,
+            this::getDefaultPort
+    );
     private final MySQLSqlExecutor sqlExecutor = new MySQLSqlExecutor();
-
+    private final MysqlCapabilitySupport capabilitySupport = new MysqlCapabilitySupport(sqlExecutor);
     private final MySqlSqlValidator sqlValidator = new MySqlSqlValidator();
-    private final MysqlRowWriteSupport rowWriteSupport = new MysqlRowWriteSupport();
+    private final DatabaseManager databaseManager = new MysqlDatabaseManager(capabilitySupport);
+    private final TableManager tableManager = new MysqlTableManager(capabilitySupport);
+    private final ViewManager viewManager = new MysqlViewManager(capabilitySupport);
+    private final ColumnManager columnManager = new MysqlColumnManager(capabilitySupport);
+    private final IndexManager indexManager = new MysqlIndexManager();
+    private final FunctionManager functionManager = new MysqlFunctionManager(capabilitySupport);
+    private final ProcedureManager procedureManager = new MysqlProcedureManager(capabilitySupport);
+    private final TriggerManager triggerManager = new MysqlTriggerManager(capabilitySupport);
 
     @Override
     public boolean supportSchema() {
@@ -53,90 +55,6 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
 
     protected int getDefaultPort() {
         return 3306;
-    }
-
-    @Override
-    public Connection connect(ConnectionConfig config) {
-        try {
-            DriverLoader.loadDriver(config, getDriverClassName());
-
-            String jdbcUrl = connectionBuilder.buildUrl(config, getJdbcUrlTemplate(), getDefaultPort());
-
-            Properties properties = connectionBuilder.buildProperties(config);
-
-            Connection connection = DriverManager.getConnection(jdbcUrl, properties);
-
-            logger.info(String.format("Successfully connected to MySQL database at %s:%d/%s",
-                    config.getHost(),
-                    config.getPort() != null ? config.getPort() : getDefaultPort(),
-                    config.getDatabase() != null ? config.getDatabase() : ""));
-
-            return connection;
-
-        } catch (SQLException e) {
-            String errorMsg = String.format("Failed to connect to MySQL database at %s:%d/%s: %s",
-                    config.getHost(),
-                    config.getPort() != null ? config.getPort() : getDefaultPort(),
-                    config.getDatabase() != null ? config.getDatabase() : "",
-                    e.getMessage());
-            logger.severe(errorMsg);
-            throw new RuntimeException(errorMsg, e);
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            String errorMsg = String.format("Unexpected error while connecting to MySQL database: %s", e.getMessage());
-            logger.severe(errorMsg);
-            throw new RuntimeException(errorMsg, e);
-        }
-    }
-
-    @Override
-    public boolean testConnection(ConnectionConfig config) {
-        try {
-            Connection connection = connect(config);
-            if (connection != null && !connection.isClosed()) {
-                closeConnection(connection);
-                return true;
-            }
-            return false;
-        } catch (Exception e) {
-            logger.warning(String.format("Connection test failed: %s", e.getMessage()));
-            return false;
-        }
-    }
-
-    @Override
-    public void closeConnection(Connection connection) {
-        if (connection == null) {
-            return;
-        }
-        try {
-            if (!connection.isClosed()) {
-                connection.close();
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to close database connection: " + e.getMessage(), e);
-        }
-    }
-
-    @Override
-    public SqlCommandResult executeCommand(SqlCommandRequest command) {
-        return sqlExecutor.executeCommand(command);
-    }
-
-    @Override
-    public java.util.List<String> split(String sql) {
-        return DefaultSqlSplitter.INSTANCE.split(sql);
-    }
-
-    @Override
-    public SqlValidationResult validate(String sql) {
-        return sqlValidator.validate(sql);
-    }
-
-    @Override
-    public SqlType classifySql(String sql) {
-        return sqlValidator.classifySql(sql);
     }
 
     @Override
@@ -165,602 +83,280 @@ public abstract class DefaultMysqlPlugin extends AbstractDatabasePlugin
     }
 
     @Override
-    public List<ColumnMetadata> getColumns(Connection connection, String catalog, String schema, String tableOrViewName) {
-        if (connection == null || StringUtils.isBlank(tableOrViewName)) {
-            return List.of();
-        }
-        String db = StringUtils.isNotBlank(catalog) ? catalog : schema;
-        if (StringUtils.isBlank(db)) {
-            return List.of();
-        }
-        String escapedDb = MysqlIdentifierEscaper.getInstance().escapeStringLiteral(db);
-        String escapedTable = MysqlIdentifierEscaper.getInstance().escapeStringLiteral(tableOrViewName);
-        String sql = String.format(MySqlTemplate.SQL_LIST_COLUMNS, escapedDb, escapedTable);
-
-        SqlCommandResult result = sqlExecutor.executeCommand(
-                SqlCommandRequest.ofWithoutTransaction(connection, sql, sql, db, null));
-        if (!result.isSuccess()) {
-            logger.severe("Failed to list columns for " + tableOrViewName + ": " + result.getErrorMessage());
-            throw new RuntimeException("Failed to list columns: " + result.getErrorMessage());
-        }
-
-        List<ColumnMetadata> list = new ArrayList<>();
-        if (result.getRows() != null) {
-            for (List<Object> row : result.getRows()) {
-                Object nameObj = result.getValueByColumnName(row, MysqlColumnConstants.COLUMN_NAME);
-                Object posObj = result.getValueByColumnName(row, MysqlColumnConstants.ORDINAL_POSITION);
-                Object defObj = result.getValueByColumnName(row, MysqlColumnConstants.COLUMN_DEFAULT);
-                Object nullableObj = result.getValueByColumnName(row, MysqlColumnConstants.IS_NULLABLE);
-                Object dataTypeObj = result.getValueByColumnName(row, MysqlColumnConstants.DATA_TYPE);
-                Object columnTypeObj = result.getValueByColumnName(row, MysqlColumnConstants.COLUMN_TYPE);
-                Object columnKeyObj = result.getValueByColumnName(row, MysqlColumnConstants.COLUMN_KEY);
-                Object extraObj = result.getValueByColumnName(row, MysqlColumnConstants.EXTRA);
-                Object commentObj = result.getValueByColumnName(row, MysqlColumnConstants.COLUMN_COMMENT);
-                Object charLenObj = result.getValueByColumnName(row, MysqlColumnConstants.CHARACTER_MAXIMUM_LENGTH);
-                Object numPrecObj = result.getValueByColumnName(row, MysqlColumnConstants.NUMERIC_PRECISION);
-                Object numScaleObj = result.getValueByColumnName(row, MysqlColumnConstants.NUMERIC_SCALE);
-
-                String name = nameObj != null ? nameObj.toString() : "";
-                if (name.isEmpty()) continue;
-
-                int ordinalPosition = posObj != null ? ((Number) posObj).intValue() : 0;
-                String defaultValue = defObj != null ? defObj.toString() : null;
-                boolean nullable = IsNullableEnum.isNullable(nullableObj != null ? nullableObj.toString() : null);
-                String dataTypeStr = dataTypeObj != null ? dataTypeObj.toString() : "";
-                String columnType = columnTypeObj != null ? columnTypeObj.toString() : "";
-                String columnKey = columnKeyObj != null ? columnKeyObj.toString() : "";
-                String extra = extraObj != null ? extraObj.toString() : "";
-                String remarks = commentObj != null ? commentObj.toString() : "";
-                int columnSize = charLenObj != null ? ((Number) charLenObj).intValue() : 0;
-                if (columnSize == 0 && numPrecObj != null) {
-                    columnSize = ((Number) numPrecObj).intValue();
-                }
-                int decimalDigits = numScaleObj != null ? ((Number) numScaleObj).intValue() : 0;
-
-                boolean isPrimaryKeyPart = MysqlColumnConstants.COLUMN_KEY_PRI.equals(columnKey);
-                boolean isAutoIncrement = extra.toLowerCase().contains(MysqlColumnConstants.EXTRA_AUTO_INCREMENT);
-                boolean isUnsigned = columnType.toLowerCase().contains("unsigned");
-
-                int javaSqlType = MySQLDataTypeEnum.toSqlType(dataTypeStr);
-                list.add(new ColumnMetadata(
-                        name,
-                        javaSqlType,
-                        dataTypeStr,
-                        columnSize,
-                        decimalDigits,
-                        nullable,
-                        ordinalPosition,
-                        remarks,
-                        isPrimaryKeyPart,
-                        isAutoIncrement,
-                        isUnsigned,
-                        defaultValue
-                ));
-            }
-        }
-        list.sort(Comparator.comparingInt(ColumnMetadata::ordinalPosition));
-        return list;
+    public Connection connect(ConnectionConfig config) {
+        return connectionManager.connect(config);
     }
 
     @Override
-    public String getTableDdl(Connection connection, String catalog, String schema, String tableName) {
-        return getObjectDdl(connection, catalog, tableName,
-                MySqlTemplate.SQL_SHOW_CREATE_TABLE,
-                MysqlShowColumnConstants.CREATE_TABLE,
-                DatabaseObjectTypeEnum.TABLE.getValue());
+    public boolean testConnection(ConnectionConfig config) {
+        return connectionManager.testConnection(config);
     }
 
     @Override
-    public String getViewDdl(Connection connection, String catalog, String schema, String viewName) {
-        return getObjectDdl(connection, catalog, viewName,
-                MySqlTemplate.SQL_SHOW_CREATE_VIEW,
-                MysqlShowColumnConstants.CREATE_VIEW,
-                DatabaseObjectTypeEnum.VIEW.getValue());
+    public void closeConnection(Connection connection) {
+        connectionManager.closeConnection(connection);
     }
 
     @Override
-    public String getFunctionDdl(Connection connection, String catalog, String schema, String functionName) {
-        return getObjectDdl(connection, catalog, functionName,
-                MySqlTemplate.SQL_SHOW_CREATE_FUNCTION,
-                MysqlShowColumnConstants.CREATE_FUNCTION,
-                DatabaseObjectTypeEnum.FUNCTION.getValue());
+    public DatabaseMetaData getMetaData(Connection connection) {
+        return connectionManager.getMetaData(connection);
     }
 
     @Override
-    public String getProcedureDdl(Connection connection, String catalog, String schema, String procedureName) {
-        return getObjectDdl(connection, catalog, procedureName,
-                MySqlTemplate.SQL_SHOW_CREATE_PROCEDURE,
-                MysqlShowColumnConstants.CREATE_PROCEDURE,
-                DatabaseObjectTypeEnum.PROCEDURE.getValue());
+    public String getDatabaseProductVersion(Connection connection) {
+        return connectionManager.getDatabaseProductVersion(connection);
     }
 
     @Override
-    public String getTriggerDdl(Connection connection, String catalog, String schema, String triggerName) {
-        return getObjectDdl(connection, catalog, triggerName,
-                MySqlTemplate.SQL_SHOW_CREATE_TRIGGER,
-                MysqlShowColumnConstants.SQL_ORIGINAL_STATEMENT,
-                DatabaseObjectTypeEnum.TRIGGER.getValue());
+    public String getDbmsInfo(Connection connection) {
+        return connectionManager.getDbmsInfo(connection);
     }
 
     @Override
-    public SqlCommandResult getTableData(Connection connection, String catalog, String schema, String tableName, int offset, int pageSize) {
-        if (connection == null || StringUtils.isBlank(tableName)) {
-            throw new IllegalArgumentException("Connection and table name must not be null or empty");
-        }
-
-        String fullTableName = MysqlIdentifierBuilder.buildFullIdentifier(catalog, tableName);
-        String sql = String.format(MySqlTemplate.SQL_SELECT_TABLE_DATA, fullTableName, pageSize, offset);
-
-        SqlCommandResult result = sqlExecutor.executeCommand(
-                SqlCommandRequest.ofWithoutTransaction(connection, sql, sql, catalog, null));
-
-        if (!result.isSuccess()) {
-            logger.severe(String.format("Failed to get table data for %s: %s",
-                    fullTableName, result.getErrorMessage()));
-            throw new RuntimeException("Failed to get table data: " + result.getErrorMessage());
-        }
-
-        return result;
+    public String getDriverInfo(Connection connection) {
+        return connectionManager.getDriverInfo(connection);
     }
 
     @Override
-    public long getTableDataCount(Connection connection, String catalog, String schema, String tableName) {
-        if (connection == null || StringUtils.isBlank(tableName)) {
-            throw new IllegalArgumentException("Connection and table name must not be null or empty");
-        }
-
-        String fullTableName = MysqlIdentifierBuilder.buildFullIdentifier(catalog, tableName);
-        String sql = String.format(MySqlTemplate.SQL_COUNT_TABLE_DATA, fullTableName);
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            if (rs.next()) {
-                return rs.getLong("total");
-            }
-            return 0;
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to get table data count: " + e.getMessage(), e);
-        }
+    public SqlCommandResult executeCommand(SqlCommandRequest command) {
+        return sqlExecutor.executeCommand(command);
     }
 
     @Override
-    public SqlCommandResult getViewData(Connection connection, String catalog, String schema, String viewName, int offset, int pageSize) {
-        return getTableData(connection, catalog, schema, viewName, offset, pageSize);
+    public java.util.List<String> split(String sql) {
+        return DefaultSqlSplitter.INSTANCE.split(sql);
     }
 
     @Override
-    public long getViewDataCount(Connection connection, String catalog, String schema, String viewName) {
-        return getTableDataCount(connection, catalog, schema, viewName);
+    public SqlValidationResult validate(String sql) {
+        return sqlValidator.validate(sql);
     }
 
     @Override
-    public long countTables(Connection connection, String catalog, String schema, String tableNamePattern) {
-        String db = StringUtils.isNotBlank(catalog) ? catalog : schema;
-        return countObjectsByName(
-                connection,
-                db,
-                MySqlTemplate.SQL_COUNT_TABLES,
-                tableNamePattern,
-                MySqlTemplate.SQL_COUNT_TABLES_NAME_CLAUSE);
+    public SqlType classifySql(String sql) {
+        return sqlValidator.classifySql(sql);
     }
+
 
     @Override
-    public long countViews(Connection connection, String catalog, String schema, String viewNamePattern) {
-        String db = StringUtils.isNotBlank(catalog) ? catalog : schema;
-        return countObjectsByName(
-                connection,
-                db,
-                MySqlTemplate.SQL_COUNT_VIEWS,
-                viewNamePattern,
-                MySqlTemplate.SQL_COUNT_TABLES_NAME_CLAUSE);
-    }
-
-    @Override
-    public long countFunctions(Connection connection, String catalog, String schema, String functionNamePattern) {
-        String db = StringUtils.isNotBlank(catalog) ? catalog : schema;
-        return countObjectsByName(
-                connection,
-                db,
-                MySqlTemplate.SQL_COUNT_FUNCTIONS,
-                functionNamePattern,
-                MySqlTemplate.SQL_COUNT_ROUTINES_NAME_CLAUSE);
-    }
-
-    @Override
-    public long countProcedures(Connection connection, String catalog, String schema, String procedureNamePattern) {
-        String db = StringUtils.isNotBlank(catalog) ? catalog : schema;
-        return countObjectsByName(
-                connection,
-                db,
-                MySqlTemplate.SQL_COUNT_PROCEDURES,
-                procedureNamePattern,
-                MySqlTemplate.SQL_COUNT_ROUTINES_NAME_CLAUSE);
-    }
-
-    @Override
-    public SqlCommandResult getTableData(Connection connection, String catalog, String schema, String tableName,
-            int offset, int pageSize, String whereClause, String orderByColumn, String orderByDirection) {
-        if (connection == null || StringUtils.isBlank(tableName)) {
-            throw new IllegalArgumentException("Connection and table name must not be null or empty");
-        }
-
-        String fullTableName = MysqlIdentifierBuilder.buildFullIdentifier(catalog, tableName);
-        StringBuilder sql = new StringBuilder("SELECT * FROM ").append(fullTableName);
-
-        if (StringUtils.isNotBlank(whereClause)) {
-            sql.append(" WHERE ").append(whereClause);
-        }
-        if (StringUtils.isNotBlank(orderByColumn)) {
-            String dir = "desc".equalsIgnoreCase(orderByDirection) ? "DESC" : "ASC";
-            String quotedCol = MysqlIdentifierEscaper.getInstance().quoteIdentifier(orderByColumn.trim());
-            sql.append(" ORDER BY ").append(quotedCol).append(" ").append(dir);
-        }
-        sql.append(" LIMIT ").append(pageSize).append(" OFFSET ").append(offset);
-
-        String sqlStr = sql.toString();
-        SqlCommandResult result = sqlExecutor.executeCommand(
-                SqlCommandRequest.ofWithoutTransaction(connection, sqlStr, sqlStr, catalog, null));
-
-        if (!result.isSuccess()) {
-            logger.severe(String.format("Failed to get table data for %s: %s", fullTableName, result.getErrorMessage()));
-            throw new RuntimeException("Failed to get table data: " + result.getErrorMessage());
-        }
-        return result;
-    }
-
-    @Override
-    public long getTableDataCount(Connection connection, String catalog, String schema, String tableName, String whereClause) {
-        if (connection == null || StringUtils.isBlank(tableName)) {
-            throw new IllegalArgumentException("Connection and table name must not be null or empty");
-        }
-
-        String fullTableName = MysqlIdentifierBuilder.buildFullIdentifier(catalog, tableName);
-        String sql = StringUtils.isNotBlank(whereClause)
-                ? "SELECT COUNT(*) AS total FROM " + fullTableName + " WHERE " + whereClause
-                : String.format(MySqlTemplate.SQL_COUNT_TABLE_DATA, fullTableName);
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            if (rs.next()) {
-                return rs.getLong("total");
-            }
-            return 0;
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to get table data count: " + e.getMessage(), e);
-        }
-    }
-
-    @Override
-    public SqlCommandResult getViewData(Connection connection, String catalog, String schema, String viewName,
-            int offset, int pageSize, String whereClause, String orderByColumn, String orderByDirection) {
-        return getTableData(connection, catalog, schema, viewName, offset, pageSize, whereClause, orderByColumn, orderByDirection);
-    }
-
-    @Override
-    public long getViewDataCount(Connection connection, String catalog, String schema, String viewName, String whereClause) {
-        return getTableDataCount(connection, catalog, schema, viewName, whereClause);
-    }
-
-    @Override
-    public List<TriggerMetadata> getTriggers(Connection connection, String catalog, String schema, String tableName) {
-        if (connection == null) {
-            return List.of();
-        }
-        String db = StringUtils.isNotBlank(catalog) ? catalog : schema;
-        if (StringUtils.isBlank(db)) {
-            return List.of();
-        }
-        String escapedDb = MysqlIdentifierEscaper.getInstance().escapeStringLiteral(db);
-        String sql = String.format(MySqlTemplate.SQL_LIST_TRIGGERS, escapedDb);
-        if (StringUtils.isNotBlank(tableName)) {
-            String escapedTable = MysqlIdentifierEscaper.getInstance().escapeStringLiteral(tableName);
-            sql += MySqlTemplate.SQL_TRIGGER_FILTER_BY_TABLE + escapedTable + "'";
-        }
-
-        SqlCommandResult result = sqlExecutor.executeCommand(
-                SqlCommandRequest.ofWithoutTransaction(connection, sql, sql, db, null));
-        if (!result.isSuccess()) {
-            logger.severe("Failed to list triggers: " + result.getErrorMessage());
-            throw new RuntimeException("Failed to list triggers: " + result.getErrorMessage());
-        }
-
-        List<TriggerMetadata> list = new ArrayList<>();
-        if (result.getRows() != null) {
-            for (List<Object> row : result.getRows()) {
-                Object nameObj = result.getValueByColumnName(row, MysqlTriggerConstants.TRIGGER_NAME);
-                Object tableObj = result.getValueByColumnName(row, MysqlTriggerConstants.EVENT_OBJECT_TABLE);
-                Object timingObj = result.getValueByColumnName(row, MysqlTriggerConstants.ACTION_TIMING);
-                Object eventObj = result.getValueByColumnName(row, MysqlTriggerConstants.EVENT_MANIPULATION);
-                String name = nameObj != null ? nameObj.toString() : "";
-                String tbl = tableObj != null ? tableObj.toString() : "";
-                String timing = timingObj != null ? timingObj.toString() : "";
-                String event = eventObj != null ? eventObj.toString() : "";
-                if (StringUtils.isNotBlank(name)) {
-                    list.add(new TriggerMetadata(name, tbl, timing, event));
-                }
-            }
-        }
-        return list;
-    }
-
-    @Override
-    public List<FunctionMetadata> getFunctions(Connection connection, String catalog, String schema) {
-        if (connection == null) {
-            return List.of();
-        }
-        String db = StringUtils.isNotBlank(catalog) ? catalog : schema;
-        if (StringUtils.isBlank(db)) {
-            return List.of();
-        }
-        String escapedDb = MysqlIdentifierEscaper.getInstance().escapeStringLiteral(db);
-        String sql = String.format(MySqlTemplate.SQL_LIST_FUNCTIONS, escapedDb);
-
-        SqlCommandResult result = sqlExecutor.executeCommand(
-                SqlCommandRequest.ofWithoutTransaction(connection, sql, sql, db, null));
-
-        if (!result.isSuccess()) {
-            logger.severe("Failed to list functions: " + result.getErrorMessage());
-            throw new RuntimeException("Failed to list functions: " + result.getErrorMessage());
-        }
-
-        Map<String, FunctionMetadata> functionsByName = new LinkedHashMap<>();
-        if (result.getRows() != null) {
-            for (List<Object> row : result.getRows()) {
-                Object specNameObj = result.getValueByColumnName(row, MysqlRoutineConstants.SPECIFIC_NAME);
-                Object nameObj = result.getValueByColumnName(row, MysqlRoutineConstants.ROUTINE_NAME);
-                Object dtdObj = result.getValueByColumnName(row, MysqlRoutineConstants.DTD_IDENTIFIER);
-                String specName = specNameObj != null ? specNameObj.toString() : "";
-                String name = nameObj != null ? nameObj.toString() : "";
-                String returnType = dtdObj != null ? dtdObj.toString().trim() : null;
-                if (!name.isEmpty() && !functionsByName.containsKey(specName)) {
-                    functionsByName.put(specName, new FunctionMetadata(name, null, returnType));
-                }
-            }
-        }
-
-        List<ParamRow> allParams = fetchParameters(connection, db, functionsByName.keySet());
-        Map<String, List<ParameterInfo>> paramsByRoutine = groupParametersByRoutine(allParams);
-
-        List<FunctionMetadata> list = new ArrayList<>();
-        for (Map.Entry<String, FunctionMetadata> e : functionsByName.entrySet()) {
-            FunctionMetadata fm = e.getValue();
-            List<ParameterInfo> params = paramsByRoutine.getOrDefault(e.getKey(), List.of());
-            list.add(new FunctionMetadata(fm.name(), params.isEmpty() ? null : params, fm.returnType()));
-        }
-        return list;
-    }
-
-    @Override
-    public List<ProcedureMetadata> getProcedures(Connection connection, String catalog, String schema) {
-        if (connection == null) {
-            return List.of();
-        }
-        String db = StringUtils.isNotBlank(catalog) ? catalog : schema;
-        if (StringUtils.isBlank(db)) {
-            return List.of();
-        }
-        String escapedDb = MysqlIdentifierEscaper.getInstance().escapeStringLiteral(db);
-        String sql = String.format(MySqlTemplate.SQL_LIST_PROCEDURES, escapedDb);
-
-        SqlCommandResult result = sqlExecutor.executeCommand(
-                SqlCommandRequest.ofWithoutTransaction(connection, sql, sql, db, null));
-
-        if (!result.isSuccess()) {
-            logger.severe("Failed to list procedures: " + result.getErrorMessage());
-            throw new RuntimeException("Failed to list procedures: " + result.getErrorMessage());
-        }
-
-        Map<String, ProcedureMetadata> proceduresByName = new LinkedHashMap<>();
-        if (result.getRows() != null) {
-            for (List<Object> row : result.getRows()) {
-                Object specNameObj = result.getValueByColumnName(row, MysqlRoutineConstants.SPECIFIC_NAME);
-                Object nameObj = result.getValueByColumnName(row, MysqlRoutineConstants.ROUTINE_NAME);
-                String specName = specNameObj != null ? specNameObj.toString() : "";
-                String name = nameObj != null ? nameObj.toString() : "";
-                if (StringUtils.isNotBlank(name) && !proceduresByName.containsKey(specName)) {
-                    proceduresByName.put(specName, new ProcedureMetadata(name, null));
-                }
-            }
-        }
-
-        List<ParamRow> allParams = fetchParameters(connection, db, proceduresByName.keySet());
-        Map<String, List<ParameterInfo>> paramsByRoutine = groupParametersByRoutine(allParams);
-
-        List<ProcedureMetadata> list = new ArrayList<>();
-        for (Map.Entry<String, ProcedureMetadata> e : proceduresByName.entrySet()) {
-            ProcedureMetadata pm = e.getValue();
-            List<ParameterInfo> params = paramsByRoutine.getOrDefault(e.getKey(), List.of());
-            list.add(new ProcedureMetadata(pm.name(), params.isEmpty() ? null : params));
-        }
-        return list;
-    }
-
-    private List<ParamRow> fetchParameters(Connection connection, String db, java.util.Set<String> specificNames) {
-        if (specificNames == null || specificNames.isEmpty()) {
-            return List.of();
-        }
-        StringBuilder inClause = new StringBuilder();
-        for (String sn : specificNames) {
-            if (inClause.length() > 0) inClause.append(',');
-            String escapedSn = MysqlIdentifierEscaper.getInstance().escapeStringLiteral(sn);
-            inClause.append("'").append(escapedSn).append("'");
-        }
-        String escapedDb = MysqlIdentifierEscaper.getInstance().escapeStringLiteral(db);
-        String sql = String.format(MySqlTemplate.SQL_FETCH_PARAMETERS, escapedDb, inClause);
-
-        SqlCommandResult result = sqlExecutor.executeCommand(
-                SqlCommandRequest.ofWithoutTransaction(connection, sql, sql, db, null));
-
-        if (!result.isSuccess()) {
-            return List.of();
-        }
-
-        List<ParamRow> list = new ArrayList<>();
-        if (result.getRows() != null) {
-            for (List<Object> row : result.getRows()) {
-                Object specObj = result.getValueByColumnName(row, MysqlRoutineConstants.SPECIFIC_NAME);
-                Object nameObj = result.getValueByColumnName(row, MysqlRoutineConstants.PARAMETER_NAME);
-                Object dtdObj = result.getValueByColumnName(row, MysqlRoutineConstants.DTD_IDENTIFIER);
-                Object posObj = result.getValueByColumnName(row, MysqlRoutineConstants.ORDINAL_POSITION);
-                String specName = specObj != null ? specObj.toString() : "";
-                String paramName = nameObj != null ? nameObj.toString() : "";
-                String dataType = dtdObj != null ? dtdObj.toString().trim() : "";
-                int pos = posObj != null ? ((Number) posObj).intValue() : 0;
-                list.add(new ParamRow(specName, paramName, dataType, pos));
-            }
-        }
-        return list;
-    }
-
-    private record ParamRow(String specName, String paramName, String dataType, int ordinalPosition) {
-    }
-
-    private Map<String, List<ParameterInfo>> groupParametersByRoutine(List<ParamRow> rows) {
-        Map<String, List<ParamRow>> bySpec = new LinkedHashMap<>();
-        for (ParamRow r : rows) {
-            bySpec.computeIfAbsent(r.specName(), k -> new ArrayList<>()).add(r);
-        }
-        Map<String, List<ParameterInfo>> result = new LinkedHashMap<>();
-        for (Map.Entry<String, List<ParamRow>> e : bySpec.entrySet()) {
-            List<ParameterInfo> params = e.getValue().stream()
-                    .sorted(Comparator.comparingInt(ParamRow::ordinalPosition))
-                    .map(r -> new ParameterInfo(r.paramName(), r.dataType()))
-                    .toList();
-            result.put(e.getKey(), params);
-        }
-        return result;
-    }
-
-    private long countObjectsByName(Connection connection, String db, String baseSql, String namePattern, String nameClause) {
-        if (connection == null || StringUtils.isBlank(db)) {
-            return 0;
-        }
-
-        boolean hasNameFilter = StringUtils.isNotBlank(namePattern) && !"%".equals(namePattern);
-        String sql = hasNameFilter ? baseSql + nameClause : baseSql;
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            int parameterIndex = 1;
-            stmt.setString(parameterIndex++, db);
-            if (hasNameFilter) {
-                stmt.setString(parameterIndex, namePattern);
-            }
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getLong("total");
-                }
-                return 0;
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to count MySQL objects: " + e.getMessage(), e);
-        }
-    }
-
-    private String getObjectDdl(Connection connection, String catalog, String objectName,
-                               String sqlTemplate, String columnName, String objectType) {
-        if (connection == null || StringUtils.isBlank(objectName)) {
-            return "";
-        }
-
-        String fullName = MysqlIdentifierBuilder.buildFullIdentifier(catalog, objectName);
-        String sql = String.format(sqlTemplate, fullName);
-
-        SqlCommandResult result = sqlExecutor.executeCommand(
-                SqlCommandRequest.ofWithoutTransaction(connection, sql, sql, catalog, null));
-
-        if (!result.isSuccess()) {
-            logger.severe(String.format("Failed to get DDL for %s %s: %s",
-                    objectType, fullName, result.getErrorMessage()));
-            throw new RuntimeException(String.format("Failed to get %s DDL: %s", objectType, result.getErrorMessage()));
-        }
-
-        if (result.getRows() == null || result.getRows().isEmpty()) {
-            throw new RuntimeException(String.format("Failed to get %s DDL: No result returned", objectType));
-        }
-
-        List<Object> firstRow = result.getRows().get(0);
-        Object ddl = result.getValueByColumnName(firstRow, columnName);
-        if (ddl == null) {
-            throw new RuntimeException(String.format("Failed to get %s DDL: Column '%s' not found in result",
-                    objectType, columnName));
-        }
-        return ddl.toString();
-    }
-
-    private void dropObject(Connection connection, String catalog, String objectName,
-                           String sqlTemplate, String objectType, boolean useFullIdentifier) {
-        if (connection == null || StringUtils.isBlank(objectName)) {
-            throw new IllegalArgumentException(String.format("Connection and %s name must not be null or empty", objectType));
-        }
-
-        String fullName;
-        if (useFullIdentifier) {
-            fullName = MysqlIdentifierBuilder.buildFullIdentifier(catalog, objectName);
-        } else {
-            fullName = MysqlIdentifierEscaper.getInstance().quoteIdentifier(objectName);
-        }
-
-        String sql = String.format(sqlTemplate, fullName);
-
-        SqlCommandResult result = sqlExecutor.executeCommand(
-                SqlCommandRequest.ofWithoutTransaction(connection, sql, sql, catalog, null));
-
-        if (!result.isSuccess()) {
-            logger.severe(String.format("Failed to delete %s %s: %s",
-                    objectType, fullName, result.getErrorMessage()));
-            throw new RuntimeException(String.format("Failed to delete %s: %s", objectType, result.getErrorMessage()));
-        }
-
-        logger.info(String.format("Successfully deleted %s: %s", objectType, fullName));
+    public List<String> getDatabases(Connection connection) {
+        return databaseManager.getDatabases(connection);
     }
 
     @Override
     public void deleteDatabase(Connection connection, String catalog) {
-        dropObject(connection, catalog, catalog, MySqlTemplate.SQL_DROP_DATABASE,
-                DatabaseObjectTypeEnum.DATABASE.getValue(), false);
+        databaseManager.deleteDatabase(connection, catalog);
+    }
+
+    @Override
+    public List<String> getTableNames(Connection connection, String catalog, String schema) {
+        return tableManager.getTableNames(connection, catalog, schema);
+    }
+
+    @Override
+    public List<String> searchTables(Connection connection, String catalog, String schema, String tableNamePattern) {
+        return tableManager.searchTables(connection, catalog, schema, tableNamePattern);
+    }
+
+    @Override
+    public long countTables(Connection connection, String catalog, String schema, String tableNamePattern) {
+        return tableManager.countTables(connection, catalog, schema, tableNamePattern);
+    }
+
+    @Override
+    public String getTableDdl(Connection connection, String catalog, String schema, String tableName) {
+        return tableManager.getTableDdl(connection, catalog, schema, tableName);
     }
 
     @Override
     public void deleteTable(Connection connection, String catalog, String schema, String tableName) {
-        dropObject(connection, catalog, tableName, MySqlTemplate.SQL_DROP_TABLE,
-                DatabaseObjectTypeEnum.TABLE.getValue(), true);
+        tableManager.deleteTable(connection, catalog, schema, tableName);
     }
 
     @Override
     public SqlCommandResult insertRow(Connection connection, String catalog, String schema, String tableName,
                                       List<TableRowValue> values) {
-        return rowWriteSupport.insertRow(connection, catalog, schema, tableName, values);
+        return tableManager.insertRow(connection, catalog, schema, tableName, values);
     }
 
     @Override
     public SqlCommandResult deleteRow(Connection connection, String catalog, String schema, String tableName,
                                       List<TableRowValue> matchValues, boolean force) {
-        return rowWriteSupport.deleteRow(connection, catalog, schema, tableName, matchValues, force);
+        return tableManager.deleteRow(connection, catalog, schema, tableName, matchValues, force);
+    }
+
+    @Override
+    public SqlCommandResult getTableData(Connection connection, String catalog, String schema,
+                                         String tableName, int offset, int pageSize) {
+        return tableManager.getTableData(connection, catalog, schema, tableName, offset, pageSize);
+    }
+
+    @Override
+    public long getTableDataCount(Connection connection, String catalog, String schema, String tableName) {
+        return tableManager.getTableDataCount(connection, catalog, schema, tableName);
+    }
+
+    @Override
+    public SqlCommandResult getTableData(Connection connection, String catalog, String schema, String tableName,
+                                         int offset, int pageSize, String whereClause,
+                                         String orderByColumn, String orderByDirection) {
+        return tableManager.getTableData(
+                connection,
+                catalog,
+                schema,
+                tableName,
+                offset,
+                pageSize,
+                whereClause,
+                orderByColumn,
+                orderByDirection
+        );
+    }
+
+    @Override
+    public long getTableDataCount(Connection connection, String catalog, String schema,
+                                  String tableName, String whereClause) {
+        return tableManager.getTableDataCount(connection, catalog, schema, tableName, whereClause);
+    }
+
+    @Override
+    public List<String> getViews(Connection connection, String catalog, String schema) {
+        return viewManager.getViews(connection, catalog, schema);
+    }
+
+    @Override
+    public List<String> searchViews(Connection connection, String catalog, String schema, String viewNamePattern) {
+        return viewManager.searchViews(connection, catalog, schema, viewNamePattern);
+    }
+
+    @Override
+    public long countViews(Connection connection, String catalog, String schema, String viewNamePattern) {
+        return viewManager.countViews(connection, catalog, schema, viewNamePattern);
+    }
+
+    @Override
+    public String getViewDdl(Connection connection, String catalog, String schema, String viewName) {
+        return viewManager.getViewDdl(connection, catalog, schema, viewName);
     }
 
     @Override
     public void deleteView(Connection connection, String catalog, String schema, String viewName) {
-        dropObject(connection, catalog, viewName, MySqlTemplate.SQL_DROP_VIEW,
-                DatabaseObjectTypeEnum.VIEW.getValue(), true);
+        viewManager.deleteView(connection, catalog, schema, viewName);
+    }
+
+    @Override
+    public SqlCommandResult getViewData(Connection connection, String catalog, String schema,
+                                        String viewName, int offset, int pageSize) {
+        return viewManager.getViewData(connection, catalog, schema, viewName, offset, pageSize);
+    }
+
+    @Override
+    public long getViewDataCount(Connection connection, String catalog, String schema, String viewName) {
+        return viewManager.getViewDataCount(connection, catalog, schema, viewName);
+    }
+
+    @Override
+    public SqlCommandResult getViewData(Connection connection, String catalog, String schema, String viewName,
+                                        int offset, int pageSize, String whereClause,
+                                        String orderByColumn, String orderByDirection) {
+        return viewManager.getViewData(
+                connection,
+                catalog,
+                schema,
+                viewName,
+                offset,
+                pageSize,
+                whereClause,
+                orderByColumn,
+                orderByDirection
+        );
+    }
+
+    @Override
+    public long getViewDataCount(Connection connection, String catalog, String schema,
+                                 String viewName, String whereClause) {
+        return viewManager.getViewDataCount(connection, catalog, schema, viewName, whereClause);
+    }
+
+    @Override
+    public List<ColumnMetadata> getColumns(Connection connection, String catalog, String schema, String tableOrViewName) {
+        return columnManager.getColumns(connection, catalog, schema, tableOrViewName);
+    }
+
+    @Override
+    public List<IndexMetadata> getIndexes(Connection connection, String catalog, String schema, String tableName) {
+        return indexManager.getIndexes(connection, catalog, schema, tableName);
+    }
+
+    @Override
+    public List<FunctionMetadata> getFunctions(Connection connection, String catalog, String schema) {
+        return functionManager.getFunctions(connection, catalog, schema);
+    }
+
+    @Override
+    public List<FunctionMetadata> searchFunctions(Connection connection, String catalog, String schema, String functionNamePattern) {
+        return functionManager.searchFunctions(connection, catalog, schema, functionNamePattern);
+    }
+
+    @Override
+    public long countFunctions(Connection connection, String catalog, String schema, String functionNamePattern) {
+        return functionManager.countFunctions(connection, catalog, schema, functionNamePattern);
+    }
+
+    @Override
+    public String getFunctionDdl(Connection connection, String catalog, String schema, String functionName) {
+        return functionManager.getFunctionDdl(connection, catalog, schema, functionName);
     }
 
     @Override
     public void deleteFunction(Connection connection, String catalog, String schema, String functionName) {
-        dropObject(connection, catalog, functionName, MySqlTemplate.SQL_DROP_FUNCTION,
-                DatabaseObjectTypeEnum.FUNCTION.getValue(), true);
+        functionManager.deleteFunction(connection, catalog, schema, functionName);
+    }
+
+    @Override
+    public List<ProcedureMetadata> getProcedures(Connection connection, String catalog, String schema) {
+        return procedureManager.getProcedures(connection, catalog, schema);
+    }
+
+    @Override
+    public List<ProcedureMetadata> searchProcedures(Connection connection, String catalog, String schema,
+                                                    String procedureNamePattern) {
+        return procedureManager.searchProcedures(connection, catalog, schema, procedureNamePattern);
+    }
+
+    @Override
+    public long countProcedures(Connection connection, String catalog, String schema, String procedureNamePattern) {
+        return procedureManager.countProcedures(connection, catalog, schema, procedureNamePattern);
+    }
+
+    @Override
+    public String getProcedureDdl(Connection connection, String catalog, String schema, String procedureName) {
+        return procedureManager.getProcedureDdl(connection, catalog, schema, procedureName);
     }
 
     @Override
     public void deleteProcedure(Connection connection, String catalog, String schema, String procedureName) {
-        dropObject(connection, catalog, procedureName, MySqlTemplate.SQL_DROP_PROCEDURE,
-                DatabaseObjectTypeEnum.PROCEDURE.getValue(), true);
+        procedureManager.deleteProcedure(connection, catalog, schema, procedureName);
+    }
+
+    @Override
+    public List<TriggerMetadata> getTriggers(Connection connection, String catalog, String schema, String tableName) {
+        return triggerManager.getTriggers(connection, catalog, schema, tableName);
+    }
+
+    @Override
+    public List<TriggerMetadata> searchTriggers(Connection connection, String catalog, String schema,
+                                                String tableName, String triggerNamePattern) {
+        return triggerManager.searchTriggers(connection, catalog, schema, tableName, triggerNamePattern);
+    }
+
+    @Override
+    public String getTriggerDdl(Connection connection, String catalog, String schema, String triggerName) {
+        return triggerManager.getTriggerDdl(connection, catalog, schema, triggerName);
     }
 
     @Override
     public void deleteTrigger(Connection connection, String catalog, String schema, String triggerName) {
-        dropObject(connection, catalog, triggerName, MySqlTemplate.SQL_DROP_TRIGGER,
-                DatabaseObjectTypeEnum.TRIGGER.getValue(), true);
+        triggerManager.deleteTrigger(connection, catalog, schema, triggerName);
     }
-
 }

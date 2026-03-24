@@ -3,7 +3,7 @@ package edu.zsc.ai.domain.service.db.impl;
 import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.IndexService;
-import edu.zsc.ai.plugin.capability.IndexProvider;
+import edu.zsc.ai.plugin.capability.IndexManager;
 import edu.zsc.ai.plugin.manager.DefaultPluginManager;
 import edu.zsc.ai.plugin.model.metadata.IndexMetadata;
 import lombok.RequiredArgsConstructor;
@@ -23,9 +23,9 @@ public class IndexServiceImpl implements IndexService {
     public List<IndexMetadata> getIndexes(DbContext db, String tableName) {
         connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-        IndexProvider provider = DefaultPluginManager.getInstance().getIndexProviderByPluginId(active.pluginId());
-        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getOwnedConnection(db);
+        IndexManager provider = DefaultPluginManager.getInstance().getIndexManagerByPluginId(active.pluginId());
+        try (ActiveConnectionRegistry.BorrowedConnection borrowed = active.borrowConnection()) {
             return provider.getIndexes(borrowed.connection(), db.catalog(), db.schema(), tableName);
         }
     }

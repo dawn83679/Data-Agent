@@ -3,7 +3,7 @@ package edu.zsc.ai.domain.service.db.impl;
 import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.FunctionService;
-import edu.zsc.ai.plugin.capability.FunctionProvider;
+import edu.zsc.ai.plugin.capability.FunctionManager;
 import edu.zsc.ai.plugin.manager.DefaultPluginManager;
 import edu.zsc.ai.plugin.model.metadata.FunctionMetadata;
 import lombok.RequiredArgsConstructor;
@@ -23,9 +23,9 @@ public class FunctionServiceImpl implements FunctionService {
     public List<FunctionMetadata> getFunctions(DbContext db) {
         connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-        FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
-        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getOwnedConnection(db);
+        FunctionManager provider = DefaultPluginManager.getInstance().getFunctionManagerByPluginId(active.pluginId());
+        try (ActiveConnectionRegistry.BorrowedConnection borrowed = active.borrowConnection()) {
             return provider.getFunctions(borrowed.connection(), db.catalog(), db.schema());
         }
     }
@@ -34,9 +34,9 @@ public class FunctionServiceImpl implements FunctionService {
     public List<FunctionMetadata> searchFunctions(DbContext db, String functionNamePattern) {
         connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-        FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
-        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getOwnedConnection(db);
+        FunctionManager provider = DefaultPluginManager.getInstance().getFunctionManagerByPluginId(active.pluginId());
+        try (ActiveConnectionRegistry.BorrowedConnection borrowed = active.borrowConnection()) {
             return provider.searchFunctions(borrowed.connection(), db.catalog(), db.schema(), functionNamePattern);
         }
     }
@@ -45,9 +45,9 @@ public class FunctionServiceImpl implements FunctionService {
     public long countFunctions(DbContext db, String functionNamePattern) {
         connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-        FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
-        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getOwnedConnection(db);
+        FunctionManager provider = DefaultPluginManager.getInstance().getFunctionManagerByPluginId(active.pluginId());
+        try (ActiveConnectionRegistry.BorrowedConnection borrowed = active.borrowConnection()) {
             return provider.countFunctions(borrowed.connection(), db.catalog(), db.schema(), functionNamePattern);
         }
     }
@@ -56,9 +56,9 @@ public class FunctionServiceImpl implements FunctionService {
     public String getFunctionDdl(DbContext db, String functionName) {
         connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-        FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
-        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getOwnedConnection(db);
+        FunctionManager provider = DefaultPluginManager.getInstance().getFunctionManagerByPluginId(active.pluginId());
+        try (ActiveConnectionRegistry.BorrowedConnection borrowed = active.borrowConnection()) {
             return provider.getFunctionDdl(borrowed.connection(), db.catalog(), db.schema(), functionName);
         }
     }
@@ -67,9 +67,9 @@ public class FunctionServiceImpl implements FunctionService {
     public void deleteFunction(DbContext db, String functionName) {
         connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-        FunctionProvider provider = DefaultPluginManager.getInstance().getFunctionProviderByPluginId(active.pluginId());
-        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getOwnedConnection(db);
+        FunctionManager provider = DefaultPluginManager.getInstance().getFunctionManagerByPluginId(active.pluginId());
+        try (ActiveConnectionRegistry.BorrowedConnection borrowed = active.borrowConnection()) {
             provider.deleteFunction(borrowed.connection(), db.catalog(), db.schema(), functionName);
         }
 

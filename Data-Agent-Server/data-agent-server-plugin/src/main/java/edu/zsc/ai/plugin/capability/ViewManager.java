@@ -10,7 +10,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public interface ViewProvider {
+public interface ViewManager {
 
     default List<String> getViews(Connection connection, String catalog, String schema) {
         return searchViews(connection, catalog, schema, null);

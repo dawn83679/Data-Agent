@@ -1,19 +1,19 @@
 package edu.zsc.ai.plugin.manager;
 
 import edu.zsc.ai.plugin.Plugin;
-import edu.zsc.ai.plugin.capability.ColumnProvider;
+import edu.zsc.ai.plugin.capability.ColumnManager;
 import edu.zsc.ai.plugin.capability.CommandExecutor;
-import edu.zsc.ai.plugin.capability.ConnectionProvider;
-import edu.zsc.ai.plugin.capability.DatabaseProvider;
-import edu.zsc.ai.plugin.capability.FunctionProvider;
-import edu.zsc.ai.plugin.capability.IndexProvider;
-import edu.zsc.ai.plugin.capability.ProcedureProvider;
-import edu.zsc.ai.plugin.capability.SchemaProvider;
+import edu.zsc.ai.plugin.capability.ConnectionManager;
+import edu.zsc.ai.plugin.capability.DatabaseManager;
+import edu.zsc.ai.plugin.capability.FunctionManager;
+import edu.zsc.ai.plugin.capability.IndexManager;
+import edu.zsc.ai.plugin.capability.ProcedureManager;
+import edu.zsc.ai.plugin.capability.SchemaManager;
 import edu.zsc.ai.plugin.capability.SqlSplitter;
 import edu.zsc.ai.plugin.capability.SqlValidator;
-import edu.zsc.ai.plugin.capability.TableProvider;
-import edu.zsc.ai.plugin.capability.TriggerProvider;
-import edu.zsc.ai.plugin.capability.ViewProvider;
+import edu.zsc.ai.plugin.capability.TableManager;
+import edu.zsc.ai.plugin.capability.TriggerManager;
+import edu.zsc.ai.plugin.capability.ViewManager;
 import edu.zsc.ai.plugin.model.command.sql.SqlCommandRequest;
 import edu.zsc.ai.plugin.model.command.sql.SqlCommandResult;
 import edu.zsc.ai.plugin.sql.DefaultSqlSplitter;
@@ -113,143 +113,143 @@ public class DefaultPluginManager implements PluginManager {
     }
 
     @Override
-    public List<ConnectionProvider> getConnectionProviderByDbType(@NotBlank String dbTypeCode) {
-        return PluginCapabilityResolver.getProviders(getPluginsByDbTypeInternal(dbTypeCode), ConnectionProvider.class, dbTypeCode);
+    public List<ConnectionManager> getConnectionManagerByDbType(@NotBlank String dbTypeCode) {
+        return PluginCapabilityResolver.getManagers(getPluginsByDbTypeInternal(dbTypeCode), ConnectionManager.class, dbTypeCode);
     }
 
     @Override
-    public ConnectionProvider getConnectionProviderByPluginId(@NotBlank String pluginId) {
-        return PluginCapabilityResolver.getProviderByPluginId(pluginMap, pluginId, ConnectionProvider.class);
+    public ConnectionManager getConnectionManagerByPluginId(@NotBlank String pluginId) {
+        return PluginCapabilityResolver.getManagerByPluginId(pluginMap, pluginId, ConnectionManager.class);
     }
 
     @Override
-    public ConnectionProvider getConnectionProviderByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion) {
-        return PluginCapabilityResolver.getProviderByDbTypeAndVersion(getPluginsByDbTypeInternal(dbTypeCode), databaseVersion, ConnectionProvider.class);
+    public ConnectionManager getConnectionManagerByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion) {
+        return PluginCapabilityResolver.getManagerByDbTypeAndVersion(getPluginsByDbTypeInternal(dbTypeCode), databaseVersion, ConnectionManager.class);
     }
 
     @Override
-    public List<DatabaseProvider> getDatabaseProviderByDbType(@NotBlank String dbTypeCode) {
-        return PluginCapabilityResolver.getProviders(getPluginsByDbTypeInternal(dbTypeCode), DatabaseProvider.class, dbTypeCode);
+    public List<DatabaseManager> getDatabaseManagerByDbType(@NotBlank String dbTypeCode) {
+        return PluginCapabilityResolver.getManagers(getPluginsByDbTypeInternal(dbTypeCode), DatabaseManager.class, dbTypeCode);
     }
 
     @Override
-    public DatabaseProvider getDatabaseProviderByPluginId(@NotBlank String pluginId) {
-        return PluginCapabilityResolver.getProviderByPluginId(pluginMap, pluginId, DatabaseProvider.class);
+    public DatabaseManager getDatabaseManagerByPluginId(@NotBlank String pluginId) {
+        return PluginCapabilityResolver.getManagerByPluginId(pluginMap, pluginId, DatabaseManager.class);
     }
 
     @Override
-    public DatabaseProvider getDatabaseProviderByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion) {
-        return PluginCapabilityResolver.getProviderByDbTypeAndVersion(getPluginsByDbTypeInternal(dbTypeCode), databaseVersion, DatabaseProvider.class);
+    public DatabaseManager getDatabaseManagerByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion) {
+        return PluginCapabilityResolver.getManagerByDbTypeAndVersion(getPluginsByDbTypeInternal(dbTypeCode), databaseVersion, DatabaseManager.class);
     }
 
     @Override
-    public List<SchemaProvider> getSchemaProviderByDbType(@NotBlank String dbTypeCode) {
-        return PluginCapabilityResolver.getProviders(getPluginsByDbTypeInternal(dbTypeCode), SchemaProvider.class, dbTypeCode);
+    public List<SchemaManager> getSchemaManagerByDbType(@NotBlank String dbTypeCode) {
+        return PluginCapabilityResolver.getManagers(getPluginsByDbTypeInternal(dbTypeCode), SchemaManager.class, dbTypeCode);
     }
 
     @Override
-    public SchemaProvider getSchemaProviderByPluginId(@NotBlank String pluginId) {
-        return PluginCapabilityResolver.getProviderByPluginId(pluginMap, pluginId, SchemaProvider.class);
+    public SchemaManager getSchemaManagerByPluginId(@NotBlank String pluginId) {
+        return PluginCapabilityResolver.getManagerByPluginId(pluginMap, pluginId, SchemaManager.class);
     }
 
     @Override
-    public SchemaProvider getSchemaProviderByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion) {
-        return PluginCapabilityResolver.getProviderByDbTypeAndVersion(getPluginsByDbTypeInternal(dbTypeCode), databaseVersion, SchemaProvider.class);
+    public SchemaManager getSchemaManagerByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion) {
+        return PluginCapabilityResolver.getManagerByDbTypeAndVersion(getPluginsByDbTypeInternal(dbTypeCode), databaseVersion, SchemaManager.class);
     }
 
     @Override
-    public List<TableProvider> getTableProviderByDbType(@NotBlank String dbTypeCode) {
-        return PluginCapabilityResolver.getProviders(getPluginsByDbTypeInternal(dbTypeCode), TableProvider.class, dbTypeCode);
+    public List<TableManager> getTableManagerByDbType(@NotBlank String dbTypeCode) {
+        return PluginCapabilityResolver.getManagers(getPluginsByDbTypeInternal(dbTypeCode), TableManager.class, dbTypeCode);
     }
 
     @Override
-    public TableProvider getTableProviderByPluginId(@NotBlank String pluginId) {
-        return PluginCapabilityResolver.getProviderByPluginId(pluginMap, pluginId, TableProvider.class);
+    public TableManager getTableManagerByPluginId(@NotBlank String pluginId) {
+        return PluginCapabilityResolver.getManagerByPluginId(pluginMap, pluginId, TableManager.class);
     }
 
     @Override
-    public TableProvider getTableProviderByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion) {
-        return PluginCapabilityResolver.getProviderByDbTypeAndVersion(getPluginsByDbTypeInternal(dbTypeCode), databaseVersion, TableProvider.class);
+    public TableManager getTableManagerByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion) {
+        return PluginCapabilityResolver.getManagerByDbTypeAndVersion(getPluginsByDbTypeInternal(dbTypeCode), databaseVersion, TableManager.class);
     }
 
     @Override
-    public List<ViewProvider> getViewProviderByDbType(@NotBlank String dbTypeCode) {
-        return PluginCapabilityResolver.getProviders(getPluginsByDbTypeInternal(dbTypeCode), ViewProvider.class, dbTypeCode);
+    public List<ViewManager> getViewManagerByDbType(@NotBlank String dbTypeCode) {
+        return PluginCapabilityResolver.getManagers(getPluginsByDbTypeInternal(dbTypeCode), ViewManager.class, dbTypeCode);
     }
 
     @Override
-    public ViewProvider getViewProviderByPluginId(@NotBlank String pluginId) {
-        return PluginCapabilityResolver.getProviderByPluginId(pluginMap, pluginId, ViewProvider.class);
+    public ViewManager getViewManagerByPluginId(@NotBlank String pluginId) {
+        return PluginCapabilityResolver.getManagerByPluginId(pluginMap, pluginId, ViewManager.class);
     }
 
     @Override
-    public ViewProvider getViewProviderByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion) {
-        return PluginCapabilityResolver.getProviderByDbTypeAndVersion(getPluginsByDbTypeInternal(dbTypeCode), databaseVersion, ViewProvider.class);
+    public ViewManager getViewManagerByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion) {
+        return PluginCapabilityResolver.getManagerByDbTypeAndVersion(getPluginsByDbTypeInternal(dbTypeCode), databaseVersion, ViewManager.class);
     }
 
     @Override
-    public List<ColumnProvider> getColumnProviderByDbType(@NotBlank String dbTypeCode) {
-        return PluginCapabilityResolver.getProviders(getPluginsByDbTypeInternal(dbTypeCode), ColumnProvider.class, dbTypeCode);
+    public List<ColumnManager> getColumnManagerByDbType(@NotBlank String dbTypeCode) {
+        return PluginCapabilityResolver.getManagers(getPluginsByDbTypeInternal(dbTypeCode), ColumnManager.class, dbTypeCode);
     }
 
     @Override
-    public ColumnProvider getColumnProviderByPluginId(@NotBlank String pluginId) {
-        return PluginCapabilityResolver.getProviderByPluginId(pluginMap, pluginId, ColumnProvider.class);
+    public ColumnManager getColumnManagerByPluginId(@NotBlank String pluginId) {
+        return PluginCapabilityResolver.getManagerByPluginId(pluginMap, pluginId, ColumnManager.class);
     }
 
     @Override
-    public ColumnProvider getColumnProviderByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion) {
-        return PluginCapabilityResolver.getProviderByDbTypeAndVersion(getPluginsByDbTypeInternal(dbTypeCode), databaseVersion, ColumnProvider.class);
+    public ColumnManager getColumnManagerByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion) {
+        return PluginCapabilityResolver.getManagerByDbTypeAndVersion(getPluginsByDbTypeInternal(dbTypeCode), databaseVersion, ColumnManager.class);
     }
 
     @Override
-    public List<IndexProvider> getIndexProviderByDbType(@NotBlank String dbTypeCode) {
-        return PluginCapabilityResolver.getProviders(getPluginsByDbTypeInternal(dbTypeCode), IndexProvider.class, dbTypeCode);
+    public List<IndexManager> getIndexManagerByDbType(@NotBlank String dbTypeCode) {
+        return PluginCapabilityResolver.getManagers(getPluginsByDbTypeInternal(dbTypeCode), IndexManager.class, dbTypeCode);
     }
 
     @Override
-    public IndexProvider getIndexProviderByPluginId(@NotBlank String pluginId) {
-        return PluginCapabilityResolver.getProviderByPluginId(pluginMap, pluginId, IndexProvider.class);
+    public IndexManager getIndexManagerByPluginId(@NotBlank String pluginId) {
+        return PluginCapabilityResolver.getManagerByPluginId(pluginMap, pluginId, IndexManager.class);
     }
 
     @Override
-    public IndexProvider getIndexProviderByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion) {
-        return PluginCapabilityResolver.getProviderByDbTypeAndVersion(getPluginsByDbTypeInternal(dbTypeCode), databaseVersion, IndexProvider.class);
+    public IndexManager getIndexManagerByDbTypeAndVersion(@NotBlank String dbTypeCode, String databaseVersion) {
+        return PluginCapabilityResolver.getManagerByDbTypeAndVersion(getPluginsByDbTypeInternal(dbTypeCode), databaseVersion, IndexManager.class);
     }
 
     @Override
-    public List<FunctionProvider> getFunctionProviderByDbType(@NotBlank String dbTypeCode) {
-        return PluginCapabilityResolver.getProviders(getPluginsByDbTypeInternal(dbTypeCode), FunctionProvider.class, dbTypeCode);
+    public List<FunctionManager> getFunctionManagerByDbType(@NotBlank String dbTypeCode) {
+        return PluginCapabilityResolver.getManagers(getPluginsByDbTypeInternal(dbTypeCode), FunctionManager.class, dbTypeCode);
     }
 
     @Override
-    public FunctionProvider getFunctionProviderByPluginId(@NotBlank String pluginId) {
-        return PluginCapabilityResolver.getProviderByPluginId(pluginMap, pluginId, FunctionProvider.class);
+    public FunctionManager getFunctionManagerByPluginId(@NotBlank String pluginId) {
+        return PluginCapabilityResolver.getManagerByPluginId(pluginMap, pluginId, FunctionManager.class);
     }
 
     @Override
-    public List<ProcedureProvider> getProcedureProviderByDbType(@NotBlank String dbTypeCode) {
-        return PluginCapabilityResolver.getProviders(getPluginsByDbTypeInternal(dbTypeCode), ProcedureProvider.class, dbTypeCode);
+    public List<ProcedureManager> getProcedureManagerByDbType(@NotBlank String dbTypeCode) {
+        return PluginCapabilityResolver.getManagers(getPluginsByDbTypeInternal(dbTypeCode), ProcedureManager.class, dbTypeCode);
     }
 
     @Override
-    public ProcedureProvider getProcedureProviderByPluginId(@NotBlank String pluginId) {
-        return PluginCapabilityResolver.getProviderByPluginId(pluginMap, pluginId, ProcedureProvider.class);
+    public ProcedureManager getProcedureManagerByPluginId(@NotBlank String pluginId) {
+        return PluginCapabilityResolver.getManagerByPluginId(pluginMap, pluginId, ProcedureManager.class);
     }
 
     @Override
-    public List<TriggerProvider> getTriggerProviderByDbType(@NotBlank String dbTypeCode) {
-        return PluginCapabilityResolver.getProviders(getPluginsByDbTypeInternal(dbTypeCode), TriggerProvider.class, dbTypeCode);
+    public List<TriggerManager> getTriggerManagerByDbType(@NotBlank String dbTypeCode) {
+        return PluginCapabilityResolver.getManagers(getPluginsByDbTypeInternal(dbTypeCode), TriggerManager.class, dbTypeCode);
     }
 
     @Override
-    public TriggerProvider getTriggerProviderByPluginId(@NotBlank String pluginId) {
-        return PluginCapabilityResolver.getProviderByPluginId(pluginMap, pluginId, TriggerProvider.class);
+    public TriggerManager getTriggerManagerByPluginId(@NotBlank String pluginId) {
+        return PluginCapabilityResolver.getManagerByPluginId(pluginMap, pluginId, TriggerManager.class);
     }
 
     @Override
     public CommandExecutor<SqlCommandRequest, SqlCommandResult> getSqlCommandExecutorByPluginId(@NotBlank String pluginId) {
-        return (CommandExecutor<SqlCommandRequest, SqlCommandResult>) PluginCapabilityResolver.getProviderByPluginId(pluginMap, pluginId, CommandExecutor.class);
+        return (CommandExecutor<SqlCommandRequest, SqlCommandResult>) PluginCapabilityResolver.getManagerByPluginId(pluginMap, pluginId, CommandExecutor.class);
     }
 
     @Override

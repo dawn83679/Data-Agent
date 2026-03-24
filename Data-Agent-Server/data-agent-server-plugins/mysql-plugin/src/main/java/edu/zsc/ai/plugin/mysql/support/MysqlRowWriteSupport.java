@@ -1,4 +1,4 @@
-package edu.zsc.ai.plugin.mysql;
+package edu.zsc.ai.plugin.mysql.support;
 
 import edu.zsc.ai.plugin.model.command.sql.SqlCommandResult;
 import edu.zsc.ai.plugin.model.command.sql.SqlMessageInfo;
@@ -16,14 +16,14 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
-final class MysqlRowWriteSupport {
+public final class MysqlRowWriteSupport {
 
-    static final String DELETE_REQUIRES_FORCE_CODE = "DELETE_REQUIRES_FORCE";
+    public static final String DELETE_REQUIRES_FORCE_CODE = "DELETE_REQUIRES_FORCE";
 
     private final MysqlRowWriteSqlTemplate sqlTemplate = new MysqlRowWriteSqlTemplate();
 
-    SqlCommandResult insertRow(Connection connection, String catalog, String schema, String tableName,
-                               List<TableRowValue> values) {
+    public SqlCommandResult insertRow(Connection connection, String catalog, String schema, String tableName,
+                                      List<TableRowValue> values) {
         if (connection == null || StringUtils.isBlank(tableName)) {
             throw new IllegalArgumentException("Connection and table name must not be null or empty");
         }
@@ -47,8 +47,8 @@ final class MysqlRowWriteSupport {
         return executePreparedUpdate(connection, sql, params);
     }
 
-    SqlCommandResult deleteRow(Connection connection, String catalog, String schema, String tableName,
-                               List<TableRowValue> matchValues, boolean force) {
+    public SqlCommandResult deleteRow(Connection connection, String catalog, String schema, String tableName,
+                                      List<TableRowValue> matchValues, boolean force) {
         if (connection == null || StringUtils.isBlank(tableName)) {
             throw new IllegalArgumentException("Connection and table name must not be null or empty");
         }

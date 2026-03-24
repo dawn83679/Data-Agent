@@ -1,6 +1,6 @@
 package edu.zsc.ai.domain.service.db.support;
 
-import edu.zsc.ai.plugin.capability.ConnectionProvider;
+import edu.zsc.ai.plugin.capability.ConnectionManager;
 import edu.zsc.ai.plugin.connection.ConnectionConfig;
 
 import javax.sql.DataSource;
@@ -14,21 +14,21 @@ import java.util.Objects;
 import java.util.logging.Logger;
 
 /**
- * App-managed DataSource wrapper that asks a plugin provider to create physical JDBC connections.
+ * App-managed DataSource wrapper that asks a plugin manager to create physical JDBC connections.
  */
-public final class ProviderBackedDataSource implements DataSource {
+public final class ManagerBackedDataSource implements DataSource {
 
-    private final ConnectionProvider connectionProvider;
+    private final ConnectionManager connectionManager;
     private final ConnectionConfig baseConfig;
 
-    public ProviderBackedDataSource(ConnectionProvider connectionProvider, ConnectionConfig baseConfig) {
-        this.connectionProvider = Objects.requireNonNull(connectionProvider, "connectionProvider");
+    public ManagerBackedDataSource(ConnectionManager connectionManager, ConnectionConfig baseConfig) {
+        this.connectionManager = Objects.requireNonNull(connectionManager, "connectionManager");
         this.baseConfig = copy(baseConfig);
     }
 
     @Override
     public Connection getConnection() {
-        return connectionProvider.connect(copy(baseConfig));
+        return connectionManager.connect(copy(baseConfig));
     }
 
     @Override
@@ -36,7 +36,7 @@ public final class ProviderBackedDataSource implements DataSource {
         ConnectionConfig config = copy(baseConfig);
         config.setUsername(username);
         config.setPassword(password);
-        return connectionProvider.connect(config);
+        return connectionManager.connect(config);
     }
 
     @Override

@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 @Slf4j
-public class ConnectionManager {
+public class ActiveConnectionRegistry {
 
     private static final int CONNECTION_VALIDATION_TIMEOUT_SECONDS = 1;
 
@@ -53,7 +53,7 @@ public class ConnectionManager {
         }
 
         public BorrowedConnection borrowConnection() {
-            return ConnectionManager.borrowConnection(this);
+            return ActiveConnectionRegistry.borrowConnection(this);
         }
     }
 
@@ -205,7 +205,7 @@ public class ConnectionManager {
     public static void closeAllConnections(Long dbConnectionId) {
         Map<String, ActiveConnection> innerMap = activeConnections.remove(dbConnectionId);
         if (innerMap != null) {
-            innerMap.values().forEach(ConnectionManager::doClose);
+            innerMap.values().forEach(ActiveConnectionRegistry::doClose);
         }
     }
 

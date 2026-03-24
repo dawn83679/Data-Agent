@@ -3,7 +3,7 @@ package edu.zsc.ai.domain.service.db.impl;
 import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.service.db.ColumnService;
 import edu.zsc.ai.domain.service.db.ConnectionService;
-import edu.zsc.ai.plugin.capability.ColumnProvider;
+import edu.zsc.ai.plugin.capability.ColumnManager;
 import edu.zsc.ai.plugin.manager.DefaultPluginManager;
 import edu.zsc.ai.plugin.model.metadata.ColumnMetadata;
 import lombok.RequiredArgsConstructor;
@@ -23,9 +23,9 @@ public class ColumnServiceImpl implements ColumnService {
     public List<ColumnMetadata> listColumns(DbContext db, String tableName) {
         connectionService.openConnection(db);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getOwnedConnection(db);
-        ColumnProvider provider = DefaultPluginManager.getInstance().getColumnProviderByPluginId(active.pluginId());
-        try (ConnectionManager.BorrowedConnection borrowed = active.borrowConnection()) {
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getOwnedConnection(db);
+        ColumnManager provider = DefaultPluginManager.getInstance().getColumnManagerByPluginId(active.pluginId());
+        try (ActiveConnectionRegistry.BorrowedConnection borrowed = active.borrowConnection()) {
             return provider.getColumns(borrowed.connection(), db.catalog(), db.schema(), tableName);
         }
     }

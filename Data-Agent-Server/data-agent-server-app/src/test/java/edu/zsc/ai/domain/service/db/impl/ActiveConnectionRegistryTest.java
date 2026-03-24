@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class ConnectionManagerTest {
+class ActiveConnectionRegistryTest {
 
     @AfterEach
     void tearDown() throws Exception {
@@ -35,8 +35,8 @@ class ConnectionManagerTest {
 
         register(11L, 7L, "sales", null, dataSource);
 
-        assertTrue(ConnectionManager.getConnection(new DbContext(11L, "sales", null)).isEmpty());
-        assertTrue(ConnectionManager.getAnyActiveConnection(11L).isEmpty());
+        assertTrue(ActiveConnectionRegistry.getConnection(new DbContext(11L, "sales", null)).isEmpty());
+        assertTrue(ActiveConnectionRegistry.getAnyActiveConnection(11L).isEmpty());
     }
 
     @Test
@@ -51,7 +51,7 @@ class ConnectionManagerTest {
         register(21L, 7L, "sales", null, schemaDataSource);
         register(21L, 7L, null, null, rootDataSource);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getAnyOwnedActiveConnection(21L);
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getAnyOwnedActiveConnection(21L);
 
         assertSame(rootDataSource, active.dataSource());
     }
@@ -70,7 +70,7 @@ class ConnectionManagerTest {
         register(31L, 7L, null, null, staleRootDataSource);
         register(31L, 7L, "sales", null, schemaDataSource);
 
-        ConnectionManager.ActiveConnection active = ConnectionManager.getAnyOwnedActiveConnection(31L);
+        ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getAnyOwnedActiveConnection(31L);
 
         assertSame(schemaDataSource, active.dataSource());
     }
@@ -93,9 +93,9 @@ class ConnectionManagerTest {
                           String catalog,
                           String schema,
                           DataSource dataSource) {
-        ConnectionManager.registerConnection(
+        ActiveConnectionRegistry.registerConnection(
                 connectionId,
-                new ConnectionManager.ActiveConnection(
+                new ActiveConnectionRegistry.ActiveConnection(
                         dataSource,
                         userId,
                         connectionId,
@@ -110,9 +110,9 @@ class ConnectionManagerTest {
     }
 
     @SuppressWarnings("unchecked")
-    private Map<Long, Map<String, ConnectionManager.ActiveConnection>> activeConnections() throws Exception {
-        Field field = ConnectionManager.class.getDeclaredField("activeConnections");
+    private Map<Long, Map<String, ActiveConnectionRegistry.ActiveConnection>> activeConnections() throws Exception {
+        Field field = ActiveConnectionRegistry.class.getDeclaredField("activeConnections");
         field.setAccessible(true);
-        return (Map<Long, Map<String, ConnectionManager.ActiveConnection>>) field.get(null);
+        return (Map<Long, Map<String, ActiveConnectionRegistry.ActiveConnection>>) field.get(null);
     }
 }

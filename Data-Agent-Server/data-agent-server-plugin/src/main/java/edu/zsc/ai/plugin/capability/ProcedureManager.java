@@ -16,7 +16,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public interface ProcedureProvider {
+public interface ProcedureManager {
 
     default List<ProcedureMetadata> getProcedures(Connection connection, String catalog, String schema) {
         return searchProcedures(connection, catalog, schema, null);

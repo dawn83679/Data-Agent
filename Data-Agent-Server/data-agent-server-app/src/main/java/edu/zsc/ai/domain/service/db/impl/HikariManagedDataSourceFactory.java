@@ -4,8 +4,8 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import edu.zsc.ai.config.db.ConnectionPoolProperties;
 import edu.zsc.ai.domain.service.db.ManagedDataSourceFactory;
-import edu.zsc.ai.domain.service.db.support.ProviderBackedDataSource;
-import edu.zsc.ai.plugin.capability.ConnectionProvider;
+import edu.zsc.ai.domain.service.db.support.ManagerBackedDataSource;
+import edu.zsc.ai.plugin.capability.ConnectionManager;
 import edu.zsc.ai.plugin.connection.ConnectionConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -20,12 +20,12 @@ public class HikariManagedDataSourceFactory implements ManagedDataSourceFactory 
     private final ConnectionPoolProperties connectionPoolProperties;
 
     @Override
-    public DataSource create(ConnectionProvider connectionProvider,
+    public DataSource create(ConnectionManager connectionManager,
                              ConnectionConfig connectionConfig,
                              ManagedDataSourceRequest request) {
         HikariConfig hikariConfig = new HikariConfig();
         hikariConfig.setPoolName(buildPoolName(request));
-        hikariConfig.setDataSource(new ProviderBackedDataSource(connectionProvider, connectionConfig));
+        hikariConfig.setDataSource(new ManagerBackedDataSource(connectionManager, connectionConfig));
         hikariConfig.setMaximumPoolSize(connectionPoolProperties.getMaximumPoolSize());
         hikariConfig.setMinimumIdle(connectionPoolProperties.getMinimumIdle());
         hikariConfig.setConnectionTimeout(connectionPoolProperties.getConnectionTimeoutMs());

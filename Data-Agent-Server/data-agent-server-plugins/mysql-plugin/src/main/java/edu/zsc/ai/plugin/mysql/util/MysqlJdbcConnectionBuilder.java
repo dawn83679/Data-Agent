@@ -1,4 +1,4 @@
-package edu.zsc.ai.plugin.mysql.connection;
+package edu.zsc.ai.plugin.mysql.util;
 
 import edu.zsc.ai.plugin.connection.JdbcConnectionBuilder;
 import edu.zsc.ai.plugin.connection.ConnectionConfig;

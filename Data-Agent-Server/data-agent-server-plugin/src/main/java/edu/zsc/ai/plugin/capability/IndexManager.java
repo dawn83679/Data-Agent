@@ -14,7 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public interface IndexProvider {
+public interface IndexManager {
 
     default List<IndexMetadata> getIndexes(Connection connection, String catalog, String schema, String tableName) {
         try {

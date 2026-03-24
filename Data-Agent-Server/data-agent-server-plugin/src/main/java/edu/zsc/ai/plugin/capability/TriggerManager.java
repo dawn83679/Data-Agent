@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public interface TriggerProvider {
+public interface TriggerManager {
 
     default List<TriggerMetadata> getTriggers(Connection connection, String catalog, String schema, String tableName) {
         throw new UnsupportedOperationException("Plugin does not support listing triggers");

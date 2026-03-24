@@ -1,4 +1,4 @@
-package edu.zsc.ai.plugin.mysql;
+package edu.zsc.ai.plugin.mysql.support;
 
 import edu.zsc.ai.plugin.mysql.constant.MySqlTemplate;
 
