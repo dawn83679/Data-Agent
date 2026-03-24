@@ -2,10 +2,6 @@
 {{SYSTEM_CONTEXT}}
 </system_context>
 
-<system_remider>
-{{SYSTEM_REMIDER}}
-</system_remider>
-
 <user_memory>
 {{USER_MEMORY}}
 </user_memory>

@@ -14,11 +14,6 @@ class MemoryUtilTest {
                 %s
                 today: 2026-03-18
                 timezone: Asia/Shanghai
-                language: zh
-                %s
-
-                %s
-                - %s is the primary task of this turn
                 %s
 
                 %s
@@ -27,9 +22,6 @@ class MemoryUtilTest {
                 """.formatted(
                 UserPromptTagConstant.SYSTEM_CONTEXT_OPEN,
                 UserPromptTagConstant.SYSTEM_CONTEXT_CLOSE,
-                UserPromptTagConstant.SYSTEM_REMIDER_OPEN,
-                UserPromptTagConstant.USER_QUESTION_OPEN,
-                UserPromptTagConstant.SYSTEM_REMIDER_CLOSE,
                 UserPromptTagConstant.USER_QUESTION_OPEN,
                 UserPromptTagConstant.USER_QUESTION_CLOSE);
 

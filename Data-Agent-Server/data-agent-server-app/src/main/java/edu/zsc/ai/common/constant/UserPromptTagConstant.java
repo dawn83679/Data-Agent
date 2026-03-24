@@ -3,7 +3,6 @@ package edu.zsc.ai.common.constant;
 public final class UserPromptTagConstant {
 
     public static final String SYSTEM_CONTEXT = "system_context";
-    public static final String SYSTEM_REMIDER = "system_remider";
     public static final String USER_MEMORY = "user_memory";
     public static final String USER_PREFERENCES = "user_preferences";
     public static final String USER_MEMORY_CONTEXT = "user_memory_context";
@@ -12,8 +11,6 @@ public final class UserPromptTagConstant {
 
     public static final String SYSTEM_CONTEXT_OPEN = open(SYSTEM_CONTEXT);
     public static final String SYSTEM_CONTEXT_CLOSE = close(SYSTEM_CONTEXT);
-    public static final String SYSTEM_REMIDER_OPEN = open(SYSTEM_REMIDER);
-    public static final String SYSTEM_REMIDER_CLOSE = close(SYSTEM_REMIDER);
     public static final String USER_MEMORY_OPEN = open(USER_MEMORY);
     public static final String USER_MEMORY_CLOSE = close(USER_MEMORY);
     public static final String USER_PREFERENCES_OPEN = open(USER_PREFERENCES);
