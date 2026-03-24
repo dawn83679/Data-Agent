@@ -13,14 +13,13 @@ import edu.zsc.ai.common.constant.PromptConstant;
 import edu.zsc.ai.domain.service.agent.prompt.AbstractUserPromptHandler;
 import edu.zsc.ai.domain.service.agent.prompt.UserPromptAssemblyContext;
 import edu.zsc.ai.domain.service.agent.prompt.UserPromptSection;
-import edu.zsc.ai.util.JsonUtil;
 
 @Component
 public class UserMentionPromptStrategy extends AbstractUserPromptHandler {
 
     @Override
     protected UserPromptSection targetSection() {
-        return UserPromptSection.USER_MENTION;
+        return UserPromptSection.EXPLICIT_REFERENCES;
     }
 
     @Override
@@ -33,11 +32,20 @@ public class UserMentionPromptStrategy extends AbstractUserPromptHandler {
                 .toList();
 
         if (mentions.isEmpty()) {
-            return PromptConstant.NONE;
+            return UserPromptBlockSupport.renderBlock(
+                    context,
+                    "本轮用户显式引用：",
+                    "The user explicitly referenced:",
+                    List.of(PromptConstant.NONE));
         }
 
-        return JsonUtil.object2json(mentions.stream()
+        return UserPromptBlockSupport.renderBlock(
+                context,
+                "本轮用户显式引用：",
+                "The user explicitly referenced:",
+                mentions.stream()
                 .map(this::toPayload)
+                .map(this::toLine)
                 .toList());
     }
 
@@ -51,5 +59,15 @@ public class UserMentionPromptStrategy extends AbstractUserPromptHandler {
         payload.put("schemaName", mention.getSchemaName());
         payload.put("objectName", mention.getObjectName());
         return payload;
+    }
+
+    private String toLine(Map<String, Object> payload) {
+        return "token: " + StringUtils.defaultString((String) payload.get("token"))
+                + "; object_type: " + StringUtils.defaultString((String) payload.get("objectType"))
+                + "; connection: " + StringUtils.defaultString((String) payload.get("connectionName"))
+                + " (id=" + payload.get("connectionId") + ")"
+                + "; catalog: " + StringUtils.defaultString((String) payload.get("catalogName"))
+                + "; schema: " + StringUtils.defaultString((String) payload.get("schemaName"))
+                + "; object: " + StringUtils.defaultString((String) payload.get("objectName"));
     }
 }

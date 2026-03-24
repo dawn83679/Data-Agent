@@ -27,17 +27,19 @@ class SystemPromptManagerTest {
     )));
 
     @Test
-    void mainAgentPrompt_containsMemorySkillBlock() {
+    void mainAgentPrompt_mentionsMemoryToolsWithoutMemorySkillBlock() {
         String prompt = manager.render(SystemPromptAssemblyContext.builder()
                 .promptEnum(PromptEnum.ZH)
                 .agentType(AgentTypeEnum.MAIN)
                 .agentMode(AgentModeEnum.AGENT)
                 .language("zh")
                 .modelName("qwen3-max")
-                .availableSkills(List.of(SkillEnum.CHART, SkillEnum.MEMORY))
+                .availableSkills(List.of(SkillEnum.CHART))
                 .build()).renderedPrompt();
 
-        assertTrue(prompt.contains(SkillPromptTagConstant.open(SkillEnum.MEMORY.getSkillName())));
+        assertFalse(prompt.contains(SkillPromptTagConstant.open("memory")));
+        assertFalse(prompt.contains(SkillPromptTagConstant.close("memory")));
+        assertTrue(prompt.contains(SkillPromptTagConstant.open(SkillEnum.CHART.getSkillName())));
         assertTrue(prompt.contains("writeMemory"));
         assertTrue(prompt.contains("examples of memory-worthy signals"));
     }
@@ -54,6 +56,7 @@ class SystemPromptManagerTest {
                 .build()).renderedPrompt();
 
         assertTrue(prompt.contains(SkillPromptTagConstant.open(SkillEnum.SQL_OPTIMIZATION.getSkillName())));
-        assertFalse(prompt.contains(SkillPromptTagConstant.open(SkillEnum.MEMORY.getSkillName())));
+        assertFalse(prompt.contains(SkillPromptTagConstant.open("memory")));
+        assertFalse(prompt.contains(SkillPromptTagConstant.close("memory")));
     }
 }

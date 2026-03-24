@@ -70,8 +70,8 @@ When brevity conflicts with continuity, preserve continuity.
 
 ### 5. Aggressively Discard
 
-- Support wrappers such as `<system_context>`, `<user_memory>`, `<user_mention>`, `<user_question>`.
-- Injected legacy wrappers such as `<memory_context>`, `<candidate_context>`, `<user_query>`.
+- Support wrappers such as `<system_context>`, `<task>`, `<response_preferences>`, `<scope_hints>`, `<durable_facts>`, `<explicit_references>`.
+- Injected legacy wrappers such as `<user_memory>`, `<user_preferences>`, `<user_mention>`, `<user_question>`, `<memory_context>`, `<candidate_context>`, `<user_query>`.
 - Repeated facts already captured elsewhere.
 - Full raw rows when an aggregate or decision summary is enough.
 - Narration that does not affect the next action.

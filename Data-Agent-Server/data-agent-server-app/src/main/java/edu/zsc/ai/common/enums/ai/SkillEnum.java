@@ -23,11 +23,6 @@ public enum SkillEnum {
             "sql-optimization",
             "skills/sql-optimization.md",
             "Optimize complex SQL involving joins, subqueries, aggregation, and execution-plan risks."
-    ),
-    MEMORY(
-            "memory",
-            "skills/memory.md",
-            "Extract and write durable memory when the conversation reveals stable user preferences, durable constraints, business rules, or reusable validated knowledge."
     );
 
     private final String skillName;

@@ -38,6 +38,12 @@ public class ReadMemoryTool {
 
     private final MemoryRecallManager memoryRecallManager;
     private final MemoryService memoryService;
+    private static final String MEMORY_TYPE_GUIDE =
+            "PREFERENCE (RESPONSE_FORMAT, LANGUAGE_PREFERENCE); "
+                    + "BUSINESS_RULE (PRODUCT_RULE, DOMAIN_RULE, GOVERNANCE_RULE, SAFETY_RULE); "
+                    + "KNOWLEDGE_POINT (ARCHITECTURE_KNOWLEDGE, DOMAIN_KNOWLEDGE, GLOSSARY, OBJECT_KNOWLEDGE); "
+                    + "WORKFLOW_CONSTRAINT (PROCESS_RULE, APPROVAL_RULE, IMPLEMENTATION_CONSTRAINT, REVIEW_CONSTRAINT); "
+                    + "GOLDEN_SQL_CASE (QUERY_PATTERN, JOIN_STRATEGY, VALIDATED_SQL, METRIC_CALCULATION).";
 
     @Tool({
             "Value: recalls durable memory across conversation and user dimensions when prompt-injected memory is not enough.",
@@ -46,16 +52,17 @@ public class ReadMemoryTool {
             "Preconditions: intent must describe the durable context you want; optional scope, memoryType, and subType should narrow recall to the smallest useful slice.",
             "Scope Guidance: prefer the narrowest valid scope. Use USER for cross-conversation durable memory and CONVERSATION only for short-lived but reusable context within this conversation.",
             "Classification Guidance: use memoryType/subType only when you already know the likely class of memory. If unsure, leave filters empty rather than guessing wrong.",
-            "Optional: activateSkill(\"memory\") only if you need the extended memory classification guide; the tool itself does not require that skill to run.",
+            "Valid Classes: " + MEMORY_TYPE_GUIDE,
+            "Subtype Rule: subType must be one of the exact uppercase values above. Do not invent labels such as DATABASE_SCHEMA. If unsure, omit subType.",
             "After Success: use only the returned durable memory that directly helps the task; do not narrate the tool call itself to the user.",
             "After Failure: refine the intent or filters and retry only if durable context is still needed.",
             "Do Not Use When: prompt-injected memory already covers the need, or when you only need transient turn context, current-turn emotions, or one-off task instructions."
     })
     public AgentToolResult readMemory(
             @P("What durable context you want to recall") String intent,
-            @P(value = "Optional scope filter: USER/CONVERSATION", required = false) String scope,
-            @P(value = "Optional memory type filter", required = false) String memoryType,
-            @P(value = "Optional memory subType filter", required = false) String subType,
+            @P(value = "Optional scope filter: USER or CONVERSATION", required = false) MemoryScopeEnum scope,
+            @P(value = "Optional memory type filter. Valid values: PREFERENCE, BUSINESS_RULE, KNOWLEDGE_POINT, WORKFLOW_CONSTRAINT, GOLDEN_SQL_CASE", required = false) MemoryTypeEnum memoryType,
+            @P(value = "Optional memory subType filter. Must exactly match one of: RESPONSE_FORMAT, LANGUAGE_PREFERENCE, PRODUCT_RULE, DOMAIN_RULE, GOVERNANCE_RULE, SAFETY_RULE, ARCHITECTURE_KNOWLEDGE, DOMAIN_KNOWLEDGE, GLOSSARY, OBJECT_KNOWLEDGE, PROCESS_RULE, APPROVAL_RULE, IMPLEMENTATION_CONSTRAINT, REVIEW_CONSTRAINT, QUERY_PATTERN, JOIN_STRATEGY, VALIDATED_SQL, METRIC_CALCULATION", required = false) MemorySubTypeEnum subType,
             InvocationParameters parameters) {
 
         AgentTypeEnum agentType = AgentTypeEnum.fromCode(AgentRequestContext.getAgentType());
@@ -115,43 +122,30 @@ public class ReadMemoryTool {
         }
     }
 
-    private String normalizeScope(String scope) {
-        if (StringUtils.isBlank(scope)) {
+    private String normalizeScope(MemoryScopeEnum scope) {
+        if (scope == null) {
             return null;
         }
-        MemoryScopeEnum memoryScope = MemoryScopeEnum.fromCode(scope);
-        if (memoryScope == null) {
-            throw new IllegalArgumentException("Unsupported scope '" + scope + "'. Valid values: " + MemoryScopeEnum.validCodes());
-        }
-        return memoryScope.getCode();
+        return scope.getCode();
     }
 
-    private String normalizeMemoryType(String memoryType) {
-        if (StringUtils.isBlank(memoryType)) {
+    private String normalizeMemoryType(MemoryTypeEnum memoryType) {
+        if (memoryType == null) {
             return null;
         }
-        MemoryTypeEnum type = MemoryTypeEnum.fromCode(memoryType);
-        if (type == null) {
-            throw new IllegalArgumentException(
-                    "Unsupported memoryType '" + memoryType + "'. Valid values: " + MemoryTypeEnum.validCodes());
-        }
-        return type.getCode();
+        return memoryType.getCode();
     }
 
-    private String normalizeSubType(String memoryType, String subType) {
-        if (StringUtils.isBlank(subType)) {
+    private String normalizeSubType(String memoryType, MemorySubTypeEnum subType) {
+        if (subType == null) {
             return null;
         }
-        MemorySubTypeEnum parsed = MemorySubTypeEnum.fromCode(subType);
-        if (parsed == null) {
+        if (StringUtils.isNotBlank(memoryType) && !subType.belongsTo(MemoryTypeEnum.fromCode(memoryType))) {
             throw new IllegalArgumentException(
-                    "Unsupported subType '" + subType + "'. Valid values: " + MemorySubTypeEnum.validCodes());
+                    "subType '" + subType.getCode() + "' does not belong to memoryType '" + memoryType
+                            + "'. Valid subTypes: " + MemorySubTypeEnum.validCodesForText(MemoryTypeEnum.fromCode(memoryType)));
         }
-        if (StringUtils.isNotBlank(memoryType) && !parsed.belongsTo(MemoryTypeEnum.fromCode(memoryType))) {
-            throw new IllegalArgumentException(
-                    "subType '" + subType + "' does not belong to memoryType '" + memoryType + "'.");
-        }
-        return parsed.getCode();
+        return subType.getCode();
     }
 
     private String resolveRecallMemoryType(String memoryType, String subType) {

@@ -1,9 +1,11 @@
 package edu.zsc.ai.domain.service.agent.prompt.strategy;
 
+import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import edu.zsc.ai.domain.service.agent.prompt.AbstractUserPromptHandler;
-import edu.zsc.ai.domain.service.agent.prompt.PromptTextUtil;
 import edu.zsc.ai.domain.service.agent.prompt.UserPromptAssemblyContext;
 import edu.zsc.ai.domain.service.agent.prompt.UserPromptSection;
 
@@ -17,11 +19,13 @@ public class SystemContextPromptStrategy extends AbstractUserPromptHandler {
 
     @Override
     protected String buildContent(UserPromptAssemblyContext context) {
-        StringBuilder builder = new StringBuilder();
-        builder.append("today: ")
-                .append(PromptTextUtil.escape(context.getCurrentDate() == null ? "" : context.getCurrentDate().toString()))
-                .append('\n');
-        builder.append("timezone: ").append(PromptTextUtil.escape(context.getTimezone()));
-        return builder.toString();
+        return UserPromptBlockSupport.renderBlock(
+                context,
+                "当前运行时环境：",
+                "Current runtime environment:",
+                List.of(
+                        "today: " + (context.getCurrentDate() == null ? "" : context.getCurrentDate().toString()),
+                        "timezone: " + StringUtils.defaultString(context.getTimezone())
+                ));
     }
 }

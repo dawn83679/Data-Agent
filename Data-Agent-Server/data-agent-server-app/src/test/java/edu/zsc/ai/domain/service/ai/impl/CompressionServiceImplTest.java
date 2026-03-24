@@ -294,7 +294,8 @@ class CompressionServiceImplTest {
         // XML 标签应出现在序列化消息中，由压缩提示词指导模型丢弃
         assertTrue(prompt.contains("memory_context"), "Serialized messages should contain the XML tags");
         assertTrue(prompt.contains("Aggressively Discard"), "Prompt template should instruct to discard XML tags");
-        assertTrue(prompt.contains("<user_memory>"), "Prompt should discard current runtime support wrappers as well");
+        assertTrue(prompt.contains("<scope_hints>"), "Prompt should discard current runtime support wrappers as well");
+        assertTrue(prompt.contains("<task>"), "Prompt should discard current task wrapper as well");
     }
 
     // ==================== 场景 5: 多轮 searchObjects 探索 ====================
@@ -518,6 +519,8 @@ class CompressionServiceImplTest {
         assertTrue(prompt.contains("readMemory"), "Missing tool rule: readMemory");
         assertTrue(prompt.contains("writeMemory"), "Missing tool rule: writeMemory");
         assertTrue(prompt.contains("<system_context>"), "Missing current runtime wrapper discard rule");
+        assertTrue(prompt.contains("<scope_hints>"), "Missing current scope wrapper discard rule");
+        assertTrue(prompt.contains("<task>"), "Missing current task wrapper discard rule");
         assertTrue(prompt.contains("<memory_context>"), "Missing legacy wrapper discard rule");
     }
 }

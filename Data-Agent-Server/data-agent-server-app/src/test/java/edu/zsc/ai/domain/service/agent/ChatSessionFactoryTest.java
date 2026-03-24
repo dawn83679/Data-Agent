@@ -91,16 +91,35 @@ class ChatSessionFactoryTest {
         when(userPromptManager.render(any()))
                 .thenReturn(new PromptRenderResult<>(
                         """
-                                <system_context>
-                                today: 2026-03-19
+                                <system_context purpose="runtime_environment" apply_to="time_interpretation" strength="reference">
+                                当前运行时环境：
+                                - today: 2026-03-19
+                                - timezone: Asia/Shanghai
                                 </system_context>
-                                <user_question>
-                                我喜欢中文交互
-                                </user_question>
+                                <task purpose="current_user_goal" apply_to="planning,answer_target" strength="highest">
+                                当前任务：
+                                - 我喜欢中文交互
+                                </task>
+                                <response_preferences purpose="final_response_preferences" apply_to="language,format,visualization" strength="default">
+                                请默认遵循以下偏好：
+                                - none
+                                </response_preferences>
+                                <scope_hints purpose="query_scope_guidance" apply_to="tool_selection,object_search,sql_scope" strength="strong">
+                                请优先按以下范围理解和检索：
+                                - none
+                                </scope_hints>
+                                <durable_facts purpose="verified_background_facts" apply_to="reasoning,sql_generation" strength="reference">
+                                已知事实：
+                                - none
+                                </durable_facts>
+                                <explicit_references purpose="user_explicit_object_selection" apply_to="scope_resolution,object_priority" strength="highest">
+                                本轮用户显式引用：
+                                - none
+                                </explicit_references>
                                 """,
                         promptSections(),
                         42,
-                        "Rendered runtime prompt sections: SYSTEM_CONTEXT, USER_MEMORY, USER_QUESTION"));
+                        "Rendered runtime prompt sections: SYSTEM_CONTEXT, TASK, RESPONSE_PREFERENCES, SCOPE_HINTS, DURABLE_FACTS, EXPLICIT_REFERENCES"));
         when(observabilityConfigProvider.current()).thenReturn(AgentObservabilitySettings.builder()
                 .enabled(true)
                 .runtimeLogEnabled(true)
@@ -129,10 +148,11 @@ class ChatSessionFactoryTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> sections = (Map<String, Object>) sectionsEvent.getPayload().get("sections");
         @SuppressWarnings("unchecked")
-        Map<String, Object> userQuestionSection = (Map<String, Object>) sections.get(UserPromptSection.USER_QUESTION.name());
-        assertEquals(Boolean.TRUE, userQuestionSection.get("rendered"));
-        assertEquals("<user_question>\n我喜欢中文交互\n</user_question>", userQuestionSection.get("content"));
-        assertEquals(List.of("SYSTEM_CONTEXT", "USER_MEMORY", "USER_QUESTION"), sectionsEvent.getPayload().get("renderedSections"));
+        Map<String, Object> taskSection = (Map<String, Object>) sections.get(UserPromptSection.TASK.name());
+        assertEquals(Boolean.TRUE, taskSection.get("rendered"));
+        assertEquals("当前任务：\n- 我喜欢中文交互", taskSection.get("content"));
+        assertEquals(List.of("SYSTEM_CONTEXT", "TASK", "RESPONSE_PREFERENCES", "SCOPE_HINTS", "DURABLE_FACTS", "EXPLICIT_REFERENCES"),
+                sectionsEvent.getPayload().get("renderedSections"));
     }
 
     @Test
@@ -142,7 +162,17 @@ class ChatSessionFactoryTest {
                 .build());
 
         String originalMessage = "show me sales";
-        String renderedPrompt = "<user_question>\nshow me sales\n</user_question>";
+        String renderedPrompt = """
+                <system_context purpose="runtime_environment" apply_to="time_interpretation" strength="reference">
+                Current runtime environment:
+                - today: 2026-03-19
+                - timezone: Asia/Shanghai
+                </system_context>
+                <task purpose="current_user_goal" apply_to="planning,answer_target" strength="highest">
+                Current task:
+                - show me sales
+                </task>
+                """;
         ChatRequest request = new ChatRequest();
         request.setMessage(originalMessage);
         request.setLanguage("en");
@@ -158,7 +188,7 @@ class ChatSessionFactoryTest {
                         renderedPrompt,
                         promptSections(),
                         11,
-                        "Rendered runtime prompt sections: SYSTEM_CONTEXT, USER_MEMORY, USER_QUESTION"));
+                        "Rendered runtime prompt sections: SYSTEM_CONTEXT, TASK, RESPONSE_PREFERENCES, SCOPE_HINTS, DURABLE_FACTS, EXPLICIT_REFERENCES"));
         when(observabilityConfigProvider.current()).thenReturn(AgentObservabilitySettings.builder()
                 .enabled(true)
                 .runtimeLogEnabled(true)
@@ -183,7 +213,7 @@ class ChatSessionFactoryTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> systemContextSection = (Map<String, Object>) sections.get(UserPromptSection.SYSTEM_CONTEXT.name());
         assertEquals(Boolean.TRUE, systemContextSection.get("rendered"));
-        assertEquals("<system_context>\ntoday: 2026-03-19\n</system_context>", systemContextSection.get("content"));
+        assertEquals("当前运行时环境：\n- today: 2026-03-19\n- timezone: Asia/Shanghai", systemContextSection.get("content"));
     }
 
     @Test
@@ -204,10 +234,15 @@ class ChatSessionFactoryTest {
                 .thenReturn(MemoryPromptContext.builder().build());
         when(userPromptManager.render(any()))
                 .thenReturn(new PromptRenderResult<>(
-                        "<user_question>\nshow me sales\n</user_question>",
+                        """
+                                <task purpose="current_user_goal" apply_to="planning,answer_target" strength="highest">
+                                Current task:
+                                - show me sales
+                                </task>
+                                """,
                         promptSections(),
                         11,
-                        "Rendered runtime prompt sections: SYSTEM_CONTEXT, USER_MEMORY, USER_QUESTION"));
+                        "Rendered runtime prompt sections: SYSTEM_CONTEXT, TASK, RESPONSE_PREFERENCES, SCOPE_HINTS, DURABLE_FACTS, EXPLICIT_REFERENCES"));
         when(observabilityConfigProvider.current()).thenReturn(AgentObservabilitySettings.builder()
                 .enabled(true)
                 .runtimeLogEnabled(false)
@@ -230,22 +265,32 @@ class ChatSessionFactoryTest {
         Map<UserPromptSection, PromptSectionResult<UserPromptSection>> sections = new EnumMap<>(UserPromptSection.class);
         sections.put(UserPromptSection.SYSTEM_CONTEXT, new PromptSectionResult<>(
                 UserPromptSection.SYSTEM_CONTEXT,
-                "<system_context>\ntoday: 2026-03-19\n</system_context>",
+                "当前运行时环境：\n- today: 2026-03-19\n- timezone: Asia/Shanghai",
                 true,
                 Map.of("source", "system")));
-        sections.put(UserPromptSection.USER_MEMORY, new PromptSectionResult<>(
-                UserPromptSection.USER_MEMORY,
-                "<user_memory>\n- prefers chinese\n</user_memory>",
+        sections.put(UserPromptSection.TASK, new PromptSectionResult<>(
+                UserPromptSection.TASK,
+                "当前任务：\n- 我喜欢中文交互",
                 true,
-                Map.of("memoryCount", 1)));
-        sections.put(UserPromptSection.USER_MENTION, new PromptSectionResult<>(
-                UserPromptSection.USER_MENTION,
-                "",
-                false,
                 Map.of()));
-        sections.put(UserPromptSection.USER_QUESTION, new PromptSectionResult<>(
-                UserPromptSection.USER_QUESTION,
-                "<user_question>\n我喜欢中文交互\n</user_question>",
+        sections.put(UserPromptSection.RESPONSE_PREFERENCES, new PromptSectionResult<>(
+                UserPromptSection.RESPONSE_PREFERENCES,
+                "请默认遵循以下偏好：\n- none",
+                true,
+                Map.of()));
+        sections.put(UserPromptSection.SCOPE_HINTS, new PromptSectionResult<>(
+                UserPromptSection.SCOPE_HINTS,
+                "请优先按以下范围理解和检索：\n- none",
+                true,
+                Map.of()));
+        sections.put(UserPromptSection.DURABLE_FACTS, new PromptSectionResult<>(
+                UserPromptSection.DURABLE_FACTS,
+                "已知事实：\n- none",
+                true,
+                Map.of()));
+        sections.put(UserPromptSection.EXPLICIT_REFERENCES, new PromptSectionResult<>(
+                UserPromptSection.EXPLICIT_REFERENCES,
+                "本轮用户显式引用：\n- none",
                 true,
                 Map.of()));
         return sections;

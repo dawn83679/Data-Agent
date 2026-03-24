@@ -22,10 +22,30 @@ class MemoryUtilTest {
                 """.formatted(
                 UserPromptTagConstant.SYSTEM_CONTEXT_OPEN,
                 UserPromptTagConstant.SYSTEM_CONTEXT_CLOSE,
+                UserPromptTagConstant.TASK_OPEN,
+                UserPromptTagConstant.TASK_CLOSE);
+
+        assertEquals("show me the current memory design", MemoryUtil.stripInjectedWrapper(wrapped));
+    }
+
+    @Test
+    void stripInjectedWrapper_supportsLegacyUserQuestionWrapper() {
+        String wrapped = """
+                %s
+                today: 2026-03-18
+                timezone: Asia/Shanghai
+                %s
+
+                %s
+                show me the legacy wrapped task
+                %s
+                """.formatted(
+                UserPromptTagConstant.SYSTEM_CONTEXT_OPEN,
+                UserPromptTagConstant.SYSTEM_CONTEXT_CLOSE,
                 UserPromptTagConstant.USER_QUESTION_OPEN,
                 UserPromptTagConstant.USER_QUESTION_CLOSE);
 
-        assertEquals("show me the current memory design", MemoryUtil.stripInjectedWrapper(wrapped));
+        assertEquals("show me the legacy wrapped task", MemoryUtil.stripInjectedWrapper(wrapped));
     }
 
     @Test
