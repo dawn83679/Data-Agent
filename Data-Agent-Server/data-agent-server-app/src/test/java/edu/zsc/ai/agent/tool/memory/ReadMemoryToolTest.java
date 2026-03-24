@@ -69,9 +69,9 @@ class ReadMemoryToolTest {
 
         AgentToolResult result = tool.readMemory(
                 "remember the user's output preference",
-                MemoryScopeEnum.USER.getCode(),
-                MemoryTypeEnum.PREFERENCE.getCode(),
-                MemorySubTypeEnum.RESPONSE_FORMAT.getCode(),
+                MemoryScopeEnum.USER,
+                MemoryTypeEnum.PREFERENCE,
+                MemorySubTypeEnum.RESPONSE_FORMAT,
                 InvocationParameters.from(Map.of()));
 
         assertTrue(result.isSuccess());
@@ -91,8 +91,8 @@ class ReadMemoryToolTest {
         AgentToolResult result = tool.readMemory(
                 "find domain rules",
                 null,
-                MemoryTypeEnum.PREFERENCE.getCode(),
-                MemorySubTypeEnum.DOMAIN_RULE.getCode(),
+                MemoryTypeEnum.PREFERENCE,
+                MemorySubTypeEnum.DOMAIN_RULE,
                 InvocationParameters.from(Map.of()));
 
         assertFalse(result.isSuccess());

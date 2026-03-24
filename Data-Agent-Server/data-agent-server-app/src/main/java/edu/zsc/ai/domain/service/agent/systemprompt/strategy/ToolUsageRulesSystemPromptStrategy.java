@@ -25,7 +25,7 @@ public class ToolUsageRulesSystemPromptStrategy extends AbstractSystemPromptHand
         if (context.getAgentType() == AgentTypeEnum.MAIN) {
             builder.append("\n- readMemory can help when prompt-injected memory is not enough and targeted durable context would clarify the task");
             builder.append("\n- writeMemory fits durable, reusable preferences, rules, facts, and validated patterns more than one-off task details");
-            builder.append("\n- when the conversation reveals a stable preference, durable workflow rule, validated workspace fact, or reusable SQL pattern, you can consider activating the memory skill and writing memory during the turn");
+            builder.append("\n- when the conversation reveals a stable preference, durable workflow rule, validated workspace fact, or reusable SQL pattern, you can consider writing memory during the turn");
             builder.append("\n- examples of memory-worthy signals: repeated output-format preference, workspace naming/governance constraint, or a verified reusable SQL aggregation pattern");
         }
         return builder.toString();

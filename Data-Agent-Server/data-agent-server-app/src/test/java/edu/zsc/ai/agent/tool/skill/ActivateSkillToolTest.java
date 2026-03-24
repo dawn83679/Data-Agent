@@ -19,7 +19,7 @@ class ActivateSkillToolTest {
     }
 
     @Test
-    void mainAgentCanLoadMemorySkill() {
+    void mainAgentCannotLoadMemorySkillAfterRemoval() {
         AgentRequestContext.set(AgentRequestContextInfo.builder()
                 .agentType("main")
                 .agentMode("agent")
@@ -27,15 +27,7 @@ class ActivateSkillToolTest {
 
         String result = tool.activateSkill("memory");
 
-        assertTrue(result.contains("writeMemory"));
-        assertTrue(result.contains("readMemory"));
-        assertTrue(result.contains("PREFERENCE"));
-        assertTrue(result.contains("### USER"));
-        assertTrue(result.contains("### GLOBAL"));
-        assertTrue(result.contains("#### METRIC_CALCULATION"));
-        assertTrue(result.contains("Good:"));
-        assertTrue(result.contains("Bad:"));
-        assertTrue(result.contains("ARPU equals revenue divided by paid_users."));
+        assertTrue(result.contains("not available for the current agent"));
     }
 
     @Test

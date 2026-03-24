@@ -17,8 +17,8 @@ class AgentSkillConfigTest {
     private final AgentSkillConfig config = new AgentSkillConfig();
 
     @Test
-    void mainAgentInNormalMode_hasChartAndMemory() {
-        assertEquals(List.of(SkillEnum.CHART, SkillEnum.MEMORY),
+    void mainAgentInNormalMode_hasOnlyChart() {
+        assertEquals(List.of(SkillEnum.CHART),
                 config.resolveAvailableSkills(AgentTypeEnum.MAIN, AgentModeEnum.AGENT));
     }
 
@@ -35,7 +35,7 @@ class AgentSkillConfigTest {
 
     @Test
     void supports_respectsAgentSkillVisibility() {
-        assertTrue(config.supports(AgentTypeEnum.MAIN, AgentModeEnum.AGENT, "memory"));
+        assertFalse(config.supports(AgentTypeEnum.MAIN, AgentModeEnum.AGENT, "memory"));
         assertFalse(config.supports(AgentTypeEnum.PLANNER, AgentModeEnum.AGENT, "memory"));
         assertFalse(config.supports(AgentTypeEnum.EXPLORER, AgentModeEnum.AGENT, "chart"));
     }

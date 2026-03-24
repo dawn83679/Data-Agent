@@ -43,7 +43,7 @@ public class ChatRequest extends BaseRequest {
 
     /**
      * Structured @ mentions selected from ChatInput.
-     * These are used to populate the runtime prompt's <user_mention> block.
+     * These are used to populate the runtime prompt's explicit references block.
      */
     private List<ChatUserMention> userMentions;
 

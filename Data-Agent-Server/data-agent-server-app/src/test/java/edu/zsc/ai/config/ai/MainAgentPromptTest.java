@@ -78,45 +78,57 @@ class MainAgentPromptTest {
     }
 
     @Test
-    void workflow_prioritizesMemoryLanguageAndMentionGrounding() {
-        assertTrue(promptContent.contains("<user_preferences> 是顶层自然语言偏好区块，也是默认有效的回答协议"),
-                "Prompt should keep durable language/output preferences active by default");
-        assertTrue(promptContent.contains("只有用户在本轮明确要求切换时才覆盖"),
-                "Prompt should require explicit override for response preferences");
-        assertTrue(promptContent.contains("不要把 user_question 里偶然出现的英文"),
+    void workflow_usesSemanticConstraintsInsteadOfUserPromptTags() {
+        assertTrue(promptContent.contains("稳定偏好"),
+                "Prompt should describe stable preferences semantically");
+        assertTrue(promptContent.contains("durable context"),
+                "Prompt should describe durable context semantically");
+        assertTrue(promptContent.contains("不要把任务文本里偶然出现的英文"),
                 "Prompt should reject incidental language as an override signal");
-        assertTrue(promptContent.contains("在最终交付前，回看 <user_preferences>"),
+        assertTrue(promptContent.contains("确认最终语言、回答格式和可视化方式"),
                 "Prompt should require a final preference compliance check");
-        assertTrue(promptContent.contains("user_mention 是 JSON 数组"),
-                "Prompt should describe user_mention as structured JSON");
         assertTrue(promptContent.contains("你的目标不是遵循固定流程"),
                 "Prompt should emphasize judgment over rigid workflow");
+        assertFalse(promptContent.contains("user_question"),
+                "Prompt should not couple to user_question field name");
+        assertFalse(promptContent.contains("user_memory"),
+                "Prompt should not couple to user_memory field name");
+        assertFalse(promptContent.contains("user_preferences"),
+                "Prompt should not couple to user_preferences field name");
+        assertFalse(promptContent.contains("user_mention"),
+                "Prompt should not couple to user_mention field name");
+        assertFalse(promptContent.contains("<user_preferences>"),
+                "Prompt should not couple to user prompt XML tags");
     }
 
     @Test
-    void workflow_allowsDirectReadPathForClearReadOnlyRequests() {
+    void workflow_reflectsRuntimeToolFlow() {
         assertTrue(promptContent.contains("最小、最有效的下一步"),
                 "Prompt should prefer minimal effective next actions");
         assertTrue(promptContent.contains("searchObjects 适合做轻量候选发现"),
                 "Prompt should describe lightweight discovery capability");
-        assertTrue(promptContent.contains("简单只读任务通常可以直接执行"),
+        assertTrue(promptContent.contains("简单只读任务通常可以直接调用 executeSelectSql"),
                 "Prompt should keep a direct execution path for simple reads");
+        assertTrue(promptContent.contains("getEnvironmentOverview：查看当前环境中的连接与 catalog 选项"),
+                "Prompt should describe environment overview as a runtime scoping tool");
+        assertTrue(promptContent.contains("使用 renderChart 交付更直观的结果"),
+                "Prompt should include visualization in the runtime workflow");
     }
 
     @Test
-    void workflow_usesExamplesInsteadOfBusinessSpecificRules() {
+    void workflow_usesSimplifiedExamples() {
         assertTrue(promptContent.contains("<examples>"),
                 "Prompt should include abstract examples");
-        assertTrue(promptContent.contains("示例 A：作用域缺失"),
+        assertTrue(promptContent.contains("示例 A：范围未定"),
                 "Prompt should teach scope reduction through examples");
-        assertTrue(promptContent.contains("示例 C：候选不唯一"),
-                "Prompt should teach how to handle ambiguous candidates");
-        assertTrue(promptContent.contains("示例 D：偏好约束"),
-                "Prompt should include a preference-constrained delivery example");
-        assertTrue(promptContent.contains("示例 E：读取记忆"),
-                "Prompt should include an example about targeted memory recall");
-        assertTrue(promptContent.contains("示例 F：写入记忆"),
-                "Prompt should include an example about writing durable memory");
+        assertTrue(promptContent.contains("示例 C：结构仍不明确"),
+                "Prompt should teach how to resolve structural ambiguity");
+        assertTrue(promptContent.contains("示例 D：需要 SQL 方案"),
+                "Prompt should include a planner-oriented example");
+        assertTrue(promptContent.contains("示例 E：稳定约束已存在"),
+                "Prompt should include an example about existing stable constraints");
+        assertFalse(promptContent.contains("示例 F：写入记忆"),
+                "Prompt examples should stay compact instead of expanding memory-specific cases");
     }
 
     @Test

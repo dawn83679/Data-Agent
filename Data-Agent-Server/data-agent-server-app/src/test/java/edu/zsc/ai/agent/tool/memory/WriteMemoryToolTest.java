@@ -20,7 +20,10 @@ import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.agent.tool.error.ToolErrorMapper;
 import edu.zsc.ai.aspect.AgentToolContextAspect;
 import edu.zsc.ai.common.constant.InvocationContextConstant;
+import edu.zsc.ai.common.enums.ai.MemoryScopeEnum;
+import edu.zsc.ai.common.enums.ai.MemorySubTypeEnum;
 import edu.zsc.ai.common.enums.ai.MemoryToolActionEnum;
+import edu.zsc.ai.common.enums.ai.MemoryTypeEnum;
 import edu.zsc.ai.context.AgentRequestContext;
 import edu.zsc.ai.context.AgentRequestContextInfo;
 import edu.zsc.ai.context.RequestContext;
@@ -59,9 +62,9 @@ class WriteMemoryToolTest {
                 .build());
 
         AgentToolResult result = tool.writeMemory(
-                "USER",
-                "PREFERENCE",
-                "RESPONSE_FORMAT",
+                MemoryScopeEnum.USER,
+                MemoryTypeEnum.PREFERENCE,
+                MemorySubTypeEnum.RESPONSE_FORMAT,
                 "Structured output",
                 "User prefers structured output.",
                 "The preference was repeated explicitly.",
@@ -90,9 +93,9 @@ class WriteMemoryToolTest {
                 .build());
 
         AgentToolResult result = tool.writeMemory(
-                "USER",
-                "PREFERENCE",
-                "RESPONSE_FORMAT",
+                MemoryScopeEnum.USER,
+                MemoryTypeEnum.PREFERENCE,
+                MemorySubTypeEnum.RESPONSE_FORMAT,
                 "Structured output",
                 "User prefers structured output.",
                 null,
@@ -110,9 +113,9 @@ class WriteMemoryToolTest {
                 .build());
 
         AgentToolResult result = tool.writeMemory(
-                "USER",
-                "PREFERENCE",
-                "RESPONSE_FORMAT",
+                MemoryScopeEnum.USER,
+                MemoryTypeEnum.PREFERENCE,
+                MemorySubTypeEnum.RESPONSE_FORMAT,
                 "Structured output",
                 "User prefers structured output.",
                 null,
@@ -139,9 +142,9 @@ class WriteMemoryToolTest {
         });
 
         AgentToolResult result = proxy.writeMemory(
-                "USER",
-                "PREFERENCE",
-                "LANGUAGE_PREFERENCE",
+                MemoryScopeEnum.USER,
+                MemoryTypeEnum.PREFERENCE,
+                MemorySubTypeEnum.LANGUAGE_PREFERENCE,
                 "用户语言偏好",
                 "用户偏好使用中文进行交互",
                 "用户明确表达了中文交互的偏好",

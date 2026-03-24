@@ -17,15 +17,14 @@ import edu.zsc.ai.common.constant.UserPromptTagConstant;
  */
 public final class MemoryUtil {
 
-    public static final String TAG_USER_QUESTION_OPEN = UserPromptTagConstant.USER_QUESTION_OPEN;
-    public static final String TAG_USER_QUESTION_CLOSE = UserPromptTagConstant.USER_QUESTION_CLOSE;
-    public static final String TAG_SYSTEM_CONTEXT_OPEN = UserPromptTagConstant.SYSTEM_CONTEXT_OPEN;
-    public static final String TAG_USER_MEMORY_OPEN = UserPromptTagConstant.USER_MEMORY_OPEN;
-    public static final String TAG_USER_MENTION_OPEN = UserPromptTagConstant.USER_MENTION_OPEN;
-
+    private static final Pattern TASK_PATTERN =
+            Pattern.compile("(?ms)^\\s*<task(?:\\s+[^>]*)?>\\s*(.*?)\\s*^\\s*</task>");
     private static final Pattern USER_QUESTION_PATTERN =
-            Pattern.compile("(?ms)^\\s*" + TAG_USER_QUESTION_OPEN + "\\s*(.*?)\\s*^\\s*"
-                    + TAG_USER_QUESTION_CLOSE + "\\s*$");
+            Pattern.compile("(?ms)^\\s*<user_question(?:\\s+[^>]*)?>\\s*(.*?)\\s*^\\s*</user_question>");
+    private static final Pattern MODERN_WRAPPER_PREFIX =
+            Pattern.compile("^\\s*<(system_context|task|response_preferences|scope_hints|durable_facts|explicit_references)(?:\\s+[^>]*)?>");
+    private static final Pattern LEGACY_WRAPPER_PREFIX =
+            Pattern.compile("^\\s*<(user_memory|user_mention|system_context)(?:\\s+[^>]*)?>");
 
     private MemoryUtil() {
     }
@@ -64,6 +63,10 @@ public final class MemoryUtil {
         if (!looksLikeInjectedWrapper(trimmed)) {
             return content;
         }
+        Matcher taskMatcher = TASK_PATTERN.matcher(trimmed);
+        if (taskMatcher.find()) {
+            return StringUtils.trimToEmpty(taskMatcher.group(1));
+        }
         Matcher matcher = USER_QUESTION_PATTERN.matcher(trimmed);
         if (!matcher.find()) {
             return content;
@@ -72,11 +75,12 @@ public final class MemoryUtil {
     }
 
     private static boolean looksLikeInjectedWrapper(String trimmed) {
-        if (!trimmed.contains(TAG_USER_QUESTION_OPEN) || !trimmed.contains(TAG_USER_QUESTION_CLOSE)) {
+        boolean hasTaskWrapper = TASK_PATTERN.matcher(trimmed).find();
+        boolean hasLegacyQuestionWrapper = USER_QUESTION_PATTERN.matcher(trimmed).find();
+        if (!hasTaskWrapper && !hasLegacyQuestionWrapper) {
             return false;
         }
-        return trimmed.startsWith(TAG_SYSTEM_CONTEXT_OPEN)
-                || trimmed.startsWith(TAG_USER_MEMORY_OPEN)
-                || trimmed.startsWith(TAG_USER_MENTION_OPEN);
+        return MODERN_WRAPPER_PREFIX.matcher(trimmed).find()
+                || LEGACY_WRAPPER_PREFIX.matcher(trimmed).find();
     }
 }

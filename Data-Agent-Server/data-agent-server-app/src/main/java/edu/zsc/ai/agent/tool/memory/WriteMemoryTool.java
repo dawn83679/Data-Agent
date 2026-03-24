@@ -12,7 +12,10 @@ import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.common.constant.MemoryRecallConstant;
 import edu.zsc.ai.common.enums.ai.AgentModeEnum;
 import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
+import edu.zsc.ai.common.enums.ai.MemoryScopeEnum;
+import edu.zsc.ai.common.enums.ai.MemorySubTypeEnum;
 import edu.zsc.ai.common.enums.ai.MemoryToolActionEnum;
+import edu.zsc.ai.common.enums.ai.MemoryTypeEnum;
 import edu.zsc.ai.context.AgentRequestContext;
 import edu.zsc.ai.domain.exception.BusinessException;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryWriteRequest;
@@ -28,6 +31,12 @@ import lombok.extern.slf4j.Slf4j;
 public class WriteMemoryTool {
 
     private final MemoryService memoryService;
+    private static final String MEMORY_TYPE_GUIDE =
+            "PREFERENCE (RESPONSE_FORMAT, LANGUAGE_PREFERENCE); "
+                    + "BUSINESS_RULE (PRODUCT_RULE, DOMAIN_RULE, GOVERNANCE_RULE, SAFETY_RULE); "
+                    + "KNOWLEDGE_POINT (ARCHITECTURE_KNOWLEDGE, DOMAIN_KNOWLEDGE, GLOSSARY, OBJECT_KNOWLEDGE); "
+                    + "WORKFLOW_CONSTRAINT (PROCESS_RULE, APPROVAL_RULE, IMPLEMENTATION_CONSTRAINT, REVIEW_CONSTRAINT); "
+                    + "GOLDEN_SQL_CASE (QUERY_PATTERN, JOIN_STRATEGY, VALIDATED_SQL, METRIC_CALCULATION).";
 
     @Tool({
             "Value: writes durable structured memory for future prompt injection and continuity across turns.",
@@ -36,15 +45,16 @@ public class WriteMemoryTool {
             "Preconditions: choose the narrowest valid scope, memoryType, and subType; content must be concise, durable, and reusable rather than conversational.",
             "Scope Guidance: use USER for durable user preferences or reusable cross-conversation rules, and CONVERSATION only for short-lived but reusable constraints inside this conversation.",
             "Classification Guidance: PREFERENCE is for stable language or response-format preferences; BUSINESS_RULE and WORKFLOW_CONSTRAINT are for durable rules; KNOWLEDGE_POINT is for verified facts; GOLDEN_SQL_CASE is for validated reusable SQL patterns.",
-            "Optional: activateSkill(\"memory\") only if you need the extended memory classification guide; the tool itself does not require that skill to run.",
+            "Valid Classes: " + MEMORY_TYPE_GUIDE,
+            "Subtype Rule: subType must be one of the exact uppercase values above and must match memoryType. Do not invent new labels. Facts about a concrete table, database, or object usually belong to OBJECT_KNOWLEDGE or ARCHITECTURE_KNOWLEDGE, not a made-up subtype.",
             "After Success: continue the task normally; do not narrate the memory write as the user-facing result.",
             "After Failure: fix the classification or content and retry only if the information is truly durable.",
             "Do Not Use When: the information is temporary, emotional-only, speculative, or specific to a one-off task."
     })
     public AgentToolResult writeMemory(
-            @P("Memory scope: USER/CONVERSATION") String scope,
-            @P("Memory type: PREFERENCE/BUSINESS_RULE/KNOWLEDGE_POINT/WORKFLOW_CONSTRAINT/GOLDEN_SQL_CASE") String memoryType,
-            @P("Memory subType matching the chosen memoryType") String subType,
+            @P("Memory scope: USER or CONVERSATION") MemoryScopeEnum scope,
+            @P("Memory type: PREFERENCE, BUSINESS_RULE, KNOWLEDGE_POINT, WORKFLOW_CONSTRAINT, or GOLDEN_SQL_CASE") MemoryTypeEnum memoryType,
+            @P("Memory subType. Must exactly match one of: RESPONSE_FORMAT, LANGUAGE_PREFERENCE, PRODUCT_RULE, DOMAIN_RULE, GOVERNANCE_RULE, SAFETY_RULE, ARCHITECTURE_KNOWLEDGE, DOMAIN_KNOWLEDGE, GLOSSARY, OBJECT_KNOWLEDGE, PROCESS_RULE, APPROVAL_RULE, IMPLEMENTATION_CONSTRAINT, REVIEW_CONSTRAINT, QUERY_PATTERN, JOIN_STRATEGY, VALIDATED_SQL, METRIC_CALCULATION") MemorySubTypeEnum subType,
             @P("Short memory title") String title,
             @P("Authoritative durable memory content") String content,
             @P(value = "Short reason explaining why this memory should persist", required = false) String reason,
@@ -61,9 +71,9 @@ public class WriteMemoryTool {
 
         try {
             MemoryWriteResult writeResult = memoryService.writeAgentMemory(MemoryWriteRequest.builder()
-                    .scope(scope)
-                    .memoryType(memoryType)
-                    .subType(subType)
+                    .scope(scope == null ? null : scope.getCode())
+                    .memoryType(memoryType == null ? null : memoryType.getCode())
+                    .subType(subType == null ? null : subType.getCode())
                     .title(title)
                     .content(content)
                     .reason(reason)

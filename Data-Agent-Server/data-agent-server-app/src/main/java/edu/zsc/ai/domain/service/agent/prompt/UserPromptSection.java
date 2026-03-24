@@ -5,10 +5,11 @@ import java.util.List;
 public enum UserPromptSection {
 
     SYSTEM_CONTEXT("{{SYSTEM_CONTEXT}}"),
-    USER_MEMORY("{{USER_MEMORY}}"),
-    USER_PREFERENCES("{{USER_PREFERENCES}}"),
-    USER_MENTION("{{USER_MENTION}}"),
-    USER_QUESTION("{{USER_QUESTION}}");
+    TASK("{{TASK}}"),
+    RESPONSE_PREFERENCES("{{RESPONSE_PREFERENCES}}"),
+    SCOPE_HINTS("{{SCOPE_HINTS}}"),
+    DURABLE_FACTS("{{DURABLE_FACTS}}"),
+    EXPLICIT_REFERENCES("{{EXPLICIT_REFERENCES}}");
 
     private final String placeholder;
 
@@ -21,6 +22,6 @@ public enum UserPromptSection {
     }
 
     public static List<UserPromptSection> renderOrder() {
-        return List.of(SYSTEM_CONTEXT, USER_MEMORY, USER_PREFERENCES, USER_MENTION, USER_QUESTION);
+        return List.of(SYSTEM_CONTEXT, TASK, RESPONSE_PREFERENCES, SCOPE_HINTS, DURABLE_FACTS, EXPLICIT_REFERENCES);
     }
 }
