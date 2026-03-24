@@ -120,24 +120,34 @@ export function TableDataToolbar({
         DDL
       </Button>
       <div className="w-px h-4 bg-border mx-0.5" />
-      <div className="flex items-center gap-1">
-        <Button
-          variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-          size="sm"
-          className="h-6 px-2 text-[10px]"
-          onClick={() => onViewModeChange('grid')}
-        >
-          {t(I18N_KEYS.EXPLORER.GRID_VIEW)}
-        </Button>
-        <Button
-          variant={viewMode === 'transpose' ? 'secondary' : 'ghost'}
-          size="sm"
-          className="h-6 px-2 text-[10px]"
-          onClick={() => onViewModeChange('transpose')}
-        >
-          {t(I18N_KEYS.EXPLORER.TRANSPOSE_VIEW)}
-        </Button>
-      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="h-6 px-2 rounded flex items-center gap-1 text-[10px] theme-text-primary hover:bg-accent/30 transition-colors">
+            <span>{viewMode === 'grid' ? t(I18N_KEYS.EXPLORER.GRID_VIEW) : t(I18N_KEYS.EXPLORER.TRANSPOSE_VIEW)}</span>
+            <ChevronDown className="w-3 h-3 theme-text-secondary" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="min-w-[100px]">
+          <DropdownMenuItem
+            onClick={() => onViewModeChange('grid')}
+            className={`text-[11px] px-2 py-1.5 ${
+              viewMode === 'grid' ? 'theme-text-primary font-semibold' : 'theme-text-secondary'
+            }`}
+          >
+            <span className="w-4">{viewMode === 'grid' && <span>✓</span>}</span>
+            <span className="ml-2">{t(I18N_KEYS.EXPLORER.GRID_VIEW)}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => onViewModeChange('transpose')}
+            className={`text-[11px] px-2 py-1.5 ${
+              viewMode === 'transpose' ? 'theme-text-primary font-semibold' : 'theme-text-secondary'
+            }`}
+          >
+            <span className="w-4">{viewMode === 'transpose' && <span>✓</span>}</span>
+            <span className="ml-2">{t(I18N_KEYS.EXPLORER.TRANSPOSE_VIEW)}</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <div className="flex-1" />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
