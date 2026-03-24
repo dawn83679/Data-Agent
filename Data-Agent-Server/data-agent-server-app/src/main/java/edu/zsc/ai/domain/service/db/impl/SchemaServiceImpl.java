@@ -23,9 +23,14 @@ public class SchemaServiceImpl implements SchemaService {
         connectionService.openConnection(connectionId);
 
         ActiveConnectionRegistry.ActiveConnection active = ActiveConnectionRegistry.getAnyOwnedActiveConnection(connectionId);
+        DefaultPluginManager pluginManager = DefaultPluginManager.getInstance();
+        if (!pluginManager.supportsSchemaByPluginId(active.pluginId())) {
+            return List.of();
+        }
+
         SchemaManager provider;
         try {
-            provider = DefaultPluginManager.getInstance().getSchemaManagerByPluginId(active.pluginId());
+            provider = pluginManager.getSchemaManagerByPluginId(active.pluginId());
         } catch (IllegalArgumentException e) {
             throw BusinessException.badRequest("Plugin does not support listing schemas: " + e.getMessage());
         }

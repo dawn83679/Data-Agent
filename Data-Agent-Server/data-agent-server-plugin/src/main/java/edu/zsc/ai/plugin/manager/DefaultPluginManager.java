@@ -1,6 +1,7 @@
 package edu.zsc.ai.plugin.manager;
 
 import edu.zsc.ai.plugin.Plugin;
+import edu.zsc.ai.plugin.SqlPlugin;
 import edu.zsc.ai.plugin.capability.ColumnManager;
 import edu.zsc.ai.plugin.capability.CommandExecutor;
 import edu.zsc.ai.plugin.capability.ConnectionManager;
@@ -262,5 +263,13 @@ public class DefaultPluginManager implements PluginManager {
     public SqlValidator getSqlValidatorByPluginId(@NotBlank String pluginId) {
         Plugin plugin = pluginMap.get(pluginId);
         return (plugin instanceof SqlValidator validator) ? validator : DefaultSqlValidator.INSTANCE;
+    }
+
+    public boolean supportsSchemaByPluginId(@NotBlank String pluginId) {
+        Plugin plugin = pluginMap.get(pluginId);
+        if (plugin == null) {
+            throw new IllegalArgumentException("No plugin found with ID: " + pluginId);
+        }
+        return !(plugin instanceof SqlPlugin sqlPlugin) || sqlPlugin.supportSchema();
     }
 }
