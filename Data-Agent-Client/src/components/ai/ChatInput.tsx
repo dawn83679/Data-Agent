@@ -149,20 +149,18 @@ export function ChatInput() {
 
   return (
     <>
-      {/* Todo list above input */}
       {showTodos && (
-        <div className="px-2 pt-1.5 pb-1 theme-bg-panel border-t theme-border shrink-0">
+        <div className="px-3 pt-2 pb-1 border-t theme-border shrink-0 bg-[color:var(--bg-panel)]">
           <TodoListBlock items={latestTodoItems} />
         </div>
       )}
 
-      {/* Todo list above input */}
-      <div className="p-2 theme-bg-panel border-t theme-border shrink-0">
+      <div className="p-3 border-t theme-border shrink-0 bg-[color:var(--bg-panel)]">
         <div
-          className={`rounded-lg border theme-border theme-bg-main relative transition-colors flex flex-col ${AGENT_COLORS[agent].focusBorder}`}
+          className={`rounded-xl border relative transition-colors flex flex-col gap-3 p-3 bg-[color:var(--bg-popup)] border-[color:var(--border-color)] ${AGENT_COLORS[agent].focusBorder}`}
         >
           {contextUsage && (
-            <div className="absolute right-2 top-2 z-20">
+            <div className="absolute right-3 top-3 z-20">
               <div
                 className="relative h-8 w-8 rounded-full"
                 title={contextUsage.title}
@@ -170,7 +168,7 @@ export function ChatInput() {
                   background: `conic-gradient(${contextUsage.ringColor} ${contextUsage.progressPercent}%, rgba(255,255,255,0.08) 0)`,
                 }}
               >
-                <div className="absolute inset-[2px] rounded-full theme-bg-main border theme-border flex items-center justify-center">
+                <div className="absolute inset-[2px] rounded-full bg-[color:var(--bg-popup)] border theme-border flex items-center justify-center">
                   <span className={`text-[8px] font-semibold leading-none ${contextUsage.textClassName}`}>
                     {contextUsage.label}
                   </span>

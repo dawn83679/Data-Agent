@@ -58,7 +58,7 @@ function resolveMentionsInText(text: string, mentions: ChatUserMention[]): ChatU
     .filter((mention): mention is ChatUserMention => mention != null);
 }
 
-export function AIAssistant() {
+export function AIAssistant({ onClosePanel }: { onClosePanel?: () => void }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -304,7 +304,6 @@ export function AIAssistant() {
         <AIAssistantHeader
           title={t(I18N_KEYS.AI.TITLE)}
           historyAriaLabel={t(I18N_KEYS.AI.HISTORY)}
-          memoryAriaLabel={t(I18N_KEYS.AI.MEMORY_ENTRY_TOOLTIP)}
           accessToken={!!accessToken}
           isHistoryOpen={isHistoryOpen}
           setIsHistoryOpen={setIsHistoryOpen}
@@ -353,6 +352,11 @@ export function AIAssistant() {
             setActiveConversation(null);
             loadMessages(null, []);
             setConversationTokenCount(null, null);
+          }}
+          onClosePanel={() => {
+            setIsHistoryOpen(false);
+            setIsSettingsOpen(false);
+            onClosePanel?.();
           }}
         />
 

@@ -53,7 +53,7 @@ export function MessageList({
   const hiddenCount = displayMessages.length - visibleMessages.length;
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-4 theme-bg-main">
+    <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-6 bg-[color:var(--bg-panel)]">
       {hiddenCount > 0 && (
         <div className="text-center text-xs theme-text-secondary py-2 opacity-60">
           {hiddenCount} {t('ai.messages_hidden', { defaultValue: 'earlier messages hidden' })}

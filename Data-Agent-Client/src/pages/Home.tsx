@@ -78,21 +78,25 @@ export default function Home() {
     }, [handleRunQuery]);
 
     return (
-        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        <div className="flex-1 min-w-0 h-full overflow-hidden flex flex-col">
             {/* Tab Bar */}
             <TabBar />
 
             {/* Workspace Area */}
             {activeTab?.type === 'plan' ? (
-                <PlanConsole
-                    tabId={activeTab.id}
-                    payload={(activeTab.metadata as PlanTabMetadata).planPayload}
-                />
+                <div className="flex-1 min-h-0 overflow-hidden theme-bg-main">
+                    <PlanConsole
+                        tabId={activeTab.id}
+                        payload={(activeTab.metadata as PlanTabMetadata).planPayload}
+                    />
+                </div>
             ) : activeTab?.type === 'subagent-console' ? (
-                <SubAgentConsole
-                    tabId={activeTab.id}
-                    metadata={activeTab.metadata as SubAgentConsoleTabMetadata}
-                />
+                <div className="flex-1 min-h-0 overflow-hidden theme-bg-main">
+                    <SubAgentConsole
+                        tabId={activeTab.id}
+                        metadata={activeTab.metadata as SubAgentConsoleTabMetadata}
+                    />
+                </div>
             ) : (
                 <ResultsPanel
                     isVisible={isResultsVisible}
@@ -100,9 +104,9 @@ export default function Home() {
                     executeResult={executeResult}
                     isRunning={isRunning}
                 >
-                    <div className="flex-1 flex flex-col min-h-0 relative">
+                    <div className="flex-1 flex flex-col min-h-0 relative theme-bg-main">
                         {activeTab?.type === 'file' && (
-                            <div className="h-8 flex items-center px-2 theme-bg-main border-b theme-border text-[10px] theme-text-secondary shrink-0 gap-1">
+                            <div className="h-8 flex items-center px-3 border-b theme-border text-[10px] theme-text-secondary shrink-0 gap-1 bg-[var(--bg-main)]/55">
                                 <Toolbar
                                     onRun={handleRunQuery}
                                     onStop={() => setIsRunning(false)}

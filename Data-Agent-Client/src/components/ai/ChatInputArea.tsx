@@ -126,7 +126,7 @@ export const ChatInputArea = forwardRef<ChatInputAreaRef, ChatInputAreaProps>(
             const mirror = mirrorRef.current;
             if (!textarea) return;
 
-            const MIN_HEIGHT = 96;
+            const MIN_HEIGHT = 40;
             const MAX_LINES = 14;
 
             const resize = () => {
@@ -239,12 +239,12 @@ export const ChatInputArea = forwardRef<ChatInputAreaRef, ChatInputAreaProps>(
         }
       `}</style>
 
-                <div className="relative min-h-24">
+                <div className="relative min-h-10">
                     {/* Mirror layer: 只在有 @mention 时显示 */}
                     {hasMention && (
                         <div
                             ref={mirrorRef}
-                            className="chat-input-mirror absolute inset-0 overflow-y-auto text-xs p-3 pr-14 whitespace-pre-wrap theme-text-primary"
+                            className="chat-input-mirror absolute inset-0 overflow-y-auto text-sm px-0 py-0 pr-10 whitespace-pre-wrap theme-text-primary"
                             aria-hidden="true"
                             style={{
                                 scrollbarWidth: 'none',
@@ -284,10 +284,10 @@ export const ChatInputArea = forwardRef<ChatInputAreaRef, ChatInputAreaProps>(
                         onCompositionStart={handleCompositionStart}
                         onCompositionEnd={handleCompositionEnd}
                         placeholder={t('ai.placeholder_mention')}
-                        className={`relative z-10 w-full bg-transparent text-xs p-3 pr-14 focus:outline-none placeholder:text-muted-foreground/50 overflow-y-auto whitespace-pre-wrap ${agent === 'Agent' ? 'caret-violet-400' : 'caret-amber-400'}`}
+                        className={`relative z-10 w-full bg-transparent text-sm px-0 py-0 pr-10 focus:outline-none placeholder:text-[var(--text-secondary)]/80 overflow-y-auto whitespace-pre-wrap ${agent === 'Agent' ? 'caret-blue-400' : 'caret-blue-300'}`}
                         style={{
                             resize: 'none',
-                            minHeight: '96px',
+                            minHeight: '40px',
                             scrollbarGutter: 'stable',
                             wordWrap: 'break-word',
                             overflowWrap: 'break-word',
