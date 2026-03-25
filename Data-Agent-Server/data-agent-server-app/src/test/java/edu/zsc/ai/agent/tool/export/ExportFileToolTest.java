@@ -1,6 +1,7 @@
 package edu.zsc.ai.agent.tool.export;
 
 import dev.langchain4j.invocation.InvocationParameters;
+import edu.zsc.ai.agent.tool.export.model.ExportRowInput;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.context.RequestContextInfo;
@@ -34,7 +35,7 @@ class ExportFileToolTest {
                 "CSV",
                 null,
                 List.of("name"),
-                List.of(List.<Object>of("Alice")),
+                List.of(new ExportRowInput(List.<Object>of("Alice"))),
                 InvocationParameters.from(Map.of())
         );
         assertFalse(result.isSuccess());
@@ -59,7 +60,7 @@ class ExportFileToolTest {
                 "CSV",
                 null,
                 List.of("name"),
-                List.of(List.<Object>of("Alice")),
+                List.of(new ExportRowInput(List.<Object>of("Alice"))),
                 InvocationParameters.from(Map.of())
         );
         assertTrue(result.isSuccess());
