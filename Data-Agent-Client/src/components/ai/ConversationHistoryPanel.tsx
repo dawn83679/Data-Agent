@@ -333,7 +333,12 @@ export function ConversationHistoryPanel({
                     {label}
                   </p>
                   <ul className="space-y-0.5">
-                    {items.map((c) => (
+                    {items.map((c) => {
+                      const isHighlighted = highlightedConversation?.id === c.id;
+                      const isCurrent = currentConversationId === c.id;
+                      const isActive = isHighlighted || isCurrent;
+
+                      return (
                       <li
                         ref={(el) => {
                           if (el) itemRefs.current.set(c.id, el);
@@ -342,9 +347,9 @@ export function ConversationHistoryPanel({
                         key={c.id}
                         className={cn(
                           'flex items-center gap-2 px-2 py-1.5 rounded-md group transition-colors',
-                          'hover:theme-bg-main/80',
-                          highlightedConversation?.id === c.id && 'bg-violet-600/40',
-                          currentConversationId === c.id && 'theme-bg-main/50'
+                          isActive
+                            ? 'bg-[var(--accent-blue)] text-white shadow-sm'
+                            : 'hover:bg-[color:var(--bg-popup)]/70'
                         )}
                       >
                         {editingId === c.id ? (
@@ -369,23 +374,23 @@ export function ConversationHistoryPanel({
                           </div>
                         ) : (
                           <>
-                            <MessageCircle className="w-3.5 h-3.5 shrink-0 theme-text-secondary" />
+                            <MessageCircle className={cn('w-3.5 h-3.5 shrink-0', isActive ? 'text-white/90' : 'theme-text-secondary')} />
                             <button
                               type="button"
                               className="flex-1 text-left min-w-0 truncate"
                               onClick={() => handleSelect(c)}
                             >
-                              <span className="text-sm theme-text-primary truncate block">
+                              <span className={cn('text-sm truncate block', isActive ? 'text-white' : 'theme-text-primary')}>
                                 {c.title || `Conversation ${c.id}`}
                               </span>
                             </button>
-                            <span className="text-[11px] theme-text-secondary shrink-0">
+                            <span className={cn('text-[11px] shrink-0', isActive ? 'text-white/80' : 'theme-text-secondary')}>
                               {formatRelativeTime(c.updatedAt)}
                             </span>
                             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                               <button
                                 type="button"
-                                className="p-1 rounded theme-text-secondary hover:theme-text-primary"
+                                className={cn('p-1 rounded transition-colors', isActive ? 'text-white/80 hover:text-white hover:bg-white/10' : 'theme-text-secondary hover:theme-text-primary')}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   startRename(c);
@@ -396,7 +401,7 @@ export function ConversationHistoryPanel({
                               </button>
                               <button
                                 type="button"
-                                className="p-1 rounded theme-text-secondary hover:text-red-500"
+                                className={cn('p-1 rounded transition-colors', isActive ? 'text-white/80 hover:text-white hover:bg-white/10' : 'theme-text-secondary hover:text-red-500')}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleDelete(c.id);
@@ -410,7 +415,7 @@ export function ConversationHistoryPanel({
                           </>
                         )}
                       </li>
-                    ))}
+                    )})}
                   </ul>
                 </div>
               ))}

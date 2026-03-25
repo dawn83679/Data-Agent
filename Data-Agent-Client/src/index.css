@@ -43,6 +43,7 @@
     --bg-popup: #2a2e39;
     --bg-toolbar: #151720;
     --bg-hover: #2a2e39;
+    --bg-tertiary: rgba(255, 255, 255, 0.04);
     --bg-selected: rgba(59, 130, 246, 0.18);
     --border-color: #334155;
     --text-primary: #e2e8f0;
@@ -113,6 +114,7 @@
     --bg-popup: #eef3f9;
     --bg-toolbar: #f8fafc;
     --bg-hover: #e8eef6;
+    --bg-tertiary: #f3f7fd;
     --bg-selected: rgba(37, 99, 235, 0.12);
     --border-color: #d8e1eb;
     --text-primary: #172133;
@@ -214,6 +216,7 @@
   .theme-bg-main { background-color: var(--bg-main); }
   .theme-bg-panel { background-color: var(--bg-panel); }
   .theme-bg-popup { background-color: var(--bg-popup); }
+  .theme-bg-tertiary { background-color: var(--bg-tertiary); }
   .theme-bg-hover:hover { background-color: var(--bg-hover); }
   .theme-border { border-color: var(--border-color); }
   .theme-text-primary { color: var(--text-primary); }

@@ -3,6 +3,7 @@ import { Database, Table, LayoutGrid, Server } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { MentionItem, MentionLevel } from './mentionTypes';
 import { I18N_KEYS } from '../../constants/i18nKeys';
+import { useTheme } from '../../hooks/useTheme';
 
 const MENTION_LEVEL_COLORS: Record<MentionLevel, string> = {
   connection: 'text-emerald-400',
@@ -11,8 +12,8 @@ const MENTION_LEVEL_COLORS: Record<MentionLevel, string> = {
   table: 'text-violet-400',
 };
 
-function MentionLevelIcon({ level }: { level: MentionLevel }) {
-  const colorClass = MENTION_LEVEL_COLORS[level] ?? 'opacity-70';
+function MentionLevelIcon({ level, selected = false }: { level: MentionLevel; selected?: boolean }) {
+  const colorClass = selected ? 'text-white' : (MENTION_LEVEL_COLORS[level] ?? 'opacity-70');
   switch (level) {
     case 'connection':
       return <Server className={`w-3 h-3 shrink-0 ${colorClass}`} />;
@@ -41,7 +42,7 @@ export interface MentionPopupProps {
   highlightClassName?: string;
 }
 
-const DEFAULT_HIGHLIGHT = 'bg-[#3574f0] text-white';
+const DEFAULT_HIGHLIGHT = 'bg-[var(--accent-blue)] text-white shadow-sm';
 
 export function MentionPopup({
   open,
@@ -56,6 +57,7 @@ export function MentionPopup({
   highlightClassName = DEFAULT_HIGHLIGHT,
 }: MentionPopupProps) {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const listContainerRef = useRef<HTMLDivElement>(null);
 
   // Scroll highlighted item into view when ArrowUp/ArrowDown changes selection
@@ -74,20 +76,28 @@ export function MentionPopup({
   return (
     <div
       ref={listContainerRef}
-      className="absolute bottom-full mb-1 left-0 w-full theme-bg-popup border theme-border rounded shadow-xl max-h-40 overflow-y-auto z-50 flex flex-col"
+      className={`absolute bottom-full mb-1 left-0 w-full border rounded shadow-xl max-h-40 overflow-y-auto z-50 flex flex-col ${
+        theme === 'light'
+          ? 'bg-slate-900/92 border-slate-700/80 backdrop-blur-md shadow-[0_18px_48px_rgba(15,23,42,0.28)]'
+          : 'theme-bg-popup theme-border'
+      }`}
       role="listbox"
       aria-label={levelLabel}
     >
-      <div className="px-3 py-1.5 text-[10px] theme-text-secondary font-medium border-b theme-border shrink-0 flex items-center justify-between">
+      <div className={`px-3 py-1.5 text-[10px] font-medium border-b shrink-0 flex items-center justify-between ${
+        theme === 'light'
+          ? 'text-slate-300 border-slate-700/80'
+          : 'theme-text-secondary theme-border'
+      }`}>
         <span>{levelLabel}</span>
         <span className="opacity-70 font-normal">{t(I18N_KEYS.AI.MENTION_NAV_HINT)}</span>
       </div>
       {loading ? (
-        <div className="px-3 py-2 text-xs theme-text-secondary">{t(I18N_KEYS.EXPLORER.LOADING)}</div>
+        <div className={`px-3 py-2 text-xs ${theme === 'light' ? 'text-slate-300' : 'theme-text-secondary'}`}>{t(I18N_KEYS.EXPLORER.LOADING)}</div>
       ) : error ? (
         <div className="px-3 py-2 text-xs text-red-500">{error}</div>
       ) : items.length === 0 ? (
-        <div className="px-3 py-2 text-xs theme-text-secondary">
+        <div className={`px-3 py-2 text-xs ${theme === 'light' ? 'text-slate-300' : 'theme-text-secondary'}`}>
           {level === 'connection'
             ? t(I18N_KEYS.COMMON.NO_CONNECTIONS)
             : level === 'database'
@@ -97,27 +107,31 @@ export function MentionPopup({
                 : t(I18N_KEYS.AI.MENTION_NO_TABLES)}
         </div>
       ) : (
-        items.map((item, index) => (
+        items.map((item, index) => {
+          const isSelected = index === highlightedIndex;
+          return (
           <button
             key={item.id}
             type="button"
             role="option"
             data-mention-index={index}
-            aria-selected={index === highlightedIndex}
+            aria-selected={isSelected}
             className={`flex items-center space-x-2 w-full text-left px-3 py-1.5 text-xs cursor-pointer transition-colors ${
-              index === highlightedIndex
+              isSelected
                 ? highlightClassName
-                : 'theme-text-primary hover:bg-white/5'
+                : theme === 'light'
+                  ? 'text-white/90 hover:bg-white/10'
+                  : 'theme-text-primary hover:bg-[color:var(--bg-popup)]/70'
             }`}
             onMouseEnter={() => onHighlight(index)}
             onClick={() => onSelect(item)}
           >
-            <MentionLevelIcon level={level} />
-            <span className={index !== highlightedIndex ? MENTION_LEVEL_COLORS[level] : undefined}>
+            <MentionLevelIcon level={level} selected={isSelected} />
+            <span className={isSelected ? 'text-white' : theme === 'light' ? 'text-white/90' : 'theme-text-primary'}>
               {item.label}
             </span>
           </button>
-        ))
+        )})
       )}
     </div>
   );
