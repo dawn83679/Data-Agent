@@ -16,13 +16,18 @@ public enum SkillEnum {
 
     CHART(
             "chart",
-            "skills/chart.md",
+            "skills/chart/SKILL.md",
             "Generate chart rendering guidance for final structured visualization output."
     ),
     SQL_OPTIMIZATION(
             "sql-optimization",
-            "skills/sql-optimization.md",
+            "skills/sql-optimization/SKILL.md",
             "Optimize complex SQL involving joins, subqueries, aggregation, and execution-plan risks."
+    ),
+    FILE_EXPORT(
+            "file-export",
+            "skills/file-export/SKILL.md",
+            "Produce exportFile-ready tabular payloads and only export when a downloadable artifact is genuinely needed."
     );
 
     private final String skillName;

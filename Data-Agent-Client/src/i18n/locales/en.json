@@ -229,6 +229,22 @@
       "copied": "Copied!",
       "downloadPng": "Download as PNG"
     },
+    "exportFile": {
+      "label": "Exported file",
+      "format": "Format",
+      "size": "Size",
+      "createdAt": "Created at",
+      "summary": "{{rowCount}} rows, {{columnCount}} columns",
+      "preview": "Preview",
+      "noPreview": "No preview data available.",
+      "truncatedHint": "Preview is truncated. Download the file for full data.",
+      "download": "Download",
+      "downloading": "Downloading...",
+      "downloadSuccess": "File downloaded.",
+      "downloadFailed": "Failed to download file",
+      "fileIdMissing": "File id is missing. Please re-run export.",
+      "toolFailed": "File export failed."
+    },
     "writeExecutionConfirm": {
       "label": "Write Confirmation Required",
       "labelAction": "The following SQL will be executed",

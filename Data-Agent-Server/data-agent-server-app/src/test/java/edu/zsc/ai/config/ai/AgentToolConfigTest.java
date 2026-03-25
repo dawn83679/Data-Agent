@@ -9,6 +9,7 @@ import dev.langchain4j.service.tool.ToolExecutor;
 import edu.zsc.ai.agent.annotation.AgentTool;
 import edu.zsc.ai.agent.tool.ask.AskUserQuestionTool;
 import edu.zsc.ai.agent.tool.chart.ChartTool;
+import edu.zsc.ai.agent.tool.export.ExportFileTool;
 import edu.zsc.ai.agent.tool.memory.ReadMemoryTool;
 import edu.zsc.ai.agent.tool.memory.WriteMemoryTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingExplorerTool;
@@ -58,6 +59,7 @@ class AgentToolConfigTest {
     private ChartTool chartTool;
     private ReadMemoryTool readMemoryTool;
     private WriteMemoryTool writeMemoryTool;
+    private ExportFileTool exportFileTool;
 
     @BeforeEach
     void setUp() {
@@ -77,6 +79,7 @@ class AgentToolConfigTest {
         chartTool = new ChartTool();
         readMemoryTool = new ReadMemoryTool(null, null);
         writeMemoryTool = new WriteMemoryTool(null);
+        exportFileTool = new ExportFileTool(null);
 
         allTools = List.of(
                 getEnvironmentOverviewTool,
@@ -92,7 +95,8 @@ class AgentToolConfigTest {
                 activateSkillTool,
                 chartTool,
                 readMemoryTool,
-                writeMemoryTool
+                writeMemoryTool,
+                exportFileTool
         );
     }
 
@@ -115,6 +119,7 @@ class AgentToolConfigTest {
             assertTrue(tools.contains(chartTool));
             assertTrue(tools.contains(readMemoryTool));
             assertTrue(tools.contains(writeMemoryTool));
+            assertTrue(tools.contains(exportFileTool));
 
             assertFalse(tools.contains(enterPlanModeTool));
             assertFalse(tools.contains(exitPlanModeTool));
@@ -135,6 +140,7 @@ class AgentToolConfigTest {
             assertFalse(tools.contains(chartTool));
             assertFalse(tools.contains(readMemoryTool));
             assertFalse(tools.contains(writeMemoryTool));
+            assertFalse(tools.contains(exportFileTool));
             assertFalse(tools.contains(searchObjectsTool));
             assertFalse(tools.contains(getObjectDetailTool));
             assertFalse(tools.contains(enterPlanModeTool));

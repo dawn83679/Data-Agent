@@ -421,6 +421,22 @@ export const I18N_KEYS = {
       COPIED: 'ai.chartActions.copied',
       DOWNLOAD_PNG: 'ai.chartActions.downloadPng',
     },
+    EXPORT_FILE: {
+      LABEL: 'ai.exportFile.label',
+      FORMAT: 'ai.exportFile.format',
+      SIZE: 'ai.exportFile.size',
+      CREATED_AT: 'ai.exportFile.createdAt',
+      SUMMARY: 'ai.exportFile.summary',
+      PREVIEW: 'ai.exportFile.preview',
+      NO_PREVIEW: 'ai.exportFile.noPreview',
+      TRUNCATED_HINT: 'ai.exportFile.truncatedHint',
+      DOWNLOAD: 'ai.exportFile.download',
+      DOWNLOADING: 'ai.exportFile.downloading',
+      DOWNLOAD_SUCCESS: 'ai.exportFile.downloadSuccess',
+      DOWNLOAD_FAILED: 'ai.exportFile.downloadFailed',
+      FILE_ID_MISSING: 'ai.exportFile.fileIdMissing',
+      TOOL_FAILED: 'ai.exportFile.toolFailed',
+    },
   },
 
   // Error keys

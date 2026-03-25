@@ -19,7 +19,7 @@ class ActivateSkillToolTest {
     }
 
     @Test
-    void mainAgentCannotLoadMemorySkillAfterRemoval() {
+    void mainAgentCannotLoadUnknownMemorySkill() {
         AgentRequestContext.set(AgentRequestContextInfo.builder()
                 .agentType("main")
                 .agentMode("agent")
@@ -27,11 +27,11 @@ class ActivateSkillToolTest {
 
         String result = tool.activateSkill("memory");
 
-        assertTrue(result.contains("not available for the current agent"));
+        assertTrue(result.contains("Skill 'memory' is not available."));
     }
 
     @Test
-    void plannerCannotLoadMemorySkill() {
+    void plannerCannotLoadUnknownMemorySkill() {
         AgentRequestContext.set(AgentRequestContextInfo.builder()
                 .agentType("planner")
                 .agentMode("agent")
@@ -39,6 +39,19 @@ class ActivateSkillToolTest {
 
         String result = tool.activateSkill("memory");
 
-        assertTrue(result.contains("not available for the current agent"));
+        assertTrue(result.contains("Skill 'memory' is not available."));
+    }
+
+    @Test
+    void mainAgentCanLoadFileExportSkill() {
+        AgentRequestContext.set(AgentRequestContextInfo.builder()
+                .agentType("main")
+                .agentMode("agent")
+                .build());
+
+        String result = tool.activateSkill("file-export");
+
+        assertTrue(result.contains("name: file-export"));
+        assertTrue(result.contains("File Export Rules"));
     }
 }
