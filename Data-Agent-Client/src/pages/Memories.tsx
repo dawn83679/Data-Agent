@@ -112,6 +112,7 @@ export default function Memories() {
         onEnable={workbench.handleEnable}
         onDelete={workbench.handleDelete}
       />
+      {workbench.confirmDialog}
     </div>
   );
 }

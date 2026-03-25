@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 import { I18N_KEYS } from '../../constants/i18nKeys';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import { useToast } from '../../hooks/useToast';
 import { resolveErrorMessage } from '../../lib/errorMessage';
 import { permissionService } from '../../services/permission.service';
@@ -39,6 +40,7 @@ export function usePermissionRuleActions({
 }: UsePermissionRuleActionsArgs) {
   const { t } = useTranslation();
   const toast = useToast();
+  const { confirm, confirmDialog } = useConfirmDialog();
   const [submitting, setSubmitting] = useState(false);
   const [toggleBusyId, setToggleBusyId] = useState<number | null>(null);
   const [deleteBusyId, setDeleteBusyId] = useState<number | null>(null);
@@ -75,11 +77,14 @@ export function usePermissionRuleActions({
       return;
     }
 
-    const confirmed = window.confirm(
-      t(I18N_KEYS.PERMISSIONS_PAGE.DELETE_CONFIRM, {
+    const confirmed = await confirm({
+      title: t(I18N_KEYS.PERMISSIONS_PAGE.DELETE),
+      description: t(I18N_KEYS.PERMISSIONS_PAGE.DELETE_CONFIRM, {
         target: rule.catalogName || rule.connectionName || `#${rule.connectionId}`,
       }),
-    );
+      confirmLabel: t(I18N_KEYS.PERMISSIONS_PAGE.DELETE),
+      confirmVariant: 'destructive',
+    });
     if (!confirmed) {
       return;
     }
@@ -97,7 +102,7 @@ export function usePermissionRuleActions({
     } finally {
       setDeleteBusyId(null);
     }
-  }, [closeEditor, deleteBusyId, editingRule?.id, setRules, t, toast]);
+  }, [closeEditor, confirm, deleteBusyId, editingRule?.id, setRules, t, toast]);
 
   const handleSubmit = useCallback(async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -137,6 +142,7 @@ export function usePermissionRuleActions({
     submitting,
     toggleBusyId,
     deleteBusyId,
+    confirmDialog,
     handleToggleRule,
     handleDeleteRule,
     handleSubmit,

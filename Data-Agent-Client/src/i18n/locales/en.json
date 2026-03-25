@@ -34,6 +34,8 @@
     "default": "Default",
     "logout_failed": "Logout failed",
     "run": "Run",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
     "select_connection_first": "Please select a connection first",
     "rows_retrieved": "{{count}} row(s) retrieved",
     "execution_time_ms": "{{ms}} ms",

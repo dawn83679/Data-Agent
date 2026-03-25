@@ -21,7 +21,6 @@ public enum AgentLogType {
     TOKEN_ERROR(AgentLogCategory.TOKEN),
     PROMPT_ORIGINAL_USER_INPUT(AgentLogCategory.PROMPT),
     PROMPT_RENDERED_USER(AgentLogCategory.PROMPT),
-    PROMPT_RENDERED_USER_SECTIONS(AgentLogCategory.PROMPT),
     EXECUTOR_TASK_START(AgentLogCategory.DEBUG),
     EXECUTOR_TASK_COMPLETE(AgentLogCategory.DEBUG),
     EXECUTOR_TASK_ERROR(AgentLogCategory.DEBUG),

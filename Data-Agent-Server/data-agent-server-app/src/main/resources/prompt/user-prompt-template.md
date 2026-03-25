@@ -6,13 +6,13 @@
 {{TASK}}
 </task>
 
-<response_preferences purpose="final_response_preferences" apply_to="language,format,visualization" strength="default">
-{{RESPONSE_PREFERENCES}}
-</response_preferences>
-
 <scope_hints purpose="query_scope_guidance" apply_to="tool_selection,object_search,sql_scope" strength="strong">
 {{SCOPE_HINTS}}
 </scope_hints>
+
+<response_preferences purpose="final_response_preferences" apply_to="language,format,visualization" strength="default">
+{{RESPONSE_PREFERENCES}}
+</response_preferences>
 
 <durable_facts purpose="verified_background_facts" apply_to="reasoning,sql_generation" strength="reference">
 {{DURABLE_FACTS}}

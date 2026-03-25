@@ -14,7 +14,6 @@ import { useSlashCommandLogic } from './hooks/useSlashCommandLogic';
 import { useMentionLogic } from './hooks/useMentionLogic';
 import { useKeyboardHandler } from './hooks/useKeyboardHandler';
 import { useInputChangeHandler } from './hooks/useInputChangeHandler';
-import { getModelMemoryThreshold } from '../../constants/models';
 import { I18N_KEYS } from '../../constants/i18nKeys';
 
 function formatDetailedTokenCount(value: number | null): string {
@@ -110,7 +109,7 @@ export function ChatInput() {
   );
   const CurrentAgentIcon = AGENT_CONFIG[agent].icon;
   const contextUsage = useMemo(() => {
-    const threshold = getModelMemoryThreshold(model);
+    const threshold = modelOptions.find((option) => option.modelName === model)?.memoryThreshold ?? null;
     if (threshold == null || threshold <= 0 || conversationTokenCount == null || conversationTokenCount <= 0) {
       return null;
     }
@@ -145,7 +144,7 @@ export function ChatInput() {
         limit: formatDetailedTokenCount(threshold),
       })}`,
     } as const;
-  }, [conversationTokenCount, model, t]);
+  }, [conversationTokenCount, model, modelOptions, t]);
 
   return (
     <>

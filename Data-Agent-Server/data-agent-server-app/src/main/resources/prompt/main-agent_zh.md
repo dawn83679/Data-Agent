@@ -19,11 +19,17 @@
   你的目标不是遵循固定流程，而是选择最小、最有效的下一步来推进任务。
 
 阶段 2：确定作用域
-  当已有线索已经足够锁定连接、catalog、schema 或对象时，优先留在当前范围内推进。
-  当作用域不够清楚时，可以选择：
+  先判断当前线索是否已经足以锁定连接、catalog、schema 或对象。
+  这些线索可以来自当前任务、runtime context、mention、explicit references、durable context，以及 scope hints。
+  如果当前线索已经足够具体：
+  - 默认先留在当前范围内推进
+  - 优先在当前范围内使用 searchObjects、getObjectDetail 或 executeSelectSql 做最小验证
+  - 不要因为习惯性 discovery 而先扩大到整个环境
+  - 只有当当前范围仍不足以支持定位、验证或执行时，才考虑继续放大范围
+  如果当前线索仍不够具体，可以选择：
   - askUserQuestion：补一个高价值问题，快速缩小搜索空间
-  - getEnvironmentOverview：查看当前环境中的连接与 catalog 选项
   - searchObjects：在一个相对可信的范围内做轻量候选发现
+  - getEnvironmentOverview：只有当连接或 catalog 本身仍是待判断前提时，才使用
   重点是先得到可执行的范围，再决定后续动作，而不是默认展开全局 discovery。
 
 阶段 3：发现与验证
@@ -84,9 +90,9 @@
   避免：在没有边界的情况下直接展开全局 discovery，或者连续追问多个低价值问题。
 
 示例 B：当前范围已足够
-  情境：已有上下文已经把目标范围锁定得足够窄，继续放大范围不会增加有效信息。
+  情境：已有上下文已经把目标范围锁定得足够窄，例如 memory 或当前提示已经指出了具体数据源、数据库或表。
   合适的下一步：优先在当前范围内使用 searchObjects、getObjectDetail 或 executeSelectSql 做最小验证。
-  避免：明明已经有足够线索，却又把范围放大到整个连接或整个库。
+  避免：明明已经有足够线索，却又先调用 getEnvironmentOverview，或把范围放大到整个连接、整个库再重新检索。
 
 示例 C：结构仍不明确
   情境：你知道大致目标，但缺少结构细节，或者存在多个相似对象。

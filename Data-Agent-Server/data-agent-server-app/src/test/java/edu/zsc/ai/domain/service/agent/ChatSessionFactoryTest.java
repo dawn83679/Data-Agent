@@ -3,7 +3,6 @@ package edu.zsc.ai.domain.service.agent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
@@ -14,8 +13,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.EnumMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -33,9 +30,7 @@ import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
 import edu.zsc.ai.domain.service.agent.prompt.PromptRenderResult;
-import edu.zsc.ai.domain.service.agent.prompt.PromptSectionResult;
 import edu.zsc.ai.domain.service.agent.prompt.UserPromptManager;
-import edu.zsc.ai.domain.service.agent.prompt.UserPromptSection;
 import edu.zsc.ai.domain.service.ai.AiConversationService;
 import edu.zsc.ai.domain.service.ai.MemoryContextService;
 import edu.zsc.ai.domain.service.ai.model.MemoryPromptContext;
@@ -69,7 +64,7 @@ class ChatSessionFactoryTest {
     }
 
     @Test
-    void create_logsFullUserPromptPayloadsWhenIncludePromptEnabled() {
+    void create_logsFullUserPromptPayloads() {
         RequestContext.set(RequestContextInfo.builder()
                 .userId(1L)
                 .connectionId(12L)
@@ -117,14 +112,13 @@ class ChatSessionFactoryTest {
                                 - none
                                 </explicit_references>
                                 """,
-                        promptSections(),
+                        Map.of(),
                         42,
                         "Rendered runtime prompt sections: SYSTEM_CONTEXT, TASK, RESPONSE_PREFERENCES, SCOPE_HINTS, DURABLE_FACTS, EXPLICIT_REFERENCES"));
         when(observabilityConfigProvider.current()).thenReturn(AgentObservabilitySettings.builder()
                 .enabled(true)
                 .runtimeLogEnabled(true)
                 .consoleLogEnabled(true)
-                .includePrompt(true)
                 .build());
 
         ChatSession session = factory.create(request);
@@ -143,20 +137,10 @@ class ChatSessionFactoryTest {
         AgentLogEvent renderedEvent = events.get(AgentLogType.PROMPT_RENDERED_USER);
         assertEquals(session.enrichedMessage(), renderedEvent.getPayload().get("prompt"));
         assertEquals(42, renderedEvent.getPayload().get("estimatedTokens"));
-
-        AgentLogEvent sectionsEvent = events.get(AgentLogType.PROMPT_RENDERED_USER_SECTIONS);
-        @SuppressWarnings("unchecked")
-        Map<String, Object> sections = (Map<String, Object>) sectionsEvent.getPayload().get("sections");
-        @SuppressWarnings("unchecked")
-        Map<String, Object> taskSection = (Map<String, Object>) sections.get(UserPromptSection.TASK.name());
-        assertEquals(Boolean.TRUE, taskSection.get("rendered"));
-        assertEquals("当前任务：\n- 我喜欢中文交互", taskSection.get("content"));
-        assertEquals(List.of("SYSTEM_CONTEXT", "TASK", "RESPONSE_PREFERENCES", "SCOPE_HINTS", "DURABLE_FACTS", "EXPLICIT_REFERENCES"),
-                sectionsEvent.getPayload().get("renderedSections"));
     }
 
     @Test
-    void create_logsOnlyPromptMetadataWhenIncludePromptDisabled() {
+    void create_alwaysLogsFullPromptPayloads() {
         RequestContext.set(RequestContextInfo.builder()
                 .userId(1L)
                 .build());
@@ -186,13 +170,12 @@ class ChatSessionFactoryTest {
         when(userPromptManager.render(any()))
                 .thenReturn(new PromptRenderResult<>(
                         renderedPrompt,
-                        promptSections(),
+                        Map.of(),
                         11,
                         "Rendered runtime prompt sections: SYSTEM_CONTEXT, TASK, RESPONSE_PREFERENCES, SCOPE_HINTS, DURABLE_FACTS, EXPLICIT_REFERENCES"));
         when(observabilityConfigProvider.current()).thenReturn(AgentObservabilitySettings.builder()
                 .enabled(true)
                 .runtimeLogEnabled(true)
-                .includePrompt(false)
                 .build());
 
         factory.create(request);
@@ -201,19 +184,11 @@ class ChatSessionFactoryTest {
 
         AgentLogEvent originalEvent = events.get(AgentLogType.PROMPT_ORIGINAL_USER_INPUT);
         assertEquals(originalMessage.length(), originalEvent.getPayload().get("originalLength"));
-        assertFalse(originalEvent.getPayload().containsKey("message"));
+        assertEquals(originalMessage, originalEvent.getPayload().get("message"));
 
         AgentLogEvent renderedEvent = events.get(AgentLogType.PROMPT_RENDERED_USER);
         assertEquals(renderedPrompt.length(), renderedEvent.getPayload().get("renderedLength"));
-        assertFalse(renderedEvent.getPayload().containsKey("prompt"));
-
-        AgentLogEvent sectionsEvent = events.get(AgentLogType.PROMPT_RENDERED_USER_SECTIONS);
-        @SuppressWarnings("unchecked")
-        Map<String, Object> sections = (Map<String, Object>) sectionsEvent.getPayload().get("sections");
-        @SuppressWarnings("unchecked")
-        Map<String, Object> systemContextSection = (Map<String, Object>) sections.get(UserPromptSection.SYSTEM_CONTEXT.name());
-        assertEquals(Boolean.TRUE, systemContextSection.get("rendered"));
-        assertEquals("当前运行时环境：\n- today: 2026-03-19\n- timezone: Asia/Shanghai", systemContextSection.get("content"));
+        assertEquals(renderedPrompt, renderedEvent.getPayload().get("prompt"));
     }
 
     @Test
@@ -240,13 +215,12 @@ class ChatSessionFactoryTest {
                                 - show me sales
                                 </task>
                                 """,
-                        promptSections(),
+                        Map.of(),
                         11,
                         "Rendered runtime prompt sections: SYSTEM_CONTEXT, TASK, RESPONSE_PREFERENCES, SCOPE_HINTS, DURABLE_FACTS, EXPLICIT_REFERENCES"));
         when(observabilityConfigProvider.current()).thenReturn(AgentObservabilitySettings.builder()
                 .enabled(true)
                 .runtimeLogEnabled(false)
-                .includePrompt(true)
                 .build());
 
         factory.create(request);
@@ -256,43 +230,8 @@ class ChatSessionFactoryTest {
 
     private Map<AgentLogType, AgentLogEvent> capturePromptEvents() {
         ArgumentCaptor<AgentLogEvent> captor = ArgumentCaptor.forClass(AgentLogEvent.class);
-        verify(agentLogService, times(3)).record(captor.capture());
+        verify(agentLogService, times(2)).record(captor.capture());
         return captor.getAllValues().stream()
                 .collect(Collectors.toMap(AgentLogEvent::getType, Function.identity()));
-    }
-
-    private Map<UserPromptSection, PromptSectionResult<UserPromptSection>> promptSections() {
-        Map<UserPromptSection, PromptSectionResult<UserPromptSection>> sections = new EnumMap<>(UserPromptSection.class);
-        sections.put(UserPromptSection.SYSTEM_CONTEXT, new PromptSectionResult<>(
-                UserPromptSection.SYSTEM_CONTEXT,
-                "当前运行时环境：\n- today: 2026-03-19\n- timezone: Asia/Shanghai",
-                true,
-                Map.of("source", "system")));
-        sections.put(UserPromptSection.TASK, new PromptSectionResult<>(
-                UserPromptSection.TASK,
-                "当前任务：\n- 我喜欢中文交互",
-                true,
-                Map.of()));
-        sections.put(UserPromptSection.RESPONSE_PREFERENCES, new PromptSectionResult<>(
-                UserPromptSection.RESPONSE_PREFERENCES,
-                "请默认遵循以下偏好：\n- none",
-                true,
-                Map.of()));
-        sections.put(UserPromptSection.SCOPE_HINTS, new PromptSectionResult<>(
-                UserPromptSection.SCOPE_HINTS,
-                "请优先按以下范围理解和检索：\n- none",
-                true,
-                Map.of()));
-        sections.put(UserPromptSection.DURABLE_FACTS, new PromptSectionResult<>(
-                UserPromptSection.DURABLE_FACTS,
-                "已知事实：\n- none",
-                true,
-                Map.of()));
-        sections.put(UserPromptSection.EXPLICIT_REFERENCES, new PromptSectionResult<>(
-                UserPromptSection.EXPLICIT_REFERENCES,
-                "本轮用户显式引用：\n- none",
-                true,
-                Map.of()));
-        return sections;
     }
 }

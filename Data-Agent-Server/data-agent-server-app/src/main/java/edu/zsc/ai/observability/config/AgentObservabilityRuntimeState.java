@@ -19,7 +19,6 @@ public class AgentObservabilityRuntimeState {
                 .sseEventLogEnabled(current.getSseEventLogEnabled())
                 .modelEventLogEnabled(current.getModelEventLogEnabled())
                 .toolEventLogEnabled(current.getToolEventLogEnabled())
-                .includePrompt(current.getIncludePrompt())
                 .includeResponse(current.getIncludeResponse())
                 .includeTokenStream(current.getIncludeTokenStream())
                 .runtimeLogDir(current.getRuntimeLogDir())

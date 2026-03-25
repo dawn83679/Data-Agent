@@ -11,7 +11,6 @@ public class AgentObservabilityUpdateRequest {
     private Boolean sseEventLogEnabled;
     private Boolean modelEventLogEnabled;
     private Boolean toolEventLogEnabled;
-    private Boolean includePrompt;
     private Boolean includeResponse;
     private Boolean includeTokenStream;
     private String runtimeLogDir;

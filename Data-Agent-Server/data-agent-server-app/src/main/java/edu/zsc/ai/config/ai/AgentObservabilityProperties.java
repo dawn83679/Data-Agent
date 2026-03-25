@@ -15,7 +15,6 @@ public class AgentObservabilityProperties {
     private boolean sseEventLogEnabled = true;
     private boolean modelEventLogEnabled = true;
     private boolean toolEventLogEnabled = true;
-    private boolean includePrompt = false;
     private boolean includeResponse = true;
     private boolean includeTokenStream = true;
     private String runtimeLogDir = "~/.data-agent/logs/agent/runtime";

@@ -159,8 +159,7 @@ function App() {
                         onLoginClick={() => {
                             setModalType(AuthModalType.LOGIN);
                             setIsAuthModalOpen(true);
-                        }} 
-                        onToggleAI={toggleAISidebar}
+                        }}
                     />
                     
                     <AppRoutes 

@@ -3,7 +3,6 @@ package edu.zsc.ai.domain.service.agent;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,7 +29,6 @@ import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
 import edu.zsc.ai.domain.service.agent.prompt.UserPromptAssemblyContext;
 import edu.zsc.ai.domain.service.agent.prompt.PromptRenderResult;
-import edu.zsc.ai.domain.service.agent.prompt.PromptSectionResult;
 import edu.zsc.ai.domain.service.agent.prompt.UserPromptManager;
 import edu.zsc.ai.domain.service.ai.AiConversationService;
 import edu.zsc.ai.domain.service.ai.MemoryContextService;
@@ -63,15 +61,8 @@ public class ChatSessionFactory {
     private static final String PAYLOAD_DEBUG_SUMMARY = "debugSummary";
     private static final String PAYLOAD_ORIGINAL_LENGTH = "originalLength";
     private static final String PAYLOAD_RENDERED_LENGTH = "renderedLength";
-    private static final String PAYLOAD_RENDERED_SECTIONS = "renderedSections";
-    private static final String PAYLOAD_EMPTY_SECTIONS = "emptySections";
-    private static final String PAYLOAD_SECTIONS = "sections";
-    private static final String PAYLOAD_RENDERED = "rendered";
-    private static final String PAYLOAD_CONTENT = "content";
-    private static final String PAYLOAD_METADATA = "metadata";
     private static final String EVENT_ORIGINAL_USER_INPUT = "prompt_original_user_input";
     private static final String EVENT_RENDERED_USER_PROMPT = "prompt_rendered_user";
-    private static final String EVENT_RENDERED_USER_SECTIONS = "prompt_rendered_user_sections";
 
     private final ReActAgentProvider reActAgentProvider;
     private final AiConversationService aiConversationService;
@@ -218,7 +209,6 @@ public class ChatSessionFactory {
             return;
         }
 
-        boolean includePrompt = settings.isIncludePrompt();
         String originalMessage = request.getMessage();
         String renderedPrompt = promptRenderResult.renderedPrompt();
 
@@ -227,25 +217,18 @@ public class ChatSessionFactory {
                 EVENT_ORIGINAL_USER_INPUT,
                 conversationId,
                 basePromptPayload(request, modelName, agentMode, promptRenderResult),
-                includePrompt ? contentPayload(PAYLOAD_MESSAGE, originalMessage)
-                        : contentPayload(PAYLOAD_ORIGINAL_LENGTH, safeLength(originalMessage))));
+                mergePayload(
+                        contentPayload(PAYLOAD_MESSAGE, originalMessage),
+                        contentPayload(PAYLOAD_ORIGINAL_LENGTH, safeLength(originalMessage)))));
 
         agentLogService.record(buildPromptEvent(
                 AgentLogType.PROMPT_RENDERED_USER,
                 EVENT_RENDERED_USER_PROMPT,
                 conversationId,
                 basePromptPayload(request, modelName, agentMode, promptRenderResult),
-                includePrompt ? contentPayload(PAYLOAD_PROMPT, renderedPrompt)
-                        : contentPayload(PAYLOAD_RENDERED_LENGTH, safeLength(renderedPrompt))));
-
-        agentLogService.record(buildPromptEvent(
-                AgentLogType.PROMPT_RENDERED_USER_SECTIONS,
-                EVENT_RENDERED_USER_SECTIONS,
-                conversationId,
                 mergePayload(
-                        basePromptPayload(request, modelName, agentMode, promptRenderResult),
-                        sectionPromptPayload(promptRenderResult, includePrompt)),
-                Map.of()));
+                        contentPayload(PAYLOAD_PROMPT, renderedPrompt),
+                        contentPayload(PAYLOAD_RENDERED_LENGTH, safeLength(renderedPrompt)))));
     }
 
     private AgentLogEvent buildPromptEvent(AgentLogType type,
@@ -276,37 +259,6 @@ public class ChatSessionFactory {
         payload.put(PAYLOAD_AGENT_MODE, agentMode.getCode());
         payload.put(PAYLOAD_ESTIMATED_TOKENS, promptRenderResult.estimatedTokens());
         payload.put(PAYLOAD_DEBUG_SUMMARY, promptRenderResult.debugSummary());
-        return payload;
-    }
-
-    private Map<String, Object> sectionPromptPayload(PromptRenderResult<?> promptRenderResult, boolean includePrompt) {
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put(PAYLOAD_ESTIMATED_TOKENS, promptRenderResult.estimatedTokens());
-        payload.put(PAYLOAD_DEBUG_SUMMARY, promptRenderResult.debugSummary());
-
-        Map<String, Object> sectionsPayload = new LinkedHashMap<>();
-        List<String> renderedSections = new ArrayList<>();
-        List<String> emptySections = new ArrayList<>();
-
-        promptRenderResult.sectionPayloads().forEach((section, result) -> {
-            String sectionName = String.valueOf(section);
-            PromptSectionResult<?> sectionResult = (PromptSectionResult<?>) result;
-            Map<String, Object> sectionPayload = new LinkedHashMap<>();
-            boolean rendered = sectionResult != null && sectionResult.rendered();
-            sectionPayload.put(PAYLOAD_RENDERED, rendered);
-            sectionPayload.put(PAYLOAD_METADATA, sectionResult == null ? Map.of() : sectionResult.metadata());
-            sectionPayload.put(PAYLOAD_CONTENT, sectionResult == null ? null : sectionResult.content());
-            if (rendered) {
-                renderedSections.add(sectionName);
-            } else {
-                emptySections.add(sectionName);
-            }
-            sectionsPayload.put(sectionName, sectionPayload);
-        });
-
-        payload.put(PAYLOAD_RENDERED_SECTIONS, renderedSections);
-        payload.put(PAYLOAD_EMPTY_SECTIONS, emptySections);
-        payload.put(PAYLOAD_SECTIONS, sectionsPayload);
         return payload;
     }
 
