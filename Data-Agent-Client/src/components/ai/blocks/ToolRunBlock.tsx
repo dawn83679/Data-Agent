@@ -6,6 +6,7 @@ import { ToolRunExecuting } from './ToolRunExecuting';
 import { GenericToolRun } from './GenericToolRun';
 import { ChartToolBlock } from './ChartToolBlock';
 import { SkillToolBlock } from './SkillToolBlock';
+import { ExportFileToolBlock } from './ExportFileToolBlock';
 import { parseTodoListResponse } from './todoTypes';
 import {
   parseAskUserQuestionParameters,
@@ -160,9 +161,9 @@ export function ToolRunBlock({
       ? JSON.stringify(executeNonSelectPayload.execution)
       : responseData;
 
-  // 2. Error fallback for non-chart tools.
-  // Chart errors should still go through ChartToolBlock to trigger auto-feedback.
-  if (responseError && toolType !== ToolType.CHART) {
+  // 2. Error fallback for non-specialized tools.
+  // Chart/file export should still go through their dedicated blocks.
+  if (responseError && toolType !== ToolType.CHART && toolType !== ToolType.FILE_EXPORT) {
     return (
       <GenericToolRun
         toolName={toolName}
@@ -227,6 +228,16 @@ export function ToolRunBlock({
         />
       );
     }
+
+    case ToolType.FILE_EXPORT:
+      return (
+        <ExportFileToolBlock
+          toolName={toolName}
+          parametersData={parametersData}
+          responseData={executeNonSelectExecutionData}
+          responseError={responseError}
+        />
+      );
 
     // CATEGORY C: Generic Data Fetching / DB Tools
     case ToolType.GENERIC:

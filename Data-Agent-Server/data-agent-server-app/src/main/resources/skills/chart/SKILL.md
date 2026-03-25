@@ -1,3 +1,10 @@
+---
+name: chart
+description: Use when the model needs to turn verified tabular data into a final chart answer with renderChart; includes chart selection rules, ECharts payload templates, and failure-avoidance guidance.
+metadata:
+  short-description: Render final chart output
+---
+
 # Chart Visualization Rules
 
 ## Principles
@@ -45,7 +52,7 @@
 }
 ```
 
-### PIE (chartType = "PIE") — NO xAxis/yAxis
+### PIE (chartType = "PIE")
 ```json
 {
   "title": { "text": "Title" },
@@ -84,7 +91,6 @@
 ```
 
 ### AREA (chartType = "AREA")
-Note: series.type is "line" with areaStyle enabled.
 ```json
 {
   "title": { "text": "Title" },
@@ -104,11 +110,10 @@ Note: series.type is "line" with areaStyle enabled.
 ```
 
 ## Common Pitfalls
-- PIE with xAxis/yAxis — render failure. PIE charts must NOT have xAxis or yAxis
-- series.type mismatch with chartType — e.g. chartType="BAR" but series.type="line"
-- AREA chart: series.type must be "line" (not "area") with `"areaStyle": {}` added
-- Invalid JSON: trailing commas, single quotes, unquoted keys — all cause parse failure
-- Empty data arrays — always check query results before rendering
-- Wrong data format: PIE needs `[{name, value}]`, SCATTER needs `[[x, y]]`, others need flat arrays
-- legend.data not matching series[].name — causes legend to not highlight correctly
-- Setting backgroundColor or textStyle.color — frontend handles theming, do not override
+- PIE with xAxis/yAxis
+- series.type mismatch with chartType
+- Invalid JSON
+- Empty data arrays
+- Wrong data format by chart type
+- legend.data not matching series[].name
+- Setting backgroundColor or textStyle.color

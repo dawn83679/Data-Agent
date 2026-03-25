@@ -37,6 +37,9 @@ public enum ToolNameEnum {
     // ── Visualization ──
     RENDER_CHART("renderChart"),
 
+    // ── File export ──
+    EXPORT_FILE("exportFile"),
+
     // ── Task management ──
     TODO_WRITE("todoWrite"),
 

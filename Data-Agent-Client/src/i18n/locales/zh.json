@@ -229,6 +229,22 @@
       "copied": "已复制！",
       "downloadPng": "下载为 PNG"
     },
+    "exportFile": {
+      "label": "导出文件",
+      "format": "格式",
+      "size": "大小",
+      "createdAt": "生成时间",
+      "summary": "{{rowCount}} 行，{{columnCount}} 列",
+      "preview": "预览",
+      "noPreview": "暂无可预览数据。",
+      "truncatedHint": "预览已截断，请下载文件查看完整数据。",
+      "download": "下载",
+      "downloading": "下载中...",
+      "downloadSuccess": "文件下载成功。",
+      "downloadFailed": "文件下载失败",
+      "fileIdMissing": "缺少文件 ID，请重新导出。",
+      "toolFailed": "文件导出失败。"
+    },
     "writeExecutionConfirm": {
       "label": "需要确认写操作",
       "labelAction": "即将执行以下 SQL",
