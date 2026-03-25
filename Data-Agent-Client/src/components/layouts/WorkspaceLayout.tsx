@@ -51,7 +51,6 @@ export function WorkspaceLayout({ children, showAI, onToggleAI, showExplorer }: 
                 <Panel className="workbench-panel workbench-panel--main min-w-0 relative animate-fade-in">
                     {children}
                 </Panel>
-
                 {showAI && (
                     <>
                         <PanelResizeHandle className="workbench-resize-handle" />

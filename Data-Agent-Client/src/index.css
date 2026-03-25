@@ -313,7 +313,8 @@
       linear-gradient(150deg, var(--workbench-panel-accent), transparent 26%),
       linear-gradient(180deg, var(--workbench-panel-bg-top), var(--workbench-panel-bg-bottom));
     border-color: var(--workbench-panel-border);
-    box-shadow: var(--workbench-panel-shadow);
+    /* Home/Workspace panels should look flat with only the border + inner highlight. */
+    box-shadow: none;
     isolation: isolate;
     transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
   }
@@ -327,7 +328,7 @@
 
   .workbench-panel:hover {
     border-color: color-mix(in srgb, var(--workbench-panel-border) 82%, var(--accent-blue) 18%);
-    box-shadow: var(--workbench-panel-shadow-hover);
+    box-shadow: none;
   }
 
   .workbench-panel--sidebar {

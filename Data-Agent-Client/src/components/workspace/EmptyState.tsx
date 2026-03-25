@@ -1,17 +1,31 @@
 import { useTranslation } from 'react-i18next';
 import { I18N_KEYS } from '../../constants/i18nKeys';
-import { getPlatformShortcuts } from '../../lib/platformShortcuts';
+import { getPlatformShortcuts, isApplePlatform } from '../../lib/platformShortcuts';
 
 export function EmptyState() {
     const { t } = useTranslation();
     const shortcuts = getPlatformShortcuts();
+
+    const handleToggleAI = () => {
+        const isApple = isApplePlatform();
+        // Reuse the existing global keyboard shortcut handler (Ctrl/Cmd + B).
+        const evt = new KeyboardEvent('keydown', {
+            key: 'b',
+            code: 'KeyB',
+            ctrlKey: !isApple,
+            metaKey: isApple,
+            bubbles: true,
+            cancelable: true,
+        });
+        window.dispatchEvent(evt);
+    };
 
     const shortcutItems = [
         { label: t(I18N_KEYS.COMMON.EXECUTE_QUERY), keys: shortcuts.runQuery },
         { label: t(I18N_KEYS.COMMON.INSERT_INDENT), keys: 'Tab' },
         { label: t(I18N_KEYS.COMMON.OPEN_SETTINGS), keys: shortcuts.openSettings },
         { label: t(I18N_KEYS.COMMON.CLOSE_EXPLORER), keys: 'Esc' },
-        { label: t(I18N_KEYS.COMMON.TOGGLE_AI), keys: shortcuts.toggleAI },
+        { label: t(I18N_KEYS.COMMON.TOGGLE_AI), keys: shortcuts.toggleAI, onClick: handleToggleAI },
     ];
 
     const shortcutCardStyle = {
@@ -34,7 +48,19 @@ export function EmptyState() {
                         {shortcutItems.map((s, i) => (
                             <div
                                 key={i}
-                                className="flex items-center justify-between gap-8 rounded-xl border border-transparent px-3 py-2.5 transition-colors hover:border-[color:var(--workbench-chip-hover-border)] hover:bg-[color:var(--workbench-chip-hover-bg)]"
+                                role={s.onClick ? 'button' : undefined}
+                                tabIndex={s.onClick ? 0 : undefined}
+                                onClick={s.onClick}
+                                onKeyDown={(e) => {
+                                    if (!s.onClick) return;
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        s.onClick();
+                                    }
+                                }}
+                                className={`flex items-center justify-between gap-8 rounded-xl border border-transparent px-3 py-2.5 transition-colors hover:border-[color:var(--workbench-chip-hover-border)] hover:bg-[color:var(--workbench-chip-hover-bg)] ${
+                                    s.onClick ? 'cursor-pointer' : ''
+                                }`}
                             >
                                 <span className="theme-text-primary">{s.label}</span>
                                 <span className="workbench-pill font-mono text-[11px] text-[var(--accent-blue-subtle)]">
