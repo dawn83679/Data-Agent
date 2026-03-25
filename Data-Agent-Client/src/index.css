@@ -52,6 +52,38 @@
     --accent-blue-subtle: #60a5fa;
     --accent-hover: #60a5fa;
 
+    /* Workbench Surface System (Dark) */
+    --workbench-shell-glow: rgba(59, 130, 246, 0.12);
+    --workbench-shell-glow-secondary: rgba(14, 165, 233, 0.08);
+    --workbench-panel-bg-top: rgba(33, 38, 51, 0.98);
+    --workbench-panel-bg-bottom: rgba(22, 25, 35, 0.96);
+    --workbench-panel-border: rgba(148, 163, 184, 0.14);
+    --workbench-panel-shadow: 0 20px 42px rgba(2, 6, 23, 0.24), 0 4px 12px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    --workbench-panel-shadow-hover: 0 24px 54px rgba(2, 6, 23, 0.28), 0 8px 18px rgba(15, 23, 42, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    --workbench-panel-highlight: rgba(255, 255, 255, 0.07);
+    --workbench-panel-accent-main: rgba(148, 163, 184, 0.08);
+    --workbench-panel-accent-sidebar: rgba(56, 189, 248, 0.12);
+    --workbench-panel-accent-assistant: rgba(59, 130, 246, 0.12);
+    --workbench-header-bg-top: rgba(255, 255, 255, 0.06);
+    --workbench-header-bg-bottom: rgba(255, 255, 255, 0.02);
+    --workbench-header-border: rgba(148, 163, 184, 0.12);
+    --workbench-header-highlight: rgba(255, 255, 255, 0.05);
+    --workbench-chip-hover-bg: rgba(255, 255, 255, 0.05);
+    --workbench-chip-hover-border: rgba(148, 163, 184, 0.14);
+    --workbench-chip-active-bg: rgba(12, 18, 30, 0.56);
+    --workbench-chip-active-border: rgba(96, 165, 250, 0.28);
+    --workbench-chip-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 18px rgba(2, 6, 23, 0.18);
+    --workbench-toolbar-divider: rgba(148, 163, 184, 0.18);
+    --workbench-input-bg: rgba(15, 23, 42, 0.34);
+    --workbench-input-border: rgba(148, 163, 184, 0.14);
+    --workbench-input-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(2, 6, 23, 0.2);
+    --workbench-input-focus: rgba(96, 165, 250, 0.34);
+    --workbench-handle-line: rgba(148, 163, 184, 0.12);
+    --workbench-handle-hover: rgba(148, 163, 184, 0.24);
+    --workbench-handle-drag: rgba(96, 165, 250, 0.8);
+    --workbench-results-bg-top: rgba(255, 255, 255, 0.03);
+    --workbench-results-bg-bottom: rgba(18, 20, 28, 0.9);
+
     /* Syntax Highlighting (Dark) */
     --syntax-keyword: #cc7832;
     --syntax-string: #6a8759;
@@ -122,6 +154,38 @@
     --accent-blue: #2563eb;
     --accent-blue-subtle: #3b82f6;
     --accent-hover: #1d4ed8;
+
+    /* Workbench Surface System (Light) */
+    --workbench-shell-glow: rgba(37, 99, 235, 0.12);
+    --workbench-shell-glow-secondary: rgba(14, 165, 233, 0.08);
+    --workbench-panel-bg-top: rgba(255, 255, 255, 0.98);
+    --workbench-panel-bg-bottom: rgba(245, 248, 252, 0.96);
+    --workbench-panel-border: rgba(148, 163, 184, 0.22);
+    --workbench-panel-shadow: 0 20px 42px rgba(148, 163, 184, 0.16), 0 4px 12px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    --workbench-panel-shadow-hover: 0 24px 52px rgba(148, 163, 184, 0.2), 0 8px 18px rgba(15, 23, 42, 0.07), inset 0 1px 0 rgba(255, 255, 255, 1);
+    --workbench-panel-highlight: rgba(255, 255, 255, 0.92);
+    --workbench-panel-accent-main: rgba(148, 163, 184, 0.14);
+    --workbench-panel-accent-sidebar: rgba(59, 130, 246, 0.1);
+    --workbench-panel-accent-assistant: rgba(14, 165, 233, 0.1);
+    --workbench-header-bg-top: rgba(255, 255, 255, 0.86);
+    --workbench-header-bg-bottom: rgba(244, 247, 251, 0.92);
+    --workbench-header-border: rgba(148, 163, 184, 0.18);
+    --workbench-header-highlight: rgba(255, 255, 255, 0.92);
+    --workbench-chip-hover-bg: rgba(255, 255, 255, 0.82);
+    --workbench-chip-hover-border: rgba(148, 163, 184, 0.22);
+    --workbench-chip-active-bg: rgba(255, 255, 255, 0.94);
+    --workbench-chip-active-border: rgba(37, 99, 235, 0.24);
+    --workbench-chip-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98), 0 8px 18px rgba(148, 163, 184, 0.16);
+    --workbench-toolbar-divider: rgba(148, 163, 184, 0.22);
+    --workbench-input-bg: rgba(255, 255, 255, 0.72);
+    --workbench-input-border: rgba(148, 163, 184, 0.2);
+    --workbench-input-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96), 0 1px 2px rgba(15, 23, 42, 0.04);
+    --workbench-input-focus: rgba(37, 99, 235, 0.22);
+    --workbench-handle-line: rgba(148, 163, 184, 0.18);
+    --workbench-handle-hover: rgba(148, 163, 184, 0.32);
+    --workbench-handle-drag: rgba(37, 99, 235, 0.7);
+    --workbench-results-bg-top: rgba(255, 255, 255, 0.84);
+    --workbench-results-bg-bottom: rgba(241, 245, 249, 0.92);
 
     /* Syntax Highlighting (Light) */
     --syntax-keyword: #0033b3;
@@ -230,8 +294,11 @@
 
   /* Workbench Shell */
   .workbench-shell {
-    @apply flex overflow-hidden p-2;
-    background: var(--bg-main);
+    @apply flex overflow-hidden p-3;
+    background:
+      radial-gradient(1200px 420px at -10% -10%, var(--workbench-shell-glow), transparent 42%),
+      radial-gradient(880px 360px at 110% 0%, var(--workbench-shell-glow-secondary), transparent 38%),
+      linear-gradient(180deg, color-mix(in srgb, var(--bg-main) 96%, #0f172a 4%), var(--bg-main));
   }
 
   .workbench-shell__group {
@@ -239,44 +306,195 @@
   }
 
   .workbench-panel {
-    @apply min-h-0 overflow-hidden rounded-[14px] border;
-    background-color: var(--bg-panel);
-    border-color: var(--border-color);
+    --workbench-panel-accent: var(--workbench-panel-accent-main);
+    @apply min-h-0 overflow-hidden rounded-[18px] border relative;
+    background:
+      linear-gradient(180deg, var(--workbench-panel-highlight), transparent 14%),
+      linear-gradient(150deg, var(--workbench-panel-accent), transparent 26%),
+      linear-gradient(180deg, var(--workbench-panel-bg-top), var(--workbench-panel-bg-bottom));
+    border-color: var(--workbench-panel-border);
+    box-shadow: var(--workbench-panel-shadow);
+    isolation: isolate;
+    transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
   }
 
-  .workbench-panel--sidebar,
+  .workbench-panel::after {
+    content: '';
+    @apply absolute inset-0 pointer-events-none;
+    border-radius: inherit;
+    box-shadow: inset 0 1px 0 var(--workbench-header-highlight);
+  }
+
+  .workbench-panel:hover {
+    border-color: color-mix(in srgb, var(--workbench-panel-border) 82%, var(--accent-blue) 18%);
+    box-shadow: var(--workbench-panel-shadow-hover);
+  }
+
+  .workbench-panel--sidebar {
+    --workbench-panel-accent: var(--workbench-panel-accent-sidebar);
+  }
+
   .workbench-panel--assistant {
-    background-color: var(--bg-panel);
+    --workbench-panel-accent: var(--workbench-panel-accent-assistant);
   }
 
-  .workbench-panel--main {
-    background-color: var(--bg-panel);
+  .workbench-resize-handle,
+  .workbench-horizontal-resize-handle {
+    @apply relative shrink-0;
+    background: transparent;
   }
 
   .workbench-resize-handle {
-    @apply relative w-2 shrink-0;
-    background: transparent;
+    @apply w-2;
   }
 
   .workbench-resize-handle::before {
     content: '';
     @apply absolute left-1/2 top-0 h-full -translate-x-1/2 rounded-full transition-colors duration-200;
     width: 1px;
-    background: transparent;
+    background: var(--workbench-handle-line);
+    display: none;
+  }
+
+  .workbench-resize-handle::after,
+  .workbench-horizontal-resize-handle::after {
+    content: '';
   }
 
   .workbench-resize-handle::after {
-    content: '';
     @apply absolute -left-1 -right-1 top-0 bottom-0 cursor-col-resize;
   }
 
   .workbench-resize-handle:hover::before,
   .workbench-resize-handle[data-resize-handle-state="hover"]::before {
-    background: color-mix(in srgb, var(--border-color) 72%, transparent);
+    background: var(--workbench-handle-hover);
   }
 
   .workbench-resize-handle[data-resize-handle-state="drag"]::before {
-    background: var(--accent-blue);
+    width: 2px;
+    background: var(--workbench-handle-drag);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--workbench-handle-drag) 14%, transparent);
+  }
+
+  .workbench-horizontal-resize-handle {
+    height: 10px;
+  }
+
+  .workbench-horizontal-resize-handle::before {
+    content: '';
+    @apply absolute left-4 right-4 top-1/2 -translate-y-1/2 rounded-full transition-all duration-200;
+    height: 1px;
+    background: var(--workbench-handle-line);
+    display: none;
+  }
+
+  .workbench-horizontal-resize-handle::after {
+    @apply absolute inset-x-0 -top-1 -bottom-1 cursor-row-resize;
+  }
+
+  .workbench-horizontal-resize-handle:hover::before,
+  .workbench-horizontal-resize-handle[data-resize-handle-state="hover"]::before {
+    background: var(--workbench-handle-hover);
+  }
+
+  .workbench-horizontal-resize-handle[data-resize-handle-state="drag"]::before {
+    height: 2px;
+    background: var(--workbench-handle-drag);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--workbench-handle-drag) 12%, transparent);
+  }
+
+  .workbench-header {
+    background:
+      linear-gradient(180deg, var(--workbench-header-bg-top), var(--workbench-header-bg-bottom));
+    border-bottom: 1px solid var(--workbench-header-border);
+    box-shadow: inset 0 1px 0 var(--workbench-header-highlight);
+  }
+
+  .workbench-chip {
+    border: 1px solid transparent;
+    background: transparent;
+    box-shadow: none;
+    transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, color 180ms ease, transform 180ms ease;
+  }
+
+  .workbench-chip:hover {
+    background: var(--workbench-chip-hover-bg);
+    border-color: var(--workbench-chip-hover-border);
+    box-shadow: inset 0 1px 0 var(--workbench-header-highlight);
+  }
+
+  .workbench-chip--active {
+    background: var(--workbench-chip-active-bg);
+    border-color: var(--workbench-chip-active-border);
+    box-shadow: var(--workbench-chip-active-shadow);
+  }
+
+  .workbench-tab-chip {
+    @apply h-8 flex items-center px-3 text-[11px] min-w-[124px] max-w-[224px] select-none rounded-xl relative cursor-pointer shrink-0;
+  }
+
+  .workbench-tab-chip:not([data-active="true"]):not([data-error="true"]) {
+    color: var(--text-secondary);
+  }
+
+  .workbench-icon-button {
+    @apply inline-flex items-center justify-center rounded-lg;
+    width: 1.75rem;
+    height: 1.75rem;
+    color: var(--text-secondary);
+    transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  }
+
+  .workbench-icon-button:hover {
+    background: var(--workbench-chip-hover-bg);
+    color: var(--text-primary);
+    box-shadow: inset 0 1px 0 var(--workbench-header-highlight);
+  }
+
+  .workbench-pill {
+    @apply inline-flex items-center gap-1.5 rounded-lg px-2 text-[11px] font-medium;
+    min-height: 1.75rem;
+    border: 1px solid var(--workbench-chip-hover-border);
+    background: var(--workbench-chip-hover-bg);
+    color: var(--text-primary);
+    box-shadow: inset 0 1px 0 var(--workbench-header-highlight);
+    transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, color 180ms ease;
+  }
+
+  .workbench-pill:hover {
+    background: var(--workbench-chip-active-bg);
+    border-color: var(--workbench-chip-active-border);
+    box-shadow: var(--workbench-chip-active-shadow);
+  }
+
+  .workbench-toolbar-divider {
+    width: 1px;
+    height: 1rem;
+    background: var(--workbench-toolbar-divider);
+  }
+
+  .workbench-search-shell {
+    border: 1px solid var(--workbench-input-border);
+    background: var(--workbench-input-bg);
+    box-shadow: var(--workbench-input-shadow);
+    transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+  }
+
+  .workbench-search-shell:focus-within {
+    border-color: var(--workbench-input-focus);
+    box-shadow: inset 0 1px 0 var(--workbench-header-highlight), 0 0 0 1px var(--workbench-input-focus);
+  }
+
+  .workbench-results-panel {
+    background:
+      linear-gradient(180deg, var(--workbench-results-bg-top), var(--workbench-results-bg-bottom));
+    box-shadow: inset 0 1px 0 var(--workbench-header-highlight);
+  }
+
+  .workbench-status-bar {
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--workbench-header-bg-top) 88%, transparent), color-mix(in srgb, var(--workbench-header-bg-bottom) 92%, transparent));
+    border-top: 1px solid var(--workbench-header-border);
   }
 
   /* Tab Styles */

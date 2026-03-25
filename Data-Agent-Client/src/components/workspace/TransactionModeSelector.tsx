@@ -30,7 +30,7 @@ export function TransactionModeSelector({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="h-6 px-2 rounded flex items-center gap-1 text-[11px] hover:bg-accent/30 transition-colors">
+        <button className="workbench-pill">
           <span className="theme-text-primary font-medium">Tx: {TRANSACTION_MODE_LABELS[transactionMode]}</span>
           <ChevronDown className="w-3 h-3 theme-text-secondary" />
         </button>

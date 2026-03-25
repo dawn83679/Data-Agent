@@ -89,16 +89,14 @@ function SortableTab({
   const isPlannerConsole = type === 'subagent-console' && subAgentType === SUB_AGENT_TYPES.PLANNER;
   const isFailedSubAgent = type === 'subagent-console' && subAgentStatus === 'error';
   const activeClass = isFailedSubAgent
-    ? 'border-red-500/70 bg-red-500/10 text-red-200'
+    ? 'border-red-400/45 bg-red-500/10 text-red-100 shadow-sm'
     : isActive
       ? isPlannerConsole
-        ? 'border-purple-500/70 bg-[var(--bg-main)] theme-text-primary shadow-sm'
+        ? 'border-purple-400/40 bg-purple-500/10 text-[color:var(--text-primary)] shadow-sm'
         : type === 'subagent-console'
-          ? 'border-cyan-500/70 bg-[var(--bg-main)] theme-text-primary shadow-sm'
-          : 'border-primary/70 bg-[var(--bg-main)] theme-text-primary shadow-sm'
-      : isFailedSubAgent
-        ? 'border-transparent bg-red-500/5 text-red-300 hover:bg-red-500/10'
-        : 'border-transparent theme-text-secondary hover:theme-text-primary hover:bg-[var(--bg-main)]/70';
+          ? 'border-cyan-400/40 bg-cyan-500/10 text-[color:var(--text-primary)] shadow-sm'
+          : 'workbench-chip--active text-[color:var(--text-primary)]'
+      : 'theme-text-secondary hover:theme-text-primary';
 
   const subAgentIconClass = isFailedSubAgent
     ? 'text-red-400'
@@ -115,8 +113,10 @@ function SortableTab({
               ref={setNodeRef}
               style={style}
               onClick={() => onSwitch(tabId)}
+              data-active={isActive ? 'true' : undefined}
+              data-error={isFailedSubAgent ? 'true' : undefined}
               className={cn(
-                'h-8 flex items-center px-3 text-[11px] min-w-[120px] max-w-[220px] group select-none border rounded-md transition-colors relative cursor-pointer shrink-0',
+                'group workbench-chip workbench-tab-chip',
                 activeClass,
                 isDragging && 'opacity-40'
               )}
@@ -148,7 +148,7 @@ function SortableTab({
                   onClose(tabId);
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
-                className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:text-red-400 transition-all cursor-pointer flex-shrink-0"
+                className="workbench-icon-button h-5 w-5 p-0 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:text-red-400 transition-all cursor-pointer flex-shrink-0"
                 type="button"
               >
                 <X className="w-3 h-3" />
@@ -206,7 +206,7 @@ export function TabBar() {
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
-        <div className="h-10 px-2 py-1.5 theme-bg-panel flex items-stretch overflow-x-auto no-scrollbar border-b theme-border shrink-0">
+        <div className="workbench-header flex h-[46px] items-stretch overflow-x-auto no-scrollbar px-2.5 py-2 shrink-0">
           <SortableContext
             items={tabs.map((tab) => tab.id)}
             strategy={horizontalListSortingStrategy}

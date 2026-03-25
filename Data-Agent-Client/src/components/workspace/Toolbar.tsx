@@ -60,6 +60,9 @@ export function Toolbar({
     loadDatabases();
   }, [connectionId]);
 
+  const actionButtonClass =
+    'workbench-icon-button h-7 w-7';
+
   return (
     <>
       {/* Left: Action Buttons */}
@@ -69,7 +72,7 @@ export function Toolbar({
         onClick={onRun}
         disabled={!connectionId || isRunning}
         title={isRunning ? t(I18N_KEYS.COMMON.STOP) : t(I18N_KEYS.WORKSPACE.RUN_SHORTCUT)}
-        className="h-6 w-6"
+        className={actionButtonClass}
       >
         {isRunning ? (
           <Square className="w-3.5 h-3.5 fill-current text-amber-500" />
@@ -79,7 +82,7 @@ export function Toolbar({
       </Button>
 
       {/* Divider */}
-      <div className="w-px h-4 bg-border mx-0.5" />
+      <div className="mx-1 workbench-toolbar-divider" />
 
       {/* Transaction Mode Selector */}
       <TransactionModeSelector
@@ -92,7 +95,7 @@ export function Toolbar({
       {extraActions && (
         <>
           {/* Divider */}
-          <div className="w-px h-4 bg-border mx-0.5" />
+          <div className="mx-1 workbench-toolbar-divider" />
           <div className="flex items-center gap-1">
             {extraActions}
           </div>
@@ -105,7 +108,7 @@ export function Toolbar({
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6"
+            className={actionButtonClass}
             title={t(I18N_KEYS.WORKSPACE.COMMIT)}
           >
             <CheckCircle className="w-3.5 h-3.5 text-green-500 hover:text-green-600" />
@@ -113,7 +116,7 @@ export function Toolbar({
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6"
+            className={actionButtonClass}
             title={t(I18N_KEYS.WORKSPACE.ROLLBACK)}
           >
             <RotateCcw className="w-3.5 h-3.5 text-orange-500 hover:text-orange-600" />
@@ -122,7 +125,7 @@ export function Toolbar({
       )}
 
       {/* Divider */}
-      <div className="w-px h-4 bg-border mx-0.5" />
+      <div className="mx-1 workbench-toolbar-divider" />
 
       {/* Stop Button */}
       <Button
@@ -131,7 +134,7 @@ export function Toolbar({
         onClick={onStop}
         disabled={!isRunning}
         title={t(I18N_KEYS.COMMON.STOP)}
-        className="h-6 w-6"
+        className={actionButtonClass}
       >
         <Square className={`w-3.5 h-3.5 fill-current ${isRunning ? 'text-red-500' : 'text-gray-400'}`} />
       </Button>
@@ -143,7 +146,7 @@ export function Toolbar({
       {connectionId && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="h-6 px-2 rounded flex items-center gap-1 text-[11px] hover:bg-accent/30 transition-colors">
+            <button className="workbench-pill">
               <span className="theme-text-primary font-medium">{currentDatabase || 'db'}</span>
               <span className="text-[9px] theme-text-secondary">▾</span>
             </button>

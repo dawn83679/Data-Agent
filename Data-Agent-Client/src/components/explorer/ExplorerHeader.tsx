@@ -35,10 +35,10 @@ export function ExplorerHeader({
   const { t } = useTranslation();
 
   return (
-    <div className="shrink-0">
+    <div className="workbench-header shrink-0">
       {/* Search Block (first) */}
-      <div className="p-3 border-b theme-border">
-        <div className="relative flex items-center gap-2 rounded-md border theme-border bg-[var(--bg-popup)]/55 p-1 focus-within:border-[var(--accent-blue)] transition-colors">
+      <div className="border-b border-[color:var(--workbench-header-border)] px-3 py-3">
+        <div className="workbench-search-shell relative flex items-center gap-2 rounded-xl p-1.5">
           <Search className="ml-1 h-3.5 w-3.5 theme-text-secondary" />
           <input
             type="text"
@@ -47,20 +47,20 @@ export function ExplorerHeader({
             onChange={(e) => onSearchChange(e.target.value)}
             className="h-6 w-full bg-transparent border-none p-0 text-[12px] theme-text-primary placeholder:theme-text-secondary/80 focus:outline-none focus:ring-0"
           />
-          <span className="mr-1 inline-flex items-center rounded border border-[var(--accent-blue)] bg-[var(--accent-blue)] px-1.5 py-0.5 text-[10px] font-medium text-white">
+          <span className="mr-0.5 inline-flex items-center rounded-lg border border-[color:var(--workbench-chip-active-border)] bg-[color:var(--workbench-chip-active-bg)] px-1.5 py-0.5 text-[10px] font-semibold theme-text-primary shadow-sm">
             K
           </span>
         </div>
       </div>
 
       {/* Explorer Title + Actions (second) */}
-      <div className="flex items-center justify-between px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] theme-text-secondary">
+      <div className="flex items-center justify-between px-3 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] theme-text-secondary">
         <span>{t(I18N_KEYS.EXPLORER.TITLE)}</span>
         <div className="flex items-center gap-1.5">
           <button
             onClick={onRefresh}
             title={t(I18N_KEYS.COMMON.REFRESH)}
-            className="rounded p-1 hover:bg-[var(--bg-popup)]/70 transition-colors"
+            className="workbench-icon-button"
           >
             <RefreshCw className={cn('h-3.5 w-3.5 hover:theme-text-primary transition-colors', isLoading && 'animate-spin')} />
           </button>
@@ -70,7 +70,7 @@ export function ExplorerHeader({
               <button
                 title={t(I18N_KEYS.COMMON.ADD)}
                 aria-label={t(I18N_KEYS.COMMON.ADD)}
-                className="rounded p-1 hover:bg-[var(--bg-popup)]/70 transition-colors"
+                className="workbench-icon-button"
               >
                 <Plus className="h-3.5 w-3.5 hover:theme-text-primary cursor-pointer transition-colors" />
               </button>

@@ -84,14 +84,14 @@ export default function Home() {
 
             {/* Workspace Area */}
             {activeTab?.type === 'plan' ? (
-                <div className="flex-1 min-h-0 overflow-hidden theme-bg-main">
+                <div className="flex-1 min-h-0 overflow-hidden bg-transparent">
                     <PlanConsole
                         tabId={activeTab.id}
                         payload={(activeTab.metadata as PlanTabMetadata).planPayload}
                     />
                 </div>
             ) : activeTab?.type === 'subagent-console' ? (
-                <div className="flex-1 min-h-0 overflow-hidden theme-bg-main">
+                <div className="flex-1 min-h-0 overflow-hidden bg-transparent">
                     <SubAgentConsole
                         tabId={activeTab.id}
                         metadata={activeTab.metadata as SubAgentConsoleTabMetadata}
@@ -104,9 +104,9 @@ export default function Home() {
                     executeResult={executeResult}
                     isRunning={isRunning}
                 >
-                    <div className="flex-1 flex flex-col min-h-0 relative theme-bg-main">
+                    <div className="flex-1 flex flex-col min-h-0 relative bg-transparent">
                         {activeTab?.type === 'file' && (
-                            <div className="h-8 flex items-center px-3 border-b theme-border text-[10px] theme-text-secondary shrink-0 gap-1 bg-[var(--bg-main)]/55">
+                            <div className="workbench-header flex h-10 items-center gap-1 px-3 text-[10px] theme-text-secondary shrink-0">
                                 <Toolbar
                                     onRun={handleRunQuery}
                                     onStop={() => setIsRunning(false)}

@@ -300,7 +300,7 @@ export function AIAssistant({ onClosePanel }: { onClosePanel?: () => void }) {
 
   return (
     <AIAssistantProvider value={contextValue}>
-      <div className="flex flex-col h-full theme-bg-panel overflow-hidden">
+      <div className="flex h-full flex-col overflow-hidden bg-transparent">
         <AIAssistantHeader
           title={t(I18N_KEYS.AI.TITLE)}
           historyAriaLabel={t(I18N_KEYS.AI.HISTORY)}

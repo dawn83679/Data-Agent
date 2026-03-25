@@ -123,7 +123,7 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
   if (!isVisible) {
     return (
       <PanelGroup orientation="vertical" className="h-full min-h-0">
-        <Panel className="flex flex-col min-h-0 relative theme-bg-main">
+        <Panel className="flex flex-col min-h-0 relative bg-transparent">
           {children}
         </Panel>
       </PanelGroup>
@@ -132,24 +132,24 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
 
   return (
     <PanelGroup orientation="vertical" className="h-full min-h-0">
-      <Panel className="flex flex-col min-h-0 relative theme-bg-main">
+      <Panel className="flex flex-col min-h-0 relative bg-transparent">
         {children}
       </Panel>
 
-      <PanelResizeHandle className="h-1 bg-transparent hover:bg-primary/40 transition-colors" />
+      <PanelResizeHandle className="workbench-horizontal-resize-handle" />
 
-      <Panel defaultSize="30%" minSize="15%" className="theme-bg-panel flex flex-col shrink-0 border-t theme-border relative">
+      <Panel defaultSize="30%" minSize="15%" className="workbench-results-panel flex flex-col shrink-0 border-t theme-border relative">
         {/* Toolbar */}
-        <div className="flex items-center h-10 px-3 border-b theme-border shrink-0 bg-[var(--bg-main)]/40">
+        <div className="workbench-header flex h-11 items-center px-3 shrink-0">
           <div className="flex space-x-1 h-full">
             {hasResultTab && (
               <button
                 onClick={() => setActiveTab('result')}
                 className={cn(
-                  "px-3 py-1 text-[11px] font-medium transition-colors relative h-full flex items-center rounded-t-sm",
+                  'workbench-chip flex h-7 items-center rounded-lg px-3 text-[11px] font-medium transition-all',
                   activeTab === 'result'
-                    ? "theme-text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary"
-                    : "theme-text-secondary hover:theme-text-primary"
+                    ? 'workbench-chip--active theme-text-primary'
+                    : 'theme-text-secondary hover:theme-text-primary'
                 )}
               >
                 Results
@@ -158,10 +158,10 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
             <button
               onClick={() => setActiveTab('output')}
               className={cn(
-                "px-3 py-1 text-[11px] font-medium transition-colors relative h-full flex items-center rounded-t-sm",
+                'workbench-chip flex h-7 items-center rounded-lg px-3 text-[11px] font-medium transition-all',
                 (activeTab === 'output' || !hasResultTab)
-                  ? "theme-text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary"
-                  : "theme-text-secondary hover:theme-text-primary"
+                  ? 'workbench-chip--active theme-text-primary'
+                  : 'theme-text-secondary hover:theme-text-primary'
               )}
             >
               Output
@@ -170,10 +170,15 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
 
           <div className="flex-1" />
 
-          <div className="flex items-center space-x-2 px-2">
+          <div className="hidden items-center gap-2 rounded-full border border-[color:var(--workbench-chip-hover-border)] bg-[color:var(--workbench-chip-hover-bg)] px-2.5 py-1 text-[10px] theme-text-secondary shadow-sm md:flex">
+            <span className={cn('h-2 w-2 rounded-full', getStatusIndicatorColor())} />
+            <span>{getStatusText()}</span>
+          </div>
+
+          <div className="flex items-center gap-1 pl-2">
             <button
               onClick={onClose}
-              className="p-1 hover:bg-accent rounded theme-text-secondary hover:theme-text-primary"
+              className="workbench-icon-button"
               title={t(I18N_KEYS.COMMON.CLOSE_PANEL)}
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -182,29 +187,29 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
               onClick={handleExport}
               disabled={!canExport}
               className={cn(
-                "p-1 rounded theme-text-secondary",
+                'workbench-icon-button',
                 canExport
-                  ? "hover:bg-accent hover:theme-text-primary"
-                  : "opacity-50 cursor-not-allowed"
+                  ? 'hover:text-[color:var(--text-primary)]'
+                  : 'cursor-not-allowed opacity-50'
               )}
               title={canExport ? t(I18N_KEYS.COMMON.EXPORT) : t(I18N_KEYS.COMMON.EXPORT_NO_DATA)}
             >
               <Download className="w-3.5 h-3.5" />
             </button>
-            <button className="p-1 hover:bg-accent rounded theme-text-secondary hover:theme-text-primary" title={t(I18N_KEYS.COMMON.MAXIMIZE)}>
+            <button className="workbench-icon-button" title={t(I18N_KEYS.COMMON.MAXIMIZE)}>
               <Maximize2 className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-hidden theme-bg-main relative">
+        <div className="flex-1 overflow-hidden bg-transparent relative">
           {activeTab === 'result' && hasResultTab && executeResult ? (
             // Results Table
             <div className="overflow-auto h-full">
               {resultHeaders.length > 0 ? (
                 <table className="text-[11px] w-full border-collapse">
-                  <thead className="sticky top-0 theme-bg-panel">
+                  <thead className="sticky top-0 bg-[color:var(--bg-panel)]/92 backdrop-blur-xl">
                     <tr>
                       {resultHeaders.map((h) => (
                         <th
@@ -219,7 +224,7 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
                   <tbody>
                     {resultRows && resultRows.length > 0 ? (
                       resultRows.map((row, i) => (
-                        <tr key={i} className="hover:bg-accent/30 border-b theme-border">
+                        <tr key={i} className="border-b theme-border hover:bg-[color:var(--workbench-chip-hover-bg)]">
                           {row.map((cell, j) => (
                             <td
                               key={j}
@@ -305,7 +310,7 @@ export function ResultsPanel({ isVisible, onClose, executeResult, isRunning = fa
         </div>
 
         {/* Status Bar */}
-        <div className="h-7 border-t theme-border flex items-center px-3 text-[10px] theme-text-secondary justify-between shrink-0 bg-[var(--bg-main)]/35">
+        <div className="workbench-status-bar flex h-7 items-center justify-between px-3 text-[10px] theme-text-secondary shrink-0">
           <div className="flex items-center space-x-2">
             <span className="flex items-center">
               <span className={cn('w-2 h-2 rounded-full mr-1.5', getStatusIndicatorColor())} />
