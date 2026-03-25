@@ -22,6 +22,10 @@ export function ChatStatsFooter({ metadata }: ChatStatsFooterProps) {
     keptRecentCount,
   } = metadata;
 
+  const inputTokens =
+    totalTokens != null && outputTokens != null
+      ? Math.max(0, totalTokens - outputTokens)
+      : null;
   const hasTools = toolCount != null && toolCount > 0;
   const hasTokens = totalTokens != null && totalTokens > 0;
   const hasCompression = memoryCompressed === true;
@@ -49,10 +53,9 @@ export function ChatStatsFooter({ metadata }: ChatStatsFooterProps) {
         <span className="flex items-center gap-1">
           <Zap className="w-3 h-3" />
           <span>
-            {formatTokens(totalTokens!)} tokens
-            {outputTokens != null && outputTokens > 0 && (
-              <> (output: {formatTokens(outputTokens)})</>
-            )}
+            {inputTokens != null && outputTokens != null
+              ? <>input: {formatTokens(inputTokens)} / output: {formatTokens(outputTokens)}</>
+              : <>{formatTokens(totalTokens!)} tokens</>}
           </span>
         </span>
       )}

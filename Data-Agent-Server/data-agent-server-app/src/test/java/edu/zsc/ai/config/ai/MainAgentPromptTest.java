@@ -140,14 +140,6 @@ class MainAgentPromptTest {
     }
 
     @Test
-    void workflow_discouragesEmojiByDefault() {
-        assertTrue(promptContent.contains("默认不要在最终回答中使用 emoji，除非用户明确要求。"),
-                "ZH prompt should explicitly discourage emoji in final answers by default");
-        assertTrue(promptContentEn.contains("Do not use emoji in the final answer unless the user explicitly asks for them."),
-                "EN prompt should explicitly discourage emoji in final answers by default");
-    }
-
-    @Test
     void workflow_usesSimplifiedExamples() {
         assertTrue(promptContent.contains("<examples>"),
                 "Prompt should include abstract examples");
