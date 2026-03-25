@@ -2,12 +2,14 @@ package edu.zsc.ai.agent.tool.memory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -15,6 +17,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.aop.aspectj.annotation.AspectJProxyFactory;
 
+import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.agent.tool.error.ToolErrorMapper;
@@ -156,6 +159,31 @@ class WriteMemoryToolTest {
 
         assertTrue(result.isSuccess());
         verify(memoryService).writeAgentMemory(any());
+    }
+
+    @Test
+    void toolGuidance_requiresExecutableScopeIdentifiersForObjectKnowledge() throws Exception {
+        Method method = WriteMemoryTool.class.getMethod(
+                "writeMemory",
+                MemoryScopeEnum.class,
+                MemoryTypeEnum.class,
+                MemorySubTypeEnum.class,
+                String.class,
+                String.class,
+                String.class,
+                InvocationParameters.class
+        );
+
+        Tool annotation = method.getAnnotation(Tool.class);
+        assertNotNull(annotation);
+
+        String joined = String.join("\n", annotation.value());
+        assertTrue(joined.contains("connectionId"),
+                "WriteMemoryTool guidance should require connectionId in object-level durable scope memory when known");
+        assertTrue(joined.contains("catalog/database"),
+                "WriteMemoryTool guidance should require catalog or database identifiers in object-level durable scope memory when known");
+        assertTrue(joined.contains("table=chat2db_user"),
+                "WriteMemoryTool guidance should include an executable scope example for object knowledge");
     }
 
     private static WriteMemoryTool proxy(WriteMemoryTool target) {

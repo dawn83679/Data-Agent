@@ -30,7 +30,6 @@ public class AgentObservabilityAdminServiceImpl implements AgentObservabilityAdm
                 .sseEventLogEnabled(request.getSseEventLogEnabled())
                 .modelEventLogEnabled(request.getModelEventLogEnabled())
                 .toolEventLogEnabled(request.getToolEventLogEnabled())
-                .includePrompt(request.getIncludePrompt())
                 .includeResponse(request.getIncludeResponse())
                 .includeTokenStream(request.getIncludeTokenStream())
                 .runtimeLogDir(request.getRuntimeLogDir())

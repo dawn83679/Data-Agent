@@ -38,6 +38,8 @@ export const I18N_KEYS = {
     LOGIN: 'common.login',
     MORE: 'common.more',
     AI_ASSISTANT: 'common.ai_assistant',
+    CANCEL: 'common.cancel',
+    CONFIRM: 'common.confirm',
   },
 
   // Auth keys

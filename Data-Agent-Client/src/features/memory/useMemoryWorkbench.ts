@@ -48,6 +48,7 @@ export function useMemoryWorkbench() {
     handleDisable: editorState.handleDisable,
     handleEnable: editorState.handleEnable,
     handleDelete: editorState.handleDelete,
+    confirmDialog: editorState.confirmDialog,
     goToPreviousPage: listState.goToPreviousPage,
     goToNextPage: listState.goToNextPage,
   };

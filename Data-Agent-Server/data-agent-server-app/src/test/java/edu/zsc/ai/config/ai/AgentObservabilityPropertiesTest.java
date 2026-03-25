@@ -18,7 +18,6 @@ class AgentObservabilityPropertiesTest {
         assertTrue(properties.isSseEventLogEnabled());
         assertTrue(properties.isModelEventLogEnabled());
         assertTrue(properties.isToolEventLogEnabled());
-        assertFalse(properties.isIncludePrompt());
         assertTrue(properties.isIncludeResponse());
         assertTrue(properties.isIncludeTokenStream());
         assertEquals("~/.data-agent/logs/agent/runtime", properties.getRuntimeLogDir());

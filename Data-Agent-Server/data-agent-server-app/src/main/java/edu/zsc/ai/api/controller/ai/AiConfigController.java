@@ -26,6 +26,8 @@ public class AiConfigController {
                 .map(m -> ModelOptionResponse.builder()
                         .modelName(m.getModelName())
                         .supportThinking(m.isSupportThinking())
+                        .memoryThreshold(m.getMemoryThreshold())
+                        .maxContextTokens(m.getMaxContextTokens())
                         .build())
                 .toList();
         return ApiResponse.success(list);

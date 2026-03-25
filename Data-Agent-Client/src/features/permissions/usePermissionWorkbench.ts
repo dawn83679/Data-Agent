@@ -68,6 +68,7 @@ export function usePermissionWorkbench(requestedConversationId: number | null) {
     submitting: editorState.submitting,
     toggleBusyId: editorState.toggleBusyId,
     deleteBusyId: editorState.deleteBusyId,
+    confirmDialog: editorState.confirmDialog,
     editorMode: editorState.editorMode,
     editingRule: editorState.editingRule,
     form: editorState.form,

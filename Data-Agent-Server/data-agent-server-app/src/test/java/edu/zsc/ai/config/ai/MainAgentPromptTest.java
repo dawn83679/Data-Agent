@@ -13,11 +13,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class MainAgentPromptTest {
 
     private static String promptContent;
+    private static String promptContentEn;
 
     @BeforeAll
     static void loadPrompt() {
         promptContent = PromptConfig.getPrompt(PromptEnum.ZH);
         assertNotNull(promptContent, "MainAgent prompt should load");
+        promptContentEn = PromptConfig.getPrompt(PromptEnum.EN);
+        assertNotNull(promptContentEn, "MainAgent EN prompt should load");
     }
 
     // ==================== 3.3.1: No <tool-mastery> ====================
@@ -109,10 +112,31 @@ class MainAgentPromptTest {
                 "Prompt should describe lightweight discovery capability");
         assertTrue(promptContent.contains("简单只读任务通常可以直接调用 executeSelectSql"),
                 "Prompt should keep a direct execution path for simple reads");
-        assertTrue(promptContent.contains("getEnvironmentOverview：查看当前环境中的连接与 catalog 选项"),
+        assertTrue(promptContent.contains("getEnvironmentOverview：只有当连接或 catalog 本身仍是待判断前提时，才使用"),
                 "Prompt should describe environment overview as a runtime scoping tool");
         assertTrue(promptContent.contains("使用 renderChart 交付更直观的结果"),
                 "Prompt should include visualization in the runtime workflow");
+    }
+
+    @Test
+    void workflow_prefersGroundedScopeBeforeEnvironmentWideDiscovery() {
+        assertTrue(promptContent.contains("这些线索可以来自当前任务、runtime context、mention、explicit references、durable context，以及 scope hints。"),
+                "ZH prompt should name the scope-grounding signals");
+        assertTrue(promptContent.contains("不要因为习惯性 discovery 而先扩大到整个环境"),
+                "ZH prompt should discourage habitual environment-wide discovery");
+        assertTrue(promptContent.contains("只有当连接或 catalog 本身仍是待判断前提时，才使用"),
+                "ZH prompt should narrow when getEnvironmentOverview is appropriate");
+        assertTrue(promptContent.contains("例如 memory 或当前提示已经指出了具体数据源、数据库或表。"),
+                "ZH prompt example B should cover already-grounded object scope");
+
+        assertTrue(promptContentEn.contains("These signals can come from the current task, runtime context, mentions, explicit references, durable context, and scope hints."),
+                "EN prompt should name the scope-grounding signals");
+        assertTrue(promptContentEn.contains("do not expand back to the whole environment just because discovery is available"),
+                "EN prompt should discourage habitual environment-wide discovery");
+        assertTrue(promptContentEn.contains("use it only when the available connections or catalogs are themselves part of the decision"),
+                "EN prompt should narrow when getEnvironmentOverview is appropriate");
+        assertTrue(promptContentEn.contains("memory or the current prompt already points to a specific data source, database, or table"),
+                "EN prompt example B should cover already-grounded object scope");
     }
 
     @Test

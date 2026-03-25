@@ -17,7 +17,6 @@ public class AgentObservabilitySettingsOverride {
     private Boolean sseEventLogEnabled;
     private Boolean modelEventLogEnabled;
     private Boolean toolEventLogEnabled;
-    private Boolean includePrompt;
     private Boolean includeResponse;
     private Boolean includeTokenStream;
     private String runtimeLogDir;
@@ -29,7 +28,6 @@ public class AgentObservabilitySettingsOverride {
                 && sseEventLogEnabled == null
                 && modelEventLogEnabled == null
                 && toolEventLogEnabled == null
-                && includePrompt == null
                 && includeResponse == null
                 && includeTokenStream == null
                 && runtimeLogDir == null;

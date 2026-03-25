@@ -101,8 +101,10 @@ class UserPromptTemplateServiceTest {
         assertTrue(prompt.contains("<explicit_references purpose=\"user_explicit_object_selection\""));
         assertTrue(prompt.contains("Current runtime environment:"));
         assertTrue(prompt.contains("Current task:"));
+        assertTrue(prompt.contains("Treat the following as the preferred starting scope for this task."));
+        assertTrue(prompt.contains("If the current hints are already specific enough, stay within that scope before considering broader discovery."));
         assertTrue(prompt.contains("Apply the following preferences by default:"));
-        assertTrue(prompt.contains("Use the following scope guidance first:"));
+        assertTrue(prompt.contains("Helpful scope hints for this task:"));
         assertTrue(prompt.contains("Known durable facts:"));
         assertTrue(prompt.contains("The user explicitly referenced:"));
         assertTrue(prompt.contains("today: 2026-03-18"));
@@ -111,14 +113,15 @@ class UserPromptTemplateServiceTest {
         assertTrue(!prompt.contains("agent_mode: normal"));
         assertTrue(!prompt.contains("model_name: qwen3-max"));
         assertTrue(prompt.contains("- Use concise explanations with SQL examples."));
-        assertTrue(prompt.contains("[USER · KNOWLEDGE_POINT/OBJECT_KNOWLEDGE]"));
         assertTrue(prompt.contains("Use analytics catalog orders table rather than staging_orders."));
+        assertTrue(!prompt.contains("[USER · KNOWLEDGE_POINT/OBJECT_KNOWLEDGE]"));
         assertTrue(prompt.contains("[USER · BUSINESS_RULE/DOMAIN_RULE]"));
         assertTrue(prompt.contains("Always confirm write SQL against production-like databases."));
         assertTrue(prompt.contains("token: @orders; object_type: TABLE; connection: main (id=12); catalog: analytics; schema: public; object: orders"));
         assertTrue(prompt.contains("token: @active_users; object_type: VIEW; connection: main (id=12); catalog: analytics; schema: public; object: active_users"));
         assertTrue(prompt.contains("Please design a safer SQL migration plan"));
-        assertTrue(prompt.indexOf("<task purpose=\"current_user_goal\"") < prompt.indexOf("<response_preferences purpose=\"final_response_preferences\""));
+        assertTrue(prompt.indexOf("<task purpose=\"current_user_goal\"") < prompt.indexOf("<scope_hints purpose=\"query_scope_guidance\""));
+        assertTrue(prompt.indexOf("<scope_hints purpose=\"query_scope_guidance\"") < prompt.indexOf("<response_preferences purpose=\"final_response_preferences\""));
         assertTrue(prompt.indexOf("<scope_hints purpose=\"query_scope_guidance\"") < prompt.indexOf("<durable_facts purpose=\"verified_background_facts\""));
         assertTrue(result.estimatedTokens() > 0);
         assertEquals("Please design a safer SQL migration plan",
@@ -158,7 +161,7 @@ class UserPromptTemplateServiceTest {
         assertTrue(prompt.contains("请默认遵循以下偏好："));
         assertTrue(prompt.contains("- 用户偏好使用中文进行交互"));
         assertTrue(prompt.contains("<scope_hints purpose=\"query_scope_guidance\""));
-        assertTrue(prompt.contains("请优先按以下范围理解和检索：\n- none"));
+        assertTrue(prompt.contains("Helpful scope hints for this task:\n\nTreat the following as the preferred starting scope for this task.\nIf the current hints are already specific enough, stay within that scope before considering broader discovery.\n\n- none"));
         assertTrue(prompt.contains("<durable_facts purpose=\"verified_background_facts\""));
         assertTrue(prompt.contains("已知事实：\n- none"));
         assertTrue(!prompt.contains("<preference>"));
@@ -183,7 +186,7 @@ class UserPromptTemplateServiceTest {
         String prompt = manager.render(context).renderedPrompt();
 
         assertTrue(prompt.contains("请默认遵循以下偏好：\n- none"));
-        assertTrue(prompt.contains("请优先按以下范围理解和检索：\n- none"));
+        assertTrue(prompt.contains("Helpful scope hints for this task:\n\nTreat the following as the preferred starting scope for this task.\nIf the current hints are already specific enough, stay within that scope before considering broader discovery.\n\n- none"));
         assertTrue(prompt.contains("已知事实：\n- none"));
         assertTrue(prompt.contains("本轮用户显式引用：\n- none"));
     }
@@ -240,7 +243,7 @@ class UserPromptTemplateServiceTest {
         String prompt = manager.render(context).renderedPrompt();
 
         assertTrue(prompt.contains("- Use charts with short explanations."));
-        assertTrue(prompt.contains("Use the following scope guidance first:\n- none"));
+        assertTrue(prompt.contains("Helpful scope hints for this task:\n\nTreat the following as the preferred starting scope for this task.\nIf the current hints are already specific enough, stay within that scope before considering broader discovery.\n\n- none"));
         assertTrue(prompt.contains("Known durable facts:\n- none"));
         assertTrue(!prompt.contains("enterprise_gateway_dev.chat2db_user"));
         assertTrue(!prompt.contains("Registration queries should stay in test3."));

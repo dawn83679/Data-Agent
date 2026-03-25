@@ -80,6 +80,7 @@ export default function Permissions() {
         onFormChange={workbench.handleFormChange}
         onSubmit={workbench.handleSubmit}
       />
+      {workbench.confirmDialog}
     </div>
   );
 }

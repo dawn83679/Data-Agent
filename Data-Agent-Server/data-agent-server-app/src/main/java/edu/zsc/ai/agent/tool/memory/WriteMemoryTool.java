@@ -47,6 +47,8 @@ public class WriteMemoryTool {
             "Classification Guidance: PREFERENCE is for stable language or response-format preferences; BUSINESS_RULE and WORKFLOW_CONSTRAINT are for durable rules; KNOWLEDGE_POINT is for verified facts; GOLDEN_SQL_CASE is for validated reusable SQL patterns.",
             "Valid Classes: " + MEMORY_TYPE_GUIDE,
             "Subtype Rule: subType must be one of the exact uppercase values above and must match memoryType. Do not invent new labels. Facts about a concrete table, database, or object usually belong to OBJECT_KNOWLEDGE or ARCHITECTURE_KNOWLEDGE, not a made-up subtype.",
+            "Object Scope Rule: when the memory is about a concrete database object or a preferred query scope, include the most specific executable identifiers you know in content whenever available: connectionId, connection name, catalog/database, schema, and object/table/view name.",
+            "Preferred Content Shape: for OBJECT_KNOWLEDGE or ARCHITECTURE_KNOWLEDGE that should later guide tool selection, write one concise factual sentence that preserves both the task intent and the exact scope. Prefer content like 'For registration analysis, use connectionId=3 (test3), database=enterprise_gateway_dev, table=chat2db_user.' over vague wording.",
             "After Success: continue the task normally; do not narrate the memory write as the user-facing result.",
             "After Failure: fix the classification or content and retry only if the information is truly durable.",
             "Do Not Use When: the information is temporary, emotional-only, speculative, or specific to a one-off task."
@@ -56,7 +58,7 @@ public class WriteMemoryTool {
             @P("Memory type: PREFERENCE, BUSINESS_RULE, KNOWLEDGE_POINT, WORKFLOW_CONSTRAINT, or GOLDEN_SQL_CASE") MemoryTypeEnum memoryType,
             @P("Memory subType. Must exactly match one of: RESPONSE_FORMAT, LANGUAGE_PREFERENCE, PRODUCT_RULE, DOMAIN_RULE, GOVERNANCE_RULE, SAFETY_RULE, ARCHITECTURE_KNOWLEDGE, DOMAIN_KNOWLEDGE, GLOSSARY, OBJECT_KNOWLEDGE, PROCESS_RULE, APPROVAL_RULE, IMPLEMENTATION_CONSTRAINT, REVIEW_CONSTRAINT, QUERY_PATTERN, JOIN_STRATEGY, VALIDATED_SQL, METRIC_CALCULATION") MemorySubTypeEnum subType,
             @P("Short memory title") String title,
-            @P("Authoritative durable memory content") String content,
+            @P("Authoritative durable memory content. For object-level scope or concrete database knowledge, include exact identifiers when known: connectionId, connection name, catalog/database, schema, and object/table/view name.") String content,
             @P(value = "Short reason explaining why this memory should persist", required = false) String reason,
             InvocationParameters parameters) {
 

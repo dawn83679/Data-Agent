@@ -27,4 +27,14 @@ public class ModelOptionResponse implements Serializable {
      * Whether this model supports thinking/reasoning mode (e.g. for displaying brain icon).
      */
     private boolean supportThinking;
+
+    /**
+     * Token threshold used by server-side memory compression heuristics.
+     */
+    private int memoryThreshold;
+
+    /**
+     * Maximum context window supported by the model.
+     */
+    private int maxContextTokens;
 }

@@ -34,6 +34,8 @@
     "default": "默认",
     "logout_failed": "退出登录失败",
     "run": "运行",
+    "cancel": "取消",
+    "confirm": "确定",
     "select_connection_first": "请先选择连接",
     "rows_retrieved": "共 {{count}} 行",
     "execution_time_ms": "{{ms}} ms",

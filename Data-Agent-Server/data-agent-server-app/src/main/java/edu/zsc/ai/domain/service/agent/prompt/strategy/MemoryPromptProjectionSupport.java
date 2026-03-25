@@ -71,6 +71,15 @@ final class MemoryPromptProjectionSupport {
                 .toList());
     }
 
+    static String renderScopeHintList(List<MemoryRecallItem> memories) {
+        if (memories == null || memories.isEmpty()) {
+            return UserPromptBlockSupport.renderBullets(List.of(PromptConstant.NONE));
+        }
+        return UserPromptBlockSupport.renderBullets(memories.stream()
+                .map(MemoryPromptProjectionSupport::renderScopeHintLine)
+                .toList());
+    }
+
     private static String renderMemoryLine(MemoryRecallItem memory) {
         if (memory == null) {
             return PromptConstant.NONE;
@@ -91,5 +100,12 @@ final class MemoryPromptProjectionSupport {
         }
         label.append("] ");
         return label + StringUtils.defaultString(memory.getContent());
+    }
+
+    private static String renderScopeHintLine(MemoryRecallItem memory) {
+        if (memory == null) {
+            return PromptConstant.NONE;
+        }
+        return StringUtils.defaultIfBlank(StringUtils.trim(memory.getContent()), PromptConstant.NONE);
     }
 }

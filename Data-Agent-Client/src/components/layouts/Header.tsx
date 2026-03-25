@@ -3,7 +3,7 @@ import { Button } from "../ui/Button";
 import { useAuthStore } from "../../store/authStore";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 import { authService } from "../../services/auth.service";
-import { LogOut, Settings, Wand2 } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import { resolveErrorMessage } from "../../lib/errorMessage";
 import { useToast } from "../../hooks/useToast";
 import { useTranslation } from "react-i18next";
@@ -11,10 +11,9 @@ import { I18N_KEYS } from "../../constants/i18nKeys";
 
 interface HeaderProps {
     onLoginClick: () => void;
-    onToggleAI?: () => void;
 }
 
-export function Header({ onLoginClick, onToggleAI }: HeaderProps) {
+export function Header({ onLoginClick }: HeaderProps) {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { user, accessToken, clearAuth } = useAuthStore();
@@ -81,16 +80,6 @@ export function Header({ onLoginClick, onToggleAI }: HeaderProps) {
                             {t(I18N_KEYS.COMMON.LOGIN)}
                         </Button>
                     )}
-
-                    <button
-                        onClick={onToggleAI}
-                        className="flex items-center justify-center hover:theme-text-primary transition-colors"
-                        title={`${t(I18N_KEYS.COMMON.AI_ASSISTANT)} (Cmd+B)`}
-                        type="button"
-                    >
-                        <Wand2 className="h-4 w-4 text-[var(--accent-blue)]" />
-                    </button>
-
                     <button
                         onClick={() => setSettingsModalOpen(true)}
                         className="flex items-center justify-center hover:theme-text-primary transition-colors"

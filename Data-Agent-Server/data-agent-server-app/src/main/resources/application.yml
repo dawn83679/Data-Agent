@@ -116,7 +116,6 @@ agent:
     sse-event-log-enabled: true
     model-event-log-enabled: true
     tool-event-log-enabled: true
-    include-prompt: false
     include-response: true
     include-token-stream: true
     runtime-log-dir: ~/.data-agent/logs/agent/runtime

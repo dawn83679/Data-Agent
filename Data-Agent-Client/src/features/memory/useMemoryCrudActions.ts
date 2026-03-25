@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { I18N_KEYS } from '../../constants/i18nKeys';
 import { useToast } from '../../hooks/useToast';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import { resolveErrorMessage } from '../../lib/errorMessage';
 import { memoryService } from '../../services/memory.service';
 import type { Memory } from '../../types/memory';
@@ -44,6 +45,7 @@ export function useMemoryCrudActions({
 }: UseMemoryCrudActionsArgs) {
   const { t } = useTranslation();
   const toast = useToast();
+  const { confirm, confirmDialog } = useConfirmDialog();
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -118,17 +120,29 @@ export function useMemoryCrudActions({
   };
 
   const handleDelete = async () => {
-    if (!selectedMemoryId || !window.confirm(t(I18N_KEYS.MEMORY_PAGE.DELETE_CONFIRM))) {
+    const memoryId = selectedMemoryId;
+    if (!memoryId) {
       return;
     }
+
+    const confirmed = await confirm({
+      title: t(I18N_KEYS.MEMORY_PAGE.DELETE),
+      description: t(I18N_KEYS.MEMORY_PAGE.DELETE_CONFIRM),
+      confirmLabel: t(I18N_KEYS.MEMORY_PAGE.DELETE),
+      confirmVariant: 'destructive',
+    });
+    if (!confirmed) {
+      return;
+    }
+
     setSubmitting(true);
     try {
-      await memoryService.delete(selectedMemoryId);
+      await memoryService.delete(memoryId);
       toast.success(t(I18N_KEYS.MEMORY_PAGE.DELETE_SUCCESS));
       setSelectedMemoryId(null);
       setSelectedMemory(null);
       setFormErrors({});
-      removeSemanticResult(selectedMemoryId);
+      removeSemanticResult(memoryId);
       closeDetailDialog();
       await reloadMemories();
     } catch (error) {
@@ -143,5 +157,6 @@ export function useMemoryCrudActions({
     handleDisable,
     handleEnable,
     handleDelete,
+    confirmDialog,
   };
 }
