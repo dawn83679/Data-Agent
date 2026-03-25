@@ -10,6 +10,7 @@ interface ExplorerTreeProps {
   data: ExplorerNode[];
   searchTerm: string;
   isLoading: boolean;
+  loadingNodeIds: ReadonlySet<string>;
   onHydrateFromCache: (node: NodeApi<ExplorerNode>) => ExplorerNodeHydrationState;
   onLoadData: (node: NodeApi<ExplorerNode>) => void;
   onDisconnect: (node: NodeApi<ExplorerNode>) => void;
@@ -17,6 +18,7 @@ interface ExplorerTreeProps {
   onDeleteConnection: (connId: number) => void;
   onViewDdl: (node: ExplorerNode) => void;
   onViewData: (node: ExplorerNode, highlightColumn?: string) => void;
+  onTableOrViewDoubleClick: (node: ExplorerNode) => void;
   onDelete: (node: ExplorerNode, type: ExplorerNodeType) => void;
   onOpenQueryConsole: (node: ExplorerNode) => void;
   onCreateTable: (node: ExplorerNode) => void;
@@ -26,6 +28,7 @@ export function ExplorerTree({
   data,
   searchTerm,
   isLoading,
+  loadingNodeIds,
   onHydrateFromCache,
   onLoadData,
   onDisconnect,
@@ -33,6 +36,7 @@ export function ExplorerTree({
   onDeleteConnection,
   onViewDdl,
   onViewData,
+  onTableOrViewDoubleClick,
   onDelete,
   onOpenQueryConsole,
   onCreateTable,
@@ -40,14 +44,12 @@ export function ExplorerTree({
   const { t } = useTranslation();
 
   const renderNode = ({ node, style, dragHandle }: { node: NodeApi<ExplorerNode>; style: React.CSSProperties; dragHandle?: unknown }) => {
-    const isLoadingState = node.isInternal && node.isOpen && (!node.data.children || node.data.children.length === 0);
-
     return (
       <ExplorerTreeNode
         node={node}
         style={style}
         dragHandle={dragHandle as React.RefObject<HTMLDivElement>}
-        isLoading={isLoadingState}
+        isLoading={loadingNodeIds.has(node.id)}
         onHydrateFromCache={onHydrateFromCache}
         onLoadData={onLoadData}
         onDisconnect={onDisconnect}
@@ -55,6 +57,7 @@ export function ExplorerTree({
         onDeleteConnection={onDeleteConnection}
         onViewDdl={onViewDdl}
         onViewData={onViewData}
+        onTableOrViewDoubleClick={onTableOrViewDoubleClick}
         onDelete={onDelete}
         onOpenQueryConsole={onOpenQueryConsole}
         onCreateTable={onCreateTable}

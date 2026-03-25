@@ -16,6 +16,7 @@ export function DatabaseExplorer() {
     connections,
     treeDataState,
     setTreeDataState,
+    loadingNodeIds,
     hydrateNodeFromCache,
     loadNodeData,
     refreshNodeById,
@@ -71,7 +72,7 @@ export function DatabaseExplorer() {
   });
 
   // Data view actions
-  const { handleViewDdl, handleViewData, handleOpenQueryConsole, handleCreateTable, getDdlConfig } = useDataViewActions({
+  const { handleViewDdl, handleViewData, handleTableOrViewDoubleClick, handleOpenQueryConsole, handleCreateTable, getDdlConfig } = useDataViewActions({
     setSelectedDdlNode,
     setDdlDialogOpen,
     setTableDataDialogOpen,
@@ -81,6 +82,7 @@ export function DatabaseExplorer() {
     setSelectedCreateTableNode,
     openTab,
     selectedDdlNode,
+    connections,
   });
 
   // Delete actions
@@ -120,6 +122,7 @@ export function DatabaseExplorer() {
           data={treeDataState}
           searchTerm={searchTerm}
           isLoading={isConnectionsLoading}
+          loadingNodeIds={loadingNodeIds}
           onHydrateFromCache={hydrateNodeFromCache}
           onLoadData={loadNodeData}
           onDisconnect={handleDisconnect}
@@ -127,6 +130,7 @@ export function DatabaseExplorer() {
           onDeleteConnection={(id) => setDeleteConfirmId(id)}
           onViewDdl={handleViewDdl}
           onViewData={handleViewData}
+          onTableOrViewDoubleClick={handleTableOrViewDoubleClick}
           onDelete={handleDelete}
           onOpenQueryConsole={handleOpenQueryConsole}
           onCreateTable={handleCreateTable}

@@ -33,6 +33,7 @@ export interface ExplorerTreeNodeProps {
   onDeleteConnection: (connId: number) => void;
   onViewDdl: (node: ExplorerNode) => void;
   onViewData: (node: ExplorerNode, highlightColumn?: string) => void;
+  onTableOrViewDoubleClick: (node: ExplorerNode) => void;
   onDelete: (node: ExplorerNode, type: ExplorerNodeType) => void;
   onOpenQueryConsole: (node: ExplorerNode) => void;
   onCreateTable: (node: ExplorerNode) => void;
@@ -50,6 +51,7 @@ export function ExplorerTreeNode({
   onDeleteConnection,
   onViewDdl,
   onViewData,
+  onTableOrViewDoubleClick,
   onDelete,
   onOpenQueryConsole,
   onCreateTable,
@@ -82,6 +84,7 @@ export function ExplorerTreeNode({
 
   const handleToggle = (e?: React.MouseEvent) => {
     e?.stopPropagation();
+    if (isLoading) return;
     if (node.isInternal) {
       if (!node.isOpen && (!node.data.children || node.data.children.length === 0)) {
         const hydrationState = onHydrateFromCache(node);
@@ -106,9 +109,10 @@ export function ExplorerTreeNode({
   // Only handle double-click for showing data, not single click on arrow
   const handleDoubleClick = (e?: React.MouseEvent) => {
     e?.stopPropagation();
+    if (isLoading) return;
     // For tables/views - show data
     if (isTableOrView) {
-      onViewData(node.data);
+      onTableOrViewDoubleClick(node.data);
     } else if (isColumnOrIndexOrKey) {
       // For columns/indexes/keys - show data with highlighted column
       const highlightCol = node.data.type === ExplorerNodeType.COLUMN
@@ -142,7 +146,13 @@ export function ExplorerTreeNode({
         className="flex h-4 w-4 items-center justify-center rounded-sm theme-text-secondary transition-colors group-hover:theme-text-primary"
         onClick={handleToggle}
       >
-        {node.isInternal && (node.isOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />)}
+        {node.isInternal && (
+          isLoading
+            ? <RefreshCw className="w-3 h-3 animate-spin" />
+            : node.isOpen
+              ? <ChevronDown className="w-3 h-3" />
+              : <ChevronRight className="w-3 h-3" />
+        )}
       </span>
       <span className="shrink-0">
         <ExplorerNodeIcon node={node.data} />

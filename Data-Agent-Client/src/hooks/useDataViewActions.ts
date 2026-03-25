@@ -7,10 +7,11 @@ import { functionService } from '../services/function.service';
 import { procedureService } from '../services/procedure.service';
 import { triggerService } from '../services/trigger.service';
 import { useWorkspaceStore } from '../store/workspaceStore';
-import { TableDblClickConsoleTargetEnum } from '../constants/workspacePreferences';
+import { TableDblClickConsoleTargetEnum, TableDblClickModeEnum } from '../constants/workspacePreferences';
 import { I18N_KEYS } from '../constants/i18nKeys';
 import type { ExplorerNode } from '../types/explorer';
 import type { ConsoleTabMetadata } from '../types/tab';
+import type { DbConnection } from '../types/connection';
 
 interface DataViewActionsProps {
   setSelectedDdlNode: (node: ExplorerNode | null) => void;
@@ -22,6 +23,26 @@ interface DataViewActionsProps {
   setSelectedCreateTableNode: (node: ExplorerNode | null) => void;
   openTab: (tab: any) => void;
   selectedDdlNode: ExplorerNode | null;
+  connections: DbConnection[];
+}
+
+interface ConsoleContext {
+  connectionId: number;
+  connectionName: string;
+  databaseName: string | null;
+  schemaName: string | null;
+  dbType?: string;
+}
+
+function quoteIdentifier(name: string, dbType?: string): string {
+  if (!name.trim()) return name;
+  const isMysql = dbType?.toLowerCase().includes('mysql');
+  return isMysql ? `\`${name}\`` : `"${name.replace(/"/g, '""')}"`;
+}
+
+function appendSql(existingContent: string, sql: string): string {
+  if (!existingContent.trim()) return sql;
+  return `${existingContent.replace(/\s*$/, '')}\n\n${sql}`;
 }
 
 export function useDataViewActions({
@@ -34,80 +55,149 @@ export function useDataViewActions({
   setSelectedCreateTableNode,
   openTab,
   selectedDdlNode,
+  connections,
 }: DataViewActionsProps) {
   const { t } = useTranslation();
-  const { tableDblClickConsoleTarget, tabs, updateTabContent, switchTab } = useWorkspaceStore();
+  const {
+    tableDblClickMode,
+    tableDblClickConsoleTarget,
+    tabs,
+    updateTabContent,
+    updateTabMetadata,
+    switchTab,
+  } = useWorkspaceStore();
 
-  const handleViewDdl = useCallback(
-    async (node: ExplorerNode) => {
-      const connId = node.connectionId || (node.type === ExplorerNodeType.ROOT ? node.dbConnection?.id : undefined);
-      if (!connId) return;
+  const getConnection = useCallback(
+    (connectionId: number) => connections.find((connection) => connection.id === connectionId),
+    [connections]
+  );
 
-      const catalog = node.catalog ?? '';
-      const schema = node.schema ?? '';
-      const objectName = node.objectName ?? node.name;
-      const connectionName = node.dbConnection?.name || 'Unknown';
-      let loadDdl: () => Promise<string>;
+  const resolveConsoleContext = useCallback(
+    (node: ExplorerNode): ConsoleContext | null => {
+      const rawConnectionId =
+        node.connectionId || (node.type === ExplorerNodeType.ROOT ? node.dbConnection?.id : undefined);
+      if (!rawConnectionId) return null;
+
+      const connectionId = Number(rawConnectionId);
+      const connection = node.dbConnection ?? getConnection(connectionId);
+      let databaseName: string | null = null;
+      let schemaName: string | null = null;
 
       switch (node.type) {
-        case ExplorerNodeType.TABLE:
-          loadDdl = () => tableService.getTableDdl(String(connId), objectName, catalog, schema);
+        case ExplorerNodeType.DB:
+          databaseName = node.name;
           break;
-        case ExplorerNodeType.VIEW:
-          loadDdl = () => viewService.getViewDdl(String(connId), objectName, catalog, schema);
+        case ExplorerNodeType.SCHEMA:
+          databaseName = node.catalog || null;
+          schemaName = node.name;
           break;
-        case ExplorerNodeType.FUNCTION:
-          loadDdl = () => functionService.getFunctionDdl(String(connId), objectName, catalog, schema);
-          break;
-        case ExplorerNodeType.PROCEDURE:
-          loadDdl = () => procedureService.getProcedureDdl(String(connId), objectName, catalog, schema);
-          break;
-        case ExplorerNodeType.TRIGGER:
-          loadDdl = () => triggerService.getTriggerDdl(String(connId), objectName, catalog, schema);
+        case ExplorerNodeType.ROOT:
           break;
         default:
-          return;
+          databaseName = node.catalog || null;
+          schemaName = node.schema || null;
+          break;
       }
 
-      // Open or reuse console tab
-      const dbName = node.catalog || null;
-      const schemaName = node.schema || null;
+      return {
+        connectionId,
+        connectionName: connection?.name || node.dbConnection?.name || 'Unknown',
+        databaseName,
+        schemaName,
+        dbType: connection?.dbType,
+      };
+    },
+    [getConnection]
+  );
+
+  const ensureConsoleTab = useCallback(
+    (node: ExplorerNode, options?: { forceNew?: boolean }) => {
+      const context = resolveConsoleContext(node);
+      if (!context) return null;
+
       const consoleTabs = tabs.filter((tab) =>
         tab.type === 'file'
-        && (tab.metadata as ConsoleTabMetadata | undefined)?.connectionId === Number(connId)
+        && (tab.metadata as ConsoleTabMetadata | undefined)?.connectionId === context.connectionId
       );
-      const reuseTab =
-        tableDblClickConsoleTarget === TableDblClickConsoleTargetEnum.REUSE && consoleTabs.length > 0;
-      const tabId = reuseTab ? consoleTabs[0].id : `console-${Date.now()}`;
-      const nameParts = [connectionName, dbName, schemaName].filter(Boolean);
-      const tabName = nameParts.join('_') || 'console';
+      const shouldReuse =
+        !options?.forceNew
+        && tableDblClickConsoleTarget === TableDblClickConsoleTargetEnum.REUSE
+        && consoleTabs.length > 0;
+      const tabId = shouldReuse ? consoleTabs[0].id : `console-${Date.now()}`;
+      const tabName = [context.connectionName, context.databaseName, context.schemaName].filter(Boolean).join('_') || 'console';
+      const metadata = {
+        connectionId: context.connectionId,
+        connectionName: context.connectionName,
+        databaseName: context.databaseName,
+        schemaName: context.schemaName,
+      };
 
-      if (!reuseTab) {
+      if (shouldReuse) {
+        updateTabMetadata(tabId, metadata);
+        switchTab(tabId);
+      } else {
         openTab({
           id: tabId,
           name: tabName,
           type: 'file',
           content: '',
-          metadata: {
-            connectionId: Number(connId),
-            connectionName,
-            databaseName: dbName,
-            schemaName: schemaName,
-          },
+          metadata,
         });
-      } else {
-        switchTab(tabId);
+      }
+
+      return { ...context, tabId };
+    },
+    [openTab, resolveConsoleContext, switchTab, tableDblClickConsoleTarget, tabs, updateTabMetadata]
+  );
+
+  const buildSelectSql = useCallback((node: ExplorerNode, dbType?: string) => {
+    const objectName = node.tableName || node.objectName || node.name;
+    const qualifiedName = [node.catalog, node.schema, objectName]
+      .filter((part): part is string => typeof part === 'string' && part.length > 0)
+      .map((part) => quoteIdentifier(part, dbType))
+      .join('.');
+    return `SELECT * FROM ${qualifiedName};`;
+  }, []);
+
+  const handleViewDdl = useCallback(
+    async (node: ExplorerNode) => {
+      const consoleContext = ensureConsoleTab(node);
+      if (!consoleContext) return;
+
+      const catalog = node.catalog ?? '';
+      const schema = node.schema ?? '';
+      const objectName = node.objectName ?? node.name;
+      let loadDdl: () => Promise<string>;
+
+      switch (node.type) {
+        case ExplorerNodeType.TABLE:
+          loadDdl = () => tableService.getTableDdl(String(consoleContext.connectionId), objectName, catalog, schema);
+          break;
+        case ExplorerNodeType.VIEW:
+          loadDdl = () => viewService.getViewDdl(String(consoleContext.connectionId), objectName, catalog, schema);
+          break;
+        case ExplorerNodeType.FUNCTION:
+          loadDdl = () => functionService.getFunctionDdl(String(consoleContext.connectionId), objectName, catalog, schema);
+          break;
+        case ExplorerNodeType.PROCEDURE:
+          loadDdl = () => procedureService.getProcedureDdl(String(consoleContext.connectionId), objectName, catalog, schema);
+          break;
+        case ExplorerNodeType.TRIGGER:
+          loadDdl = () => triggerService.getTriggerDdl(String(consoleContext.connectionId), objectName, catalog, schema);
+          break;
+        default:
+          return;
       }
 
       try {
         const ddl = await loadDdl();
-        updateTabContent(tabId, ddl);
+        updateTabContent(consoleContext.tabId, ddl);
       } catch (err) {
         const errMsg = (err as Error).message || t(I18N_KEYS.EXPLORER.LOAD_DDL_FAILED);
-        updateTabContent(tabId, `-- ${errMsg}\n`);
+        updateTabContent(consoleContext.tabId, `-- ${errMsg}\n`);
       }
     },
-    [openTab, tabs, tableDblClickConsoleTarget, updateTabContent, switchTab, t]
+    [ensureConsoleTab, updateTabContent, t]
   );
 
   const handleViewData = useCallback(
@@ -120,7 +210,8 @@ export function useDataViewActions({
       let objectName: string;
       let objectType: 'table' | 'view';
       let connId = node.connectionId;
-      let connectionName = node.dbConnection?.name || 'Unknown';
+      const connection = connId ? getConnection(Number(connId)) : undefined;
+      let connectionName = node.dbConnection?.name || connection?.name || 'Unknown';
       let databaseName = node.catalog || node.schema || null;
       let schemaName = node.schema || null;
 
@@ -156,62 +247,30 @@ export function useDataViewActions({
         },
       });
     },
-    [openTab, setHighlightColumn, setSelectedTableDataNode, setTableDataDialogOpen]
+    [getConnection, openTab, setHighlightColumn, setSelectedTableDataNode, setTableDataDialogOpen]
+  );
+
+  const handleTableOrViewDoubleClick = useCallback(
+    (node: ExplorerNode) => {
+      if (tableDblClickMode === TableDblClickModeEnum.TABLE) {
+        handleViewData(node);
+        return;
+      }
+
+      const consoleContext = ensureConsoleTab(node);
+      if (!consoleContext) return;
+
+      const sql = buildSelectSql(node, consoleContext.dbType);
+      const existingContent = tabs.find((tab) => tab.id === consoleContext.tabId)?.content ?? '';
+      updateTabContent(consoleContext.tabId, appendSql(existingContent, sql));
+      switchTab(consoleContext.tabId);
+    },
+    [buildSelectSql, ensureConsoleTab, handleViewData, tableDblClickMode, tabs, updateTabContent, switchTab]
   );
 
   const handleOpenQueryConsole = useCallback((node: ExplorerNode) => {
-    // For ROOT nodes (connections), get connectionId from dbConnection.id
-    const connId = node.connectionId || (node.type === ExplorerNodeType.ROOT ? node.dbConnection?.id : undefined);
-    if (!connId) {
-      return;
-    }
-
-    const id = `console-${Date.now()}`;
-    const connectionName = node.dbConnection?.name || 'Unknown';
-    let databaseName: string | null = null;
-    let schemaName: string | null = null;
-
-    switch (node.type) {
-      case ExplorerNodeType.ROOT:
-        // Connection node - no database/schema selected
-        break;
-      case ExplorerNodeType.DB:
-        databaseName = node.name;
-        break;
-      case ExplorerNodeType.SCHEMA:
-        databaseName = node.catalog || null;
-        schemaName = node.name;
-        break;
-      case ExplorerNodeType.TABLE:
-      case ExplorerNodeType.VIEW:
-      case ExplorerNodeType.COLUMN:
-      case ExplorerNodeType.INDEX:
-      case ExplorerNodeType.KEY:
-      case ExplorerNodeType.FUNCTION:
-      case ExplorerNodeType.PROCEDURE:
-      case ExplorerNodeType.TRIGGER:
-      case ExplorerNodeType.FOLDER:
-        databaseName = node.catalog || null;
-        schemaName = node.schema || null;
-        break;
-    }
-
-    const nameParts = [connectionName, databaseName, schemaName].filter(Boolean);
-    const tabName = nameParts.join('_') || 'console';
-
-    openTab({
-      id,
-      name: tabName,
-      type: 'file',
-      content: '',
-      metadata: {
-        connectionId: Number(connId),
-        connectionName,
-        databaseName,
-        schemaName,
-      },
-    });
-  }, [openTab]);
+    ensureConsoleTab(node, { forceNew: true });
+  }, [ensureConsoleTab]);
 
   const getDdlConfig = useCallback(() => {
     if (!selectedDdlNode?.connectionId) return null;
@@ -263,5 +322,12 @@ export function useDataViewActions({
     setCreateTableDialogOpen(true);
   }, [setSelectedCreateTableNode, setCreateTableDialogOpen]);
 
-  return { handleViewDdl, handleViewData, handleOpenQueryConsole, handleCreateTable, getDdlConfig };
+  return {
+    handleViewDdl,
+    handleViewData,
+    handleTableOrViewDoubleClick,
+    handleOpenQueryConsole,
+    handleCreateTable,
+    getDdlConfig,
+  };
 }

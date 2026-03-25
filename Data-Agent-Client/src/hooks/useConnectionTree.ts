@@ -59,6 +59,7 @@ export function useConnectionTree() {
   }, [connections]);
 
   const [treeDataState, setTreeDataState] = useState<ExplorerNode[]>([]);
+  const [loadingNodeIds, setLoadingNodeIds] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     setTreeDataState((prev) => {
@@ -104,6 +105,18 @@ export function useConnectionTree() {
           return n;
         });
       return update(prev);
+    });
+  };
+
+  const setNodeLoading = (nodeId: string, isLoading: boolean) => {
+    setLoadingNodeIds((prev) => {
+      const next = new Set(prev);
+      if (isLoading) {
+        next.add(nodeId);
+      } else {
+        next.delete(nodeId);
+      }
+      return next;
     });
   };
 
@@ -266,6 +279,7 @@ export function useConnectionTree() {
       (node.data.dbConnection ? String(node.data.dbConnection.id) : undefined);
     if (!connId) return;
 
+    setNodeLoading(node.id, true);
     try {
       if (node.data.type === ExplorerNodeType.ROOT && node.data.dbConnection) {
         const dbNames = await fetchExplorerDatabases(queryClient, String(node.data.dbConnection.id));
@@ -364,6 +378,8 @@ export function useConnectionTree() {
     } catch (err) {
       console.error('Failed to load node data:', err);
       toast.error(t('explorer.load_failed'));
+    } finally {
+      setNodeLoading(node.id, false);
     }
   };
 
@@ -384,6 +400,7 @@ export function useConnectionTree() {
     const connId = node.connectionId ?? (node.dbConnection ? String(node.dbConnection.id) : undefined);
     if (!connId) return;
 
+    setNodeLoading(nodeId, true);
     try {
       if (node.type === ExplorerNodeType.DB) {
         const dbName = node.name;
@@ -450,6 +467,8 @@ export function useConnectionTree() {
     } catch (err) {
       console.error('Failed to refresh node:', err);
       toast.error(t('explorer.load_failed'));
+    } finally {
+      setNodeLoading(nodeId, false);
     }
   };
 
@@ -474,6 +493,7 @@ export function useConnectionTree() {
     connections,
     treeDataState,
     setTreeDataState,
+    loadingNodeIds,
     hydrateNodeFromCache,
     loadNodeData,
     refreshNodeById,
