@@ -1,6 +1,8 @@
 import { MessageRole } from '../../../types/chat';
 import { UserBubble } from './UserBubble';
 import { AssistantBubble } from './AssistantBubble';
+import { CompactSummaryBubble } from './CompactSummaryBubble';
+import { isCompactSummaryMessage } from './compactSummary';
 import type { TodoBoxSpec } from './types';
 import type { Message, Segment } from './types';
 
@@ -23,6 +25,9 @@ export function MessageBubble({
   hideTodoInThisMessage = false,
   overrideTodoBoxes = [],
 }: MessageBubbleProps) {
+  if (isCompactSummaryMessage(message)) {
+    return <CompactSummaryBubble message={message} />;
+  }
   if (message.role === MessageRole.USER) {
     return <UserBubble message={message} />;
   }

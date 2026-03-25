@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import edu.zsc.ai.agent.memory.ChatMemoryCompressor;
 import edu.zsc.ai.common.converter.ai.ConversationConverter;
 import edu.zsc.ai.common.enums.ai.ModelEnum;
-import edu.zsc.ai.domain.model.dto.request.ai.ConversationCompressRequest;
+import edu.zsc.ai.domain.model.dto.request.ai.ConversationCompactRequest;
 import edu.zsc.ai.domain.model.dto.request.base.PageRequest;
 import edu.zsc.ai.domain.model.dto.request.ai.ConversationUpdateRequest;
-import edu.zsc.ai.domain.model.dto.response.ai.ConversationCompressResponse;
+import edu.zsc.ai.domain.model.dto.response.ai.ConversationCompactResponse;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.model.dto.response.base.PageResponse;
 import edu.zsc.ai.domain.model.dto.response.ai.ConversationMessageResponse;
@@ -80,10 +80,10 @@ public class ConversationController {
         return ApiResponse.success(ConversationConverter.toResponse(updated));
     }
 
-    @PostMapping("/{id}/compress")
-    public ApiResponse<ConversationCompressResponse> compress(
+    @PostMapping("/{id}/compact")
+    public ApiResponse<ConversationCompactResponse> compact(
             @PathVariable @NotNull Long id,
-            @Valid @RequestBody ConversationCompressRequest request) {
+            @Valid @RequestBody ConversationCompactRequest request) {
         final String modelName;
         try {
             modelName = ModelEnum.resolve(request.getModel()).getModelName();
@@ -92,12 +92,13 @@ public class ConversationController {
         }
 
         var result = chatMemoryCompressor.compressNow(id, modelName);
-        return ApiResponse.success(ConversationCompressResponse.builder()
+        return ApiResponse.success(ConversationCompactResponse.builder()
                 .compressed(result.memoryCompressed())
                 .tokenCountBefore(result.tokenCountBefore())
                 .tokenCountAfter(result.tokenCountAfter())
                 .compressedMessageCount(result.compressedMessageCount())
                 .keptRecentCount(result.keptRecentCount())
+                .summary(result.summary())
                 .build());
     }
 

@@ -114,47 +114,76 @@ public class ChatMemoryCompressor {
 
     public CompressionDoneMetadata compressNow(Long conversationId, String modelName) {
         if (conversationId == null || modelName == null) {
-            return new CompressionDoneMetadata(false, null, null, 0, 0, null, null);
+            return new CompressionDoneMetadata(false, null, null, 0, 0, null, null, null);
         }
 
         AiConversation conversation = aiConversationService.getByIdForCurrentUser(conversationId);
         Integer tokenCountBefore = conversation == null ? null : conversation.getTokenCount();
-        List<StoredChatMessage> storedMessages = aiMessageService.getByConversationIdOrderByCreatedAtAsc(conversationId);
+        int threshold = resolveMemoryThreshold(modelName);
+        List<StoredChatMessage> storedMessages = aiMessageService.getActiveByConversationIdOrderByCreatedAtAsc(conversationId);
         List<ChatMessage> messages = storedMessages.stream()
                 .map(item -> ChatMessageDeserializer.messageFromJson(item.getData()))
                 .toList();
 
         if (messages.size() < MIN_MESSAGES_FOR_COMPRESSION) {
-            return new CompressionDoneMetadata(false, tokenCountBefore, tokenCountBefore, 0, messages.size(), null, null);
+            recordCompressionEvent(conversationId, CompressionLogConstant.EVENT_COMPRESSION_SKIPPED, AgentLogFields.of(
+                    CompressionLogConstant.FIELD_DECISION, CompressionLogConstant.DECISION_SKIP_NOT_ENOUGH_MESSAGES,
+                    CompressionLogConstant.FIELD_MODEL_NAME, modelName,
+                    CompressionLogConstant.FIELD_TOKEN_COUNT_BEFORE, tokenCountBefore,
+                    CompressionLogConstant.FIELD_THRESHOLD, threshold,
+                    CompressionLogConstant.FIELD_MESSAGE_COUNT, messages.size()
+            ));
+            return new CompressionDoneMetadata(false, tokenCountBefore, tokenCountBefore, 0, messages.size(), null, null, null);
         }
 
         if (!compressingConversations.add(conversationId)) {
-            return new CompressionDoneMetadata(false, tokenCountBefore, tokenCountBefore, 0, messages.size(), null, null);
+            recordCompressionEvent(conversationId, CompressionLogConstant.EVENT_COMPRESSION_SKIPPED, AgentLogFields.of(
+                    CompressionLogConstant.FIELD_DECISION, CompressionLogConstant.DECISION_SKIP_ALREADY_IN_PROGRESS,
+                    CompressionLogConstant.FIELD_MODEL_NAME, modelName,
+                    CompressionLogConstant.FIELD_TOKEN_COUNT_BEFORE, tokenCountBefore,
+                    CompressionLogConstant.FIELD_THRESHOLD, threshold,
+                    CompressionLogConstant.FIELD_MESSAGE_COUNT, messages.size()
+            ));
+            return new CompressionDoneMetadata(false, tokenCountBefore, tokenCountBefore, 0, messages.size(), null, null, null);
         }
 
         try {
+            recordCompressionEvent(conversationId, CompressionLogConstant.EVENT_COMPRESSION_STARTED, AgentLogFields.of(
+                    CompressionLogConstant.FIELD_DECISION, CompressionLogConstant.DECISION_COMPRESS,
+                    CompressionLogConstant.FIELD_MODEL_NAME, modelName,
+                    CompressionLogConstant.FIELD_TOKEN_COUNT_BEFORE, tokenCountBefore,
+                    CompressionLogConstant.FIELD_THRESHOLD, threshold,
+                    CompressionLogConstant.FIELD_MESSAGE_COUNT, messages.size()
+            ));
             ManualCompressionResult result = doCompress(
                     conversationId,
                     modelName,
                     tokenCountBefore,
-                    resolveMemoryThreshold(modelName),
+                    threshold,
                     messages,
-                    false,
+                    true,
                     false
             );
             aiMessageService.replaceConversationMessages(conversationId, result.messages());
             return new CompressionDoneMetadata(
                     true,
                     result.tokenCountBefore(),
-                    null,
+                    result.tokenCountAfter(),
                     result.compressedMessageCount(),
                     result.keptRecentCount(),
+                    result.summary(),
                     result.compressionOutputTokens(),
                     result.compressionTotalTokens()
             );
         } catch (Exception e) {
+            recordCompressionError(conversationId, CompressionLogConstant.EVENT_COMPRESSION_FAILED, e, AgentLogFields.of(
+                    CompressionLogConstant.FIELD_MODEL_NAME, modelName,
+                    CompressionLogConstant.FIELD_TOKEN_COUNT_BEFORE, tokenCountBefore,
+                    CompressionLogConstant.FIELD_THRESHOLD, threshold,
+                    CompressionLogConstant.FIELD_MESSAGE_COUNT, messages.size()
+            ));
             log.warn("Manual compression failed for conversation {}, keeping original messages", conversationId, e);
-            return new CompressionDoneMetadata(false, tokenCountBefore, tokenCountBefore, 0, messages.size(), null, null);
+            return new CompressionDoneMetadata(false, tokenCountBefore, tokenCountBefore, 0, messages.size(), null, null, null);
         } finally {
             compressingConversations.remove(conversationId);
         }
@@ -225,14 +254,15 @@ public class ChatMemoryCompressor {
                 compressionResult.totalTokens());
 
         List<ChatMessage> compressedMessages = new ArrayList<>(toKeep.size() + 1);
-        compressedMessages.add(UserMessage.from(SUMMARY_PREFIX + summary));
         compressedMessages.addAll(toKeep);
+        compressedMessages.add(UserMessage.from(SUMMARY_PREFIX + summary));
         return new ManualCompressionResult(
                 compressedMessages,
                 tokenCountBefore,
                 tokenCountAfter,
                 toCompress.size(),
                 toKeep.size(),
+                summary,
                 compressionResult.outputTokens(),
                 compressionResult.totalTokens()
         );
@@ -277,6 +307,7 @@ public class ChatMemoryCompressor {
                 tokenCountAfter,
                 compressedMessageCount,
                 keptRecentCount,
+                result.summary(),
                 result.outputTokens(),
                 result.totalTokens()
         );
@@ -311,6 +342,7 @@ public class ChatMemoryCompressor {
             Integer tokenCountAfter,
             int compressedMessageCount,
             int keptRecentCount,
+            String summary,
             Integer compressionOutputTokens,
             Integer compressionTotalTokens
     ) {

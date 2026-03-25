@@ -14,10 +14,11 @@ import { aiService } from '../../services/ai.service';
 import { ChatPaths } from '../../constants/apiPaths';
 import { DEFAULT_MODEL, FALLBACK_MODELS } from '../../constants/models';
 import { ROUTES } from '../../constants/routes';
+import { resolveErrorMessage } from '../../lib/errorMessage';
 import { SLASH_COMMAND_IDS } from './slashCommands';
 import { I18N_KEYS } from '../../constants/i18nKeys';
 import type { ChatContext, ChatMessage, ChatUserMention } from '../../types/chat';
-import { MessageRole } from '../../types/chat';
+import { MessageBlockType, MessageRole } from '../../types/chat';
 import type { ModelOption } from '../../types/ai';
 import { findMentionTokens } from './mentionTypes';
 import { chatMessagesToMessages } from './MessageList';
@@ -25,13 +26,6 @@ import { extractPlansFromMessages } from './blocks/exitPlanModeTypes';
 import { planTabId } from './blocks/ToolRunBlock';
 
 const DEFAULT_AGENT: AgentType = 'Agent';
-
-function formatTokenCount(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) {
-    return '--';
-  }
-  return Math.round(value).toLocaleString();
-}
 
 function filterMentionsByTokens(mentions: ChatUserMention[], tokens: string[]): ChatUserMention[] {
   if (mentions.length === 0 || tokens.length === 0) {
@@ -58,6 +52,10 @@ function resolveMentionsInText(text: string, mentions: ChatUserMention[]): ChatU
     .filter((mention): mention is ChatUserMention => mention != null);
 }
 
+function stripLocalCompactMessages(list: ChatMessage[]): ChatMessage[] {
+  return list.filter((message) => !message.localKind?.startsWith('compact-'));
+}
+
 export function AIAssistant({ onClosePanel }: { onClosePanel?: () => void }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -72,6 +70,7 @@ export function AIAssistant({ onClosePanel }: { onClosePanel?: () => void }) {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPlanListOpen, setIsPlanListOpen] = useState(false);
+  const [isCompacting, setIsCompacting] = useState(false);
   const [input, setInput] = useState('');
 
   const setUserMentions = useCallback<Dispatch<SetStateAction<ChatUserMention[]>>>((value) => {
@@ -220,6 +219,45 @@ export function AIAssistant({ onClosePanel }: { onClosePanel?: () => void }) {
     createdAt: new Date(),
   }), []);
 
+  const buildCompactCommandMessage = useCallback((): ChatMessage => ({
+    id: crypto.randomUUID(),
+    role: MessageRole.USER,
+    content: '/compact',
+    localKind: 'compact-command',
+    createdAt: new Date(),
+  }), []);
+
+  const buildCompactStatusMessage = useCallback((): ChatMessage => ({
+    id: crypto.randomUUID(),
+    role: MessageRole.ASSISTANT,
+    content: '',
+    blocks: [
+      {
+        type: MessageBlockType.STATUS,
+        data: 'compacting',
+        done: false,
+      },
+    ],
+    localKind: 'compact-status',
+    createdAt: new Date(),
+  }), []);
+
+  const buildCompactSummaryMessage = useCallback((summary: string): ChatMessage => ({
+    id: crypto.randomUUID(),
+    role: MessageRole.USER,
+    content: summary,
+    localKind: 'compact-summary',
+    createdAt: new Date(),
+  }), []);
+
+  const buildCompactResultMessage = useCallback((content: string): ChatMessage => ({
+    id: crypto.randomUUID(),
+    role: MessageRole.ASSISTANT,
+    content,
+    localKind: 'compact-result',
+    createdAt: new Date(),
+  }), []);
+
   const contextValue = {
     input,
     setInput,
@@ -248,42 +286,65 @@ export function AIAssistant({ onClosePanel }: { onClosePanel?: () => void }) {
         setIsHistoryOpen(false);
         setIsSettingsOpen(false);
         navigate('/memories');
-      } else if (id === SLASH_COMMAND_IDS.COMPRESS) {
+      } else if (id === SLASH_COMMAND_IDS.COMPACT) {
         void (async () => {
           const targetConversationId = persistedConversationId;
-          if (isLoading) {
+          const baseMessages = stripLocalCompactMessages(messages);
+          if (isLoading || isCompacting) {
             appendLocalAssistantMessage(buildLocalAssistantMessage(
-              t(I18N_KEYS.AI.COMPRESS.IN_PROGRESS)
+              t(I18N_KEYS.AI.COMPACT.IN_PROGRESS)
             ));
             return;
           }
           if (targetConversationId == null) {
             appendLocalAssistantMessage(buildLocalAssistantMessage(
-              t(I18N_KEYS.AI.COMPRESS.NO_CONVERSATION)
+              t(I18N_KEYS.AI.COMPACT.NO_CONVERSATION)
             ));
             return;
           }
 
+          userHasScrolledUpRef.current = false;
+          loadMessages(targetConversationId, [
+            ...baseMessages,
+            buildCompactCommandMessage(),
+            buildCompactStatusMessage(),
+          ]);
+          setIsCompacting(true);
+
           try {
-            const result = await conversationService.compress(targetConversationId, { model });
-            const [conversation, list] = await Promise.all([
-              conversationService.getById(targetConversationId),
-              conversationService.getMessages(targetConversationId),
+            const result = await conversationService.compact(targetConversationId, { model });
+            if (!result.compressed) {
+              loadMessages(targetConversationId, [
+                ...baseMessages,
+                buildCompactCommandMessage(),
+                buildCompactResultMessage(t(I18N_KEYS.AI.COMPACT.NOOP)),
+              ]);
+              return;
+            }
+
+            setConversationTokenCount(targetConversationId, result.tokenCountAfter ?? null);
+            loadMessages(targetConversationId, [
+              ...baseMessages,
+              buildCompactCommandMessage(),
+              ...(result.summary && result.summary.trim() !== ''
+                ? [buildCompactSummaryMessage(result.summary)]
+                : []),
             ]);
-            setConversationTokenCount(targetConversationId, conversation.tokenCount ?? null);
-            loadMessages(targetConversationId, list);
-            appendLocalAssistantMessage(buildLocalAssistantMessage(
-              result.compressed
-                ? t(I18N_KEYS.AI.COMPRESS.DONE, {
-                    before: formatTokenCount(result.tokenCountBefore),
-                    kept: result.keptRecentCount ?? 0,
-                  })
-                : t(I18N_KEYS.AI.COMPRESS.NOOP)
-            ), targetConversationId);
-          } catch {
-            appendLocalAssistantMessage(buildLocalAssistantMessage(
-              t(I18N_KEYS.AI.COMPRESS.FAILED)
-            ), targetConversationId);
+          } catch (error) {
+            console.error('Compact request failed:', error);
+            const fallback = t(I18N_KEYS.AI.COMPACT.FAILED);
+            const reason = resolveErrorMessage(error, fallback);
+            loadMessages(targetConversationId, [
+              ...baseMessages,
+              buildCompactCommandMessage(),
+              buildCompactResultMessage(
+                reason === fallback
+                  ? fallback
+                  : t(I18N_KEYS.AI.COMPACT.FAILED_WITH_REASON, { reason })
+              ),
+            ]);
+          } finally {
+            setIsCompacting(false);
           }
         })();
       } else if (id === SLASH_COMMAND_IDS.PLAN) {

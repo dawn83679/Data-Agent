@@ -206,12 +206,15 @@
       "executing": "Executing...",
       "parameters": "Parameters"
     },
-    "compress": {
-      "noConversation": "Start or load a saved conversation before compressing.",
-      "inProgress": "Wait for the current response to finish before compressing history.",
-      "done": "History compressed. Previous usage: ~{{before}} tokens. Kept recent: {{kept}}.",
-      "noop": "Nothing to compress yet.",
-      "failed": "Compression failed."
+    "compact": {
+      "loading": "Compacting conversation...",
+      "noConversation": "Start or load a saved conversation before compacting.",
+      "inProgress": "Wait for the current response to finish before compacting the conversation.",
+      "done": "Conversation compacted. Previous usage: ~{{before}} tokens. Current usage: ~{{after}} tokens. Kept recent: {{kept}}.",
+      "noop": "Nothing to compact yet.",
+      "failed": "Compaction failed.",
+      "failedWithReason": "Compaction failed: {{reason}}",
+      "summaryLabel": "Compacted Summary"
     },
     "chartType": {
       "line": "Line Chart",
@@ -283,7 +286,7 @@
       "new": "New conversation",
       "history": "Show conversation history",
       "memory": "Open memory console",
-      "compress": "Compress conversation history",
+      "compact": "Compact conversation history",
       "plan": "Show plans in conversation",
       "permission": "Manage permissions"
     }
@@ -623,6 +626,8 @@
     "http_403": "You are not allowed to perform this action.",
     "http_404": "Requested resource was not found.",
     "http_500": "Server error. Please try again later.",
+    "network": "Request did not reach the server. Check whether the backend or dev proxy is available.",
+    "timeout": "Request timed out. The backend may be unavailable or too slow to respond.",
     "context_not_provided": "useAIAssistantContext must be used within AIAssistantProvider"
   },
   "memoryPage": {

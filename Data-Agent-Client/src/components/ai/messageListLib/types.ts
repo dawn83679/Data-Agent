@@ -24,6 +24,8 @@ export interface Message {
   timestamp: Date;
   blocks?: ChatResponseBlock[];
   doneMetadata?: DoneMetadata;
+  messageStatus?: 'NORMAL' | 'DELETED' | 'COMPRESSED' | 'COMPRESSION_SUMMARY';
+  localKind?: 'compact-command' | 'compact-status' | 'compact-summary' | 'compact-result';
 }
 
 export type Segment =

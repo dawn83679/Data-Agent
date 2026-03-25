@@ -1,3 +1,3 @@
 ALTER TABLE ai_stored_chat_message
     ADD COLUMN IF NOT EXISTS status SMALLINT NOT NULL DEFAULT 0;
-COMMENT ON COLUMN ai_stored_chat_message.status IS 'Message status: 0=NORMAL, 1=DELETED, 2=COMPRESSED';
+COMMENT ON COLUMN ai_stored_chat_message.status IS 'Message status: 0=NORMAL, 1=DELETED, 2=COMPRESSED, 3=COMPRESSION_SUMMARY';

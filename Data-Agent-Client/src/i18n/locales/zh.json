@@ -206,12 +206,15 @@
       "executing": "正在执行...",
       "parameters": "参数"
     },
-    "compress": {
+    "compact": {
+      "loading": "正在压缩当前会话...",
       "noConversation": "请先进入一个已保存的会话再执行压缩。",
-      "inProgress": "请等待当前回复结束后再压缩会话历史。",
-      "done": "历史已压缩。此前会话用量：~{{before}} tokens。保留最近 {{kept}} 条。",
+      "inProgress": "请等待当前回复结束后再执行压缩。",
+      "done": "当前会话已压缩。此前会话用量：~{{before}} tokens，当前约 {{after}} tokens，保留最近 {{kept}} 条。",
       "noop": "当前还没有可压缩的历史。",
-      "failed": "压缩失败。"
+      "failed": "压缩失败。",
+      "failedWithReason": "压缩失败：{{reason}}",
+      "summaryLabel": "压缩摘要"
     },
     "chartType": {
       "line": "折线图",
@@ -283,7 +286,7 @@
       "new": "新建会话",
       "history": "查看会话历史",
       "memory": "打开记忆控制台",
-      "compress": "压缩当前会话历史",
+      "compact": "压缩当前会话历史",
       "plan": "查看当前会话计划",
       "permission": "管理权限"
     }
@@ -624,6 +627,8 @@
     "http_403": "您无权执行此操作。",
     "http_404": "请求的资源未找到。",
     "http_500": "服务器错误，请稍后重试。",
+    "network": "请求没有成功到达服务端，请检查后端服务或开发代理是否可用。",
+    "timeout": "请求超时，后端可能不可用，或响应过慢。",
     "context_not_provided": "useAIAssistantContext 必须在 AIAssistantProvider 内使用"
   },
   "memoryPage": {

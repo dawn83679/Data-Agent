@@ -8,7 +8,8 @@ public enum MessageStatusEnum {
 
     NORMAL(0),
     DELETED(1),
-    COMPRESSED(2);
+    COMPRESSED(2),
+    COMPRESSION_SUMMARY(3);
 
     private final int code;
 

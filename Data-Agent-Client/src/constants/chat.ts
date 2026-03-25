@@ -1,3 +1,5 @@
+import { I18N_KEYS } from './i18nKeys';
+
 /**
  * API paths and error/label constants for chat and AI assistant.
  */
@@ -35,9 +37,10 @@ export const TOOL_RUN_EMPTY_PLACEHOLDER = '—';
 /** PlanningIndicator: label shown while waiting for AI response or between blocks. */
 export const PLANNING_LABEL = 'Planning...';
 
-/** Status key → display label mapping for STATUS blocks. */
-export const STATUS_LABELS: Record<string, string> = {
-  compressing: 'Compressing memory...',
+/** Status key → i18n key mapping for STATUS blocks. */
+export const STATUS_LABEL_KEYS: Record<string, string> = {
+  compacting: I18N_KEYS.AI.COMPACT.LOADING,
+  compressing: I18N_KEYS.AI.COMPACT.LOADING,
 };
 
 /** SubAgent type → display label mapping. */

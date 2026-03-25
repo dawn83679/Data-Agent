@@ -23,6 +23,7 @@ public final class CompressionLogConstant {
 
     public static final String DECISION_COMPRESS = "compress";
     public static final String DECISION_COMPRESSED = "compressed";
+    public static final String DECISION_SKIP_NOT_ENOUGH_MESSAGES = "skip_not_enough_messages";
     public static final String DECISION_SKIP_ALREADY_IN_PROGRESS = "skip_already_in_progress";
 
     private CompressionLogConstant() {
