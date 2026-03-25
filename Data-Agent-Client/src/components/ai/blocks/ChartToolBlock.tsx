@@ -564,11 +564,11 @@ export function ChartToolBlock({
                   className={`w-full max-w-full min-w-0 rounded border theme-border theme-bg-main p-4 box-border ${isPieChart ? 'min-h-[300px] h-[360px]' : 'min-h-[280px] h-[min(450px,75vh)]'}`}
                 />
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-sm border theme-border overflow-hidden">
+                  <div className="flex theme-bg-popup rounded-lg shadow-sm border theme-border overflow-hidden">
                     <button
                       type="button"
                       onClick={handleCopyImage}
-                      className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-r theme-border"
+                      className="p-2 hover:bg-[color:var(--bg-tertiary)] transition-colors border-r theme-border"
                       title={copied ? t(I18N_KEYS.AI.CHART_ACTIONS.COPIED) : t(I18N_KEYS.AI.CHART_ACTIONS.COPY_IMAGE)}
                     >
                       {copied ? (
@@ -580,7 +580,7 @@ export function ChartToolBlock({
                     <button
                       type="button"
                       onClick={handleExportChart}
-                      className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      className="p-2 hover:bg-[color:var(--bg-tertiary)] transition-colors"
                       title={t(I18N_KEYS.AI.CHART_ACTIONS.DOWNLOAD_PNG)}
                     >
                       <Download className="w-4 h-4 theme-text-primary" />
