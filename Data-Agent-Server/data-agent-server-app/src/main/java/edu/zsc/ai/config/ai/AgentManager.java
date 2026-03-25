@@ -38,8 +38,8 @@ public class AgentManager {
     @Primary
     public ReActAgentProvider reActAgentProvider() {
         return (modelName, language, agentMode) -> {
-            PromptEnum promptLanguage = PromptEnum.fromRequestLanguage(language);
             AgentModeEnum mode = AgentModeEnum.fromRequest(agentMode);
+            PromptEnum promptLanguage = resolveMainPrompt(language, mode);
             StreamingChatModel model = modelsByName.get(modelName);
             if (model == null) {
                 throw new IllegalArgumentException(
@@ -82,5 +82,13 @@ public class AgentManager {
      */
     static String buildCacheKey(String modelName, String language, String mode, AgentTypeEnum agentType) {
         return modelName + "::" + language + "::" + mode + "::" + agentType.getCode();
+    }
+
+    private PromptEnum resolveMainPrompt(String language, AgentModeEnum mode) {
+        PromptEnum base = PromptEnum.fromRequestLanguage(language);
+        if (mode != AgentModeEnum.PLAN) {
+            return base;
+        }
+        return base == PromptEnum.ZH ? PromptEnum.ZH_PLAN : PromptEnum.EN_PLAN;
     }
 }

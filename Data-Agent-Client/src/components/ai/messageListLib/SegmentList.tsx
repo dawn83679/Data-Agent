@@ -20,6 +20,8 @@ export interface SegmentListProps {
   isLastAssistantStreaming?: boolean;
   /** When true, show Planning indicator (no block received recently). */
   isWaiting?: boolean;
+  /** Historical sub-agent blocks can hide elapsed/timeout text while remaining visible. */
+  showElapsedTextForSubAgent?: boolean;
 }
 
 /**
@@ -33,6 +35,7 @@ export function SegmentList({
   overrideTodoBoxes = [],
   isLastAssistantStreaming = false,
   isWaiting = false,
+  showElapsedTextForSubAgent = true,
 }: SegmentListProps): React.ReactElement {
   const markdownComponents = useMarkdownComponents();
 
@@ -68,13 +71,13 @@ export function SegmentList({
               </div>
             );
           }
-          return renderSegment(seg, i, false, isLastAssistantStreaming);
+          return renderSegment(seg, i, false, isLastAssistantStreaming, showElapsedTextForSubAgent);
         }
         const isStreamingThought =
           isLastAssistantStreaming &&
           seg.kind === SegmentKind.THOUGHT &&
           seg === lastSeg;
-        return renderSegment(seg, i, isStreamingThought, isLastAssistantStreaming);
+        return renderSegment(seg, i, isStreamingThought, isLastAssistantStreaming, showElapsedTextForSubAgent);
       })}
       {/* Phase C: has content but gap in stream — show Planning at end.
           Suppress when the last segment is any TOOL_RUN: the tool is still

@@ -2,6 +2,7 @@ package edu.zsc.ai.domain.service.agent.systemprompt.strategy;
 
 import org.springframework.stereotype.Component;
 
+import edu.zsc.ai.common.enums.ai.AgentModeEnum;
 import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
 import edu.zsc.ai.domain.service.agent.systemprompt.AbstractSystemPromptHandler;
 import edu.zsc.ai.domain.service.agent.systemprompt.SystemPromptAssemblyContext;
@@ -22,7 +23,7 @@ public class ToolUsageRulesSystemPromptStrategy extends AbstractSystemPromptHand
         builder.append("- activateSkill is available when one of those skills would meaningfully help with the current task\n");
         builder.append("- after activateSkill succeeds, you can apply the loaded guidance directly instead of narrating the activation itself\n");
         builder.append("- internal tool names usually stay out of the final user answer unless the user explicitly asks for them");
-        if (context.getAgentType() == AgentTypeEnum.MAIN) {
+        if (context.getAgentType() == AgentTypeEnum.MAIN && context.getAgentMode() != AgentModeEnum.PLAN) {
             builder.append("\n- readMemory can help when prompt-injected memory is not enough and targeted durable context would clarify the task");
             builder.append("\n- writeMemory fits durable, reusable preferences, rules, facts, and validated patterns more than one-off task details");
             builder.append("\n- when the conversation reveals a stable preference, durable workflow rule, validated workspace fact, or reusable SQL pattern, you can consider writing memory during the turn");

@@ -7,7 +7,8 @@ export function renderSegment(
   segment: Segment,
   index: number,
   isStreamingThought: boolean,
-  allowAutoRetryForToolRun = false
+  allowAutoRetryForToolRun = false,
+  showElapsedTextForSubAgent = true
 ): React.ReactNode {
   const key = `seg-${index}-${segment.kind}`;
   switch (segment.kind) {
@@ -36,6 +37,7 @@ export function renderSegment(
           progressEvents={segment.progressEvents}
           nestedToolRuns={segment.nestedToolRuns}
           allowAutoRetry={allowAutoRetryForToolRun}
+          showElapsedText={showElapsedTextForSubAgent}
         />
       );
   }

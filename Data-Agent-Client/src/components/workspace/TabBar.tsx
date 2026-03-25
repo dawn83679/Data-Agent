@@ -89,7 +89,7 @@ function SortableTab({
   const isPlannerConsole = type === 'subagent-console' && subAgentType === SUB_AGENT_TYPES.PLANNER;
   const isFailedSubAgent = type === 'subagent-console' && subAgentStatus === 'error';
   const activeClass = isFailedSubAgent
-    ? 'border-red-400/45 bg-red-500/10 text-red-100 shadow-sm'
+    ? 'workbench-tab-chip--error shadow-sm'
     : isActive
       ? isPlannerConsole
         ? 'border-purple-400/40 bg-purple-500/10 text-[color:var(--text-primary)] shadow-sm'
@@ -99,10 +99,16 @@ function SortableTab({
       : 'theme-text-secondary hover:theme-text-primary';
 
   const subAgentIconClass = isFailedSubAgent
-    ? 'text-red-400'
+    ? 'text-white'
     : isPlannerConsole
       ? 'text-purple-400'
       : 'text-cyan-400';
+  const labelClass = isFailedSubAgent
+    ? 'text-white font-semibold'
+    : '';
+  const closeButtonClass = isFailedSubAgent
+    ? 'text-white/85 hover:bg-white/15 hover:text-white'
+    : '';
 
   return (
     <ContextMenu>
@@ -138,7 +144,7 @@ function SortableTab({
                   <TableIcon className="w-3 h-3 text-green-400" />
                 )}
               </span>
-              <span className="flex-1 truncate mr-1">
+              <span className={cn('flex-1 truncate mr-1', labelClass)}>
                 {tabLabel}
               </span>
               <button
@@ -148,7 +154,12 @@ function SortableTab({
                   onClose(tabId);
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
-                className="workbench-icon-button h-5 w-5 p-0 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:text-red-400 transition-all cursor-pointer flex-shrink-0"
+                className={cn(
+                  'workbench-icon-button h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-all cursor-pointer flex-shrink-0',
+                  isFailedSubAgent
+                    ? closeButtonClass
+                    : 'hover:bg-red-500/20 hover:text-red-400'
+                )}
                 type="button"
               >
                 <X className="w-3 h-3" />

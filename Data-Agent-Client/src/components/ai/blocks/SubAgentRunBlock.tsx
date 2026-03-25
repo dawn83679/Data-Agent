@@ -22,6 +22,7 @@ export interface SubAgentRunBlockProps {
   progressEvents?: SubAgentProgressEvent[];
   toolCallId?: string;
   nestedToolRuns?: Segment[];
+  showElapsedText?: boolean;
 }
 
 type ToolRunSegment = Extract<Segment, { kind: typeof SegmentKind.TOOL_RUN }>;
@@ -351,10 +352,12 @@ function TaskSubAgentCard({
   toolCallId,
   conversationId,
   task,
+  showElapsedText,
 }: {
   toolCallId: string;
   conversationId: number | null;
   task: TaskViewModel;
+  showElapsedText: boolean;
 }) {
   const { handleOpenConsole } = useSubAgentConsoleTab({
     enabled: task.isConsoleReady,
@@ -380,6 +383,7 @@ function TaskSubAgentCard({
       isComplete={task.isComplete}
       isError={task.isError}
       elapsedText={task.elapsedText}
+      showElapsedText={showElapsedText}
       onOpenConsole={task.isConsoleReady ? handleOpenConsole : undefined}
     />
   );
@@ -393,6 +397,7 @@ export function SubAgentRunBlock({
   progressEvents,
   toolCallId,
   nestedToolRuns,
+  showElapsedText = true,
 }: SubAgentRunBlockProps) {
   const { conversationId } = useAIAssistantContext();
   const tabs = useWorkspaceStore((state) => state.tabs);
@@ -518,6 +523,7 @@ export function SubAgentRunBlock({
           isComplete={false}
           isError={false}
           elapsedText={elapsed > 0 ? formatElapsedText(elapsed) : undefined}
+          showElapsedText={showElapsedText}
         />
       </div>
     );
@@ -531,6 +537,7 @@ export function SubAgentRunBlock({
           toolCallId={stableToolCallId}
           conversationId={conversationId}
           task={task}
+          showElapsedText={showElapsedText}
         />
       ))}
     </div>

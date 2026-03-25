@@ -186,12 +186,32 @@ export function WriteExecutionConfirmCard({ payload }: WriteExecutionConfirmCard
         </p>
       </button>
 
-      <div className={`${OPTION_CARD_CLASS} flex flex-col gap-3`}>
+      <div
+        role="button"
+        tabIndex={defaultAllowDisabled ? -1 : 0}
+        aria-disabled={defaultAllowDisabled}
+        onClick={() => {
+          if (!defaultAllowDisabled) {
+            void handleSaveDefaultAllow();
+          }
+        }}
+        onKeyDown={(event) => {
+          if (defaultAllowDisabled) return;
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            void handleSaveDefaultAllow();
+          }
+        }}
+        className={`${OPTION_CARD_CLASS} flex flex-col gap-3 transition-colors ${defaultAllowDisabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:bg-black/5 dark:hover:bg-white/5'}`}
+      >
         <p className="text-[13px] leading-6 theme-text-primary">
           {t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.DEFAULT_ALLOW_SENTENCE_PREFIX)}{' '}
           <button
             type="button"
-            onClick={handleToggleScope}
+            onClick={(event) => {
+              event.stopPropagation();
+              handleToggleScope();
+            }}
             disabled={!canToggleScope}
             className={INLINE_TOGGLE_CLASS}
           >
@@ -200,7 +220,10 @@ export function WriteExecutionConfirmCard({ payload }: WriteExecutionConfirmCard
           {t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.DEFAULT_ALLOW_SENTENCE_MIDDLE)}{' '}
           <button
             type="button"
-            onClick={handleToggleCoverage}
+            onClick={(event) => {
+              event.stopPropagation();
+              handleToggleCoverage();
+            }}
             disabled={!canToggleCoverage}
             className={INLINE_TOGGLE_CLASS}
           >
@@ -213,15 +236,6 @@ export function WriteExecutionConfirmCard({ payload }: WriteExecutionConfirmCard
           </button>{' '}
           {t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.DEFAULT_ALLOW_SENTENCE_SUFFIX)}
         </p>
-
-        <button
-          type="button"
-          onClick={handleSaveDefaultAllow}
-          disabled={defaultAllowDisabled}
-          className="w-fit text-[13px] font-medium theme-text-primary underline underline-offset-4 transition-opacity hover:opacity-75 disabled:cursor-not-allowed disabled:no-underline disabled:opacity-50"
-        >
-          {t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.SAVE_AND_EXECUTE_LABEL)}
-        </button>
       </div>
 
       <div className={`${OPTION_CARD_CLASS} flex flex-col gap-2`}>

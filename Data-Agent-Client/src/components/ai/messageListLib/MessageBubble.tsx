@@ -15,6 +15,7 @@ export interface MessageBubbleProps {
   hideTodoInThisMessage?: boolean;
   /** Todo boxes to show in this message (one per todoId that first appeared here). */
   overrideTodoBoxes?: TodoBoxSpec[];
+  showElapsedTextForSubAgent?: boolean;
 }
 
 export function MessageBubble({
@@ -24,6 +25,7 @@ export function MessageBubble({
   isWaiting,
   hideTodoInThisMessage = false,
   overrideTodoBoxes = [],
+  showElapsedTextForSubAgent = true,
 }: MessageBubbleProps) {
   if (isCompactSummaryMessage(message)) {
     return <CompactSummaryBubble message={message} />;
@@ -39,6 +41,7 @@ export function MessageBubble({
       overrideTodoBoxes={overrideTodoBoxes}
       isLastAssistantStreaming={isLastAssistantStreaming}
       isWaiting={isWaiting}
+      showElapsedTextForSubAgent={showElapsedTextForSubAgent}
     />
   );
 }

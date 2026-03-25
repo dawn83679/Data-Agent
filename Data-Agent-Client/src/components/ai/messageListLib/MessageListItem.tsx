@@ -15,6 +15,7 @@ export interface MessageListItemProps {
   showAllCompletedPrompt: boolean;
   latestTodoItemsForPrompt: TodoItem[] | null;
   isLastAssistantStreaming: boolean;
+  showElapsedTextForSubAgent?: boolean;
 }
 
 export function MessageListItem({
@@ -29,6 +30,7 @@ export function MessageListItem({
   showAllCompletedPrompt,
   latestTodoItemsForPrompt,
   isLastAssistantStreaming,
+  showElapsedTextForSubAgent = true,
 }: MessageListItemProps) {
   return (
     <>
@@ -40,6 +42,7 @@ export function MessageListItem({
           isWaiting={isWaiting}
           hideTodoInThisMessage={hideTodoInThisMessage}
           overrideTodoBoxes={overrideTodoBoxes}
+          showElapsedTextForSubAgent={showElapsedTextForSubAgent}
         />
       </div>
       {showAllCompletedPrompt && latestTodoItemsForPrompt != null && (
