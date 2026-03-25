@@ -453,6 +453,30 @@
     color: var(--text-secondary);
   }
 
+  .workbench-tab-chip--error {
+    background: #dc2626;
+    border-color: #b91c1c;
+    color: #ffffff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 10px 20px rgba(220, 38, 38, 0.22);
+  }
+
+  .dark .workbench-tab-chip--error {
+    background: #b91c1c;
+    border-color: #ef4444;
+    color: #ffffff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 10px 20px rgba(127, 29, 29, 0.30);
+  }
+
+  .workbench-tab-chip--error:hover {
+    background: #b91c1c;
+    border-color: #991b1b;
+  }
+
+  .dark .workbench-tab-chip--error:hover {
+    background: #991b1b;
+    border-color: #f87171;
+  }
+
   .workbench-icon-button {
     @apply inline-flex items-center justify-center rounded-lg;
     width: 1.75rem;

@@ -12,6 +12,8 @@ public enum PromptEnum {
 
     EN("en", "prompt/main-agent_en.md"),
     ZH("zh", "prompt/main-agent_zh.md"),
+    EN_PLAN("en-plan", "prompt/main-agent-plan_en.md"),
+    ZH_PLAN("zh-plan", "prompt/main-agent-plan_zh.md"),
     COMPRESSION("compression", "prompt/compression.md"),
     EXPLORER("explorer", "prompt/explorer.md"),
     PLANNER("planner", "prompt/planner.md");

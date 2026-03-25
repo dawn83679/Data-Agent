@@ -80,6 +80,9 @@ export function MessageList({
           segments = segments.filter((seg) => {
             if (seg.kind === SegmentKind.TOOL_RUN) {
               const toolType = getToolType(seg.toolName);
+              if (toolType === ToolType.CALLING_SUB_AGENT) {
+                return false;
+              }
               if (toolType === ToolType.ASK_USER) {
                 return false;
               }
@@ -125,6 +128,7 @@ export function MessageList({
             showAllCompletedPrompt={showAllCompletedPrompt}
             latestTodoItemsForPrompt={latestTodoItems}
             isLastAssistantStreaming={isLastAssistantStreaming}
+            showElapsedTextForSubAgent={isLastMessage}
           />
         );
       })}

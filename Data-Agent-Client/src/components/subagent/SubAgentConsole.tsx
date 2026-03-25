@@ -68,7 +68,10 @@ export function SubAgentConsole({ metadata }: SubAgentConsoleProps) {
               <div className="flex items-center gap-2 px-3">
                 <span className="text-[15px] font-semibold theme-text-primary">{displayTitle}</span>
                 {inlineStatusText && (
-                  <span className="text-[12px] theme-text-secondary">
+                  <span className={cn(
+                    'text-[12px]',
+                    status === 'error' ? 'theme-text-error font-medium' : 'theme-text-secondary'
+                  )}>
                     {inlineStatusText}
                   </span>
                 )}

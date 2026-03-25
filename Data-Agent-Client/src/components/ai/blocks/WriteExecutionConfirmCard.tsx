@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, Clock3, ShieldCheck, XCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { I18N_KEYS } from '../../../constants/i18nKeys';
 import { SqlCodeBlock } from '../../common/SqlCodeBlock';
 import { useAIAssistantContext } from '../AIAssistantContext';
@@ -28,17 +28,12 @@ export interface WriteExecutionConfirmCardProps {
   payload: ExecuteNonSelectToolResultPayload;
 }
 
-const OPTION_CARD_CLASS = 'flex min-w-0 flex-col gap-3 p-3';
-const CLICKABLE_OPTION_CLASS = [
-  'cursor-pointer transition-colors hover:bg-black/5 dark:hover:bg-white/5',
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-blue)] focus-visible:ring-inset',
-  'disabled:cursor-not-allowed disabled:opacity-60',
-].join(' ');
-const INLINE_TEXT_TOGGLE_CLASS = [
-  'inline rounded-sm font-semibold text-[var(--accent-blue)] underline decoration-dotted underline-offset-2',
-  'transition-opacity hover:opacity-75',
+const OPTION_CARD_CLASS = 'rounded-md border theme-border theme-bg-panel px-3 py-3';
+const INLINE_TOGGLE_CLASS = [
+  'inline-flex items-center border-b border-current border-dotted pb-px text-left',
+  'underline-offset-4 transition-opacity hover:opacity-75',
   'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)] focus-visible:ring-offset-2',
-  'disabled:cursor-default disabled:no-underline disabled:opacity-100',
+  'disabled:cursor-default disabled:border-transparent disabled:no-underline disabled:opacity-100',
 ].join(' ');
 
 export function WriteExecutionConfirmCard({ payload }: WriteExecutionConfirmCardProps) {
@@ -106,7 +101,7 @@ export function WriteExecutionConfirmCard({ payload }: WriteExecutionConfirmCard
   };
 
   const handleReject = async () => {
-    if (isProcessing || isLoading) return;
+    if (isProcessing || isLoading || !supplementaryInput.trim()) return;
     setIsProcessing(true);
     try {
       await submitMessage(buildRejectMessage(t, supplementaryInput));
@@ -133,17 +128,6 @@ export function WriteExecutionConfirmCard({ payload }: WriteExecutionConfirmCard
     setSelectedCoverage(nextCoverage);
   };
 
-  const handleOptionKeyDown = (
-    event: React.KeyboardEvent<HTMLElement>,
-    action: () => Promise<void>,
-    disabled: boolean
-  ) => {
-    if (disabled) return;
-    if (event.key !== 'Enter' && event.key !== ' ') return;
-    event.preventDefault();
-    void action();
-  };
-
   if (!confirmation || isSubmitted || payload.status !== ExecuteNonSelectToolStatus.REQUIRES_CONFIRMATION) {
     return null;
   }
@@ -161,20 +145,6 @@ export function WriteExecutionConfirmCard({ payload }: WriteExecutionConfirmCard
   const canToggleScope = !interactiveDisabled && new Set(grantOptions.map((option) => option.scopeType)).size > 1;
   const canToggleCoverage = !interactiveDisabled
     && permissionGrantCoverageOptionsForScope(grantOptions, selectedScope).length > 1;
-  const selectedScopeLabel = permissionScopeDescription(t, selectedScope);
-  const selectedCoverageLabel = permissionCoverageLabel(
-    t,
-    selectedCoverage,
-    confirmation.databaseName,
-    confirmation.schemaName
-  );
-  const selectedScopeHint = permissionScopeHint(t, selectedScope);
-  const selectedCoverageHint = permissionCoverageHint(
-    t,
-    selectedCoverage,
-    confirmation.databaseName,
-    confirmation.schemaName
-  );
 
   return (
     <div className="mb-2 flex flex-col gap-3 rounded-lg border theme-border theme-bg-main p-4 shadow-sm">
@@ -202,131 +172,90 @@ export function WriteExecutionConfirmCard({ payload }: WriteExecutionConfirmCard
         </p>
       )}
 
-      <div className="overflow-hidden rounded-lg border theme-border theme-bg-panel">
-        <div className="flex flex-col divide-y theme-border">
-        <section
-          role="button"
-          tabIndex={interactiveDisabled ? -1 : 0}
-          onClick={() => {
-            void handleExecuteOnce();
-          }}
-          onKeyDown={(event) => handleOptionKeyDown(event, handleExecuteOnce, !canConfirm || interactiveDisabled)}
-          className={`${OPTION_CARD_CLASS} ${CLICKABLE_OPTION_CLASS}`}
-        >
-          <div className="flex flex-1 flex-col gap-3">
-            <div className="flex items-start gap-2.5">
-              <div className="rounded-full bg-slate-500/10 p-1.5 text-slate-600 dark:bg-white/10 dark:text-slate-200">
-                <Clock3 className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[13px] font-semibold theme-text-primary">
-                  {t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.EXECUTE_ONCE_LABEL)}
-                </div>
-                <p className="mt-1 text-[12px] leading-5 theme-text-secondary">
-                  {t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.EXECUTE_ONCE_HINT)}
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section
-          role="button"
-          tabIndex={defaultAllowDisabled ? -1 : 0}
-          onClick={() => {
-            void handleSaveDefaultAllow();
-          }}
-          onKeyDown={(event) => handleOptionKeyDown(event, handleSaveDefaultAllow, defaultAllowDisabled)}
-          className={`${OPTION_CARD_CLASS} ${CLICKABLE_OPTION_CLASS}`}
-        >
-          <div className="flex flex-1 flex-col gap-3">
-            <div className="flex items-start gap-2.5">
-              <div className="rounded-full bg-[var(--accent-blue)]/10 p-1.5 text-[var(--accent-blue)]">
-                <ShieldCheck className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[13px] font-semibold theme-text-primary">
-                  {t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.SAVE_AND_EXECUTE_LABEL)}
-                </div>
-                <p className="mt-1 text-[12px] leading-5 theme-text-secondary">
-                  {t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.DEFAULT_ALLOW_SENTENCE_PREFIX)}{' '}
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handleToggleScope();
-                    }}
-                    disabled={!canToggleScope}
-                    className={INLINE_TEXT_TOGGLE_CLASS}
-                    title={selectedScopeHint}
-                  >
-                    {selectedScopeLabel}
-                  </button>{' '}
-                  {t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.DEFAULT_ALLOW_SENTENCE_MIDDLE)}{' '}
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handleToggleCoverage();
-                    }}
-                    disabled={!canToggleCoverage}
-                    className={INLINE_TEXT_TOGGLE_CLASS}
-                    title={selectedCoverageHint}
-                  >
-                    {selectedCoverageLabel}
-                  </button>{' '}
-                  {t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.DEFAULT_ALLOW_SENTENCE_SUFFIX)}
-                </p>
-                <p className="mt-1 text-[11px] font-medium text-[var(--accent-blue)]/80">
-                  {t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.EDITABLE_HINT)}
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section
-          role="button"
-          tabIndex={interactiveDisabled ? -1 : 0}
-          onClick={() => {
-            void handleReject();
-          }}
-          onKeyDown={(event) => handleOptionKeyDown(event, handleReject, interactiveDisabled)}
-          className={`${OPTION_CARD_CLASS} ${CLICKABLE_OPTION_CLASS}`}
-        >
-          <div className="flex flex-1 flex-col gap-3">
-            <div className="flex items-start gap-2.5">
-              <div className="rounded-full bg-red-500/10 p-1.5 text-red-500 dark:bg-red-500/15 dark:text-red-300">
-                <XCircle className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[13px] font-semibold theme-text-primary">
-                  {t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.REJECT_LABEL)}
-                </div>
-                <p className="mt-1 text-[12px] leading-5 theme-text-secondary">
-                  {t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.REJECT_INPUT_HINT)}
-                </p>
-              </div>
-            </div>
-
-            <input
-              type="text"
-              value={supplementaryInput}
-              onChange={(event) => setSupplementaryInput(event.target.value)}
-              onClick={(event) => event.stopPropagation()}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  void handleReject();
-                }
-              }}
-              placeholder={t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.INPUT_PLACEHOLDER)}
-              disabled={interactiveDisabled}
-              className="w-full rounded-md border theme-border theme-bg-main px-3 py-2 text-[12px] theme-text-primary placeholder:theme-text-secondary focus:border-[var(--accent-blue)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)] disabled:cursor-not-allowed disabled:opacity-60"
-            />
-          </div>
-        </section>
+      <button
+        type="button"
+        onClick={handleExecuteOnce}
+        disabled={!canConfirm || interactiveDisabled}
+        className={`${OPTION_CARD_CLASS} w-full text-left transition-colors hover:bg-black/5 dark:hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50`}
+      >
+        <div className="text-[14px] font-medium theme-text-primary">
+          {t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.EXECUTE_ONCE_LABEL)}
         </div>
+        <p className="mt-1 text-[12px] theme-text-secondary">
+          {t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.EXECUTE_ONCE_HINT)}
+        </p>
+      </button>
+
+      <div
+        role="button"
+        tabIndex={defaultAllowDisabled ? -1 : 0}
+        aria-disabled={defaultAllowDisabled}
+        onClick={() => {
+          if (!defaultAllowDisabled) {
+            void handleSaveDefaultAllow();
+          }
+        }}
+        onKeyDown={(event) => {
+          if (defaultAllowDisabled) return;
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            void handleSaveDefaultAllow();
+          }
+        }}
+        className={`${OPTION_CARD_CLASS} flex flex-col gap-3 transition-colors ${defaultAllowDisabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:bg-black/5 dark:hover:bg-white/5'}`}
+      >
+        <p className="text-[13px] leading-6 theme-text-primary">
+          {t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.DEFAULT_ALLOW_SENTENCE_PREFIX)}{' '}
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              handleToggleScope();
+            }}
+            disabled={!canToggleScope}
+            className={INLINE_TOGGLE_CLASS}
+          >
+            {permissionScopeDescription(t, selectedScope)}
+          </button>{' '}
+          {t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.DEFAULT_ALLOW_SENTENCE_MIDDLE)}{' '}
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              handleToggleCoverage();
+            }}
+            disabled={!canToggleCoverage}
+            className={INLINE_TOGGLE_CLASS}
+          >
+            {permissionCoverageLabel(
+              t,
+              selectedCoverage,
+              confirmation.databaseName,
+              confirmation.schemaName
+            )}
+          </button>{' '}
+          {t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.DEFAULT_ALLOW_SENTENCE_SUFFIX)}
+        </p>
+      </div>
+
+      <div className={`${OPTION_CARD_CLASS} flex flex-col gap-2`}>
+        <p className="text-[12px] theme-text-secondary">
+          {t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.REJECT_INPUT_HINT)}
+        </p>
+        <input
+          type="text"
+          value={supplementaryInput}
+          onChange={(event) => setSupplementaryInput(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && supplementaryInput.trim()) {
+              event.preventDefault();
+              void handleReject();
+            }
+          }}
+          placeholder={t(I18N_KEYS.AI.WRITE_EXECUTION_CONFIRM.INPUT_PLACEHOLDER)}
+          disabled={interactiveDisabled}
+          className="w-full rounded-md border theme-border theme-bg-main px-3 py-2 text-[12px] theme-text-primary placeholder:theme-text-secondary focus:border-[var(--accent-blue)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)] disabled:cursor-not-allowed disabled:opacity-60"
+        />
       </div>
     </div>
   );
@@ -344,41 +273,6 @@ function defaultCoverage(
   scopeType: PermissionScopeType
 ): PermissionGrantCoverage {
   return permissionGrantCoverageOptionsForScope(options, scopeType)[0] ?? PermissionGrantCoverage.CONNECTION;
-}
-
-function permissionScopeHint(
-  t: ReturnType<typeof useTranslation>['t'],
-  scopeType: PermissionScopeType
-): string {
-  switch (scopeType) {
-    case PermissionScopeType.CONVERSATION:
-      return t(I18N_KEYS.AI.PERMISSION.SCOPE_HINT_CONVERSATION);
-    case PermissionScopeType.USER:
-      return t(I18N_KEYS.AI.PERMISSION.SCOPE_HINT_USER);
-  }
-  return '';
-}
-
-function permissionCoverageHint(
-  t: ReturnType<typeof useTranslation>['t'],
-  coverage: PermissionGrantCoverage,
-  databaseName?: string | null,
-  schemaName?: string | null
-): string {
-  switch (coverage) {
-    case PermissionGrantCoverage.EXACT_TARGET:
-      return t(I18N_KEYS.AI.PERMISSION.COVERAGE_HINT_EXACT_TARGET, {
-        database: databaseName ?? '*',
-        schema: schemaName ?? '*',
-      });
-    case PermissionGrantCoverage.DATABASE:
-      return t(I18N_KEYS.AI.PERMISSION.COVERAGE_HINT_DATABASE, {
-        database: databaseName ?? '*',
-      });
-    case PermissionGrantCoverage.CONNECTION:
-      return t(I18N_KEYS.AI.PERMISSION.COVERAGE_HINT_CONNECTION);
-  }
-  return '';
 }
 
 function buildFollowupMessage(

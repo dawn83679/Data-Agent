@@ -12,6 +12,7 @@ export interface AssistantBubbleProps {
   overrideTodoBoxes: TodoBoxSpec[];
   isLastAssistantStreaming: boolean;
   isWaiting: boolean;
+  showElapsedTextForSubAgent?: boolean;
 }
 
 export function AssistantBubble({
@@ -21,6 +22,7 @@ export function AssistantBubble({
   overrideTodoBoxes,
   isLastAssistantStreaming,
   isWaiting,
+  showElapsedTextForSubAgent = true,
 }: AssistantBubbleProps) {
   const { t } = useTranslation();
   return (
@@ -39,6 +41,7 @@ export function AssistantBubble({
           overrideTodoBoxes={overrideTodoBoxes}
           isLastAssistantStreaming={isLastAssistantStreaming}
           isWaiting={isWaiting}
+          showElapsedTextForSubAgent={showElapsedTextForSubAgent}
         />
         {!isLastAssistantStreaming && message.doneMetadata && (
           <ChatStatsFooter metadata={message.doneMetadata} />

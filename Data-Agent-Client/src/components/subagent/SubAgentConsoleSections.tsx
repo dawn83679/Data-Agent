@@ -78,6 +78,7 @@ function ExplorerObjectLabel({
 
 export function ToolCalls({ invocation }: { invocation?: SubAgentInvocation }) {
   const rawToolRuns = invocation?.nestedToolRuns?.filter((segment) => segment.kind === SegmentKind.TOOL_RUN) ?? [];
+  const toolRunFailedByAgentError = invocation?.status === 'error';
   const latestTodoIndexById = new Map<string, number>();
 
   rawToolRuns.forEach((toolRun, index) => {
@@ -100,20 +101,33 @@ export function ToolCalls({ invocation }: { invocation?: SubAgentInvocation }) {
   return (
     <div className="space-y-2">
       {toolRuns.map((toolRun, index) => (
+        (() => {
+          const isUnfinished =
+            toolRun.pending
+            || toolRun.executionState === ToolExecutionState.STREAMING_ARGUMENTS
+            || toolRun.executionState === ToolExecutionState.EXECUTING;
+          const shouldPromoteToError = Boolean(toolRunFailedByAgentError && isUnfinished);
+          const coercedExecutionState = shouldPromoteToError
+            ? ToolExecutionState.COMPLETE
+            : toolRun.executionState;
+
+          return (
         <ToolRunBlock
           key={`${toolRun.toolCallId ?? toolRun.toolName}-${index}`}
           toolName={toolRun.toolName}
           parametersData={toolRun.parametersData}
           responseData={toolRun.responseData}
-          responseError={toolRun.responseError}
-          pending={toolRun.pending}
+          responseError={Boolean(toolRun.responseError || shouldPromoteToError)}
+          pending={shouldPromoteToError ? false : toolRun.pending}
           executionState={
-            toolRun.executionState === ToolExecutionState.STREAMING_ARGUMENTS
+            coercedExecutionState === ToolExecutionState.STREAMING_ARGUMENTS
               ? ToolExecutionState.EXECUTING
-              : toolRun.executionState
+              : coercedExecutionState
           }
           toolCallId={toolRun.toolCallId}
         />
+          );
+        })()
       ))}
     </div>
   );

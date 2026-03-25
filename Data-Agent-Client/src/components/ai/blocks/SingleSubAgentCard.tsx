@@ -10,6 +10,7 @@ export interface SingleSubAgentCardProps {
   isComplete: boolean;
   isError: boolean;
   elapsedText?: string;
+  showElapsedText?: boolean;
   onOpenConsole?: () => void;
 }
 
@@ -20,6 +21,7 @@ export function SingleSubAgentCard({
   isComplete,
   isError,
   elapsedText,
+  showElapsedText = true,
   onOpenConsole,
 }: SingleSubAgentCardProps) {
   const { theme } = useTheme();
@@ -81,7 +83,7 @@ export function SingleSubAgentCard({
         <AgentIcon className={cn('w-3.5 h-3.5 shrink-0', iconColor)} />
         <span className="text-[12px] font-medium theme-text-primary">{label}</span>
         <span className="ml-auto flex items-center gap-3 text-[11px] theme-text-secondary tabular-nums">
-          {elapsedText && <span>{elapsedText}</span>}
+          {showElapsedText && elapsedText && <span>{elapsedText}</span>}
         </span>
       </div>
       {shouldShowStatusText && (

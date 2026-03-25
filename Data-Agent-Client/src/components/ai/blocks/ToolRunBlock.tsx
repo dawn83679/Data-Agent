@@ -44,6 +44,8 @@ export interface ToolRunBlockProps {
   progressEvents?: SubAgentProgressEvent[];
   /** Nested tool runs from SubAgent (getEnvironmentOverview, searchObjects, etc.). */
   nestedToolRuns?: Segment[];
+  /** Historical messages can hide elapsed/timeout text while preserving the sub-agent block. */
+  showElapsedText?: boolean;
 }
 
 /**
@@ -66,6 +68,7 @@ export function ToolRunBlock({
   allowAutoRetry = false,
   progressEvents,
   nestedToolRuns,
+  showElapsedText = true,
 }: ToolRunBlockProps) {
   const toolType = getToolType(toolName);
   const formattedParameters = formatParameters(parametersData);
@@ -86,6 +89,7 @@ export function ToolRunBlock({
         progressEvents={progressEvents}
         toolCallId={toolCallId}
         nestedToolRuns={nestedToolRuns}
+        showElapsedText={showElapsedText}
       />
     );
   }
