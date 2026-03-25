@@ -85,9 +85,8 @@ export function AskUserQuestionCard({ askUserPayload }: AskUserQuestionCardProps
             }
 
             if (answerStr) {
-                // If there's only one question, we don't strictly need the question title,
-                // but adding it makes the markdown structure consistent and clear.
-                formattedAnswer += `- **${q.question}**\n  👉 ${answerStr}\n\n`;
+                formattedAnswer += `**${t(I18N_KEYS.AI.ASK_USER_QUESTION.QUESTION_LABEL)} ${idx + 1}:** ${q.question}\n\n`;
+                formattedAnswer += `**${t(I18N_KEYS.AI.ASK_USER_QUESTION.ANSWER_LABEL)} ${idx + 1}:** ${answerStr}\n\n`;
             }
         });
 

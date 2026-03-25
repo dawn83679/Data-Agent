@@ -194,9 +194,11 @@
       "reject": "Reject",
       "rejectMessage": "User declined to answer your question. Please review the current context to see if there is sufficient information to answer the question or reconsider the user's needs.",
       "customLabel": "User Additional Input",
-      "answerPrefix": "Regarding your questions, the user's answers are as follows:",
+      "answerPrefix": "The user has answered your clarification question(s):",
+      "questionLabel": "Question",
+      "answerLabel": "Answer",
       "submittedAnswer": "Your answer",
-      "continueSuffix": "Please review the user's feedback above and proceed with the remaining tasks.",
+      "continueSuffix": "Continue with the current task based on the answers above. Ask again only if the information is still insufficient.",
       "originalQuestionPrefix": "To retain context, the original question(s) you asked the user are below:"
     },
     "toolRun": {

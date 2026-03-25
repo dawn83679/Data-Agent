@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -33,7 +35,7 @@ class GetObjectDetailToolTest {
     void returnsSuccessMessageWhenAllObjectDetailsSucceed() {
         when(discoveryService.getObjectDetails(List.of(new ObjectQueryItem("TABLE", "users", 1L, "app", "public"))))
                 .thenReturn(List.of(
-                        new NamedObjectDetail("users", "TABLE", true, null, new ObjectDetail("ddl", 10L, List.of()))
+                        new NamedObjectDetail("users", "TABLE", 1L, "app", "public", true, null, "ddl", 10L, List.of())
                 ));
 
         AgentToolResult result = tool.getObjectDetail(
@@ -43,7 +45,14 @@ class GetObjectDetailToolTest {
 
         assertTrue(result.isSuccess());
         assertTrue(result.getMessage().contains("Object details are available for users"));
-        assertTrue(result.getMessage().contains("Use the returned DDL, row counts, and indexes"));
+        assertTrue(result.getMessage().contains("Use the returned DDL, row counts, indexes, and effective scope"));
+        @SuppressWarnings("unchecked")
+        List<NamedObjectDetail> details = assertInstanceOf(List.class, result.getResult());
+        assertEquals(1L, details.get(0).connectionId());
+        assertEquals("app", details.get(0).databaseName());
+        assertEquals("public", details.get(0).schemaName());
+        assertEquals("ddl", details.get(0).ddl());
+        assertEquals(10L, details.get(0).rowCount());
     }
 
     @Test
@@ -54,8 +63,8 @@ class GetObjectDetailToolTest {
         );
         when(discoveryService.getObjectDetails(objects))
                 .thenReturn(List.of(
-                        new NamedObjectDetail("users", "TABLE", true, null, new ObjectDetail("ddl", 10L, List.of())),
-                        new NamedObjectDetail("orders_archive", "TABLE", false, "connection closed", null)
+                        new NamedObjectDetail("users", "TABLE", 1L, "app", "public", true, null, "ddl", 10L, List.of()),
+                        new NamedObjectDetail("orders_archive", "TABLE", 1L, "app", "public", false, "connection closed", null, null, List.of())
                 ));
 
         AgentToolResult result = tool.getObjectDetail(objects, InvocationParameters.from(Map.of()));
@@ -75,7 +84,7 @@ class GetObjectDetailToolTest {
         );
         when(discoveryService.getObjectDetails(objects))
                 .thenReturn(List.of(
-                        new NamedObjectDetail("users_backup", "TABLE", false, "timeout", null)
+                        new NamedObjectDetail("users_backup", "TABLE", 1L, "app", "public", false, "timeout", null, null, List.of())
                 ));
 
         AgentToolResult result = tool.getObjectDetail(objects, InvocationParameters.from(Map.of()));
@@ -101,7 +110,7 @@ class GetObjectDetailToolTest {
         );
         when(discoveryService.getObjectDetails(normalizedObjects))
                 .thenReturn(List.of(
-                        new NamedObjectDetail("users", "TABLE", true, null, new ObjectDetail("ddl", 10L, List.of()))
+                        new NamedObjectDetail("users", "TABLE", 1L, "app", "public", true, null, "ddl", 10L, List.of())
                 ));
 
         AgentToolResult result = tool.getObjectDetail(requestedObjects, InvocationParameters.from(Map.of()));

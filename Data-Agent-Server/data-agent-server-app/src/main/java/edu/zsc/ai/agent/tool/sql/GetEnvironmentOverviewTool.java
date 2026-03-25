@@ -4,7 +4,6 @@ import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.agent.annotation.AgentTool;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
-import edu.zsc.ai.common.constant.InvocationContextConstant;
 import edu.zsc.ai.agent.tool.sql.model.ConnectionOverview;
 import edu.zsc.ai.domain.service.db.DiscoveryService;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +25,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GetEnvironmentOverviewTool {
 
+    private static final int LARGE_ENVIRONMENT_CONNECTION_THRESHOLD = 3;
+
     private final DiscoveryService discoveryService;
 
     @Tool({
@@ -40,25 +41,23 @@ public class GetEnvironmentOverviewTool {
     public AgentToolResult getEnvironmentOverview(InvocationParameters parameters) {
         log.info("[Tool] getEnvironmentOverview");
         List<ConnectionOverview> overview = discoveryService.getEnvironmentOverview();
-        boolean chinese = isChinese(parameters);
         if (CollectionUtils.isEmpty(overview)) {
             log.info("[Tool done] getEnvironmentOverview -> empty");
-            return AgentToolResult.empty(chinese
-                    ? "环境概览未返回可用连接。请先检查连接配置或稍后重试；在连接恢复可用之前，不要继续依赖该连接的检索、规划或执行。"
-                    : "Environment overview returned no available connections. Check the connection configuration or retry later. Do not continue discovery, planning, or execution until a usable connection is available.");
+            return AgentToolResult.empty(
+                    "Environment overview returned no available connections. Check the connection configuration or retry later. Do not continue discovery, planning, or execution until a usable connection is available.");
         }
         log.info("[Tool done] getEnvironmentOverview, connections={}", overview.size());
-        return AgentToolResult.success(overview, buildOverviewMessage(overview, chinese));
+        return AgentToolResult.success(overview, buildOverviewMessage(overview));
     }
 
-    private String buildOverviewMessage(List<ConnectionOverview> overview, boolean chinese) {
+    private String buildOverviewMessage(List<ConnectionOverview> overview) {
         List<ConnectionOverview> unavailableConnections = overview.stream()
                 .filter(connection -> StringUtils.isNotBlank(connection.error()))
                 .toList();
         if (CollectionUtils.isEmpty(unavailableConnections)) {
-            if (chinese) {
-                return "当前环境中有 " + overview.size()
-                        + " 个可用连接。只有当当前指令、mention、connectionId、catalog 或 schema 仍不足以唯一定位目标时，才比较这些连接。若现有约束已足够，请继续在当前范围内检索或执行。";
+            if (overview.size() >= LARGE_ENVIRONMENT_CONNECTION_THRESHOLD) {
+                return "Environment overview is available for " + overview.size()
+                        + " connection(s), which is a relatively large search space. Prefer askUserQuestion to narrow the scope as much as possible before comparing connections. Only compare these connections when the current instruction, mention, connectionId, catalog, or schema still does not identify a unique target. Broad fuzzy discovery across many connections is expensive, so stay within the current grounding whenever it is already sufficient.";
             }
             return "Environment overview is available for " + overview.size()
                     + " connection(s). Compare these connections only when the current instruction, mention, connectionId, catalog, or schema still does not identify a unique target. If the current grounding is already sufficient, continue within that scope instead of asking the user to reconfirm it.";
@@ -73,27 +72,16 @@ public class GetEnvironmentOverviewTool {
 
         long availableCount = overview.size() - unavailableConnections.size();
         if (availableCount > 0) {
-            if (chinese) {
-                return "当前环境仅部分可用。失败的连接有：" + unavailableSummary
-                        + "。请继续使用其余可用连接；只有当当前任务依赖失败连接且无法替代时，再询问用户是否切换到可用连接或稍后重试。";
+            if (availableCount >= LARGE_ENVIRONMENT_CONNECTION_THRESHOLD) {
+                return "Environment overview is only partially available. Failed connections: " + unavailableSummary
+                        + ". There are still " + availableCount
+                        + " available connection(s), so prefer askUserQuestion to narrow the search space as much as possible before comparing across connections. Broad fuzzy discovery is expensive. Ask the user whether to switch to an available connection or retry later only when the task still depends on an unavailable connection.";
             }
             return "Environment overview is only partially available. Failed connections: " + unavailableSummary
                     + ". Continue with the remaining available connections. Ask the user whether to switch to an available connection or retry later only when the task still depends on an unavailable connection.";
         }
 
-        if (chinese) {
-            return "当前环境未找到可用连接。失败的连接有：" + unavailableSummary
-                    + "。请询问用户是稍后重试还是检查连接配置；在恢复可用连接之前，不要继续依赖连接的对象检索。";
-        }
         return "Environment overview could not find any usable connection. Failed connections: " + unavailableSummary
                 + ". Ask the user whether to retry later or check the connection configuration. Do not continue object discovery until a usable connection is available.";
-    }
-
-    private boolean isChinese(InvocationParameters parameters) {
-        if (parameters == null) {
-            return false;
-        }
-        String language = parameters.getOrDefault(InvocationContextConstant.LANGUAGE, "en");
-        return StringUtils.startsWithIgnoreCase(language, "zh");
     }
 }

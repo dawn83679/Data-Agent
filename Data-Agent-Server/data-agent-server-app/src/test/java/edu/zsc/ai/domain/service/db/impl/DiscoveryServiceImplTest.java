@@ -12,7 +12,6 @@ import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.response.db.ConnectionResponse;
-import edu.zsc.ai.domain.service.db.ColumnService;
 import edu.zsc.ai.domain.service.db.DatabaseObjectService;
 import edu.zsc.ai.domain.service.db.DatabaseService;
 import edu.zsc.ai.domain.service.db.DbConnectionService;
@@ -47,7 +46,6 @@ class DiscoveryServiceImplTest {
     private final SchemaService schemaService = mock(SchemaService.class);
     private final DatabaseObjectService databaseObjectService = mock(DatabaseObjectService.class);
     private final IndexService indexService = mock(IndexService.class);
-    private final ColumnService columnService = mock(ColumnService.class);
 
     private DiscoveryServiceImpl discoveryService;
 
@@ -59,8 +57,7 @@ class DiscoveryServiceImplTest {
                 databaseService,
                 schemaService,
                 databaseObjectService,
-                indexService,
-                columnService
+                indexService
         );
     }
 
@@ -113,6 +110,30 @@ class DiscoveryServiceImplTest {
         assertEquals(1, results.size());
         assertFalse(results.get(0).success());
         assertTrue(results.get(0).error().contains("not allowed"));
+    }
+
+    @Test
+    void getObjectDetails_returnsFlattenedDetailWithEffectiveScope() {
+        when(databaseObjectService.getObjectDdl(DatabaseObjectTypeEnum.TABLE, "users", new DbContext(5L, "app", "public")))
+                .thenReturn("CREATE TABLE users ...");
+        when(databaseObjectService.countObjectRows(DatabaseObjectTypeEnum.TABLE, new DbContext(5L, "app", "public"), "users"))
+                .thenReturn(12L);
+        when(indexService.getIndexes(new DbContext(5L, "app", "public"), "users"))
+                .thenReturn(List.of());
+
+        List<NamedObjectDetail> results = discoveryService.getObjectDetails(List.of(
+                new ObjectQueryItem("TABLE", "users", 5L, "app", "public")
+        ));
+
+        assertEquals(1, results.size());
+        NamedObjectDetail detail = results.get(0);
+        assertTrue(detail.success());
+        assertEquals(5L, detail.connectionId());
+        assertEquals("app", detail.databaseName());
+        assertEquals("public", detail.schemaName());
+        assertEquals("CREATE TABLE users ...", detail.ddl());
+        assertEquals(12L, detail.rowCount());
+        assertEquals(List.of(), detail.indexes());
     }
 
     @Test

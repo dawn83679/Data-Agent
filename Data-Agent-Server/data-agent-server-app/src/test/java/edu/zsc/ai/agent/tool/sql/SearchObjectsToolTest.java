@@ -12,12 +12,14 @@ import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
 import edu.zsc.ai.context.AgentRequestContext;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.domain.service.db.DiscoveryService;
+import edu.zsc.ai.plugin.constant.DatabaseObjectTypeEnum;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.aop.aspectj.annotation.AspectJProxyFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -182,6 +184,33 @@ class SearchObjectsToolTest {
         assertTrue(result.getMessage().contains("connectionId=5 closed"));
         assertTrue(result.getMessage().contains("Ask the user whether to retry with another connection or scope"));
         assertTrue(result.getMessage().contains("Do not continue object discovery until the user replies"));
+    }
+
+    @Test
+    void returnsExpensiveFuzzySearchGuidanceWhenManyCandidatesMatch() {
+        List<ObjectSearchResult> candidates = IntStream.range(0, 18)
+                .mapToObj(index -> new ObjectSearchResult(
+                        3L,
+                        "test3",
+                        "mysql",
+                        "enterprise_gateway_dev",
+                        null,
+                        "user_table_" + index,
+                        "TABLE"
+                ))
+                .toList();
+        when(discoveryService.searchObjects("%user%", DatabaseObjectTypeEnum.TABLE, 3L, "enterprise_gateway_dev", null))
+                .thenReturn(new ObjectSearchResponse(candidates, 18, false, null));
+
+        AgentToolResult result = tool.searchObjects(
+                new ObjectSearchQuery("%user%", "TABLE", 3L, "enterprise_gateway_dev", null),
+                InvocationParameters.from(Map.of())
+        );
+
+        assertTrue(result.isSuccess());
+        assertTrue(result.getMessage().contains("broad fuzzy search result"));
+        assertTrue(result.getMessage().contains("Broad fuzzy discovery over many similarly named objects is expensive."));
+        assertTrue(result.getMessage().contains("Prefer askUserQuestion to confirm the intended table name, object scope, or expected result shape"));
     }
 
     private SearchObjectsTool proxiedTool() {

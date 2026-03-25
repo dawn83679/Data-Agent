@@ -327,6 +327,8 @@ export const I18N_KEYS = {
       REJECT: 'ai.askUserQuestion.reject',
       ANSWER_PREFIX: 'ai.askUserQuestion.answerPrefix',
       CONTINUE_SUFFIX: 'ai.askUserQuestion.continueSuffix',
+      QUESTION_LABEL: 'ai.askUserQuestion.questionLabel',
+      ANSWER_LABEL: 'ai.askUserQuestion.answerLabel',
       ORIGINAL_QUESTION_PREFIX: 'ai.askUserQuestion.originalQuestionPrefix',
     },
     WRITE_EXECUTION_CONFIRM: {

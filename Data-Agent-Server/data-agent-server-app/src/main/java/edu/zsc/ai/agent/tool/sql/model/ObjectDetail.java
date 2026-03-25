@@ -1,23 +1,17 @@
 package edu.zsc.ai.agent.tool.sql.model;
 
-import edu.zsc.ai.plugin.model.metadata.ColumnMetadata;
 import edu.zsc.ai.plugin.model.metadata.IndexMetadata;
 
 import java.util.List;
 
 /**
- * Combined object detail: DDL + row count + indexes + columns.
- * For TABLE/VIEW: columns populated from ColumnService.
- * For FUNCTION/PROCEDURE/TRIGGER: only ddl is present, columns empty.
+ * Combined object detail: DDL + row count + indexes.
+ * For TABLE/VIEW: row count and indexes may be present.
+ * For FUNCTION/PROCEDURE/TRIGGER: only ddl is typically present.
  */
-public record ObjectDetail(String ddl, Long rowCount, List<IndexMetadata> indexes, List<ColumnMetadata> columns) {
+public record ObjectDetail(String ddl, Long rowCount, List<IndexMetadata> indexes) {
 
     public ObjectDetail {
-        if (columns == null) columns = List.of();
-    }
-
-    /** Backward-compatible constructor (columns = empty). */
-    public ObjectDetail(String ddl, Long rowCount, List<IndexMetadata> indexes) {
-        this(ddl, rowCount, indexes, List.of());
+        if (indexes == null) indexes = List.of();
     }
 }

@@ -127,7 +127,7 @@ public class GetObjectDetailTool {
         String suffix = results.size() > successfulObjects.size() ? ", ..." : "";
         return ToolMessageSupport.sentence(
                 "Object details are available for " + String.join(", ", successfulObjects) + suffix + ".",
-                "Use the returned DDL, row counts, and indexes to verify object structure before generating or executing SQL."
+                "Use the returned DDL, row counts, indexes, and effective scope to verify object structure before generating or executing SQL."
         );
     }
 }

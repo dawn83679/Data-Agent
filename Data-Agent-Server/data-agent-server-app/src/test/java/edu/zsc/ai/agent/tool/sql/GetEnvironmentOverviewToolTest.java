@@ -66,7 +66,7 @@ class GetEnvironmentOverviewToolTest {
     }
 
     @Test
-    void returnsChineseMessageWhenInvocationLanguageIsChinese() {
+    void stillReturnsEnglishMessageWhenInvocationLanguageIsChinese() {
         when(discoveryService.getEnvironmentOverview()).thenReturn(List.of(
                 new ConnectionOverview(1L, "test1", "mysql", List.of(new CatalogInfo("db1", List.of())), null)
         ));
@@ -74,7 +74,53 @@ class GetEnvironmentOverviewToolTest {
         AgentToolResult result = tool.getEnvironmentOverview(InvocationParameters.from(Map.of("language", "zh")));
 
         assertTrue(result.isSuccess());
-        assertTrue(result.getMessage().contains("当前环境中有 1 个可用连接"));
-        assertTrue(result.getMessage().contains("只有当当前指令、mention、connectionId、catalog 或 schema 仍不足以唯一定位目标时"));
+        assertTrue(result.getMessage().contains("Environment overview is available for 1 connection(s)."));
+        assertTrue(result.getMessage().contains("current instruction, mention, connectionId, catalog, or schema"));
+    }
+
+    @Test
+    void returnsAskUserQuestionHintWhenReachableConnectionsExceedThreshold() {
+        when(discoveryService.getEnvironmentOverview()).thenReturn(List.of(
+                new ConnectionOverview(1L, "test1", "mysql", List.of(new CatalogInfo("db1", List.of())), null),
+                new ConnectionOverview(2L, "test2", "mysql", List.of(new CatalogInfo("db2", List.of())), null),
+                new ConnectionOverview(3L, "test3", "mysql", List.of(new CatalogInfo("db3", List.of())), null),
+                new ConnectionOverview(4L, "test4", "mysql", List.of(new CatalogInfo("db4", List.of())), null)
+        ));
+
+        AgentToolResult result = tool.getEnvironmentOverview(InvocationParameters.from(Map.of()));
+
+        assertTrue(result.isSuccess());
+        assertTrue(result.getMessage().contains("Prefer askUserQuestion to narrow the scope as much as possible"));
+        assertTrue(result.getMessage().contains("Broad fuzzy discovery across many connections is expensive"));
+    }
+
+    @Test
+    void stillReturnsEnglishAskUserQuestionHintWhenInvocationLanguageIsChinese() {
+        when(discoveryService.getEnvironmentOverview()).thenReturn(List.of(
+                new ConnectionOverview(1L, "test1", "mysql", List.of(new CatalogInfo("db1", List.of())), null),
+                new ConnectionOverview(2L, "test2", "mysql", List.of(new CatalogInfo("db2", List.of())), null),
+                new ConnectionOverview(3L, "test3", "mysql", List.of(new CatalogInfo("db3", List.of())), null),
+                new ConnectionOverview(4L, "test4", "mysql", List.of(new CatalogInfo("db4", List.of())), null)
+        ));
+
+        AgentToolResult result = tool.getEnvironmentOverview(InvocationParameters.from(Map.of("language", "zh")));
+
+        assertTrue(result.isSuccess());
+        assertTrue(result.getMessage().contains("Prefer askUserQuestion to narrow the scope as much as possible"));
+        assertTrue(result.getMessage().contains("Broad fuzzy discovery across many connections is expensive"));
+    }
+
+    @Test
+    void returnsAskUserQuestionHintWhenReachableConnectionsMeetThreshold() {
+        when(discoveryService.getEnvironmentOverview()).thenReturn(List.of(
+                new ConnectionOverview(1L, "test1", "mysql", List.of(new CatalogInfo("db1", List.of())), null),
+                new ConnectionOverview(2L, "test2", "mysql", List.of(new CatalogInfo("db2", List.of())), null),
+                new ConnectionOverview(3L, "test3", "mysql", List.of(new CatalogInfo("db3", List.of())), null)
+        ));
+
+        AgentToolResult result = tool.getEnvironmentOverview(InvocationParameters.from(Map.of("language", "zh")));
+
+        assertTrue(result.isSuccess());
+        assertTrue(result.getMessage().contains("Prefer askUserQuestion to narrow the scope as much as possible"));
     }
 }

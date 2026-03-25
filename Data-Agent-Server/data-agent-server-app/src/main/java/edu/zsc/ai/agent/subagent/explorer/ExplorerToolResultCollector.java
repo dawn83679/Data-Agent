@@ -44,7 +44,7 @@ public class ExplorerToolResultCollector {
 
             for (int index = 0; index < details.size(); index++) {
                 NamedObjectDetail d = details.get(index);
-                if (!d.success() || d.detail() == null) continue;
+                if (!d.success() || d.ddl() == null) continue;
                 ObjectQueryItem queryItem = index < queryItems.size() ? queryItems.get(index) : null;
                 ExploreObject exploreObject = toExploreObject(d, queryItem);
                 if (exploreObject != null && objects.stream().noneMatch(existing -> sameObject(existing, exploreObject))) {
@@ -119,12 +119,18 @@ public class ExplorerToolResultCollector {
     }
 
     private ExploreObject toExploreObject(NamedObjectDetail detail, ObjectQueryItem queryItem) {
+        String effectiveCatalog = detail.databaseName() != null
+                ? detail.databaseName()
+                : queryItem != null ? queryItem.getDatabaseName() : null;
+        String effectiveSchema = detail.schemaName() != null
+                ? detail.schemaName()
+                : queryItem != null ? queryItem.getSchemaName() : null;
         return ExploreObject.builder()
-                .catalog(queryItem != null ? queryItem.getDatabaseName() : null)
-                .schema(queryItem != null ? queryItem.getSchemaName() : null)
+                .catalog(effectiveCatalog)
+                .schema(effectiveSchema)
                 .objectName(detail.objectName())
                 .objectType(detail.objectType())
-                .objectDdl(detail.detail() != null ? detail.detail().ddl() : null)
+                .objectDdl(detail.ddl())
                 .relevanceScore(ExploreObjectScoreSupport.DEFAULT_RELEVANCE_SCORE)
                 .build();
     }

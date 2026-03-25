@@ -15,7 +15,6 @@ import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.util.ConnectionIdUtil;
 import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.response.db.ConnectionResponse;
-import edu.zsc.ai.domain.service.db.ColumnService;
 import edu.zsc.ai.domain.service.db.DatabaseObjectService;
 import edu.zsc.ai.domain.service.db.DatabaseService;
 import edu.zsc.ai.domain.service.db.DbConnectionService;
@@ -23,7 +22,6 @@ import edu.zsc.ai.domain.service.db.DiscoveryService;
 import edu.zsc.ai.domain.service.db.IndexService;
 import edu.zsc.ai.domain.service.db.SchemaService;
 import edu.zsc.ai.plugin.constant.DatabaseObjectTypeEnum;
-import edu.zsc.ai.plugin.model.metadata.ColumnMetadata;
 import edu.zsc.ai.plugin.model.metadata.IndexMetadata;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -66,7 +64,6 @@ public class DiscoveryServiceImpl implements DiscoveryService {
     private final SchemaService schemaService;
     private final DatabaseObjectService databaseObjectService;
     private final IndexService indexService;
-    private final ColumnService columnService;
 
     public DiscoveryServiceImpl(
             @Qualifier(SHARED_EXECUTOR_BEAN_NAME) Executor sharedExecutor,
@@ -74,15 +71,13 @@ public class DiscoveryServiceImpl implements DiscoveryService {
             DatabaseService databaseService,
             SchemaService schemaService,
             DatabaseObjectService databaseObjectService,
-            IndexService indexService,
-            ColumnService columnService) {
+            IndexService indexService) {
         this.sharedExecutor = sharedExecutor;
         this.dbConnectionService = dbConnectionService;
         this.databaseService = databaseService;
         this.schemaService = schemaService;
         this.databaseObjectService = databaseObjectService;
         this.indexService = indexService;
-        this.columnService = columnService;
     }
 
     // ==================== getEnvironmentOverview ====================
@@ -287,17 +282,7 @@ public class DiscoveryServiceImpl implements DiscoveryService {
                 ? indexService.getIndexes(db, objectName)
                 : null;
 
-        List<ColumnMetadata> columns = List.of();
-        if (ROW_COUNT_TYPES.contains(type)) {
-            try {
-                columns = columnService.listColumns(db, objectName);
-                if (columns == null) columns = List.of();
-            } catch (Exception e) {
-                log.warn("Failed to list columns for {} '{}': {}", type, objectName, e.getMessage());
-            }
-        }
-
-        return new ObjectDetail(ddl, rowCount, indexes, columns);
+        return new ObjectDetail(ddl, rowCount, indexes);
     }
 
     // ==================== getObjectDetails (batch) ====================
@@ -317,13 +302,31 @@ public class DiscoveryServiceImpl implements DiscoveryService {
                 DbContext db = new DbContext(connId, item.getDatabaseName(), item.getSchemaName());
                 ObjectDetail detail = getObjectDetail(type, item.getObjectName(), db);
                 results.add(new NamedObjectDetail(
-                        item.getObjectName(), item.getObjectType(), true, null, detail));
+                        item.getObjectName(),
+                        item.getObjectType(),
+                        db.connectionId(),
+                        db.catalog(),
+                        db.schema(),
+                        true,
+                        null,
+                        detail.ddl(),
+                        detail.rowCount(),
+                        detail.indexes()));
             } catch (Exception e) {
                 log.warn("Batch getObjectDetail failed for {} '{}': {}",
                         item.getObjectType(), item.getObjectName(), e.getMessage());
                 String errorMsg = StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getSimpleName());
                 results.add(new NamedObjectDetail(
-                        item.getObjectName(), item.getObjectType(), false, errorMsg, null));
+                        item.getObjectName(),
+                        item.getObjectType(),
+                        item.getConnectionId(),
+                        item.getDatabaseName(),
+                        item.getSchemaName(),
+                        false,
+                        errorMsg,
+                        null,
+                        null,
+                        List.of()));
             }
         }
         return results;

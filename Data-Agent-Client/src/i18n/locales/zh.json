@@ -194,9 +194,11 @@
       "reject": "拒绝回答",
       "rejectMessage": "用户拒绝回答你的问题 请你重新梳理当前上下文是否已有足够的信息回答问题或者重新审视用户需求。",
       "customLabel": "用户补充输入",
-      "answerPrefix": "针对你的提问，用户的答复如下：",
+      "answerPrefix": "用户已回答你的澄清问题：",
+      "questionLabel": "问题",
+      "answerLabel": "答复",
       "submittedAnswer": "您的答案",
-      "continueSuffix": "请仔细阅读上述反馈，并结合上下文继续生成对应的 SQL 语句或完成后续任务。",
+      "continueSuffix": "请基于上述答复继续处理当前任务；只有在信息仍不足时才再次追问。",
       "originalQuestionPrefix": "为了防遗忘，下面是你原本向用户提出的问题："
     },
     "toolRun": {

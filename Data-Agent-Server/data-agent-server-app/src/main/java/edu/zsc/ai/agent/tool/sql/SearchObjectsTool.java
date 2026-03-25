@@ -35,6 +35,8 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class SearchObjectsTool {
 
+    private static final int LARGE_FUZZY_CANDIDATE_THRESHOLD = 8;
+
     private final DiscoveryService discoveryService;
 
     @Tool({
@@ -159,6 +161,8 @@ public class SearchObjectsTool {
         String truncation = response.truncated()
                 ? " The result set is truncated, so refine the search before assuming all matches are visible."
                 : "";
+        boolean broadFuzzySearch = isFuzzyPattern(objectNamePattern)
+                && response.totalCount() >= LARGE_FUZZY_CANDIDATE_THRESHOLD;
         if (response.totalCount() == 1) {
             return ToolMessageSupport.sentence(
                     "Object search found 1 candidate for " + scope + ".",
@@ -166,10 +170,18 @@ public class SearchObjectsTool {
                             + truncation
             );
         }
+        if (broadFuzzySearch) {
+            return ToolMessageSupport.sentence(
+                    "Object search found " + response.totalCount() + " candidate(s) for " + scope + ", which is still a broad fuzzy search result.",
+                    "Broad fuzzy discovery over many similarly named objects is expensive.",
+                    "Prefer askUserQuestion to confirm the intended table name, object scope, or expected result shape before requesting details, planning SQL, or answering."
+                            + truncation
+            );
+        }
         return ToolMessageSupport.sentence(
                 "Object search found " + response.totalCount() + " candidate(s) for " + scope + ".",
                 "Use these matches to narrow down the target object; do not treat them as the final answer yet.",
-                "If multiple candidates remain plausible, ask the user to confirm the intended object or scope before requesting details, planning SQL, or answering."
+                "If multiple candidates remain plausible, prefer askUserQuestion to confirm the intended object, table name, object scope, or expected result shape before requesting details, planning SQL, or answering."
                         + truncation
         );
     }
@@ -203,5 +215,9 @@ public class SearchObjectsTool {
             builder.append(", schema=").append(schemaName);
         }
         return builder.toString();
+    }
+
+    private boolean isFuzzyPattern(String objectNamePattern) {
+        return StringUtils.contains(objectNamePattern, '%') || StringUtils.contains(objectNamePattern, '_');
     }
 }

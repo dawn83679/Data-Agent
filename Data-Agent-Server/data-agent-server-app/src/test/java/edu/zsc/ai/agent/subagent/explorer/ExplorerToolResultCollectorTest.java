@@ -4,7 +4,6 @@ import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import edu.zsc.ai.agent.subagent.contract.SchemaSummary;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.agent.tool.sql.model.NamedObjectDetail;
-import edu.zsc.ai.agent.tool.sql.model.ObjectDetail;
 import edu.zsc.ai.agent.tool.sql.model.ObjectQueryItem;
 import edu.zsc.ai.util.JsonUtil;
 import org.junit.jupiter.api.Test;
@@ -52,10 +51,10 @@ class ExplorerToolResultCollectorTest {
     void onToolExecuted_getObjectDetail_collectsObjects() {
         ExplorerToolResultCollector collector = new ExplorerToolResultCollector();
         List<NamedObjectDetail> details = List.of(
-                new NamedObjectDetail("users", "TABLE", true, null,
-                        new ObjectDetail("CREATE TABLE users...", 100L, List.of())),
-                new NamedObjectDetail("orders", "TABLE", true, null,
-                        new ObjectDetail("CREATE TABLE orders...", 50L, List.of()))
+                new NamedObjectDetail("users", "TABLE", 1L, "analytics", "public", true, null,
+                        "CREATE TABLE users...", 100L, List.of()),
+                new NamedObjectDetail("orders", "TABLE", 1L, "analytics", "public", true, null,
+                        "CREATE TABLE orders...", 50L, List.of())
         );
         AgentToolResult agentResult = AgentToolResult.success(details);
         collector.onToolExecuted(getObjectDetailRequest(), agentResult);
@@ -85,8 +84,8 @@ class ExplorerToolResultCollectorTest {
     void onToolExecuted_jsonString_parsesCorrectly() {
         ExplorerToolResultCollector collector = new ExplorerToolResultCollector();
         List<NamedObjectDetail> details = List.of(
-                new NamedObjectDetail("products", "TABLE", true, null,
-                        new ObjectDetail("CREATE TABLE products...", 200L, List.of()))
+                new NamedObjectDetail("products", "TABLE", 1L, "analytics", "public", true, null,
+                        "CREATE TABLE products...", 200L, List.of())
         );
         AgentToolResult agentResult = AgentToolResult.success(details);
         String json = JsonUtil.object2json(agentResult);
@@ -117,8 +116,8 @@ class ExplorerToolResultCollectorTest {
                         )))
                         .build(),
                 AgentToolResult.success(List.of(
-                        new NamedObjectDetail("t1", "TABLE", true, null,
-                                new ObjectDetail("ddl", 1L, List.of())))));
+                        new NamedObjectDetail("t1", "TABLE", 1L, "analytics", "public", true, null,
+                                "ddl", 1L, List.of()))));
         SchemaSummary first = collector.buildAndClear("r1");
         assertEquals(1, first.getObjects().size());
 
