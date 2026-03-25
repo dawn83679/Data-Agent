@@ -297,6 +297,7 @@ export const I18N_KEYS = {
     TRANSACTION: 'ai.transaction',
     MAX_RETRIES: 'ai.max_retries',
     RETRIES_HINT: 'ai.retries_hint',
+    PLACEHOLDER: 'ai.placeholder',
     PLACEHOLDER_MENTION: 'ai.placeholder_mention',
     MENTION_OBJECT: 'ai.mention_object',
     MENTION_NAV_HINT: 'ai.mention_nav_hint',

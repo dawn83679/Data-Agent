@@ -13,6 +13,7 @@ import { databaseService } from '../../services/database.service';
 import { Button } from '../ui/Button';
 import { TransactionMode, IsolationLevel } from '../../constants/transactionSettings';
 import { TransactionModeSelector } from './TransactionModeSelector';
+import { getPlatformShortcuts } from '../../lib/platformShortcuts';
 
 interface ToolbarProps {
   onRun: () => void;
@@ -34,6 +35,7 @@ export function Toolbar({
   extraActions,
 }: ToolbarProps) {
   const { t } = useTranslation();
+  const shortcuts = getPlatformShortcuts();
   const [databases, setDatabases] = useState<string[]>([]);
   const [loadingDatabases, setLoadingDatabases] = useState(false);
   const [transactionMode, setTransactionMode] = useState<TransactionMode>(TransactionMode.AUTO);
@@ -71,7 +73,11 @@ export function Toolbar({
         size="icon"
         onClick={onRun}
         disabled={!connectionId || isRunning}
-        title={isRunning ? t(I18N_KEYS.COMMON.STOP) : t(I18N_KEYS.WORKSPACE.RUN_SHORTCUT)}
+        title={
+          isRunning
+            ? t(I18N_KEYS.COMMON.STOP)
+            : t(I18N_KEYS.WORKSPACE.RUN_SHORTCUT, { shortcut: shortcuts.runQuery })
+        }
         className={actionButtonClass}
       >
         {isRunning ? (

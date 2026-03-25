@@ -1,15 +1,17 @@
 import { useTranslation } from 'react-i18next';
 import { I18N_KEYS } from '../../constants/i18nKeys';
+import { getPlatformShortcuts } from '../../lib/platformShortcuts';
 
 export function EmptyState() {
     const { t } = useTranslation();
+    const shortcuts = getPlatformShortcuts();
 
-    const shortcuts = [
-        { label: t(I18N_KEYS.COMMON.EXECUTE_QUERY), keys: 'Ctrl+Enter / Cmd+Enter' },
+    const shortcutItems = [
+        { label: t(I18N_KEYS.COMMON.EXECUTE_QUERY), keys: shortcuts.runQuery },
         { label: t(I18N_KEYS.COMMON.INSERT_INDENT), keys: 'Tab' },
-        { label: t(I18N_KEYS.COMMON.OPEN_SETTINGS), keys: 'Ctrl+Shift+, / Cmd+Shift+,' },
+        { label: t(I18N_KEYS.COMMON.OPEN_SETTINGS), keys: shortcuts.openSettings },
         { label: t(I18N_KEYS.COMMON.CLOSE_EXPLORER), keys: 'Esc' },
-        { label: t(I18N_KEYS.COMMON.TOGGLE_AI), keys: 'Ctrl+B / Cmd+B' },
+        { label: t(I18N_KEYS.COMMON.TOGGLE_AI), keys: shortcuts.toggleAI },
     ];
 
     const shortcutCardStyle = {
@@ -29,7 +31,7 @@ export function EmptyState() {
                     </div>
                     <h2 className="mb-6 text-xl font-medium theme-text-primary">{t(I18N_KEYS.COMMON.KEYBOARD_SHORTCUTS)}</h2>
                     <div className="space-y-3 text-sm">
-                        {shortcuts.map((s, i) => (
+                        {shortcutItems.map((s, i) => (
                             <div
                                 key={i}
                                 className="flex items-center justify-between gap-8 rounded-xl border border-transparent px-3 py-2.5 transition-colors hover:border-[color:var(--workbench-chip-hover-border)] hover:bg-[color:var(--workbench-chip-hover-bg)]"

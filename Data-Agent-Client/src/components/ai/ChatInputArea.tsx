@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { parseMentionSegments } from './mentionTypes';
 import { AGENT_COLORS, type AgentType } from './agentTypes';
 import type { UseMentionReturn } from '../../hooks/useMention';
+import { I18N_KEYS } from '../../constants/i18nKeys';
 
 interface ChatInputAreaProps {
     input: string;
@@ -283,7 +284,7 @@ export const ChatInputArea = forwardRef<ChatInputAreaRef, ChatInputAreaProps>(
                         onScroll={handleScroll}
                         onCompositionStart={handleCompositionStart}
                         onCompositionEnd={handleCompositionEnd}
-                        placeholder={t('ai.placeholder_mention')}
+                        placeholder={t(I18N_KEYS.AI.PLACEHOLDER)}
                         className={`relative z-10 w-full bg-transparent text-sm px-0 py-0 pr-10 focus:outline-none placeholder:text-[var(--text-secondary)]/80 overflow-y-auto whitespace-pre-wrap ${agent === 'Agent' ? 'caret-blue-400' : 'caret-blue-300'}`}
                         style={{
                             resize: 'none',

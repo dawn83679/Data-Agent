@@ -8,6 +8,7 @@ import { resolveErrorMessage } from "../../lib/errorMessage";
 import { useToast } from "../../hooks/useToast";
 import { useTranslation } from "react-i18next";
 import { I18N_KEYS } from "../../constants/i18nKeys";
+import { getPlatformShortcuts } from "../../lib/platformShortcuts";
 
 interface HeaderProps {
     onLoginClick: () => void;
@@ -15,6 +16,7 @@ interface HeaderProps {
 
 export function Header({ onLoginClick }: HeaderProps) {
     const { t } = useTranslation();
+    const shortcuts = getPlatformShortcuts();
     const navigate = useNavigate();
     const { user, accessToken, clearAuth } = useAuthStore();
     const { setSettingsModalOpen } = useWorkspaceStore();
@@ -83,7 +85,7 @@ export function Header({ onLoginClick }: HeaderProps) {
                     <button
                         onClick={() => setSettingsModalOpen(true)}
                         className="flex items-center justify-center hover:theme-text-primary transition-colors"
-                        title={`${t(I18N_KEYS.COMMON.SETTINGS)} (Cmd+Shift+,)`}
+                        title={`${t(I18N_KEYS.COMMON.SETTINGS)} (${shortcuts.openSettings})`}
                         type="button"
                     >
                         <Settings className="h-4 w-4" />

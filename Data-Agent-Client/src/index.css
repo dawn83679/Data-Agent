@@ -342,18 +342,31 @@
   .workbench-horizontal-resize-handle {
     @apply relative shrink-0;
     background: transparent;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
   }
 
   .workbench-resize-handle {
     @apply w-2;
   }
 
+  .workbench-resize-handle:focus,
+  .workbench-resize-handle:focus-visible,
+  .workbench-horizontal-resize-handle:focus,
+  .workbench-horizontal-resize-handle:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+
   .workbench-resize-handle::before {
     content: '';
-    @apply absolute left-1/2 top-0 h-full -translate-x-1/2 rounded-full transition-colors duration-200;
+    @apply absolute left-1/2 top-0 h-full -translate-x-1/2 rounded-full transition-[background-color,opacity,width] duration-200;
     width: 1px;
     background: var(--workbench-handle-line);
-    display: none;
+    opacity: 0;
   }
 
   .workbench-resize-handle::after,
@@ -368,12 +381,13 @@
   .workbench-resize-handle:hover::before,
   .workbench-resize-handle[data-resize-handle-state="hover"]::before {
     background: var(--workbench-handle-hover);
+    opacity: 1;
   }
 
   .workbench-resize-handle[data-resize-handle-state="drag"]::before {
     width: 2px;
     background: var(--workbench-handle-drag);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--workbench-handle-drag) 14%, transparent);
+    opacity: 1;
   }
 
   .workbench-horizontal-resize-handle {
@@ -382,10 +396,10 @@
 
   .workbench-horizontal-resize-handle::before {
     content: '';
-    @apply absolute left-4 right-4 top-1/2 -translate-y-1/2 rounded-full transition-all duration-200;
+    @apply absolute left-4 right-4 top-1/2 -translate-y-1/2 rounded-full transition-[background-color,opacity,height] duration-200;
     height: 1px;
     background: var(--workbench-handle-line);
-    display: none;
+    opacity: 0;
   }
 
   .workbench-horizontal-resize-handle::after {
@@ -395,12 +409,13 @@
   .workbench-horizontal-resize-handle:hover::before,
   .workbench-horizontal-resize-handle[data-resize-handle-state="hover"]::before {
     background: var(--workbench-handle-hover);
+    opacity: 1;
   }
 
   .workbench-horizontal-resize-handle[data-resize-handle-state="drag"]::before {
     height: 2px;
     background: var(--workbench-handle-drag);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--workbench-handle-drag) 12%, transparent);
+    opacity: 1;
   }
 
   .workbench-header {
