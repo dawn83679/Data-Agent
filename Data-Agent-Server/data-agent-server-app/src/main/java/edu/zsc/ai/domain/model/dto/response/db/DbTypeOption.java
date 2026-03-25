@@ -36,4 +36,16 @@ public class DbTypeOption {
      * Whether this database type supports schema as a separate namespace within a database.
      */
     private boolean supportSchema;
+
+    /**
+     * SQL template for table/view double-click actions in the frontend.
+     * The frontend replaces {{qualifiedName}} with a locally assembled identifier path.
+     */
+    private String tableDoubleClickSelectTemplate;
+
+    /**
+     * Identifier quoting style for frontend SQL rendering. Supported values:
+     * backtick, double_quote, none.
+     */
+    private String identifierQuoteStyle;
 }

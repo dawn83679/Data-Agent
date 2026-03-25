@@ -27,4 +27,3 @@ public interface SqlPlugin extends Plugin {
         return true;
     }
 }
-

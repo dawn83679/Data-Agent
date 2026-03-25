@@ -1,5 +1,7 @@
 package edu.zsc.ai.api.controller.db;
 
+import edu.zsc.ai.config.db.DbTypeSqlTemplateConfig;
+import edu.zsc.ai.config.db.DbTypeSqlTemplateRegistry;
 import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.model.dto.response.db.DbTypeOption;
 import edu.zsc.ai.plugin.Plugin;
@@ -29,6 +31,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DbTypeController {
 
+    private final DbTypeSqlTemplateRegistry dbTypeSqlTemplateRegistry;
+
     /**
      * List all supported database types.
      * Returns code and displayName (no enum in API).
@@ -40,9 +44,12 @@ public class DbTypeController {
         log.debug("Listing supported database types");
         List<DbTypeOption> options = Arrays.stream(DbType.values())
                 .map(t -> {
+                    DbTypeSqlTemplateConfig sqlTemplateConfig = dbTypeSqlTemplateRegistry.resolve(t.getCode());
                     DbTypeOption.DbTypeOptionBuilder builder = DbTypeOption.builder()
                             .code(t.getCode())
-                            .displayName(t.getDisplayName());
+                            .displayName(t.getDisplayName())
+                            .tableDoubleClickSelectTemplate(sqlTemplateConfig.getTableDoubleClickSelectTemplate())
+                            .identifierQuoteStyle(sqlTemplateConfig.getIdentifierQuoteStyle());
 
                     // Get capabilities from plugin
                     try {
