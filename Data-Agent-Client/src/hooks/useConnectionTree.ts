@@ -4,21 +4,34 @@ import { NodeApi } from 'react-arborist';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { connectionService } from '../services/connection.service';
 import { useAuthStore } from '../store/authStore';
-import { databaseService } from '../services/database.service';
-import { schemaService } from '../services/schema.service';
 import { useWorkspaceStore } from '../store/workspaceStore';
 import { useToast } from './useToast';
 import { ExplorerNodeType, FolderName, ExplorerIdPrefix, QUERY_KEY_CONNECTIONS } from '../constants/explorer';
 import type { ExplorerNode } from '../types/explorer';
 import {
+  createCachedObjectFolders,
   createFolderNode,
   loadDbSchemaFolders,
   loadFolderContents,
   toChildrenOrEmpty,
 } from './connectionTreeLoader';
+import {
+  clearExplorerMetadataForConnection,
+  fetchExplorerDatabases,
+  fetchExplorerSchemas,
+  getCachedExplorerDatabases,
+  getCachedExplorerFunctions,
+  getCachedExplorerProcedures,
+  getCachedExplorerSchemas,
+  getCachedExplorerTables,
+  getCachedExplorerTriggers,
+  getCachedExplorerViews,
+} from '../lib/explorerMetadataCache';
 
 export type { ExplorerNode };
 export { ExplorerNodeType, FolderName };
+
+export type ExplorerNodeHydrationState = 'none' | 'full' | 'partial';
 
 export function useConnectionTree() {
   const { t } = useTranslation();
@@ -66,14 +79,16 @@ export function useConnectionTree() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => connectionService.deleteConnection(id),
-    onSuccess: () => {
+    onSuccess: (_, id) => {
+      clearExplorerMetadataForConnection(queryClient, String(id));
       queryClient.invalidateQueries({ queryKey: QUERY_KEY_CONNECTIONS });
     },
   });
 
   const disconnectMutation = useMutation({
     mutationFn: (connectionId: number) => connectionService.closeConnection(connectionId),
-    onSuccess: () => {
+    onSuccess: (_, connectionId) => {
+      clearExplorerMetadataForConnection(queryClient, String(connectionId));
       queryClient.invalidateQueries({ queryKey: QUERY_KEY_CONNECTIONS });
     },
   });
@@ -92,6 +107,157 @@ export function useConnectionTree() {
     });
   };
 
+  const hydrateNodeFromCache = (node: NodeApi<ExplorerNode>): ExplorerNodeHydrationState => {
+    const connId =
+      node.data.connectionId ||
+      (node.data.dbConnection ? String(node.data.dbConnection.id) : undefined);
+    if (!connId) return 'none';
+
+    if (node.data.type === ExplorerNodeType.ROOT && node.data.dbConnection) {
+      const dbNames = getCachedExplorerDatabases(queryClient, String(node.data.dbConnection.id));
+      if (!dbNames || dbNames.length === 0) return 'none';
+      const childrenNodes: ExplorerNode[] = dbNames.map((name) => ({
+        id: `${node.id}${ExplorerIdPrefix.DB}${name}`,
+        name,
+        type: ExplorerNodeType.DB,
+        connectionId: String(node.data.dbConnection!.id),
+        dbConnection: node.data.dbConnection,
+        children: [],
+      }));
+      updateNodeChildren(node.id, childrenNodes, String(node.data.dbConnection.id));
+      return 'full';
+    }
+
+    if (node.data.type === ExplorerNodeType.DB) {
+      const dbName = node.data.name;
+      let rootNode = node;
+      while (rootNode.parent && rootNode.level > 0) rootNode = rootNode.parent;
+      const typeOption = supportedDbTypes.find((opt) => opt.code === rootNode.data.dbConnection?.dbType);
+      const supportSchema = typeOption?.supportSchema ?? false;
+
+      if (supportSchema) {
+        const schemas = getCachedExplorerSchemas(queryClient, connId, dbName);
+        if (!schemas || schemas.length === 0) return 'none';
+        const childrenNodes: ExplorerNode[] = schemas.map((schemaName) => ({
+          id: `${node.id}${ExplorerIdPrefix.SCHEMA}${schemaName}`,
+          name: schemaName,
+          type: ExplorerNodeType.SCHEMA,
+          connectionId: connId,
+          dbConnection: node.data.dbConnection,
+          catalog: dbName,
+          schema: schemaName,
+          children: [],
+        }));
+        updateNodeChildren(node.id, childrenNodes);
+        return 'full';
+      }
+
+      const tables = getCachedExplorerTables(queryClient, connId, dbName) ?? [];
+      const views = getCachedExplorerViews(queryClient, connId, dbName) ?? [];
+      const functions = getCachedExplorerFunctions(queryClient, connId, dbName);
+      const procedures = getCachedExplorerProcedures(queryClient, connId, dbName);
+      const triggers = getCachedExplorerTriggers(queryClient, connId, dbName);
+      const hasAnyCachedObjectList =
+        getCachedExplorerTables(queryClient, connId, dbName) !== undefined
+        || getCachedExplorerViews(queryClient, connId, dbName) !== undefined
+        || functions !== undefined
+        || procedures !== undefined
+        || triggers !== undefined;
+      if (!hasAnyCachedObjectList) return 'none';
+      const folders = createCachedObjectFolders(
+        {
+          connId,
+          parentId: node.id,
+          catalog: dbName,
+          schema: undefined,
+          t,
+        },
+        tables,
+        views,
+        functions ?? [],
+        procedures ?? [],
+        triggers ?? []
+      );
+      updateNodeChildren(node.id, folders);
+      const isFull = functions !== undefined && procedures !== undefined && triggers !== undefined
+        && getCachedExplorerTables(queryClient, connId, dbName) !== undefined
+        && getCachedExplorerViews(queryClient, connId, dbName) !== undefined;
+      return isFull ? 'full' : 'partial';
+    }
+
+    if (node.data.type === ExplorerNodeType.SCHEMA) {
+      const dbName = node.data.catalog ?? '';
+      const schemaName = node.data.name;
+      const tables = getCachedExplorerTables(queryClient, connId, dbName, schemaName) ?? [];
+      const views = getCachedExplorerViews(queryClient, connId, dbName, schemaName) ?? [];
+      const functions = getCachedExplorerFunctions(queryClient, connId, dbName, schemaName);
+      const procedures = getCachedExplorerProcedures(queryClient, connId, dbName, schemaName);
+      const triggers = getCachedExplorerTriggers(queryClient, connId, dbName, schemaName);
+      const hasAnyCachedObjectList =
+        getCachedExplorerTables(queryClient, connId, dbName, schemaName) !== undefined
+        || getCachedExplorerViews(queryClient, connId, dbName, schemaName) !== undefined
+        || functions !== undefined
+        || procedures !== undefined
+        || triggers !== undefined;
+      if (!hasAnyCachedObjectList) return 'none';
+      const folders = createCachedObjectFolders(
+        {
+          connId,
+          parentId: node.id,
+          catalog: dbName,
+          schema: schemaName,
+          t,
+        },
+        tables,
+        views,
+        functions ?? [],
+        procedures ?? [],
+        triggers ?? []
+      );
+      updateNodeChildren(node.id, folders);
+      const isFull = functions !== undefined && procedures !== undefined && triggers !== undefined
+        && getCachedExplorerTables(queryClient, connId, dbName, schemaName) !== undefined
+        && getCachedExplorerViews(queryClient, connId, dbName, schemaName) !== undefined;
+      return isFull ? 'full' : 'partial';
+    }
+
+    if (node.data.type === ExplorerNodeType.FOLDER && node.data.folderName) {
+      if (node.data.folderName === FolderName.TABLES) {
+        const tables = getCachedExplorerTables(queryClient, connId, node.data.catalog, node.data.schema);
+        if (!tables) return 'none';
+        const children = tables.map((name) => ({
+          id: `${node.id}${ExplorerIdPrefix.TABLE}${name}`,
+          name,
+          type: ExplorerNodeType.TABLE,
+          connectionId: connId,
+          catalog: node.data.catalog,
+          schema: node.data.schema,
+          children: [],
+        }));
+        updateNodeChildren(node.id, toChildrenOrEmpty(children, node.id, t));
+        return 'full';
+      }
+
+      if (node.data.folderName === FolderName.VIEWS) {
+        const views = getCachedExplorerViews(queryClient, connId, node.data.catalog, node.data.schema);
+        if (!views) return 'none';
+        const children = views.map((name) => ({
+          id: `${node.id}${ExplorerIdPrefix.VIEW}${name}`,
+          name,
+          type: ExplorerNodeType.VIEW,
+          connectionId: connId,
+          catalog: node.data.catalog,
+          schema: node.data.schema,
+          children: [],
+        }));
+        updateNodeChildren(node.id, toChildrenOrEmpty(children, node.id, t));
+        return 'full';
+      }
+    }
+
+    return 'none';
+  };
+
   const loadNodeData = async (node: NodeApi<ExplorerNode>) => {
     if (!node.data.connectionId && node.data.type !== ExplorerNodeType.ROOT) return;
 
@@ -102,7 +268,7 @@ export function useConnectionTree() {
 
     try {
       if (node.data.type === ExplorerNodeType.ROOT && node.data.dbConnection) {
-        const dbNames = await databaseService.listDatabases(String(node.data.dbConnection.id));
+        const dbNames = await fetchExplorerDatabases(queryClient, String(node.data.dbConnection.id));
         const childrenNodes: ExplorerNode[] = dbNames.map((name) => ({
           id: `${node.id}${ExplorerIdPrefix.DB}${name}`,
           name,
@@ -123,7 +289,7 @@ export function useConnectionTree() {
         const supportSchema = typeOption?.supportSchema ?? false;
 
         if (supportSchema) {
-          const schemas = await schemaService.listSchemas(connId, dbName);
+          const schemas = await fetchExplorerSchemas(queryClient, connId, dbName);
           const childrenNodes: ExplorerNode[] = schemas.map((schemaName) => ({
             id: `${node.id}${ExplorerIdPrefix.SCHEMA}${schemaName}`,
             name: schemaName,
@@ -142,6 +308,7 @@ export function useConnectionTree() {
             catalog: dbName,
             schema: undefined,
             t,
+            queryClient,
           });
           updateNodeChildren(node.id, folders);
         }
@@ -158,6 +325,7 @@ export function useConnectionTree() {
           catalog: dbName,
           schema: schemaName,
           t,
+          queryClient,
         });
         updateNodeChildren(node.id, folders);
         return;
@@ -176,6 +344,7 @@ export function useConnectionTree() {
             folderId: node.id,
             tableName: node.data.tableName,
             t,
+            queryClient,
           },
           folderName
         );
@@ -221,7 +390,7 @@ export function useConnectionTree() {
         const typeOption = supportedDbTypes.find((opt) => opt.code === node.dbConnection?.dbType);
         const supportSchema = typeOption?.supportSchema ?? false;
         if (supportSchema) {
-          const schemas = await schemaService.listSchemas(connId, dbName);
+          const schemas = await fetchExplorerSchemas(queryClient, connId, dbName, { force: true });
           const childrenNodes: ExplorerNode[] = schemas.map((schemaName) => ({
             id: `${node.id}${ExplorerIdPrefix.SCHEMA}${schemaName}`,
             name: schemaName,
@@ -240,6 +409,8 @@ export function useConnectionTree() {
             catalog: dbName,
             schema: undefined,
             t,
+            queryClient,
+            force: true,
           });
           updateNodeChildren(node.id, folders);
         }
@@ -252,6 +423,8 @@ export function useConnectionTree() {
           catalog: dbName,
           schema: schemaName,
           t,
+          queryClient,
+          force: true,
         });
         updateNodeChildren(node.id, folders);
       } else if (node.type === ExplorerNodeType.FOLDER && node.folderName) {
@@ -267,6 +440,8 @@ export function useConnectionTree() {
             folderId: node.id,
             tableName: node.tableName,
             t,
+            queryClient,
+            force: true,
           },
           folderName
         );
@@ -283,6 +458,7 @@ export function useConnectionTree() {
     const connId = Number(node.data.connectionId);
     if (isNaN(connId)) return;
     disconnectMutation.mutate(connId);
+    clearExplorerMetadataForConnection(queryClient, String(connId));
     setTreeDataState((prev) => {
       const update = (list: ExplorerNode[]): ExplorerNode[] =>
         list.map((n) => {
@@ -298,6 +474,7 @@ export function useConnectionTree() {
     connections,
     treeDataState,
     setTreeDataState,
+    hydrateNodeFromCache,
     loadNodeData,
     refreshNodeById,
     handleDisconnect,

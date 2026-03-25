@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/react-query';
 import { tableService } from '../services/table.service';
 import { viewService } from '../services/view.service';
 import { functionService } from '../services/function.service';
@@ -16,6 +17,13 @@ import type { FunctionMetadata } from '../services/function.service';
 import type { ProcedureMetadata } from '../services/procedure.service';
 import type { TriggerMetadata } from '../services/trigger.service';
 import { formatRoutineSignature, loadFolderContentsByType } from './folderContentLoaders';
+import {
+  fetchExplorerFunctions,
+  fetchExplorerProcedures,
+  fetchExplorerTables,
+  fetchExplorerTriggers,
+  fetchExplorerViews,
+} from '../lib/explorerMetadataCache';
 
 export { formatRoutineSignature } from './folderContentLoaders';
 
@@ -65,6 +73,70 @@ export function createFolderWithChildren(
   return { ...base, children };
 }
 
+export function createCachedObjectFolders(
+  ctx: DbSchemaContext,
+  tables: string[],
+  views: string[],
+  functions: FunctionMetadata[] = [],
+  procedures: ProcedureMetadata[] = [],
+  triggers: TriggerMetadata[] = []
+): ExplorerNode[] {
+  const folders: ExplorerNode[] = [];
+  if (tables.length > 0) {
+    folders.push(
+      createFolderWithChildren(
+        ctx.parentId,
+        FolderName.TABLES,
+        ctx.connId,
+        ctx.catalog,
+        ctx.schema,
+        ctx.t,
+        toTableNodes(ctx, tables)
+      )
+    );
+  }
+  if (views.length > 0) {
+    folders.push(
+      createFolderWithChildren(
+        ctx.parentId,
+        FolderName.VIEWS,
+        ctx.connId,
+        ctx.catalog,
+        ctx.schema,
+        ctx.t,
+        toViewNodes(ctx, views)
+      )
+    );
+  }
+  if (functions.length > 0 || procedures.length > 0) {
+    folders.push(
+      createFolderWithChildren(
+        ctx.parentId,
+        FolderName.ROUTINES,
+        ctx.connId,
+        ctx.catalog,
+        ctx.schema,
+        ctx.t,
+        toRoutineNodes(ctx, functions, procedures)
+      )
+    );
+  }
+  if (triggers.length > 0) {
+    folders.push(
+      createFolderWithChildren(
+        ctx.parentId,
+        FolderName.TRIGGERS,
+        ctx.connId,
+        ctx.catalog,
+        ctx.schema,
+        ctx.t,
+        toTriggerNodes(ctx, triggers)
+      )
+    );
+  }
+  return folders;
+}
+
 export function toChildrenOrEmpty(
   children: ExplorerNode[],
   parentId: string,
@@ -87,6 +159,8 @@ type DbSchemaContext = {
   catalog: string;
   schema: string | undefined;
   t: (key: string) => string;
+  queryClient?: QueryClient;
+  force?: boolean;
 };
 
 function folderId(ctx: DbSchemaContext, fn: FolderName) {
@@ -163,27 +237,24 @@ function toTriggerNodes(ctx: DbSchemaContext, triggers: TriggerMetadata[]): Expl
 /** Load all object folders for DB/Schema. Only returns non-empty folders. */
 export async function loadDbSchemaFolders(ctx: DbSchemaContext): Promise<ExplorerNode[]> {
   const [tables, views, functions, procedures, triggers] = await Promise.all([
-    tableService.listTables(ctx.connId, ctx.catalog, ctx.schema),
-    viewService.listViews(ctx.connId, ctx.catalog, ctx.schema),
-    functionService.listFunctions(ctx.connId, ctx.catalog, ctx.schema),
-    procedureService.listProcedures(ctx.connId, ctx.catalog, ctx.schema),
-    triggerService.listTriggers(ctx.connId, ctx.catalog, ctx.schema),
+    ctx.queryClient
+      ? fetchExplorerTables(ctx.queryClient, ctx.connId, ctx.catalog, ctx.schema, { force: ctx.force })
+      : tableService.listTables(ctx.connId, ctx.catalog, ctx.schema),
+    ctx.queryClient
+      ? fetchExplorerViews(ctx.queryClient, ctx.connId, ctx.catalog, ctx.schema, { force: ctx.force })
+      : viewService.listViews(ctx.connId, ctx.catalog, ctx.schema),
+    ctx.queryClient
+      ? fetchExplorerFunctions(ctx.queryClient, ctx.connId, ctx.catalog, ctx.schema, { force: ctx.force })
+      : functionService.listFunctions(ctx.connId, ctx.catalog, ctx.schema),
+    ctx.queryClient
+      ? fetchExplorerProcedures(ctx.queryClient, ctx.connId, ctx.catalog, ctx.schema, { force: ctx.force })
+      : procedureService.listProcedures(ctx.connId, ctx.catalog, ctx.schema),
+    ctx.queryClient
+      ? fetchExplorerTriggers(ctx.queryClient, ctx.connId, ctx.catalog, ctx.schema, { force: ctx.force })
+      : triggerService.listTriggers(ctx.connId, ctx.catalog, ctx.schema),
   ]);
 
-  const folders: ExplorerNode[] = [];
-  if (tables.length > 0) {
-    folders.push(createFolderWithChildren(ctx.parentId, FolderName.TABLES, ctx.connId, ctx.catalog, ctx.schema, ctx.t, toTableNodes(ctx, tables)));
-  }
-  if (views.length > 0) {
-    folders.push(createFolderWithChildren(ctx.parentId, FolderName.VIEWS, ctx.connId, ctx.catalog, ctx.schema, ctx.t, toViewNodes(ctx, views)));
-  }
-  if (functions.length > 0 || procedures.length > 0) {
-    folders.push(createFolderWithChildren(ctx.parentId, FolderName.ROUTINES, ctx.connId, ctx.catalog, ctx.schema, ctx.t, toRoutineNodes(ctx, functions, procedures)));
-  }
-  if (triggers.length > 0) {
-    folders.push(createFolderWithChildren(ctx.parentId, FolderName.TRIGGERS, ctx.connId, ctx.catalog, ctx.schema, ctx.t, toTriggerNodes(ctx, triggers)));
-  }
-  return folders;
+  return createCachedObjectFolders(ctx, tables, views, functions, procedures, triggers);
 }
 
 /** Load folder contents (lazy load when expanding a pre-created folder). */

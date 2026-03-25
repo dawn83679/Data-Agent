@@ -43,11 +43,11 @@ export function SlashCommandPopup({
   return (
     <div
       ref={listRef}
-      className="absolute bottom-full mb-1 left-0 w-full theme-bg-popup border theme-border rounded shadow-xl max-h-40 overflow-y-auto z-50 flex flex-col"
+      className="absolute bottom-full left-0 z-50 mb-1 flex max-h-40 w-full flex-col overflow-y-auto rounded border border-[color:var(--border-color)] bg-[color:var(--bg-panel)] shadow-xl"
       role="listbox"
       aria-label={t(I18N_KEYS.AI.SLASH_COMMAND.POPUP_TITLE)}
     >
-      <div className="px-3 py-1.5 text-[10px] theme-text-secondary font-medium border-b theme-border shrink-0">
+      <div className="shrink-0 border-b border-[color:var(--border-color)] px-3 py-1.5 text-[10px] font-medium theme-text-secondary">
         {t(I18N_KEYS.AI.SLASH_COMMAND.POPUP_TITLE)}
       </div>
       {filtered.length === 0 ? (
@@ -62,7 +62,7 @@ export function SlashCommandPopup({
             aria-selected={index === highlightedIndex}
             className={cn(
               'flex items-center gap-2 w-full text-left px-3 py-1.5 text-xs cursor-pointer transition-colors',
-              index === highlightedIndex ? highlightClassName : 'theme-text-primary hover:bg-white/5'
+              index === highlightedIndex ? highlightClassName : 'theme-text-primary hover:bg-[color:var(--bg-hover)]'
             )}
             onMouseEnter={() => onHighlight(index)}
             onClick={() => onSelect(cmd)}

@@ -4,11 +4,13 @@ import { ExplorerTreeConfig, ExplorerNodeType } from '../../constants/explorer';
 import { I18N_KEYS } from '../../constants/i18nKeys';
 import { ExplorerTreeNode } from './ExplorerTreeNode';
 import type { ExplorerNode } from '../../types/explorer';
+import type { ExplorerNodeHydrationState } from '../../hooks/useConnectionTree';
 
 interface ExplorerTreeProps {
   data: ExplorerNode[];
   searchTerm: string;
   isLoading: boolean;
+  onHydrateFromCache: (node: NodeApi<ExplorerNode>) => ExplorerNodeHydrationState;
   onLoadData: (node: NodeApi<ExplorerNode>) => void;
   onDisconnect: (node: NodeApi<ExplorerNode>) => void;
   onEditConnection: (connId: number) => void;
@@ -24,6 +26,7 @@ export function ExplorerTree({
   data,
   searchTerm,
   isLoading,
+  onHydrateFromCache,
   onLoadData,
   onDisconnect,
   onEditConnection,
@@ -45,6 +48,7 @@ export function ExplorerTree({
         style={style}
         dragHandle={dragHandle as React.RefObject<HTMLDivElement>}
         isLoading={isLoadingState}
+        onHydrateFromCache={onHydrateFromCache}
         onLoadData={onLoadData}
         onDisconnect={onDisconnect}
         onEditConnection={onEditConnection}

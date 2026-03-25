@@ -19,11 +19,12 @@ export interface MentionPayload {
   objectType?: MentionObjectType;
 }
 
-export type MentionLevel = 'connection' | 'database' | 'schema' | 'table';
+export type MentionLevel = 'connection' | 'database' | 'schema' | 'object';
 
 export interface MentionItem {
   id: string;
   label: string;
+  detail?: string;
   payload?: MentionPayload;
 }
 

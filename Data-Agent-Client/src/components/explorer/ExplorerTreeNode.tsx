@@ -19,12 +19,14 @@ import { ExplorerNodeIcon } from './ExplorerNodeIcon';
 import { ExplorerNodeType, ExplorerIdPrefix } from '../../constants/explorer';
 import type { ExplorerNode } from '../../types/explorer';
 import { NodeContextMenuContent } from './NodeContextMenuContent';
+import type { ExplorerNodeHydrationState } from '../../hooks/useConnectionTree';
 
 export interface ExplorerTreeNodeProps {
   node: NodeApi<ExplorerNode>;
   style: React.CSSProperties;
   dragHandle?: React.RefObject<HTMLDivElement>;
   isLoading: boolean;
+  onHydrateFromCache: (node: NodeApi<ExplorerNode>) => ExplorerNodeHydrationState;
   onLoadData: (node: NodeApi<ExplorerNode>) => void;
   onDisconnect: (node: NodeApi<ExplorerNode>) => void;
   onEditConnection: (connId: number) => void;
@@ -41,6 +43,7 @@ export function ExplorerTreeNode({
   style,
   dragHandle,
   isLoading,
+  onHydrateFromCache,
   onLoadData,
   onDisconnect,
   onEditConnection,
@@ -81,7 +84,10 @@ export function ExplorerTreeNode({
     e?.stopPropagation();
     if (node.isInternal) {
       if (!node.isOpen && (!node.data.children || node.data.children.length === 0)) {
-        onLoadData(node);
+        const hydrationState = onHydrateFromCache(node);
+        if (hydrationState !== 'full') {
+          onLoadData(node);
+        }
       }
       node.toggle();
     }
@@ -115,7 +121,10 @@ export function ExplorerTreeNode({
     } else if (node.isInternal) {
       // For other nodes (folders), double-click toggles expansion
       if (!node.isOpen && (!node.data.children || node.data.children.length === 0)) {
-        onLoadData(node);
+        const hydrationState = onHydrateFromCache(node);
+        if (hydrationState !== 'full') {
+          onLoadData(node);
+        }
       }
       node.toggle();
     }

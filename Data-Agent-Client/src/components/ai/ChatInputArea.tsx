@@ -56,11 +56,11 @@ export const ChatInputArea = forwardRef<ChatInputAreaRef, ChatInputAreaProps>(
 
             const wasOpen = prevMentionOpenRef.current;
             const isOpen = mention.mentionOpen;
-            const wasTable = prevMentionLevelRef.current === 'table';
+            const wasObject = prevMentionLevelRef.current === 'object';
 
-            // Detect when mention popup closes from table level (user clicked a table)
-            if (wasOpen && !isOpen && wasTable) {
-                // Popup just closed from table level, focus back to textarea
+            // Detect when mention popup closes from object level (user selected an object)
+            if (wasOpen && !isOpen && wasObject) {
+                // Popup just closed from object level, focus back to textarea
                 setTimeout(() => {
                     textareaRef.current?.focus();
                 }, 0);

@@ -16,6 +16,7 @@ export function DatabaseExplorer() {
     connections,
     treeDataState,
     setTreeDataState,
+    hydrateNodeFromCache,
     loadNodeData,
     refreshNodeById,
     handleDisconnect,
@@ -119,6 +120,7 @@ export function DatabaseExplorer() {
           data={treeDataState}
           searchTerm={searchTerm}
           isLoading={isConnectionsLoading}
+          onHydrateFromCache={hydrateNodeFromCache}
           onLoadData={loadNodeData}
           onDisconnect={handleDisconnect}
           onEditConnection={openEditModal}

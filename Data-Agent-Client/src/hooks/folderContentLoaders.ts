@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/react-query';
 import { tableService } from '../services/table.service';
 import { viewService } from '../services/view.service';
 import { functionService } from '../services/function.service';
@@ -9,6 +10,7 @@ import { primaryKeyService } from '../services/primaryKey.service';
 import { ExplorerNodeType, ExplorerIdPrefix, TRIGGER_ON_TABLE_FORMAT, INDEX_UNIQUE_SUFFIX } from '../constants/explorer';
 import type { ExplorerNode } from '../types/explorer';
 import type { ParameterInfo } from '../services/function.service';
+import { fetchExplorerTables, fetchExplorerViews } from '../lib/explorerMetadataCache';
 
 export function formatRoutineSignature(
   parameters: ParameterInfo[] | undefined | null,
@@ -29,11 +31,15 @@ export type FolderLoadContext = {
   schema: string | undefined;
   folderId: string;
   tableName?: string;
+  queryClient?: QueryClient;
+  force?: boolean;
 };
 
 async function loadTables(ctx: FolderLoadContext): Promise<ExplorerNode[]> {
   const { connId, catalog, schema, folderId: fid } = ctx;
-  const tables = await tableService.listTables(connId, catalog, schema);
+  const tables = ctx.queryClient
+    ? await fetchExplorerTables(ctx.queryClient, connId, catalog, schema, { force: ctx.force })
+    : await tableService.listTables(connId, catalog, schema);
   return tables.map((name) => ({
     id: `${fid}${ExplorerIdPrefix.TABLE}${name}`,
     name,
@@ -47,7 +53,9 @@ async function loadTables(ctx: FolderLoadContext): Promise<ExplorerNode[]> {
 
 async function loadViews(ctx: FolderLoadContext): Promise<ExplorerNode[]> {
   const { connId, catalog, schema, folderId: fid } = ctx;
-  const views = await viewService.listViews(connId, catalog, schema);
+  const views = ctx.queryClient
+    ? await fetchExplorerViews(ctx.queryClient, connId, catalog, schema, { force: ctx.force })
+    : await viewService.listViews(connId, catalog, schema);
   return views.map((name) => ({
     id: `${fid}${ExplorerIdPrefix.VIEW}${name}`,
     name,
