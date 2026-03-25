@@ -1,0 +1,11 @@
+{
+  "defaults": {
+    "tableDoubleClickSelectTemplate": "SELECT * FROM {{qualifiedName}};",
+    "identifierQuoteStyle": "double_quote"
+  },
+  "dbTypes": {
+    "mysql": {
+      "identifierQuoteStyle": "backtick"
+    }
+  }
+}

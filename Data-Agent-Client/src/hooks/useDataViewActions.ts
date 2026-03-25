@@ -10,6 +10,7 @@ import { useWorkspaceStore } from '../store/workspaceStore';
 import { TableDblClickConsoleTargetEnum, TableDblClickModeEnum } from '../constants/workspacePreferences';
 import { I18N_KEYS } from '../constants/i18nKeys';
 import type { ExplorerNode } from '../types/explorer';
+import type { DbTypeOption, IdentifierQuoteStyle } from '../types/dbType';
 import type { ConsoleTabMetadata } from '../types/tab';
 import type { DbConnection } from '../types/connection';
 
@@ -32,17 +33,27 @@ interface ConsoleContext {
   databaseName: string | null;
   schemaName: string | null;
   dbType?: string;
+  dbTypeConfig?: DbTypeOption;
 }
 
-function quoteIdentifier(name: string, dbType?: string): string {
+function quoteIdentifier(name: string, quoteStyle: IdentifierQuoteStyle = 'double_quote'): string {
   if (!name.trim()) return name;
-  const isMysql = dbType?.toLowerCase().includes('mysql');
-  return isMysql ? `\`${name}\`` : `"${name.replace(/"/g, '""')}"`;
+  if (quoteStyle === 'none') {
+    return name;
+  }
+  if (quoteStyle === 'backtick') {
+    return `\`${name.replace(/`/g, '``')}\``;
+  }
+  return `"${name.replace(/"/g, '""')}"`;
 }
 
 function appendSql(existingContent: string, sql: string): string {
   if (!existingContent.trim()) return sql;
   return `${existingContent.replace(/\s*$/, '')}\n\n${sql}`;
+}
+
+function renderSqlTemplate(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => vars[key] ?? '');
 }
 
 export function useDataViewActions({
@@ -61,6 +72,7 @@ export function useDataViewActions({
   const {
     tableDblClickMode,
     tableDblClickConsoleTarget,
+    supportedDbTypes,
     tabs,
     updateTabContent,
     updateTabMetadata,
@@ -72,6 +84,11 @@ export function useDataViewActions({
     [connections]
   );
 
+  const getDbTypeConfig = useCallback(
+    (dbType?: string) => supportedDbTypes.find((typeOption) => typeOption.code === dbType),
+    [supportedDbTypes]
+  );
+
   const resolveConsoleContext = useCallback(
     (node: ExplorerNode): ConsoleContext | null => {
       const rawConnectionId =
@@ -80,6 +97,7 @@ export function useDataViewActions({
 
       const connectionId = Number(rawConnectionId);
       const connection = node.dbConnection ?? getConnection(connectionId);
+      const dbType = connection?.dbType || node.dbConnection?.dbType;
       let databaseName: string | null = null;
       let schemaName: string | null = null;
 
@@ -104,10 +122,11 @@ export function useDataViewActions({
         connectionName: connection?.name || node.dbConnection?.name || 'Unknown',
         databaseName,
         schemaName,
-        dbType: connection?.dbType,
+        dbType,
+        dbTypeConfig: getDbTypeConfig(dbType),
       };
     },
-    [getConnection]
+    [getConnection, getDbTypeConfig]
   );
 
   const ensureConsoleTab = useCallback(
@@ -150,13 +169,17 @@ export function useDataViewActions({
     [openTab, resolveConsoleContext, switchTab, tableDblClickConsoleTarget, tabs, updateTabMetadata]
   );
 
-  const buildSelectSql = useCallback((node: ExplorerNode, dbType?: string) => {
+  const buildSelectSql = useCallback((node: ExplorerNode, dbTypeConfig?: DbTypeOption) => {
     const objectName = node.tableName || node.objectName || node.name;
+    const quoteStyle = dbTypeConfig?.identifierQuoteStyle ?? 'double_quote';
     const qualifiedName = [node.catalog, node.schema, objectName]
       .filter((part): part is string => typeof part === 'string' && part.length > 0)
-      .map((part) => quoteIdentifier(part, dbType))
+      .map((part) => quoteIdentifier(part, quoteStyle))
       .join('.');
-    return `SELECT * FROM ${qualifiedName};`;
+    return renderSqlTemplate(
+      dbTypeConfig?.tableDoubleClickSelectTemplate || 'SELECT * FROM {{qualifiedName}};',
+      { qualifiedName }
+    );
   }, []);
 
   const handleViewDdl = useCallback(
@@ -260,7 +283,7 @@ export function useDataViewActions({
       const consoleContext = ensureConsoleTab(node);
       if (!consoleContext) return;
 
-      const sql = buildSelectSql(node, consoleContext.dbType);
+      const sql = buildSelectSql(node, consoleContext.dbTypeConfig);
       const existingContent = tabs.find((tab) => tab.id === consoleContext.tabId)?.content ?? '';
       updateTabContent(consoleContext.tabId, appendSql(existingContent, sql));
       switchTab(consoleContext.tabId);
