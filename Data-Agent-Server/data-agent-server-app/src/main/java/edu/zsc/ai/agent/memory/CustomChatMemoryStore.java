@@ -33,7 +33,7 @@ public class CustomChatMemoryStore implements ChatMemoryStore {
 
         aiConversationService.checkAccess(idInfo.userId(), idInfo.conversationId());
 
-        List<StoredChatMessage> stored = aiMessageService.getByConversationIdOrderByCreatedAtAsc(idInfo.conversationId());
+        List<StoredChatMessage> stored = aiMessageService.getActiveByConversationIdOrderByCreatedAtAsc(idInfo.conversationId());
         if (stored.isEmpty()) {
             return List.of();
         }

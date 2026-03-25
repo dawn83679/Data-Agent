@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ConversationCompressRequest {
+public class ConversationCompactRequest {
 
     @NotBlank(message = "Model cannot be empty")
     private String model;

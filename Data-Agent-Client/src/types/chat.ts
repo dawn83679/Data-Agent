@@ -88,6 +88,9 @@ export interface ChatMessage {
   userMentions?: ChatUserMention[];
   blocks?: ChatResponseBlock[];
   doneMetadata?: DoneMetadata;
+  messageStatus?: 'NORMAL' | 'DELETED' | 'COMPRESSED' | 'COMPRESSION_SUMMARY';
+  /** Frontend-only marker for ephemeral UI messages that should not be persisted. */
+  localKind?: 'compact-command' | 'compact-status' | 'compact-summary' | 'compact-result';
   createdAt?: Date;
 }
 

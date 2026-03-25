@@ -12,7 +12,7 @@ export const SLASH_COMMAND_IDS = {
   NEW: 'new',
   HISTORY: 'history',
   MEMORY: 'memory',
-  COMPRESS: 'compress',
+  COMPACT: 'compact',
   PLAN: 'plan',
   PERMISSION: 'permission',
 } as const;
@@ -37,9 +37,9 @@ export const SLASH_COMMANDS: SlashCommandItem[] = [
     icon: <Brain className="w-3.5 h-3.5 shrink-0" />,
   },
   {
-    id: SLASH_COMMAND_IDS.COMPRESS,
-    slug: SLASH_COMMAND_IDS.COMPRESS,
-    labelKey: I18N_KEYS.AI.SLASH_COMMAND.COMPRESS,
+    id: SLASH_COMMAND_IDS.COMPACT,
+    slug: SLASH_COMMAND_IDS.COMPACT,
+    labelKey: I18N_KEYS.AI.SLASH_COMMAND.COMPACT,
     icon: <Archive className="w-3.5 h-3.5 shrink-0" />,
   },
   {

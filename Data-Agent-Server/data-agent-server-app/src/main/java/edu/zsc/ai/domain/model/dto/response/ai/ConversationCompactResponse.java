@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ConversationCompressResponse {
+public class ConversationCompactResponse {
 
     private boolean compressed;
 
@@ -20,4 +20,6 @@ public class ConversationCompressResponse {
     private Integer compressedMessageCount;
 
     private Integer keptRecentCount;
+
+    private String summary;
 }

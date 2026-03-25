@@ -129,7 +129,16 @@ public class AiConversationServiceImpl extends ServiceImpl<AiConversationMapper,
                 log.warn("Failed to deserialize message id={}, skipping", s.getId(), e);
             }
         }
-        return result;
+        List<ConversationMessageResponse> nonSummary = result.stream()
+                .filter(message -> !"COMPRESSION_SUMMARY".equals(message.getMessageStatus()))
+                .toList();
+        List<ConversationMessageResponse> summary = result.stream()
+                .filter(message -> "COMPRESSION_SUMMARY".equals(message.getMessageStatus()))
+                .toList();
+        List<ConversationMessageResponse> ordered = new ArrayList<>(result.size());
+        ordered.addAll(nonSummary);
+        ordered.addAll(summary);
+        return ordered;
     }
 
     @Override

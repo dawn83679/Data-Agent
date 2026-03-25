@@ -7,6 +7,8 @@ interface ErrorResponseData {
 }
 
 interface ApiErrorLike {
+    code?: string;
+    request?: unknown;
     response?: {
         status?: number;
         data?: ErrorResponseData;
@@ -72,6 +74,14 @@ export function resolveErrorMessage(error: unknown, fallback: string): string {
         }
     }
 
+    if (err?.code === 'ECONNABORTED') {
+        return i18n.t('error.timeout');
+    }
+
+    if (err?.message === 'Network Error' || (err?.request && err?.response == null)) {
+        return i18n.t('error.network');
+    }
+
     // 兜底：用 error.message 或调用方给的 fallback
     if (err?.message && typeof err.message === 'string') {
         return err.message;
@@ -79,4 +89,3 @@ export function resolveErrorMessage(error: unknown, fallback: string): string {
 
     return fallback;
 }
-

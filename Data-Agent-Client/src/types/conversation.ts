@@ -9,12 +9,13 @@ export interface Conversation {
   updatedAt: string;
 }
 
-export interface CompressConversationResponse {
+export interface CompactConversationResponse {
   compressed: boolean;
   tokenCountBefore: number | null;
   tokenCountAfter: number | null;
   compressedMessageCount: number;
   keptRecentCount: number;
+  summary?: string | null;
 }
 
 export interface PageResponse<T> {

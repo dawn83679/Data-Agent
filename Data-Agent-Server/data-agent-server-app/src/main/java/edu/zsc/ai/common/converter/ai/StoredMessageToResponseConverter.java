@@ -1,14 +1,12 @@
 package edu.zsc.ai.common.converter.ai;
 
-import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.data.message.TextContent;
-import dev.langchain4j.data.message.ToolExecutionResultMessage;
-import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.data.message.*;
+import edu.zsc.ai.agent.memory.ChatMemoryCompressor;
 import edu.zsc.ai.agent.memory.MemoryUtil;
 import edu.zsc.ai.common.enums.ai.MessageRoleEnum;
-import edu.zsc.ai.domain.model.dto.response.ai.ConversationMessageResponse;
+import edu.zsc.ai.common.enums.ai.MessageStatusEnum;
 import edu.zsc.ai.domain.model.dto.response.agent.ChatResponseBlock;
+import edu.zsc.ai.domain.model.dto.response.ai.ConversationMessageResponse;
 import edu.zsc.ai.domain.model.entity.ai.StoredChatMessage;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
@@ -60,8 +58,21 @@ public class StoredMessageToResponseConverter {
                 .role(role)
                 .content(StringUtils.defaultString(content))
                 .blocks(blocks)
+                .messageStatus(resolveMessageStatus(stored.getStatus(), message))
                 .createdAt(stored.getCreatedAt())
                 .build();
+    }
+
+    private String resolveMessageStatus(Integer statusCode, ChatMessage message) {
+        if (statusCode != null
+                && statusCode == MessageStatusEnum.COMPRESSED.getCode()
+                && ChatMemoryCompressor.isSummaryMessage(message)) {
+            return MessageStatusEnum.COMPRESSION_SUMMARY.name();
+        }
+        if (statusCode == null) {
+            return MessageStatusEnum.NORMAL.name();
+        }
+        return MessageStatusEnum.fromCode(statusCode).name();
     }
 
     private String userMessageContent(UserMessage userMsg) {
