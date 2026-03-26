@@ -8,7 +8,8 @@ export function renderSegment(
   index: number,
   isStreamingThought: boolean,
   allowAutoRetryForToolRun = false,
-  showElapsedTextForSubAgent = true
+  showElapsedTextForSubAgent = true,
+  isHistoricalMessage = false
 ): React.ReactNode {
   const key = `seg-${index}-${segment.kind}`;
   switch (segment.kind) {
@@ -38,6 +39,7 @@ export function renderSegment(
           nestedToolRuns={segment.nestedToolRuns}
           allowAutoRetry={allowAutoRetryForToolRun}
           showElapsedText={showElapsedTextForSubAgent}
+          isHistoricalMessage={isHistoricalMessage}
         />
       );
   }

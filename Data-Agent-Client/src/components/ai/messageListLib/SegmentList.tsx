@@ -71,13 +71,13 @@ export function SegmentList({
               </div>
             );
           }
-          return renderSegment(seg, i, false, isLastAssistantStreaming, showElapsedTextForSubAgent);
+          return renderSegment(seg, i, false, isLastAssistantStreaming, showElapsedTextForSubAgent, !isLastAssistantStreaming);
         }
         const isStreamingThought =
           isLastAssistantStreaming &&
           seg.kind === SegmentKind.THOUGHT &&
           seg === lastSeg;
-        return renderSegment(seg, i, isStreamingThought, isLastAssistantStreaming, showElapsedTextForSubAgent);
+        return renderSegment(seg, i, isStreamingThought, isLastAssistantStreaming, showElapsedTextForSubAgent, !isLastAssistantStreaming);
       })}
       {/* Phase C: has content but gap in stream — show Planning at end.
           Suppress when the last segment is any TOOL_RUN: the tool is still

@@ -1,22 +1,22 @@
-import { useMemo, useState } from 'react';
-import type { ColDef } from 'ag-grid-community';
-import { AgGridReact } from 'ag-grid-react';
-import { AlertTriangle, CheckCircle, ChevronDown, ChevronRight, Download, FileText } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, CheckCircle, ChevronDown, ChevronRight, Download } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { useTranslation } from 'react-i18next';
 import { I18N_KEYS } from '../../../constants/i18nKeys';
-import { useTheme } from '../../../hooks/useTheme';
 import { useToast } from '../../../hooks/useToast';
 import { resolveErrorMessage } from '../../../lib/errorMessage';
 import { exportFileService } from '../../../services/exportFile.service';
-import type { ExportFilePreview, ExportedFileResult } from '../../../types/exportFile';
+import type { ExportFilePreview, ExportedFileResult, ExportFileStatus } from '../../../types/exportFile';
 import { formatParameters } from './formatParameters';
 import { GenericToolRun } from './GenericToolRun';
+import { markdownRemarkPlugins, useMarkdownComponents } from './markdownComponents';
 
 interface ExportFileToolBlockProps {
   toolName: string;
   parametersData: string;
   responseData: string;
   responseError: boolean;
+  checkAvailability?: boolean;
 }
 
 interface AgentToolResultWrapper {
@@ -28,11 +28,6 @@ interface AgentToolResultWrapper {
 interface ExportFileParseResult {
   payload: ExportedFileResult | null;
   parseError?: string;
-}
-
-interface ExportPreviewGridRow {
-  __rowNumber: number;
-  [key: string]: string | number;
 }
 
 function parseJsonSafe<T>(raw: string): T | null {
@@ -105,6 +100,34 @@ function normalizePreview(value: unknown): ExportFilePreview | undefined {
     totalRowCount: toFiniteNumber(previewObj.totalRowCount),
     totalColumnCount: toFiniteNumber(previewObj.totalColumnCount),
   };
+}
+
+function escapeMarkdownTableCell(value: string): string {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/\|/g, '\\|')
+    .replace(/\r?\n/g, '<br/>');
+}
+
+function buildPreviewMarkdown(preview: ExportFilePreview | undefined): string {
+  if (!preview || preview.columns.length === 0) {
+    return '';
+  }
+
+  const headers = ['#', ...preview.columns].map(escapeMarkdownTableCell);
+  const separator = headers.map(() => '---');
+  const rows = preview.rows.map((row, rowIndex) => {
+    const numberedRow = [String(rowIndex + 1), ...row];
+    return numberedRow
+      .map((cell) => escapeMarkdownTableCell(cell ?? ''))
+      .join(' | ');
+  });
+
+  return [
+    `| ${headers.join(' | ')} |`,
+    `| ${separator.join(' | ')} |`,
+    ...rows.map((row) => `| ${row} |`),
+  ].join('\n');
 }
 
 function parseExportFilePayload(responseData: string): ExportFileParseResult {
@@ -238,6 +261,160 @@ function formatTimestamp(value: string | number | undefined): string {
   return `${y}-${m}-${d} ${h}:${min}:${sec}`;
 }
 
+function resolveFileType(value: string | undefined): string {
+  if (!value) {
+    return '';
+  }
+  return value.trim().toLowerCase();
+}
+
+function inferExportFileKind(payload: ExportedFileResult | null): 'csv' | 'xlsx' | 'docx' | 'pdf' | 'generic' {
+  const filename = resolveFileType(payload?.filename);
+  if (filename.endsWith('.csv')) return 'csv';
+  if (filename.endsWith('.xlsx') || filename.endsWith('.xls')) return 'xlsx';
+  if (filename.endsWith('.docx') || filename.endsWith('.doc')) return 'docx';
+  if (filename.endsWith('.pdf')) return 'pdf';
+
+  const format = resolveFileType(payload?.format);
+  if (format === 'csv') return 'csv';
+  if (format === 'xlsx' || format === 'xls') return 'xlsx';
+  if (format === 'docx' || format === 'doc') return 'docx';
+  if (format === 'pdf') return 'pdf';
+  return 'generic';
+}
+
+interface SplitFileIconProps {
+  letter: string;
+  tileColor: string;
+  tileShadow: string;
+  panelColor: string;
+  foldColor: string;
+  accentColor: string;
+  kind: 'text' | 'grid' | 'pdf';
+}
+
+function SplitFileIcon({
+  letter,
+  tileColor,
+  tileShadow,
+  panelColor,
+  foldColor,
+  accentColor,
+  kind,
+}: SplitFileIconProps) {
+  return (
+    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center" aria-hidden="true">
+      <svg viewBox="0 0 32 32" className="h-8 w-8">
+        <rect x="12" y="3" width="16" height="24" rx="4" fill={panelColor} />
+        <path d="M22 3h1.4c1 0 1.6.1 2.1.4.4.2.7.5 1 .8l1.3 1.3c.3.3.6.6.8 1 .3.5.4 1.1.4 2.1V10h-5.2c-1.6 0-2.8-1.2-2.8-2.8V3Z" fill={foldColor} />
+        {kind === 'text' && (
+          <>
+            <rect x="17" y="12" width="7.5" height="1.8" rx="0.9" fill={accentColor} opacity="0.95" />
+            <rect x="17" y="15.8" width="8.5" height="1.8" rx="0.9" fill={accentColor} opacity="0.78" />
+            <rect x="17" y="19.6" width="6.2" height="1.8" rx="0.9" fill={accentColor} opacity="0.6" />
+          </>
+        )}
+        {kind === 'grid' && (
+          <>
+            <rect x="17" y="11.4" width="8.8" height="10.8" rx="1.6" fill={accentColor} opacity="0.18" />
+            <path d="M17 15h8.8M17 18.6h8.8M19.95 11.4v10.8M22.9 11.4v10.8" stroke={accentColor} strokeWidth="1.4" strokeLinecap="round" opacity="0.95" />
+          </>
+        )}
+        {kind === 'pdf' && (
+          <>
+            <path d="M18.2 20.6c2.8-3.8 3.9-7 3.4-8-.3-.6-1.2-.8-1.7-.3-.8.8-.6 2.8.3 5.2 1.2 3.1 3.4 5 5 4.5 1.1-.4.8-1.9-.8-2.3-2.8-.7-7.2.1-10.2 2.1-1.5 1-1.1 2.4.2 2.4 1.8 0 3.3-1.8 4.8-5.2" fill="none" stroke={accentColor} strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" />
+          </>
+        )}
+        <rect x="3.5" y="7.2" width="12.2" height="17.6" rx="3.2" fill={tileColor} />
+        <rect x="3.5" y="7.2" width="12.2" height="17.6" rx="3.2" fill={tileShadow} opacity="0.18" />
+        <text
+          x="9.6"
+          y="18.7"
+          textAnchor="middle"
+          fontSize="8.4"
+          fontWeight="700"
+          fill="#FFFFFF"
+          style={{ fontFamily: 'Segoe UI, Arial, sans-serif' }}
+        >
+          {letter}
+        </text>
+      </svg>
+    </span>
+  );
+}
+
+function FileTypeIcon({ payload }: { payload: ExportedFileResult | null }) {
+  const kind = inferExportFileKind(payload);
+
+  if (kind === 'docx') {
+    return (
+      <SplitFileIcon
+        letter="W"
+        tileColor="#185ABD"
+        tileShadow="#0F3F91"
+        panelColor="#41A5EE"
+        foldColor="#7DC8F7"
+        accentColor="#EAF4FF"
+        kind="text"
+      />
+    );
+  }
+
+  if (kind === 'xlsx') {
+    return (
+      <SplitFileIcon
+        letter="X"
+        tileColor="#107C41"
+        tileShadow="#0B5C2E"
+        panelColor="#33C481"
+        foldColor="#7BE0AD"
+        accentColor="#E9FFF4"
+        kind="grid"
+      />
+    );
+  }
+
+  if (kind === 'csv') {
+    return (
+      <SplitFileIcon
+        letter="C"
+        tileColor="#107C41"
+        tileShadow="#0B5C2E"
+        panelColor="#33C481"
+        foldColor="#7BE0AD"
+        accentColor="#E9FFF4"
+        kind="grid"
+      />
+    );
+  }
+
+  if (kind === 'pdf') {
+    return (
+      <SplitFileIcon
+        letter="P"
+        tileColor="#C43E1C"
+        tileShadow="#962C13"
+        panelColor="#FF6B57"
+        foldColor="#FF9B8F"
+        accentColor="#FFF4F2"
+        kind="pdf"
+      />
+    );
+  }
+
+  return (
+    <SplitFileIcon
+      letter="F"
+      tileColor="#5B6472"
+      tileShadow="#434A55"
+      panelColor="#97A1AF"
+      foldColor="#C8D0DB"
+      accentColor="#F8FAFC"
+      kind="text"
+    />
+  );
+}
+
 async function resolveBlobErrorMessage(error: unknown, fallback: string): Promise<string> {
   const err = error as { response?: { data?: unknown } } | undefined;
   const blob = err?.response?.data;
@@ -264,85 +441,80 @@ export function ExportFileToolBlock({
   parametersData,
   responseData,
   responseError,
+  checkAvailability = false,
 }: ExportFileToolBlockProps) {
   const { t } = useTranslation();
-  const { theme } = useTheme();
   const toast = useToast();
-  const agThemeClass = theme === 'light' ? 'ag-theme-quartz' : 'ag-theme-quartz-dark';
+  const markdownComponents = useMarkdownComponents({ enableTableActions: false });
 
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(checkAvailability);
+  const [previewCollapsed, setPreviewCollapsed] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
   const parseResult = useMemo(() => parseExportFilePayload(responseData), [responseData]);
   const payload = parseResult.payload;
   const preview = payload?.preview;
-
-  const previewRows = useMemo<ExportPreviewGridRow[]>(() => {
-    if (!preview) {
-      return [];
-    }
-    return preview.rows.map((row, rowIndex) => {
-      const mapped: ExportPreviewGridRow = {
-        __rowNumber: rowIndex + 1,
-      };
-      preview.columns.forEach((_, colIndex) => {
-        mapped[`__col_${colIndex}`] = row[colIndex] ?? '';
-      });
-      return mapped;
-    });
-  }, [preview]);
-
-  const previewColumns = useMemo<ColDef<ExportPreviewGridRow>[]>(() => {
-    if (!preview) {
-      return [];
-    }
-    const leading: ColDef<ExportPreviewGridRow> = {
-      colId: '__rowNumber',
-      field: '__rowNumber',
-      headerName: '#',
-      width: 60,
-      minWidth: 60,
-      maxWidth: 60,
-      pinned: 'left',
-      lockPinned: true,
-      lockPosition: 'left',
-      suppressMovable: true,
-      sortable: false,
-      resizable: false,
-      cellClass: 'workspace-ag-grid__row-number-cell',
-      headerClass: 'workspace-ag-grid__row-number-header',
-    };
-
-    const dataColumns = preview.columns.map<ColDef<ExportPreviewGridRow>>((column, index) => ({
-      colId: `preview-col-${index}`,
-      field: `__col_${index}`,
-      headerName: column || `Column ${index + 1}`,
-      sortable: false,
-      resizable: true,
-      minWidth: 120,
-      flex: 1,
-      suppressHeaderMenuButton: true,
-      cellClass: 'theme-text-primary',
-      headerClass: 'theme-text-secondary',
-    }));
-
-    return [leading, ...dataColumns];
-  }, [preview]);
+  const previewMarkdown = useMemo(() => buildPreviewMarkdown(preview), [preview]);
+  const [fileStatus, setFileStatus] = useState<ExportFileStatus | null>(null);
+  const [statusChecked, setStatusChecked] = useState(() => !checkAvailability || !payload?.fileId);
 
   const summaryText = useMemo(() => {
-    const rowCount = payload?.rowCount ?? preview?.totalRowCount ?? previewRows.length;
+    const rowCount = payload?.rowCount ?? preview?.totalRowCount ?? preview?.rows.length ?? 0;
     const columnCount = payload?.columnCount ?? preview?.totalColumnCount ?? preview?.columns.length ?? 0;
     return t(I18N_KEYS.AI.EXPORT_FILE.SUMMARY, {
       rowCount,
       columnCount,
     });
-  }, [payload?.rowCount, payload?.columnCount, preview?.totalRowCount, preview?.totalColumnCount, preview?.columns.length, previewRows.length, t]);
+  }, [payload?.rowCount, payload?.columnCount, preview?.totalRowCount, preview?.totalColumnCount, preview?.columns.length, preview?.rows.length, t]);
 
   const parseOrResponseError = parseResult.parseError
     ?? (responseError ? t(I18N_KEYS.AI.EXPORT_FILE.TOOL_FAILED) : null);
 
+  useEffect(() => {
+    if (!checkAvailability || !payload?.fileId || parseOrResponseError) {
+      setFileStatus(null);
+      setStatusChecked(true);
+      return;
+    }
+
+    let cancelled = false;
+    setFileStatus(null);
+    setStatusChecked(false);
+
+    exportFileService.getFileStatus(payload.fileId)
+      .then((status) => {
+        if (cancelled) {
+          return;
+        }
+        setFileStatus(status);
+      })
+      .catch(() => {
+        if (cancelled) {
+          return;
+        }
+        setFileStatus(null);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setStatusChecked(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [checkAvailability, payload?.fileId, parseOrResponseError]);
+
   const formattedParameters = useMemo(() => formatParameters(parametersData), [parametersData]);
   const canDownload = !!payload?.fileId && !downloading && !parseOrResponseError;
+
+  if (checkAvailability && payload?.fileId && !parseOrResponseError && !statusChecked) {
+    return null;
+  }
+
+  if (checkAvailability && payload?.fileId && !parseOrResponseError && fileStatus && !fileStatus.available) {
+    return null;
+  }
 
   const handleDownload = async () => {
     if (!payload?.fileId) {
@@ -377,7 +549,7 @@ export function ExportFileToolBlock({
         ) : (
           <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />
         )}
-        <FileText className="w-3.5 h-3.5 shrink-0 theme-text-secondary" />
+        <FileTypeIcon payload={payload} />
         <span>{payload?.filename ?? t(I18N_KEYS.AI.EXPORT_FILE.LABEL)}</span>
         <span className="ml-auto opacity-70">
           {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -391,7 +563,7 @@ export function ExportFileToolBlock({
               <span className="theme-text-secondary">{t(I18N_KEYS.AI.EXPORT_FILE.FORMAT)}</span>
               <span className="theme-text-primary font-medium">{payload?.format ?? '--'}</span>
               <span className="theme-text-secondary">{t(I18N_KEYS.AI.EXPORT_FILE.SIZE)}</span>
-              <span className="theme-text-primary">{formatBytes(payload?.sizeBytes)}</span>
+              <span className="theme-text-primary">{formatBytes(fileStatus?.sizeBytes ?? payload?.sizeBytes)}</span>
             </div>
             <div className="mt-1 flex items-center gap-2">
               <span className="theme-text-secondary">{t(I18N_KEYS.AI.EXPORT_FILE.CREATED_AT)}</span>
@@ -416,29 +588,30 @@ export function ExportFileToolBlock({
             </div>
           </div>
 
-          {preview && previewColumns.length > 1 ? (
+          {preview && previewMarkdown ? (
             <div className="rounded border theme-border p-2">
-              <div className="mb-2 text-[11px] theme-text-secondary">{t(I18N_KEYS.AI.EXPORT_FILE.PREVIEW)}</div>
-              <div className={`workspace-ag-grid ${agThemeClass} h-[220px] min-h-0 w-full rounded`}>
-                <AgGridReact<ExportPreviewGridRow>
-                  rowData={previewRows}
-                  columnDefs={previewColumns}
-                  rowModelType="clientSide"
-                  animateRows={false}
-                  suppressCellFocus
-                  suppressRowHoverHighlight
-                  suppressMovableColumns
-                  rowSelection={undefined}
-                  rowHeight={32}
-                  headerHeight={34}
-                  defaultColDef={{
-                    sortable: false,
-                    resizable: true,
-                    minWidth: 120,
-                    suppressHeaderMenuButton: true,
-                  }}
-                />
-              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewCollapsed((value) => !value)}
+                className="mb-1 flex w-full items-center gap-2 rounded px-1 py-1 text-left text-[11px] theme-text-secondary hover:bg-black/5 dark:hover:bg-white/5"
+              >
+                {previewCollapsed ? (
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+                ) : (
+                  <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                )}
+                <span>{t(I18N_KEYS.AI.EXPORT_FILE.PREVIEW)}</span>
+              </button>
+              {!previewCollapsed && (
+                <div className="max-h-[260px] overflow-auto text-[11px]">
+                  <ReactMarkdown
+                    components={markdownComponents}
+                    remarkPlugins={markdownRemarkPlugins}
+                  >
+                    {previewMarkdown}
+                  </ReactMarkdown>
+                </div>
+              )}
             </div>
           ) : (
             <div className="rounded border theme-border px-2 py-1.5 text-[11px] theme-text-secondary">

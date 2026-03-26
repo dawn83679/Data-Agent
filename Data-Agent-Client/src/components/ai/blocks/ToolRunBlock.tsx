@@ -5,6 +5,8 @@ import { ToolRunStreaming } from './ToolRunStreaming';
 import { ToolRunExecuting } from './ToolRunExecuting';
 import { GenericToolRun } from './GenericToolRun';
 import { ChartToolBlock } from './ChartToolBlock';
+import { ExecuteSelectSqlBlock } from './ExecuteSelectSqlBlock';
+import { GetObjectDetailBlock } from './GetObjectDetailBlock';
 import { SkillToolBlock } from './SkillToolBlock';
 import { ExportFileToolBlock } from './ExportFileToolBlock';
 import { parseTodoListResponse } from './todoTypes';
@@ -26,6 +28,8 @@ import { ExitPlanModeCard } from './ExitPlanModeCard';
 import { ThoughtBlock } from './ThoughtBlock';
 import { useWorkspaceStore } from '../../../store/workspaceStore';
 import { useAIAssistantContext } from '../AIAssistantContext';
+import { useTranslation } from 'react-i18next';
+import { I18N_KEYS } from '../../../constants/i18nKeys';
 
 export interface ToolRunBlockProps {
   toolName: string;
@@ -47,6 +51,8 @@ export interface ToolRunBlockProps {
   nestedToolRuns?: Segment[];
   /** Historical messages can hide elapsed/timeout text while preserving the sub-agent block. */
   showElapsedText?: boolean;
+  /** True when rendering a persisted message rather than the live streaming turn. */
+  isHistoricalMessage?: boolean;
 }
 
 /**
@@ -70,6 +76,7 @@ export function ToolRunBlock({
   progressEvents,
   nestedToolRuns,
   showElapsedText = true,
+  isHistoricalMessage = false,
 }: ToolRunBlockProps) {
   const toolType = getToolType(toolName);
   const formattedParameters = formatParameters(parametersData);
@@ -236,6 +243,27 @@ export function ToolRunBlock({
           parametersData={parametersData}
           responseData={executeNonSelectExecutionData}
           responseError={responseError}
+          checkAvailability={isHistoricalMessage}
+        />
+      );
+
+    case ToolType.EXECUTE_SELECT:
+      return (
+        <ExecuteSelectSqlBlock
+          toolName={toolName}
+          formattedParameters={formattedParameters}
+          responseData={executeNonSelectExecutionData}
+          responseError={responseError}
+        />
+      );
+
+    case ToolType.GET_OBJECT_DETAIL:
+      return (
+        <GetObjectDetailBlock
+          toolName={toolName}
+          formattedParameters={formattedParameters}
+          responseData={executeNonSelectExecutionData}
+          responseError={responseError}
         />
       );
 
@@ -264,6 +292,7 @@ export function planTabId(title: string): string {
  */
 function PlanStreamHandler({ parametersData }: { parametersData: string }) {
   const openedRef = useRef(false);
+  const { t } = useTranslation();
 
   const partial = parsePartialExitPlanPayload(parametersData);
 
@@ -293,10 +322,10 @@ function PlanStreamHandler({ parametersData }: { parametersData: string }) {
     <div className="mb-2 px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10 flex items-center gap-2">
       <ListTodo className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 animate-pulse" />
       <span className="text-[12px] theme-text-primary flex-1 truncate">
-        Generating plan: <span className="font-medium">{partial.title}</span>
-        <span className="ml-1.5 theme-text-secondary">
-          ({partial.steps.length} step{partial.steps.length !== 1 ? 's' : ''})
-        </span>
+        {t(I18N_KEYS.AI.TOOL_RUN.PLAN_GENERATING, {
+          title: partial.title,
+          count: partial.steps.length,
+        })}
       </span>
     </div>
   );
@@ -308,6 +337,7 @@ function PlanStreamHandler({ parametersData }: { parametersData: string }) {
  */
 function PlanCompleteHandler({ payload }: { payload: ExitPlanPayload }) {
   const finalizedRef = useRef(false);
+  const { t } = useTranslation();
   const { latestPlanTabId } = useAIAssistantContext();
   const tabId = planTabId(payload.title);
 
@@ -356,17 +386,17 @@ function PlanCompleteHandler({ payload }: { payload: ExitPlanPayload }) {
       <div className="px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10 flex items-center gap-2">
         <ListTodo className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
         <span className="text-[12px] theme-text-primary flex-1 truncate">
-          Plan: <span className="font-medium">{payload.title}</span>
-          <span className="ml-1.5 theme-text-secondary">
-            ({payload.steps.length} step{payload.steps.length !== 1 ? 's' : ''})
-          </span>
+          {t(I18N_KEYS.AI.TOOL_RUN.PLAN_SUMMARY, {
+            title: payload.title,
+            count: payload.steps.length,
+          })}
         </span>
         <button
           type="button"
           onClick={handleViewPlan}
           className="text-[11px] text-amber-600 dark:text-amber-400 hover:underline shrink-0"
         >
-          View Plan
+          {t(I18N_KEYS.AI.TOOL_RUN.VIEW_PLAN)}
         </button>
       </div>
       {/* Action buttons card */}

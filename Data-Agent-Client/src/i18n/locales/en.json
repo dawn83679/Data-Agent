@@ -204,7 +204,10 @@
     "toolRun": {
       "streamingArguments": "Streaming arguments...",
       "executing": "Executing...",
-      "parameters": "Parameters"
+      "parameters": "Parameters",
+      "planGenerating": "Generating plan: {{title}} ({{count}} steps)",
+      "planSummary": "Plan: {{title}} ({{count}} steps)",
+      "viewPlan": "View Plan"
     },
     "compact": {
       "loading": "Compacting conversation...",
@@ -228,6 +231,31 @@
       "copyImage": "Copy image",
       "copied": "Copied!",
       "downloadPng": "Download as PNG"
+    },
+    "tableActions": {
+      "copyTable": "Copy table",
+      "copied": "Table copied.",
+      "download": "Download",
+      "downloadSuccess": "Table downloaded.",
+      "downloadFailed": "Failed to download table."
+    },
+    "executeSelect": {
+      "table": "Table",
+      "json": "JSON",
+      "summary": "{{rowCount}} rows, {{columnCount}} columns",
+      "previewLimitHint": "Showing first {{count}} rows only.",
+      "limitAppliedHint": "Result limit applied.",
+      "noResultSet": "No table result available. Switch to JSON for the full response.",
+      "invalidPayload": "Unable to parse executeSelectSql response."
+    },
+    "getObjectDetail": {
+      "ddl": "DDL",
+      "json": "JSON",
+      "rowCount": "{{count}} rows",
+      "indexCount": "{{count}} indexes",
+      "noDetails": "No object details available. Switch to JSON for the full response.",
+      "detailFailed": "Failed to load object details.",
+      "objectFallback": "Object {{count}}"
     },
     "exportFile": {
       "label": "Exported file",

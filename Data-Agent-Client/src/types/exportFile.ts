@@ -24,3 +24,10 @@ export interface DownloadExportFileResponse {
   contentDisposition?: string;
   contentType?: string;
 }
+
+export interface ExportFileStatus {
+  fileId: string;
+  exists: boolean;
+  available: boolean;
+  sizeBytes: number;
+}

@@ -3,10 +3,91 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { SqlCodeBlock } from '../../common/SqlCodeBlock';
 import { cn } from '../../../lib/utils';
+import { LightDataTable, type LightDataTableCell } from './LightDataTable';
 
 export const markdownRemarkPlugins = [remarkGfm];
 
-export function useMarkdownComponents(): React.ComponentProps<typeof ReactMarkdown>['components'] {
+type MarkdownTableNode = {
+  tagName?: string;
+  value?: string;
+  children?: MarkdownTableNode[];
+};
+
+interface MarkdownComponentsOptions {
+  enableTableActions?: boolean;
+}
+
+interface ParsedMarkdownTable {
+  headers: string[];
+  rows: string[][];
+}
+
+function normalizeCellText(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function extractTextFromTableNode(node: MarkdownTableNode | null | undefined): string {
+  if (!node) {
+    return '';
+  }
+  const ownValue = typeof node.value === 'string' ? node.value : '';
+  const childValue = Array.isArray(node.children)
+    ? node.children.map((child) => extractTextFromTableNode(child)).join('')
+    : '';
+  return normalizeCellText(ownValue + childValue);
+}
+
+function collectRowsFromSection(node: MarkdownTableNode | null | undefined): string[][] {
+  if (!node || !Array.isArray(node.children)) {
+    return [];
+  }
+
+  return node.children
+    .filter((child) => child?.tagName === 'tr')
+    .map((rowNode) => {
+      const cells = Array.isArray(rowNode.children) ? rowNode.children : [];
+      return cells
+        .filter((cellNode) => cellNode?.tagName === 'th' || cellNode?.tagName === 'td')
+        .map((cellNode) => extractTextFromTableNode(cellNode));
+    })
+    .filter((row) => row.length > 0);
+}
+
+function parseMarkdownTable(node: MarkdownTableNode | null | undefined): ParsedMarkdownTable {
+  if (!node || !Array.isArray(node.children)) {
+    return { headers: [], rows: [] };
+  }
+
+  const headerSection = node.children.find((child) => child?.tagName === 'thead');
+  const bodySection = node.children.find((child) => child?.tagName === 'tbody');
+  const directRows = node.children.filter((child) => child?.tagName === 'tr');
+
+  const headerRows = collectRowsFromSection(headerSection);
+  const bodyRows = collectRowsFromSection(bodySection);
+  const fallbackRows = directRows.length > 0
+    ? directRows.map((rowNode) => {
+        const cells = Array.isArray(rowNode.children) ? rowNode.children : [];
+        return cells
+          .filter((cellNode) => cellNode?.tagName === 'th' || cellNode?.tagName === 'td')
+          .map((cellNode) => extractTextFromTableNode(cellNode));
+      }).filter((row) => row.length > 0)
+    : [];
+
+  const allRows = bodyRows.length > 0 || headerRows.length > 0 ? [...headerRows, ...bodyRows] : fallbackRows;
+  if (allRows.length === 0) {
+    return { headers: [], rows: [] };
+  }
+
+  const headers = headerRows[0] ?? allRows[0];
+  const rows = headerRows.length > 0 ? bodyRows : allRows.slice(1);
+  return { headers, rows };
+}
+
+export function useMarkdownComponents(
+  options: MarkdownComponentsOptions = {}
+): React.ComponentProps<typeof ReactMarkdown>['components'] {
+  const { enableTableActions = true } = options;
+
   return {
     code({ className, children, ...props }) {
       const match = /language-(\w+)/.exec(className || '');
@@ -31,11 +112,20 @@ export function useMarkdownComponents(): React.ComponentProps<typeof ReactMarkdo
     ol: ({ children }: { children?: React.ReactNode }) => (
       <ol className="list-decimal pl-4 mb-2">{children}</ol>
     ),
-    table: ({ children }: { children?: React.ReactNode }) => (
-      <div className="my-2 overflow-x-auto">
-        <table className="w-full border-collapse border theme-border">{children}</table>
-      </div>
-    ),
+    table: ({ node, children }: { node?: MarkdownTableNode; children?: React.ReactNode }) => {
+      const tableData = parseMarkdownTable(node);
+      return (
+        <LightDataTable
+          headers={tableData.headers}
+          rows={tableData.rows.map((row) =>
+            row.map<LightDataTableCell>((cell) => ({ text: cell, title: cell }))
+          )}
+          enableActions={enableTableActions}
+        >
+        {children}
+        </LightDataTable>
+      );
+    },
     thead: ({ children }: { children?: React.ReactNode }) => (
       <thead className="theme-bg-hover">{children}</thead>
     ),

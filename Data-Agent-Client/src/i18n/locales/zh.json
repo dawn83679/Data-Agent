@@ -204,7 +204,10 @@
     "toolRun": {
       "streamingArguments": "正在流式传输参数...",
       "executing": "正在执行...",
-      "parameters": "参数"
+      "parameters": "参数",
+      "planGenerating": "正在生成计划：{{title}}（{{count}} 步）",
+      "planSummary": "计划：{{title}}（{{count}} 步）",
+      "viewPlan": "查看计划"
     },
     "compact": {
       "loading": "正在压缩当前会话...",
@@ -228,6 +231,31 @@
       "copyImage": "复制图片",
       "copied": "已复制！",
       "downloadPng": "下载为 PNG"
+    },
+    "tableActions": {
+      "copyTable": "复制表格",
+      "copied": "表格已复制。",
+      "download": "下载",
+      "downloadSuccess": "表格下载成功。",
+      "downloadFailed": "表格下载失败。"
+    },
+    "executeSelect": {
+      "table": "表格",
+      "json": "JSON",
+      "summary": "{{rowCount}} 行，{{columnCount}} 列",
+      "previewLimitHint": "仅预览前 {{count}} 行。",
+      "limitAppliedHint": "结果已应用限制。",
+      "noResultSet": "暂无可展示结果，请切换到 JSON 查看完整响应。",
+      "invalidPayload": "executeSelectSql 返回内容无法解析。"
+    },
+    "getObjectDetail": {
+      "ddl": "DDL",
+      "json": "JSON",
+      "rowCount": "{{count}} 行",
+      "indexCount": "{{count}} 个索引",
+      "noDetails": "暂无可展示对象详情，请切换到 JSON 查看完整响应。",
+      "detailFailed": "对象详情获取失败。",
+      "objectFallback": "对象 {{count}}"
     },
     "exportFile": {
       "label": "导出文件",
