@@ -68,7 +68,6 @@ export function AIAssistant({ onClosePanel }: { onClosePanel?: () => void }) {
   const [userMentions, setUserMentionsState] = useState<ChatUserMention[]>([]);
   const userMentionsRef = useRef<ChatUserMention[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPlanListOpen, setIsPlanListOpen] = useState(false);
   const [isCompacting, setIsCompacting] = useState(false);
   const [input, setInput] = useState('');
@@ -284,7 +283,6 @@ export function AIAssistant({ onClosePanel }: { onClosePanel?: () => void }) {
         setIsHistoryOpen(true);
       } else if (id === SLASH_COMMAND_IDS.MEMORY) {
         setIsHistoryOpen(false);
-        setIsSettingsOpen(false);
         navigate('/memories');
       } else if (id === SLASH_COMMAND_IDS.COMPACT) {
         void (async () => {
@@ -368,8 +366,6 @@ export function AIAssistant({ onClosePanel }: { onClosePanel?: () => void }) {
           accessToken={!!accessToken}
           isHistoryOpen={isHistoryOpen}
           setIsHistoryOpen={setIsHistoryOpen}
-          isSettingsOpen={isSettingsOpen}
-          setIsSettingsOpen={setIsSettingsOpen}
           currentConversationId={activeConversationId}
           conversationTabs={conversationTabs}
           onSelectTab={async (id) => {
@@ -416,7 +412,6 @@ export function AIAssistant({ onClosePanel }: { onClosePanel?: () => void }) {
           }}
           onClosePanel={() => {
             setIsHistoryOpen(false);
-            setIsSettingsOpen(false);
             onClosePanel?.();
           }}
         />

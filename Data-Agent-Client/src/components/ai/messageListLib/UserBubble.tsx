@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { User, Copy, Check } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { COPY_FEEDBACK_SHORT_MS } from '../../../constants/timing';
 import { expandMentionTokensForCopy, parseMentionSegments } from '../mentionTypes';
@@ -49,12 +49,6 @@ export function UserBubble({ message }: UserBubbleProps) {
 
   return (
     <div className="flex flex-col w-full group/bubble">
-      <div className="flex items-center space-x-2 mb-1.5 opacity-60">
-        <span className="text-[10px] font-medium theme-text-secondary">
-          {t(I18N_KEYS.AI.YOU)}
-        </span>
-        <User className="w-3 h-3 shrink-0" />
-      </div>
       <div
         className="relative w-full px-3 py-2 pr-9 rounded-lg text-xs border"
         style={{

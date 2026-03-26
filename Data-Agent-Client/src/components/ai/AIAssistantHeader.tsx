@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { History, Plus, Settings as SettingsIcon, X } from 'lucide-react';
-import { AISettings } from './AISettings';
+import { History, Plus, X } from 'lucide-react';
 import { ConversationHistoryPanel } from './ConversationHistoryPanel';
 import { cn } from '../../lib/utils';
 import type { ConversationTabSummary } from '../../hooks/useConversationRuntime';
@@ -12,8 +11,6 @@ export interface AIAssistantHeaderProps {
   accessToken: boolean;
   isHistoryOpen: boolean;
   setIsHistoryOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  isSettingsOpen: boolean;
-  setIsSettingsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   currentConversationId: number | null;
   conversationTabs: ConversationTabSummary[];
   onSelectTab: (id: number | null) => void;
@@ -46,8 +43,6 @@ export function AIAssistantHeader({
   accessToken,
   isHistoryOpen,
   setIsHistoryOpen,
-  isSettingsOpen,
-  setIsSettingsOpen,
   currentConversationId,
   conversationTabs,
   onSelectTab,
@@ -232,20 +227,6 @@ export function AIAssistantHeader({
             )}
           </div>
         )}
-        <div className="relative">
-          <button
-            type="button"
-            className="workbench-icon-button"
-            onClick={() => setIsSettingsOpen((prev) => !prev)}
-            aria-label="Settings"
-            title="Settings"
-          >
-            <SettingsIcon className="w-4 h-4" />
-          </button>
-          {isSettingsOpen && (
-            <AISettings onClose={() => setIsSettingsOpen(false)} />
-          )}
-        </div>
         <button
           type="button"
           className="workbench-icon-button"
