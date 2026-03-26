@@ -1,4 +1,5 @@
 package edu.zsc.ai.domain.service.ai.export.model;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -8,16 +9,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExportedFilePayload {
+public class ExportedFileStatus {
 
     private String fileId;
-    private String filename;
-    private String format;
-    private String mimeType;
+    private boolean exists;
+    private boolean available;
     private long sizeBytes;
-    private String downloadPath;
-    private long createdAt;
-    private Integer rowCount;
-    private Integer columnCount;
-    private Object preview;
 }

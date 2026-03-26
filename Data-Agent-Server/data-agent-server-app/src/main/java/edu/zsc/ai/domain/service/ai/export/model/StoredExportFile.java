@@ -1,5 +1,4 @@
 package edu.zsc.ai.domain.service.ai.export.model;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

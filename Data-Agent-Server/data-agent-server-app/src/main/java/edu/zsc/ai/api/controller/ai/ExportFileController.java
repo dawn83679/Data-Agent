@@ -3,6 +3,7 @@ package edu.zsc.ai.api.controller.ai;
 import cn.dev33.satoken.stp.StpUtil;
 import edu.zsc.ai.domain.service.ai.export.FileExportService;
 import edu.zsc.ai.domain.service.ai.export.model.ExportedFileDownload;
+import edu.zsc.ai.domain.service.ai.export.model.ExportedFileStatus;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,12 @@ import java.nio.charset.StandardCharsets;
 public class ExportFileController {
 
     private final FileExportService exportFileService;
+
+    @GetMapping("/{fileId}/status")
+    public ExportedFileStatus status(@PathVariable @NotBlank(message = "fileId is required") String fileId) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        return exportFileService.getStatus(fileId, userId);
+    }
 
     @GetMapping("/{fileId}")
     public ResponseEntity<Resource> download(@PathVariable @NotBlank(message = "fileId is required") String fileId) {
