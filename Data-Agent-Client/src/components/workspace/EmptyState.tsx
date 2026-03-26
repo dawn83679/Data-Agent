@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { I18N_KEYS } from '../../constants/i18nKeys';
 import { getPlatformShortcuts, isApplePlatform } from '../../lib/platformShortcuts';
+import { useWorkspaceStore } from '../../store/workspaceStore';
 
 export function EmptyState() {
     const { t } = useTranslation();
     const shortcuts = getPlatformShortcuts();
+    const setSettingsModalOpen = useWorkspaceStore((s) => s.setSettingsModalOpen);
 
     const handleToggleAI = () => {
         const isApple = isApplePlatform();
@@ -20,11 +22,26 @@ export function EmptyState() {
         window.dispatchEvent(evt);
     };
 
+    const handleOpenSettings = () => {
+        setSettingsModalOpen(true);
+    };
+
+    const handleCloseExplorer = () => {
+        // ESC: global handler toggles the database explorer (unless focus is in an input).
+        const evt = new KeyboardEvent('keydown', {
+            key: 'Escape',
+            code: 'Escape',
+            bubbles: true,
+            cancelable: true,
+        });
+        window.dispatchEvent(evt);
+    };
+
     const shortcutItems = [
         { label: t(I18N_KEYS.COMMON.EXECUTE_QUERY), keys: shortcuts.runQuery },
         { label: t(I18N_KEYS.COMMON.INSERT_INDENT), keys: 'Tab' },
-        { label: t(I18N_KEYS.COMMON.OPEN_SETTINGS), keys: shortcuts.openSettings },
-        { label: t(I18N_KEYS.COMMON.CLOSE_EXPLORER), keys: 'Esc' },
+        { label: t(I18N_KEYS.COMMON.OPEN_SETTINGS), keys: shortcuts.openSettings, onClick: handleOpenSettings },
+        { label: t(I18N_KEYS.COMMON.CLOSE_EXPLORER), keys: 'Esc', onClick: handleCloseExplorer },
         { label: t(I18N_KEYS.COMMON.TOGGLE_AI), keys: shortcuts.toggleAI, onClick: handleToggleAI },
     ];
 
