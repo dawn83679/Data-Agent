@@ -32,14 +32,11 @@ public class ExportFileTool {
             "After Success: treat the returned file card as the delivery artifact. Keep any narrative aligned with the preview and file metadata.",
             "After Failure: fix the export input or ask the user to narrow the output format before retrying.",
             "Do Not Use When: you do not yet have verified data or the user only needs a short textual answer.",
-            "Relation: call activateSkill('file-export') before the first export in a session when that skill is available.",
-            "Version: this environment currently supports CSV only."
+            "Version: this environment currently supports CSV, XLSX, DOCX, and PDF."
     })
     @DisallowInPlanMode(ToolNameEnum.EXPORT_FILE)
     public AgentToolResult exportFile(
-            @P("Export format. Currently only CSV is supported.") String format,
-            @P(value = "Optional user-facing label for the export request. Does not override the final server filename.", required = false)
-            String filename,
+            @P("Export format. Supported values: CSV, XLSX, DOCX, PDF.") String format,
             @P("Column headers for the exported table.") List<String> headers,
             @P("Table rows. Provide a list of row objects, each shaped as { cells: [...] }. Every row must have the same number of cells as headers.")
             List<ExportRowInput> rows,
@@ -51,7 +48,6 @@ public class ExportFileTool {
 
         ExportedFilePayload payload = exportFileService.export(FileExportRequest.builder()
                 .format(format)
-                .filename(filename)
                 .headers(headers)
                 .rows(rows == null ? null : rows.stream().map(row -> row == null ? null : row.getCells()).toList())
                 .userId(userId)

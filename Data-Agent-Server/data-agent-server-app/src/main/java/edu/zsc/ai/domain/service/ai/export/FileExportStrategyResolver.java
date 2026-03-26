@@ -16,15 +16,15 @@ public class FileExportStrategyResolver {
     }
 
     public FileExportStrategy resolve(String format) {
-        String normalized = StringUtils.upperCase(StringUtils.trimToEmpty(format));
-        if (StringUtils.isBlank(normalized)) {
+        if (StringUtils.isBlank(format)) {
             throw new IllegalArgumentException("format is required");
         }
+        var normalized = edu.zsc.ai.common.enums.ai.FileExportFormatEnum.fromValue(format);
         return strategies.stream()
-                .filter(strategy -> strategy.supports(normalized))
+                .filter(strategy -> strategy.supports(format))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(
-                        "Unsupported format '" + normalized + "'. Supported formats: " + supportedFormatsText()
+                        "Unsupported format '" + normalized.name() + "'. Supported formats: " + supportedFormatsText()
                 ));
     }
 
@@ -34,11 +34,9 @@ public class FileExportStrategyResolver {
         }
         return strategies.stream()
                 .map(FileExportStrategy::format)
-                .map(StringUtils::upperCase)
                 .distinct()
                 .sorted()
                 .reduce((left, right) -> left + ", " + right)
                 .orElse("none");
     }
 }
-

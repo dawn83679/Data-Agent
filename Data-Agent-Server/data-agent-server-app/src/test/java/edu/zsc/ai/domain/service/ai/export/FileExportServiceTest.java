@@ -1,8 +1,8 @@
 package edu.zsc.ai.domain.service.ai.export;
-
 import edu.zsc.ai.domain.exception.BusinessException;
 import edu.zsc.ai.domain.service.ai.export.model.ExportedFileDownload;
 import edu.zsc.ai.domain.service.ai.export.model.ExportedFilePayload;
+import edu.zsc.ai.domain.service.ai.export.model.ExportedFileStatus;
 import edu.zsc.ai.domain.service.ai.export.model.FileExportRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -49,6 +49,10 @@ class FileExportServiceTest {
 
         ExportedFileDownload download = service.getDownload(payload.getFileId(), 42L);
         assertEquals(payload.getFilename(), download.getFilename());
+
+        ExportedFileStatus status = service.getStatus(payload.getFileId(), 42L);
+        assertTrue(status.isExists());
+        assertTrue(status.isAvailable());
     }
 
     @Test
@@ -58,7 +62,7 @@ class FileExportServiceTest {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> service.export(FileExportRequest.builder()
-                        .format("PDF")
+                        .format("ZIP")
                         .headers(List.of("name"))
                         .rows(List.of(List.<Object>of("Alice")))
                         .userId(1L)
@@ -67,6 +71,20 @@ class FileExportServiceTest {
         );
 
         assertTrue(exception.getMessage().contains("Unsupported format"));
+    }
+
+    @Test
+    void export_supportsAdditionalFormats() {
+        FileExportService service = createService(
+                new CsvFileExportStrategy(),
+                new XlsxFileExportStrategy(),
+                new DocxFileExportStrategy(),
+                new PdfFileExportStrategy()
+        );
+
+        assertEquals("XLSX", service.export(baseRequest("XLSX")).getFormat());
+        assertEquals("DOCX", service.export(baseRequest("DOCX")).getFormat());
+        assertEquals("PDF", service.export(baseRequest("PDF")).getFormat());
     }
 
     @Test
@@ -87,9 +105,22 @@ class FileExportServiceTest {
         assertEquals(403, exception.getCode());
     }
 
-    private FileExportService createService() {
+    private FileExportService createService(FileExportStrategy... strategies) {
         storageService = new ExportFileStorageService(tempDir.resolve("exports"));
         storageService.initialize();
-        return new FileExportService(new FileExportStrategyResolver(List.of(new CsvFileExportStrategy())), storageService);
+        List<FileExportStrategy> configured = strategies == null || strategies.length == 0
+                ? List.of(new CsvFileExportStrategy())
+                : List.of(strategies);
+        return new FileExportService(new FileExportStrategyResolver(configured), storageService);
+    }
+
+    private FileExportRequest baseRequest(String format) {
+        return FileExportRequest.builder()
+                .format(format)
+                .headers(List.of("name"))
+                .rows(List.of(List.<Object>of("Alice")))
+                .userId(2L)
+                .conversationId(3L)
+                .build();
     }
 }

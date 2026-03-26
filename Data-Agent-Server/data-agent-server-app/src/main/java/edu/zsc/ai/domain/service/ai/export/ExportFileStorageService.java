@@ -4,6 +4,7 @@ import edu.zsc.ai.common.constant.ResponseCode;
 import edu.zsc.ai.common.enums.error.ErrorCodeEnum;
 import edu.zsc.ai.domain.exception.BusinessException;
 import edu.zsc.ai.domain.service.ai.export.model.ExportedFileDownload;
+import edu.zsc.ai.domain.service.ai.export.model.ExportedFileStatus;
 import edu.zsc.ai.domain.service.ai.export.model.FileExportArtifact;
 import edu.zsc.ai.domain.service.ai.export.model.StoredExportFile;
 import jakarta.annotation.PostConstruct;
@@ -131,6 +132,41 @@ public class ExportFileStorageService {
                 .build();
     }
 
+    public ExportedFileStatus resolveStatus(String fileId, Long currentUserId) {
+        if (currentUserId == null) {
+            throw new BusinessException(ResponseCode.UNAUTHORIZED, ErrorCodeEnum.NOT_LOGIN_ERROR.getMessage());
+        }
+        if (fileId == null || fileId.isBlank()) {
+            return unavailableStatus(fileId, false, 0L);
+        }
+
+        StoredExportFile stored = files.get(fileId);
+        if (stored == null || !currentUserId.equals(stored.getOwnerUserId())) {
+            return unavailableStatus(fileId, false, 0L);
+        }
+
+        Path path = stored.getPath();
+        if (path == null || !Files.exists(path)) {
+            files.remove(fileId);
+            return unavailableStatus(fileId, false, 0L);
+        }
+
+        long actualSizeBytes;
+        try {
+            actualSizeBytes = Files.size(path);
+        } catch (IOException e) {
+            log.warn("Failed to read export file status {}", path, e);
+            return unavailableStatus(fileId, true, 0L);
+        }
+
+        return ExportedFileStatus.builder()
+                .fileId(fileId)
+                .exists(true)
+                .available(actualSizeBytes > 0)
+                .sizeBytes(actualSizeBytes)
+                .build();
+    }
+
     public void remove(String fileId) {
         if (fileId == null || fileId.isBlank()) {
             return;
@@ -179,5 +215,14 @@ public class ExportFileStorageService {
         String safeFileId = StringUtils.defaultIfBlank(fileId, UUID.randomUUID().toString());
         String safeExtension = StringUtils.defaultIfBlank(extension, "bin");
         return "%s-%d-%d-%s.%s".formatted(timestamp, userId, safeConversationId, safeFileId, safeExtension);
+    }
+
+    private ExportedFileStatus unavailableStatus(String fileId, boolean exists, long sizeBytes) {
+        return ExportedFileStatus.builder()
+                .fileId(fileId)
+                .exists(exists)
+                .available(false)
+                .sizeBytes(sizeBytes)
+                .build();
     }
 }

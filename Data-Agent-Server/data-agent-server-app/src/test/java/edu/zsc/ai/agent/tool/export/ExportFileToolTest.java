@@ -33,7 +33,6 @@ class ExportFileToolTest {
     void exportFileRequiresUserContext() {
         AgentToolResult result = tool.exportFile(
                 "CSV",
-                null,
                 List.of("name"),
                 List.of(new ExportRowInput(List.<Object>of("Alice"))),
                 InvocationParameters.from(Map.of())
@@ -58,7 +57,6 @@ class ExportFileToolTest {
 
         AgentToolResult result = tool.exportFile(
                 "CSV",
-                null,
                 List.of("name"),
                 List.of(new ExportRowInput(List.<Object>of("Alice"))),
                 InvocationParameters.from(Map.of())

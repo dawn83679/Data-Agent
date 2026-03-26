@@ -1,5 +1,4 @@
 package edu.zsc.ai.domain.service.ai.export.model;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,4 +18,3 @@ public class FileExportArtifact {
     private Integer columnCount;
     private Object preview;
 }
-

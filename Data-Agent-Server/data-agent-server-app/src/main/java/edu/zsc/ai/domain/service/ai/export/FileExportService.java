@@ -4,6 +4,7 @@ import edu.zsc.ai.common.constant.ResponseCode;
 import edu.zsc.ai.domain.exception.BusinessException;
 import edu.zsc.ai.domain.service.ai.export.model.ExportedFileDownload;
 import edu.zsc.ai.domain.service.ai.export.model.ExportedFilePayload;
+import edu.zsc.ai.domain.service.ai.export.model.ExportedFileStatus;
 import edu.zsc.ai.domain.service.ai.export.model.FileExportArtifact;
 import edu.zsc.ai.domain.service.ai.export.model.FileExportRequest;
 import edu.zsc.ai.domain.service.ai.export.model.StoredExportFile;
@@ -33,6 +34,10 @@ public class FileExportService {
         return storageService.resolveDownload(fileId, currentUserId);
     }
 
+    public ExportedFileStatus getStatus(String fileId, Long currentUserId) {
+        return storageService.resolveStatus(fileId, currentUserId);
+    }
+
     private ExportedFilePayload toPayload(StoredExportFile stored) {
         return ExportedFilePayload.builder()
                 .fileId(stored.getFileId())
@@ -51,6 +56,9 @@ public class FileExportService {
     private void validateRequest(FileExportRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("export request is required");
+        }
+        if (request.getFormat() == null || request.getFormat().isBlank()) {
+            throw new IllegalArgumentException("format is required");
         }
         if (request.getUserId() == null) {
             throw BusinessException.unauthorized();

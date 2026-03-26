@@ -1,7 +1,7 @@
 package edu.zsc.ai.domain.service.ai.export;
-
 import edu.zsc.ai.domain.exception.BusinessException;
 import edu.zsc.ai.domain.service.ai.export.model.ExportedFileDownload;
+import edu.zsc.ai.domain.service.ai.export.model.ExportedFileStatus;
 import edu.zsc.ai.domain.service.ai.export.model.FileExportArtifact;
 import edu.zsc.ai.domain.service.ai.export.model.StoredExportFile;
 import org.junit.jupiter.api.AfterEach;
@@ -78,6 +78,32 @@ class ExportFileStorageServiceTest {
     }
 
     @Test
+    void resolveStatus_reportsAvailabilityFromPhysicalFile() throws Exception {
+        storageService = new ExportFileStorageService(tempDir);
+        storageService.initialize();
+
+        FileExportArtifact artifact = FileExportArtifact.builder()
+                .normalizedFormat("CSV")
+                .extension("csv")
+                .mimeType("text/csv;charset=utf-8")
+                .content("x".getBytes(StandardCharsets.UTF_8))
+                .build();
+        StoredExportFile stored = storageService.store(3L, 4L, artifact);
+
+        ExportedFileStatus availableStatus = storageService.resolveStatus(stored.getFileId(), 3L);
+        assertTrue(availableStatus.isExists());
+        assertTrue(availableStatus.isAvailable());
+        assertTrue(availableStatus.getSizeBytes() > 0);
+
+        Files.deleteIfExists(stored.getPath());
+
+        ExportedFileStatus missingStatus = storageService.resolveStatus(stored.getFileId(), 3L);
+        assertFalse(missingStatus.isExists());
+        assertFalse(missingStatus.isAvailable());
+        assertEquals(0L, missingStatus.getSizeBytes());
+    }
+
+    @Test
     void shutdown_cleansDirectory() {
         storageService = new ExportFileStorageService(tempDir);
         storageService.initialize();
@@ -94,4 +120,3 @@ class ExportFileStorageServiceTest {
         assertFalse(Files.exists(tempDir));
     }
 }
-
