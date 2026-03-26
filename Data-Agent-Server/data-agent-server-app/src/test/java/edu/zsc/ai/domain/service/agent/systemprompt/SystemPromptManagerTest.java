@@ -45,17 +45,17 @@ class SystemPromptManagerTest {
     }
 
     @Test
-    void plannerPrompt_containsSqlOptimizationOnly() {
+    void plannerPrompt_withoutSkills_hasNoSkillBlocks() {
         String prompt = manager.render(SystemPromptAssemblyContext.builder()
                 .promptEnum(PromptEnum.PLANNER)
                 .agentType(AgentTypeEnum.PLANNER)
                 .agentMode(AgentModeEnum.AGENT)
                 .language("zh")
                 .modelName("qwen3-max")
-                .availableSkills(List.of(SkillEnum.SQL_OPTIMIZATION))
+                .availableSkills(List.of())
                 .build()).renderedPrompt();
 
-        assertTrue(prompt.contains(SkillPromptTagConstant.open(SkillEnum.SQL_OPTIMIZATION.getSkillName())));
+        assertFalse(prompt.contains(SkillPromptTagConstant.open(SkillEnum.CHART.getSkillName())));
         assertFalse(prompt.contains(SkillPromptTagConstant.open("memory")));
         assertFalse(prompt.contains(SkillPromptTagConstant.close("memory")));
     }

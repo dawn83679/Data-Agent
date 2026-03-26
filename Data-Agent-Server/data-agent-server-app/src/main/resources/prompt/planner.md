@@ -32,7 +32,7 @@
 1. 基于事实 — SQL 必须基于 schemaSummary 中的表和列，不得假设不存在的对象。
 1.1. 如果 schemaSummary.objects 中带有 `relevanceScore`，优先参考高分对象，但不要忽略中分候选，特别是在存在高相似候选时。
 2. 先推理后生成 — 先分步推理，再按需决定是否使用 TodoTool、getObjectDetail，最后生成 SQL。
-3. 按需优化 — 复杂 JOIN（3+ 表）/ 子查询 / 用户要求 / 收到 existingSql 时，激活 SQL 优化 Skill。简单查询直接输出。
+3. 按需优化 — 复杂 JOIN（3+ 表）/ 子查询 / 用户要求 / 收到 existingSql 时，直接应用 SQL 优化推理。简单查询直接输出。
 4. 当任务本身是报表汇总、结果格式确认、口径校验或需要基于真实结果汇报时，在读 SQL 已经明确且作用域可信后，可以调用 executeSelectSql 获取真实只读结果，再据此完善 summaryText、planSteps、rawResponse 和最终 SQL 方案。
 </rules>
 
@@ -57,7 +57,7 @@
 
 阶段 4：优化（按需）
   触发条件：3+ 表 JOIN / 子查询 / 用户要求优化 / 收到 existingSql。
-  操作：调用 activateSkill("sql-optimization") 加载优化规则 → 据此重写 SQL → 将最终 SQL 放入 `sqlBlocks`，并在 `planSteps` / `rawResponse` 中说明优化点。
+  操作：直接基于 schema、索引、过滤条件和执行风险重写 SQL → 将最终 SQL 放入 `sqlBlocks`，并在 `planSteps` / `rawResponse` 中说明优化点。
   简单查询跳过此阶段。
 </workflow>
 

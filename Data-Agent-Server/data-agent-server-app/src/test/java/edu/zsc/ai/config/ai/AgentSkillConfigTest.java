@@ -29,14 +29,16 @@ class AgentSkillConfigTest {
 
     @Test
     void planner_hasOnlySqlOptimization() {
-        assertEquals(List.of(SkillEnum.SQL_OPTIMIZATION),
+        assertEquals(List.of(),
                 config.resolveAvailableSkills(AgentTypeEnum.PLANNER, AgentModeEnum.AGENT));
     }
 
     @Test
     void supports_respectsAgentSkillVisibility() {
         assertFalse(config.supports(AgentTypeEnum.MAIN, AgentModeEnum.AGENT, "memory"));
+        assertFalse(config.supports(AgentTypeEnum.MAIN, AgentModeEnum.AGENT, "file-export"));
         assertFalse(config.supports(AgentTypeEnum.PLANNER, AgentModeEnum.AGENT, "memory"));
+        assertFalse(config.supports(AgentTypeEnum.PLANNER, AgentModeEnum.AGENT, "chart"));
         assertFalse(config.supports(AgentTypeEnum.EXPLORER, AgentModeEnum.AGENT, "chart"));
     }
 }

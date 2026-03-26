@@ -19,10 +19,15 @@ public class ToolUsageRulesSystemPromptStrategy extends AbstractSystemPromptHand
     @Override
     protected String buildContent(SystemPromptAssemblyContext context) {
         StringBuilder builder = new StringBuilder();
-        builder.append("- <skill_available> describes the optional skills supported in this session\n");
-        builder.append("- activateSkill is available when one of those skills would meaningfully help with the current task\n");
-        builder.append("- after activateSkill succeeds, you can apply the loaded guidance directly instead of narrating the activation itself\n");
-        builder.append("- internal tool names usually stay out of the final user answer unless the user explicitly asks for them");
+        if (context.getAvailableSkills() != null && !context.getAvailableSkills().isEmpty()) {
+            builder.append("- <skill_available> describes the optional skills supported in this session\n");
+            builder.append("- activateSkill is available when one of those listed skills would meaningfully help with the current task\n");
+            builder.append("- after activateSkill succeeds, you can apply the loaded guidance directly instead of narrating the activation itself\n");
+            builder.append("- internal tool names usually stay out of the final user answer unless the user explicitly asks for them");
+        } else {
+            builder.append("- no optional skills are available in this session\n");
+            builder.append("- internal tool names usually stay out of the final user answer unless the user explicitly asks for them");
+        }
         if (context.getAgentType() == AgentTypeEnum.MAIN && context.getAgentMode() != AgentModeEnum.PLAN) {
             builder.append("\n- readMemory can help when prompt-injected memory is not enough and targeted durable context would clarify the task");
             builder.append("\n- writeMemory fits durable, reusable preferences, rules, facts, and validated patterns more than one-off task details");

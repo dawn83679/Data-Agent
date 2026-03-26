@@ -10,7 +10,7 @@ import java.util.Locale;
  * <ul>
  *   <li>MAIN — the orchestrator agent that talks to the user, executes SQL, and delegates to sub-agents</li>
  *   <li>EXPLORER — schema discovery sub-agent (TodoTool, SearchObjectsTool, GetObjectDetailTool)</li>
- *   <li>PLANNER — SQL plan generation sub-agent (TodoTool, ActivateSkillTool, GetObjectDetailTool)</li>
+ *   <li>PLANNER — SQL plan generation sub-agent (TodoTool, GetObjectDetailTool, ExecuteSqlTool)</li>
  * </ul>
  */
 @Getter

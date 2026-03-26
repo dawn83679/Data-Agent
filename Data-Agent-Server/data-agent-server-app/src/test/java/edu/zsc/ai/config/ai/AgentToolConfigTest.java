@@ -134,9 +134,9 @@ class AgentToolConfigTest {
             assertTrue(tools.contains(callingExplorerTool));
             assertTrue(tools.contains(callingPlannerTool));
             assertTrue(tools.contains(todoTool));
-            assertTrue(tools.contains(activateSkillTool));
 
             assertFalse(tools.contains(executeSqlTool));
+            assertFalse(tools.contains(activateSkillTool));
             assertFalse(tools.contains(chartTool));
             assertFalse(tools.contains(readMemoryTool));
             assertFalse(tools.contains(writeMemoryTool));
@@ -164,12 +164,11 @@ class AgentToolConfigTest {
         }
 
         @Test
-        void planner_hasTodoSkillObjectDetailAndExecuteSql() {
+        void planner_hasTodoObjectDetailAndExecuteSql() {
             List<Object> tools = config.resolveSubAgentTools(allTools, AgentTypeEnum.PLANNER);
 
-            assertEquals(4, tools.size(), "Planner should have exactly 4 tools");
+            assertEquals(3, tools.size(), "Planner should have exactly 3 tools");
             assertTrue(tools.contains(todoTool), "Planner should have TodoTool");
-            assertTrue(tools.contains(activateSkillTool), "Planner should have ActivateSkillTool");
             assertTrue(tools.contains(getObjectDetailTool), "Planner should have GetObjectDetailTool");
             assertTrue(tools.contains(executeSqlTool), "Planner should have ExecuteSqlTool");
         }
@@ -183,6 +182,7 @@ class AgentToolConfigTest {
             assertFalse(tools.contains(askUserQuestionTool), "Planner should NOT have AskUserQuestionTool");
             assertFalse(tools.contains(callingExplorerTool), "Planner should NOT have CallingExplorerTool");
             assertFalse(tools.contains(callingPlannerTool), "Planner should NOT have CallingPlannerTool");
+            assertFalse(tools.contains(activateSkillTool), "Planner should NOT have ActivateSkillTool");
             assertFalse(tools.contains(chartTool), "Planner should NOT have ChartTool");
             assertFalse(tools.contains(readMemoryTool), "Planner should NOT have ReadMemoryTool");
             assertFalse(tools.contains(writeMemoryTool), "Planner should NOT have WriteMemoryTool");

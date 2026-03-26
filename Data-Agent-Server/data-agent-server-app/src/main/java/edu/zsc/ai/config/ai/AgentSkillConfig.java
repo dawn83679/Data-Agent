@@ -16,8 +16,8 @@ public class AgentSkillConfig {
     private final Map<AgentTypeEnum, List<SkillEnum>> defaultSkillsByAgent = new EnumMap<>(AgentTypeEnum.class);
 
     public AgentSkillConfig() {
-        defaultSkillsByAgent.put(AgentTypeEnum.MAIN, List.of(SkillEnum.CHART, SkillEnum.FILE_EXPORT));
-        defaultSkillsByAgent.put(AgentTypeEnum.PLANNER, List.of(SkillEnum.SQL_OPTIMIZATION));
+        defaultSkillsByAgent.put(AgentTypeEnum.MAIN, List.of(SkillEnum.CHART));
+        defaultSkillsByAgent.put(AgentTypeEnum.PLANNER, List.of());
         defaultSkillsByAgent.put(AgentTypeEnum.EXPLORER, List.of());
     }
 

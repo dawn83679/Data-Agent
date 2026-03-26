@@ -35,8 +35,7 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * Planner SubAgent implementation.
- * Uses TodoTool for task tracking,
- * and ActivateSkillTool for optional SQL optimization.
+ * Uses TodoTool for task tracking and direct planner reasoning for SQL optimization.
  * Accepts SchemaSummary + user question, returns structured SqlPlan.
  */
 @Slf4j
