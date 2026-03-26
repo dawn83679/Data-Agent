@@ -204,10 +204,10 @@ class PlannerSubAgentTest {
         }
 
         @Test
-        void promptFile_mentionsActivateSkill() {
+        void promptFile_describesDirectOptimization() {
             String content = PromptConfig.getPrompt(PromptEnum.PLANNER);
-            assertTrue(content.contains("activateSkill"), "Should mention activateSkill");
-            assertTrue(content.contains("sql-optimization"), "Should mention sql-optimization skill");
+            assertTrue(content.contains("直接应用 SQL 优化推理"), "Should describe direct optimization reasoning");
+            assertTrue(content.contains("直接基于 schema、索引、过滤条件和执行风险重写 SQL"), "Should describe direct rewrite guidance");
         }
 
         @Test

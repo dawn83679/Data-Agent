@@ -25,7 +25,7 @@ public class ActivateSkillTool {
             "Use When: call only when a skill listed in <skill_available> of the current system prompt is clearly needed.",
             "After Success: immediately apply the loaded rules in later tool calls. Do not present skill activation itself as the user-facing result.",
             "After Failure: choose a supported skill from <skill_available> or continue without the skill only if the quality tradeoff is acceptable.",
-            "Relation: use activateSkill before specialized charting, SQL optimization, or durable memory writing work when the current agent exposes those skills.",
+            "Relation: use activateSkill before specialized charting work when the current agent exposes the chart skill.",
             "skillName must match one of the skills listed in <skill_available> for the current agent. Skip if the skill is already loaded in this session."
     })
     public String activateSkill(

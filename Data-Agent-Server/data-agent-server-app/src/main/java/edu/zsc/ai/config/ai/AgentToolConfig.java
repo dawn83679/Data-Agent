@@ -61,8 +61,7 @@ public class AgentToolConfig {
                     CallingExplorerTool.class,
                     CallingPlannerTool.class,
                     AskUserQuestionTool.class,
-                    TodoTool.class,
-                    ActivateSkillTool.class
+                    TodoTool.class
             ),
             ToolScope.EXPLORER, Set.of(
                     TodoTool.class,
@@ -72,7 +71,6 @@ public class AgentToolConfig {
             ),
             ToolScope.PLANNER, Set.of(
                     TodoTool.class,
-                    ActivateSkillTool.class,
                     GetObjectDetailTool.class,
                     ExecuteSqlTool.class
             )

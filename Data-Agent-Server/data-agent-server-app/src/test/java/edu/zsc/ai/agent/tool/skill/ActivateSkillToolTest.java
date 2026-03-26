@@ -43,7 +43,7 @@ class ActivateSkillToolTest {
     }
 
     @Test
-    void mainAgentCanLoadFileExportSkill() {
+    void mainAgentRejectsRemovedFileExportSkill() {
         AgentRequestContext.set(AgentRequestContextInfo.builder()
                 .agentType("main")
                 .agentMode("agent")
@@ -51,7 +51,6 @@ class ActivateSkillToolTest {
 
         String result = tool.activateSkill("file-export");
 
-        assertTrue(result.contains("name: file-export"));
-        assertTrue(result.contains("File Export Rules"));
+        assertTrue(result.contains("Skill 'file-export' is not available."));
     }
 }

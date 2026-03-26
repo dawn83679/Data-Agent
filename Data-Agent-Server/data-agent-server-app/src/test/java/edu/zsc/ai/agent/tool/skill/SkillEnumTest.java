@@ -1,14 +1,11 @@
 package edu.zsc.ai.agent.tool.skill;
 
 import edu.zsc.ai.common.enums.ai.SkillEnum;
-import edu.zsc.ai.config.ai.PromptConfig;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Tests for SkillEnum — verifies all skills are registered and loadable.
- */
+/** Tests for SkillEnum — verifies the remaining skill registration. */
 class SkillEnumTest {
 
     @Test
@@ -19,49 +16,11 @@ class SkillEnumTest {
     }
 
     @Test
-    void sqlOptimizationSkill_exists() {
-        SkillEnum skill = SkillEnum.fromName("sql-optimization");
-        assertNotNull(skill);
-        assertEquals("sql-optimization", skill.getSkillName());
-        assertEquals("skills/sql-optimization/SKILL.md", skill.getResourcePath());
-    }
-
-    @Test
-    void sqlOptimizationSkill_resourceLoadable() {
-        String content = PromptConfig.loadClassPathResource("skills/sql-optimization/SKILL.md");
-        assertNotNull(content);
-        assertFalse(content.isBlank());
-        assertTrue(content.contains("name: sql-optimization"));
-        assertTrue(content.contains("Index Utilization"), "Should contain index optimization rules");
-        assertTrue(content.contains("JOIN Optimization"), "Should contain JOIN optimization rules");
-        assertTrue(content.contains("optimizedSql"), "Should describe output format");
-    }
-
-    @Test
-    void fileExportSkill_exists() {
-        SkillEnum skill = SkillEnum.fromName("file-export");
-        assertNotNull(skill);
-        assertEquals("file-export", skill.getSkillName());
-        assertEquals("skills/file-export/SKILL.md", skill.getResourcePath());
-    }
-
-    @Test
-    void fileExportSkill_resourceLoadable() {
-        String content = PromptConfig.loadClassPathResource("skills/file-export/SKILL.md");
-        assertNotNull(content);
-        assertFalse(content.isBlank());
-        assertTrue(content.contains("name: file-export"));
-        assertTrue(content.contains("Export only when the user clearly wants a downloadable artifact"));
-        assertTrue(content.contains("headers"));
-        assertTrue(content.contains("rows"));
-    }
-
-    @Test
     void validNames_includesRegisteredSkills() {
         String names = SkillEnum.validNames();
         assertTrue(names.contains("chart"));
-        assertTrue(names.contains("file-export"));
-        assertTrue(names.contains("sql-optimization"));
+        assertFalse(names.contains("file-export"));
+        assertFalse(names.contains("sql-optimization"));
         assertFalse(names.contains("memory"));
     }
 
@@ -73,6 +32,6 @@ class SkillEnumTest {
 
     @Test
     void fromName_caseInsensitive() {
-        assertNotNull(SkillEnum.fromName("SQL-OPTIMIZATION"));
+        assertNotNull(SkillEnum.fromName("CHART"));
     }
 }
