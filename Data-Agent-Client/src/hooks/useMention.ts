@@ -97,7 +97,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
         names.map((name) => ({
           id: `${MentionIdPrefix.DB}${name}`,
           label: name,
-          payload: { connectionId, catalogName: name },
+          payload: { connectionId, catalogName: name, dbType: mentionConnection?.dbType },
         }))
       );
     } catch (err) {
@@ -106,7 +106,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
     } finally {
       setMentionLoading(false);
     }
-  }, [queryClient, t]);
+  }, [mentionConnection?.dbType, queryClient, t]);
 
   const loadSchemas = useCallback(
     async (connId: number, catalog: string) => {
@@ -241,7 +241,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
         connections.map((c) => ({
           id: `${MentionIdPrefix.CONNECTION}${c.id}`,
           label: c.name,
-          payload: { connectionId: c.id },
+          payload: { connectionId: c.id, dbType: c.dbType },
         }))
       );
       setMentionHighlightedIndex(0);
@@ -260,7 +260,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
       connections.map((c) => ({
         id: `${MentionIdPrefix.CONNECTION}${c.id}`,
         label: c.name,
-        payload: { connectionId: c.id },
+        payload: { connectionId: c.id, dbType: c.dbType },
       }))
     );
     setMentionHighlightedIndex(0);
@@ -395,7 +395,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
         connections.map((c) => ({
           id: `${MentionIdPrefix.CONNECTION}${c.id}`,
           label: c.name,
-          payload: { connectionId: c.id },
+          payload: { connectionId: c.id, dbType: c.dbType },
         }))
       );
       setMentionHighlightedIndex(0);

@@ -13,6 +13,7 @@ export type MentionObjectType =
 export interface MentionPayload {
   connectionId?: number;
   connectionName?: string;
+  dbType?: string;
   catalogName?: string;
   schemaName?: string;
   objectName?: string;

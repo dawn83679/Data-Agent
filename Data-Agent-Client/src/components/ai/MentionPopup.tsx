@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { Database, Eye, FunctionSquare, LayoutGrid, Server, Table, Zap } from 'lucide-react';
+import { Database, Eye, FunctionSquare, LayoutGrid, Table, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { MentionItem, MentionLevel, MentionObjectType } from './mentionTypes';
 import { I18N_KEYS } from '../../constants/i18nKeys';
+import { DatabaseTypeIcon } from '../common/DatabaseTypeIcon';
 
 const MENTION_LEVEL_COLORS: Record<MentionLevel, string> = {
   connection: 'text-emerald-400',
@@ -22,13 +23,21 @@ const OBJECT_TYPE_COLORS: Record<MentionObjectType, string> = {
   KEY: 'text-amber-500',
 };
 
-function MentionLevelIcon({ level, selected = false }: { level: MentionLevel; selected?: boolean }) {
+function MentionLevelIcon({
+  level,
+  selected = false,
+  dbType,
+}: {
+  level: MentionLevel;
+  selected?: boolean;
+  dbType?: string;
+}) {
   const colorClass = selected ? 'text-white' : (MENTION_LEVEL_COLORS[level] ?? 'opacity-70');
   switch (level) {
     case 'connection':
-      return <Server className={`w-3 h-3 shrink-0 ${colorClass}`} />;
+      return <DatabaseTypeIcon dbType={dbType} className="w-3 h-3 shrink-0" fallbackClassName={colorClass} />;
     case 'database':
-      return <Database className={`w-3 h-3 shrink-0 ${colorClass}`} />;
+      return <DatabaseTypeIcon dbType={dbType} className="w-3 h-3 shrink-0" fallbackClassName={colorClass} />;
     case 'schema':
       return <LayoutGrid className={`w-3 h-3 shrink-0 ${colorClass}`} />;
     case 'object':
@@ -169,7 +178,7 @@ export function MentionPopup({
           >
             {level === 'object'
               ? <MentionObjectIcon objectType={item.payload?.objectType} selected={isSelected} />
-              : <MentionLevelIcon level={level} selected={isSelected} />}
+              : <MentionLevelIcon level={level} selected={isSelected} dbType={item.payload?.dbType} />}
             <span className="min-w-0 flex-1 truncate">
               <span className={isSelected ? 'text-white' : 'theme-text-primary'}>
                 {item.label}
