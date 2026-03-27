@@ -8,6 +8,7 @@ import { MessageAccumulator } from './MessageAccumulator';
 import { MessageListItem } from './MessageListItem';
 import { segmentsHaveTodo } from './segmentTodoUtils';
 import { useTodoInMessages } from './useTodoInMessages';
+import { groupSqlToolSegments } from './groupSqlToolSegments';
 import { PlanningIndicator } from '../blocks';
 import { getToolType, ToolType } from '../blocks/toolTypes';
 import type { Message, Segment, TodoBoxSpec } from './types';
@@ -69,7 +70,9 @@ export function MessageList({
             ? (() => {
                 const acc = new MessageAccumulator();
                 msg.blocks!.forEach((b) => acc.pushBlock(b));
-                return acc.getSegments();
+                return groupSqlToolSegments(acc.getSegments(), {
+                  keepTailGroupOpen: isLastAssistantStreaming,
+                });
               })()
             : msg.role === MessageRole.ASSISTANT && (msg.content ?? '').trim() !== ''
               ? [{ kind: SegmentKind.TEXT as const, data: msg.content ?? '' }]
@@ -166,6 +169,13 @@ function getSegmentSignature(segments: Segment[]): string {
           return `${seg.kind}:${seg.data}`;
         case SegmentKind.STATUS:
           return `${seg.kind}:${seg.statusKey}`;
+        case SegmentKind.TOOL_GROUP:
+          return [
+            seg.kind,
+            seg.groupType,
+            seg.pending ? '1' : '0',
+            getSegmentSignature(seg.nestedToolRuns),
+          ].join(':');
         case SegmentKind.TOOL_RUN:
           return [
             seg.kind,

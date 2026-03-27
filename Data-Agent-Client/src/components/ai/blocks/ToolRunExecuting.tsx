@@ -1,6 +1,12 @@
+import { Loader2 } from 'lucide-react';
+import {
+  getToolCardClassName,
+  TOOL_CARD_HEADER_CLASSNAME,
+  TOOL_CARD_META_CLASSNAME,
+} from './toolRunStyles';
+
 export interface ToolRunExecutingProps {
   toolName: string;
-  parametersData: string;
 }
 
 /**
@@ -8,9 +14,13 @@ export interface ToolRunExecutingProps {
  */
 export function ToolRunExecuting({ toolName }: ToolRunExecutingProps) {
   return (
-    <div className="mb-2 text-[12px] theme-text-secondary">
-      <div className="flex items-center gap-2">
-        <span className="font-medium animate-pulse theme-text-primary">{toolName}</span>
+    <div className={getToolCardClassName(false)}>
+      <div className={TOOL_CARD_HEADER_CLASSNAME}>
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-500" aria-hidden />
+        <span className="min-w-0 flex-1 truncate text-[12px] font-medium theme-text-primary">
+          {toolName}
+        </span>
+        <span className={TOOL_CARD_META_CLASSNAME}>Running</span>
       </div>
     </div>
   );

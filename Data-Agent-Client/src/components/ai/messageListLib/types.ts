@@ -7,6 +7,7 @@ export enum SegmentKind {
   TEXT = 'TEXT',
   THOUGHT = 'THOUGHT',
   TOOL_RUN = 'TOOL_RUN',
+  TOOL_GROUP = 'TOOL_GROUP',
   STATUS = 'STATUS',
 }
 
@@ -32,6 +33,12 @@ export type Segment =
   | { kind: SegmentKind.TEXT; data: string }
   | { kind: SegmentKind.THOUGHT; data: string }
   | { kind: SegmentKind.STATUS; statusKey: string }
+  | {
+      kind: SegmentKind.TOOL_GROUP;
+      groupType: 'sql-explore';
+      nestedToolRuns: Segment[];
+      pending?: boolean;
+    }
   | {
       kind: SegmentKind.TOOL_RUN;
       toolName: string;
