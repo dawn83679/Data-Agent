@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { ListTodo } from 'lucide-react';
 import { TodoListBlock } from './TodoListBlock';
-import { ToolRunStreaming } from './ToolRunStreaming';
 import { ToolRunExecuting } from './ToolRunExecuting';
 import { GenericToolRun } from './GenericToolRun';
 import { ChartToolBlock } from './ChartToolBlock';
@@ -83,8 +82,6 @@ export function ToolRunBlock({
   const executeNonSelectPayload = toolName === 'executeNonSelectSql'
     ? parseExecuteNonSelectToolResult(responseData)
     : null;
-  const isInteractive = toolType === ToolType.ASK_USER
-    || executeNonSelectPayload?.status === ExecuteNonSelectToolStatus.REQUIRES_CONFIRMATION;
 
   // 0. exploreSchema / generateSqlPlan — render as SubAgent card at every lifecycle stage
   if (toolType === ToolType.CALLING_SUB_AGENT) {
@@ -137,18 +134,9 @@ export function ToolRunBlock({
 
   // 1. Handle Execution Lifecycle States
   if (executionState === ToolExecutionState.STREAMING_ARGUMENTS) {
-    if (isInteractive) {
-      return (
-        <ToolRunExecuting
-          toolName={toolName}
-          parametersData={parametersData}
-        />
-      );
-    }
     return (
-      <ToolRunStreaming
+      <ToolRunExecuting
         toolName={toolName}
-        partialArguments={parametersData}
       />
     );
   }
@@ -158,7 +146,6 @@ export function ToolRunBlock({
     return (
       <ToolRunExecuting
         toolName={toolName}
-        parametersData={parametersData}
       />
     );
   }

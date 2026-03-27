@@ -17,6 +17,14 @@ import { cn } from '../../../lib/utils';
 import { connectionService } from '../../../services/connection.service';
 import { parseGetObjectDetailResponse } from './getObjectDetailTypes';
 import { SqlPreviewCard } from './SqlPreviewCard';
+import {
+  getToolCardClassName,
+  getToolSectionShellClassName,
+  TOOL_CARD_CONTENT_CLASSNAME,
+  TOOL_CARD_HEADER_CLASSNAME,
+  TOOL_CARD_META_CLASSNAME,
+  TOOL_SECTION_TITLE_CLASSNAME,
+} from './toolRunStyles';
 
 export interface GetObjectDetailBlockProps {
   toolName: string;
@@ -75,9 +83,7 @@ export function GetObjectDetailBlock({
   }, [parsed.items, t]);
 
   const syntaxTheme = theme === 'dark' ? oneDark : oneLight;
-  const sectionShellClassName = theme === 'dark'
-    ? 'rounded-lg border border-white/8 bg-black/18'
-    : 'rounded-lg border border-slate-200 bg-slate-50/90';
+  const sectionShellClassName = getToolSectionShellClassName(theme);
 
   const highlighterProps = {
     language: 'json',
@@ -123,35 +129,33 @@ export function GetObjectDetailBlock({
   ].filter((part): part is string => !!part && part.trim() !== '') : [];
 
   return (
-    <div
-      className={cn(
-        'mb-2 text-xs rounded transition-colors',
-        collapsed ? 'opacity-70 theme-text-secondary' : 'opacity-100 theme-text-primary'
-      )}
-    >
+    <div className={getToolCardClassName(!collapsed)}>
       <button
         type="button"
         onClick={() => setCollapsed((current) => !current)}
-        className="w-full py-1.5 flex items-center gap-2 text-left rounded transition-colors theme-text-primary hover:bg-[color:var(--bg-popup)]/55"
+        className={TOOL_CARD_HEADER_CLASSNAME}
       >
         {isHeaderError ? (
           <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" aria-label="Failed" />
         ) : (
           <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" aria-hidden />
         )}
-        <span className="font-medium">
+        <span className="min-w-0 flex-1 truncate text-[12px] font-medium theme-text-primary">
           {isHeaderError ? TOOL_RUN_LABEL_FAILED : TOOL_RUN_LABEL_RAN}
           {toolName}
         </span>
-        <span className={cn('ml-auto shrink-0', collapsed ? 'opacity-60' : 'opacity-80')}>
+        <span className={cn(TOOL_CARD_META_CLASSNAME, 'shrink-0')}>
+          {parsed.items.length} object{parsed.items.length === 1 ? '' : 's'}
+        </span>
+        <span className="shrink-0 theme-text-secondary">
           {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </span>
       </button>
 
       {!collapsed && (
-        <div className="mt-1 space-y-2 theme-text-primary">
+        <div className={cn(TOOL_CARD_CONTENT_CLASSNAME, 'space-y-3 theme-text-primary')}>
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wide opacity-90 mb-1 flex items-center gap-1">
+            <div className={TOOL_SECTION_TITLE_CLASSNAME}>
               {TOOL_RUN_SECTION_PARAMETERS}
               <span className="opacity-50" aria-hidden>☰</span>
             </div>
@@ -163,7 +167,7 @@ export function GetObjectDetailBlock({
           </div>
 
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wide opacity-90 mb-1">
+            <div className={TOOL_SECTION_TITLE_CLASSNAME}>
               {TOOL_RUN_SECTION_RESPONSE}
             </div>
             <div className={`${sectionShellClassName} px-2 py-2 text-[11px]`}>

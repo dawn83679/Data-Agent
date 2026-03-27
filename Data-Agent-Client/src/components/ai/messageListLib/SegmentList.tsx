@@ -84,6 +84,7 @@ export function SegmentList({
           rendering or executing, so the gap is tool latency, not AI thinking. */}
       {isLastAssistantStreaming && isWaiting &&
         lastSeg?.kind !== SegmentKind.TOOL_RUN &&
+        !(lastSeg?.kind === SegmentKind.TOOL_GROUP && lastSeg.pending) &&
         <PlanningIndicator />}
     </div>
   );

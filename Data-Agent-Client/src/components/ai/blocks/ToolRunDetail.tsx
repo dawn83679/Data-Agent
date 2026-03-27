@@ -6,6 +6,10 @@ import {
   TOOL_RUN_SECTION_RESPONSE,
   TOOL_RUN_EMPTY_PLACEHOLDER,
 } from '../../../constants/chat';
+import {
+  getToolSectionShellClassName,
+  TOOL_SECTION_TITLE_CLASSNAME,
+} from './toolRunStyles';
 
 export interface ToolRunDetailProps {
   formattedParameters: string;
@@ -19,9 +23,7 @@ export function ToolRunDetail({
 }: ToolRunDetailProps) {
   const { theme } = useTheme();
   const syntaxTheme = theme === 'dark' ? oneDark : oneLight;
-  const sectionShellClassName = theme === 'dark'
-    ? 'rounded-lg border border-white/8 bg-black/18'
-    : 'rounded-lg border border-slate-200 bg-slate-50/90';
+  const sectionShellClassName = getToolSectionShellClassName(theme);
 
   const highlighterProps = {
     language: 'json',
@@ -39,9 +41,9 @@ export function ToolRunDetail({
   };
 
   return (
-    <div className="mt-1 space-y-2 theme-text-primary">
+    <div className="space-y-3 theme-text-primary">
       <div>
-        <div className="text-[10px] font-semibold uppercase tracking-wide opacity-90 mb-1 flex items-center gap-1">
+        <div className={TOOL_SECTION_TITLE_CLASSNAME}>
           {TOOL_RUN_SECTION_PARAMETERS}
           <span className="opacity-50" aria-hidden>☰</span>
         </div>
@@ -52,7 +54,7 @@ export function ToolRunDetail({
         </div>
       </div>
       <div>
-        <div className="text-[10px] font-semibold uppercase tracking-wide opacity-90 mb-1">
+        <div className={TOOL_SECTION_TITLE_CLASSNAME}>
           {TOOL_RUN_SECTION_RESPONSE}
         </div>
         <div className={`${sectionShellClassName} text-[11px] max-h-[220px] overflow-auto`}>

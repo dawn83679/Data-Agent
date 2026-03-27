@@ -1,5 +1,6 @@
 import React from 'react';
 import { StatusBlock, TextBlock, ThoughtBlock, ToolRunBlock } from '../blocks';
+import { SqlExploreGroupBlock } from '../blocks/SqlExploreGroupBlock';
 import type { Segment } from './types';
 import { SegmentKind } from './types';
 
@@ -25,6 +26,15 @@ export function renderSegment(
       );
     case SegmentKind.STATUS:
       return <StatusBlock key={key} statusKey={segment.statusKey} />;
+    case SegmentKind.TOOL_GROUP:
+      return (
+        <SqlExploreGroupBlock
+          key={key}
+          nestedToolRuns={segment.nestedToolRuns}
+          pending={segment.pending}
+          isHistoricalMessage={isHistoricalMessage}
+        />
+      );
     case SegmentKind.TOOL_RUN:
       return (
         <ToolRunBlock

@@ -3,6 +3,12 @@ import { CheckCircle, ChevronDown, ChevronRight, XCircle } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { TOOL_RUN_LABEL_FAILED, TOOL_RUN_LABEL_RAN } from '../../../constants/chat';
 import { ToolRunDetail } from './ToolRunDetail';
+import {
+  getToolCardClassName,
+  TOOL_CARD_CONTENT_CLASSNAME,
+  TOOL_CARD_HEADER_CLASSNAME,
+  TOOL_CARD_META_CLASSNAME,
+} from './toolRunStyles';
 
 export interface GenericToolRunProps {
   toolName: string;
@@ -24,36 +30,36 @@ export function GenericToolRun({
   const [collapsed, setCollapsed] = useState(true);
 
   return (
-    <div
-      className={cn(
-        'mb-2 text-xs rounded transition-colors',
-        collapsed ? 'opacity-70 theme-text-secondary' : 'opacity-100 theme-text-primary'
-      )}
-    >
+    <div className={getToolCardClassName(!collapsed)}>
       <button
         type="button"
         onClick={() => setCollapsed((c) => !c)}
-        className="w-full py-1.5 flex items-center gap-2 text-left rounded transition-colors theme-text-primary hover:bg-[color:var(--bg-popup)]/55"
+        className={TOOL_CARD_HEADER_CLASSNAME}
       >
         {responseError ? (
           <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" aria-label="Failed" />
         ) : (
           <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" aria-hidden />
         )}
-        <span className="font-medium">
+        <span className="min-w-0 flex-1 truncate text-[12px] font-medium theme-text-primary">
           {responseError ? TOOL_RUN_LABEL_FAILED : TOOL_RUN_LABEL_RAN}
           {toolName}
         </span>
-        <span className={cn('ml-auto shrink-0', collapsed ? 'opacity-60' : 'opacity-80')}>
+        <span className={cn(TOOL_CARD_META_CLASSNAME, 'shrink-0')}>
+          {responseError ? 'Error' : 'Tool'}
+        </span>
+        <span className="shrink-0 theme-text-secondary">
           {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </span>
       </button>
 
       {!collapsed && (
-        <ToolRunDetail
-          formattedParameters={formattedParameters}
-          responseData={responseData}
-        />
+        <div className={TOOL_CARD_CONTENT_CLASSNAME}>
+          <ToolRunDetail
+            formattedParameters={formattedParameters}
+            responseData={responseData}
+          />
+        </div>
       )}
     </div>
   );
