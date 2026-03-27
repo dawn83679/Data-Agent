@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { BookOpen, ChevronDown, ChevronRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useMarkdownComponents, markdownRemarkPlugins } from './markdownComponents';
@@ -10,6 +10,15 @@ export interface SkillToolBlockProps {
   responseError: boolean;
 }
 
+function stripSkillFrontmatter(raw: string): string {
+  const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+  if (!match) {
+    return raw.trim();
+  }
+
+  return raw.slice(match[0].length).trim();
+}
+
 /**
  * Renders an activateSkill tool result with the response rendered as markdown.
  * Shows skill name in a collapsible header; expands to show formatted markdown content.
@@ -17,6 +26,7 @@ export interface SkillToolBlockProps {
 export function SkillToolBlock({ skillName, responseData, responseError }: SkillToolBlockProps) {
   const [collapsed, setCollapsed] = useState(true);
   const markdownComponents = useMarkdownComponents();
+  const skillMarkdownBody = useMemo(() => stripSkillFrontmatter(responseData), [responseData]);
 
   return (
     <div
@@ -46,9 +56,11 @@ export function SkillToolBlock({ skillName, responseData, responseError }: Skill
 
       {!collapsed && responseData && (
         <div className="mt-1 px-3 py-2 rounded-md border theme-border theme-bg-secondary text-[12px] leading-relaxed overflow-x-auto">
-          <ReactMarkdown components={markdownComponents} remarkPlugins={markdownRemarkPlugins}>
-            {responseData}
-          </ReactMarkdown>
+          {skillMarkdownBody && (
+            <ReactMarkdown components={markdownComponents} remarkPlugins={markdownRemarkPlugins}>
+              {skillMarkdownBody}
+            </ReactMarkdown>
+          )}
         </div>
       )}
     </div>

@@ -89,6 +89,18 @@ export function useMarkdownComponents(
   const { enableTableActions = true } = options;
 
   return {
+    h1: ({ children }: { children?: React.ReactNode }) => (
+      <h1 className="mb-3 mt-1 text-[16px] font-semibold tracking-tight theme-text-primary">{children}</h1>
+    ),
+    h2: ({ children }: { children?: React.ReactNode }) => (
+      <h2 className="mb-2 mt-4 text-[14px] font-semibold tracking-tight theme-text-primary">{children}</h2>
+    ),
+    h3: ({ children }: { children?: React.ReactNode }) => (
+      <h3 className="mb-2 mt-3 text-[13px] font-semibold theme-text-primary">{children}</h3>
+    ),
+    h4: ({ children }: { children?: React.ReactNode }) => (
+      <h4 className="mb-2 mt-3 text-[12px] font-semibold theme-text-primary">{children}</h4>
+    ),
     code({ className, children, ...props }) {
       const match = /language-(\w+)/.exec(className || '');
       const language = match ? match[1] : '';
@@ -105,6 +117,9 @@ export function useMarkdownComponents(
     },
     p: ({ children }: { children?: React.ReactNode }) => (
       <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>
+    ),
+    strong: ({ children }: { children?: React.ReactNode }) => (
+      <strong className="font-semibold text-[color:var(--text-markdown-strong)]">{children}</strong>
     ),
     ul: ({ children }: { children?: React.ReactNode }) => (
       <ul className="list-disc pl-4 mb-2">{children}</ul>
