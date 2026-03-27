@@ -517,7 +517,7 @@ class CompressionServiceImplTest {
         assertTrue(prompt.contains("callingExplorerSubAgent"), "Missing tool rule: callingExplorerSubAgent");
         assertTrue(prompt.contains("callingPlannerSubAgent"), "Missing tool rule: callingPlannerSubAgent");
         assertTrue(prompt.contains("readMemory"), "Missing tool rule: readMemory");
-        assertTrue(prompt.contains("writeMemory"), "Missing tool rule: writeMemory");
+        assertTrue(prompt.contains("updateMemory"), "Missing tool rule: updateMemory");
         assertTrue(prompt.contains("<system_context>"), "Missing current runtime wrapper discard rule");
         assertTrue(prompt.contains("<scope_hints>"), "Missing current scope wrapper discard rule");
         assertTrue(prompt.contains("<task>"), "Missing current task wrapper discard rule");

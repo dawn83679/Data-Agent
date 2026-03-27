@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS ai_memory (
     updated_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-COMMENT ON TABLE ai_memory IS 'Primary durable memory table used by runtime recall, writeMemory, manual audit, and lifecycle maintenance';
+COMMENT ON TABLE ai_memory IS 'Primary durable memory table used by runtime recall, updateMemory, manual audit, and lifecycle maintenance';
 COMMENT ON COLUMN ai_memory.user_id IS 'Owner user id';
 COMMENT ON COLUMN ai_memory.conversation_id IS 'Conversation where the memory was last created or updated';
 COMMENT ON COLUMN ai_memory.scope IS 'Memory scope: USER / CONVERSATION';

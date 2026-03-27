@@ -5,7 +5,7 @@ import java.util.List;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryCreateRequest;
-import edu.zsc.ai.domain.model.dto.request.ai.MemoryWriteRequest;
+import edu.zsc.ai.domain.model.dto.request.ai.MemoryMutationRequest;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryUpdateRequest;
 import edu.zsc.ai.domain.model.entity.ai.AiMemory;
 import edu.zsc.ai.domain.model.dto.request.base.PageRequest;
@@ -37,7 +37,7 @@ public interface MemoryService extends IService<AiMemory> {
 
     AiMemory updateMemory(Long memoryId, MemoryUpdateRequest request);
 
-    MemoryWriteResult writeAgentMemory(MemoryWriteRequest request);
+    MemoryWriteResult mutateAgentMemory(MemoryMutationRequest request);
 
     AiMemory disableMemory(Long memoryId);
 

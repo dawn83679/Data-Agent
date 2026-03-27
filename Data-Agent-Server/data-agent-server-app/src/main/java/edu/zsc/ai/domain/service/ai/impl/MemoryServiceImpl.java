@@ -36,6 +36,7 @@ import edu.zsc.ai.common.constant.MemoryRecallPlanningConstant;
 import edu.zsc.ai.common.enums.ai.MemoryScopeEnum;
 import edu.zsc.ai.common.enums.ai.MemorySourceTypeEnum;
 import edu.zsc.ai.common.enums.ai.MemorySubTypeEnum;
+import edu.zsc.ai.common.enums.ai.MemoryOperationEnum;
 import edu.zsc.ai.common.enums.ai.MemoryToolActionEnum;
 import edu.zsc.ai.common.enums.ai.MemoryTypeEnum;
 import edu.zsc.ai.common.enums.ai.MemoryEnableEnum;
@@ -45,7 +46,7 @@ import edu.zsc.ai.domain.exception.BusinessException;
 import edu.zsc.ai.domain.mapper.ai.AiMemoryMapper;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryCreateRequest;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryUpdateRequest;
-import edu.zsc.ai.domain.model.dto.request.ai.MemoryWriteRequest;
+import edu.zsc.ai.domain.model.dto.request.ai.MemoryMutationRequest;
 import edu.zsc.ai.domain.model.dto.request.base.PageRequest;
 import edu.zsc.ai.domain.model.dto.response.base.PageResponse;
 import edu.zsc.ai.domain.model.entity.ai.AiMemory;
@@ -328,6 +329,9 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
     private record RecallExecutionResult(List<MemorySearchResult> results, String executionPath, boolean usedFallback) {
     }
 
+    private record MutationExecution(AiMemory memory, MemoryToolActionEnum action) {
+    }
+
     @Override
     public PageResponse<AiMemory> pageCurrentUserMemories(PageRequest pageRequest,
                                                           String keyword,
@@ -438,49 +442,20 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
     }
 
     @Override
-    public MemoryWriteResult writeAgentMemory(MemoryWriteRequest request) {
+    public MemoryWriteResult mutateAgentMemory(MemoryMutationRequest request) {
         Long userId = requireUserId();
-        BusinessException.assertNotNull(request, "memory write request is required");
-        String content = StringUtils.trimToEmpty(request.getContent());
-        if (content.isBlank()) {
-            throw BusinessException.badRequest("memory content is required");
-        }
-
-        String scope = resolveScopeOrDefault(request.getScope(), DEFAULT_SCOPE);
-        String memoryType = resolveMemoryType(request.getMemoryType());
-        String subType = resolveMemorySubType(request.getMemoryType(), request.getSubType());
-        validatePreferenceScope(scope, memoryType);
-        LocalDateTime now = LocalDateTime.now();
-        MemoryMutationConverter.Mutation mutation = new MemoryMutationConverter.Mutation(
-                RequestContext.getConversationId(),
-                scope,
-                memoryType,
-                subType,
-                AGENT_SOURCE_TYPE,
-                resolveTitle(request.getTitle(), content),
-                content,
-                StringUtils.trimToNull(request.getReason()),
-                ENABLED_MEMORY_VALUE,
-                0,
-                now
-        );
-        AiMemory memory = findLatestEnabledPreferenceMemory(userId, memoryType, subType, null);
-        MemoryToolActionEnum action = MemoryToolActionEnum.CREATED;
-        if (memory == null) {
-            memory = MemoryMutationConverter.create(userId, mutation);
-            save(memory);
-        } else {
-            MemoryMutationConverter.apply(memory, mutation);
-            updateById(memory);
-            action = MemoryToolActionEnum.UPDATED;
-        }
-        disableConflictingEnabledPreferenceMemories(userId, subType, memory.getId(), now);
-        rebuildEmbedding(memory);
-        recordMemoryMutation(MemoryLogConstant.EVENT_MEMORY_AGENT_WRITE, memory,
-                AgentLogFields.of(MemoryLogConstant.FIELD_ACTION, action.getCode()));
+        BusinessException.assertNotNull(request, "memory mutation request is required");
+        MemoryOperationEnum operation = resolveOperation(request.getOperation());
+        MutationExecution execution = switch (operation) {
+            case CREATE -> createAgentMemory(request, userId);
+            case UPDATE -> updateAgentMemory(request);
+            case DELETE -> softDeleteAgentMemory(request);
+        };
+        recordMemoryMutation(MemoryLogConstant.EVENT_MEMORY_AGENT_WRITE, execution.memory(),
+                AgentLogFields.of(MemoryLogConstant.FIELD_ACTION, execution.action().getCode()));
         return MemoryWriteResult.builder()
-                .memory(memory)
-                .action(action)
+                .memory(execution.memory())
+                .action(execution.action())
                 .build();
     }
 
@@ -698,6 +673,104 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
                     value, MemoryScopeEnum.validCodes());
         }
         return scope.getCode();
+    }
+
+    private MemoryOperationEnum resolveOperation(String value) {
+        MemoryOperationEnum operation = MemoryOperationEnum.fromCode(value);
+        if (operation == null) {
+            throw BusinessException.badRequest("Unsupported operation '%s'. Valid values: %s",
+                    value, MemoryOperationEnum.validCodes());
+        }
+        return operation;
+    }
+
+    private MutationExecution createAgentMemory(MemoryMutationRequest request, Long userId) {
+        String content = requireMutationContent(request.getContent());
+        String scope = resolveScopeOrDefault(request.getScope(), DEFAULT_SCOPE);
+        String memoryType = resolveMemoryType(request.getMemoryType());
+        String subType = resolveMemorySubType(request.getMemoryType(), request.getSubType());
+        validatePreferenceScope(scope, memoryType);
+        LocalDateTime now = LocalDateTime.now();
+        MemoryMutationConverter.Mutation mutation = new MemoryMutationConverter.Mutation(
+                RequestContext.getConversationId(),
+                scope,
+                memoryType,
+                subType,
+                AGENT_SOURCE_TYPE,
+                resolveTitle(request.getTitle(), content),
+                content,
+                StringUtils.trimToNull(request.getReason()),
+                ENABLED_MEMORY_VALUE,
+                0,
+                now
+        );
+        AiMemory memory = MemoryMutationConverter.create(userId, mutation);
+        save(memory);
+        disableConflictingEnabledPreferenceMemories(userId, subType, memory.getId(), now);
+        rebuildEmbedding(memory);
+        return new MutationExecution(memory, MemoryToolActionEnum.CREATED);
+    }
+
+    private MutationExecution updateAgentMemory(MemoryMutationRequest request) {
+        Long memoryId = requireMutationMemoryId(request.getMemoryId(), MemoryOperationEnum.UPDATE);
+        AiMemory memory = getByIdForCurrentUser(memoryId);
+        String content = requireMutationContent(request.getContent());
+        String targetScope = resolveScopeOrDefault(request.getScope(),
+                StringUtils.defaultIfBlank(memory.getScope(), DEFAULT_SCOPE));
+        String targetMemoryTypeInput = StringUtils.defaultIfBlank(request.getMemoryType(), memory.getMemoryType());
+        String targetSubTypeInput = StringUtils.defaultIfBlank(request.getSubType(), memory.getSubType());
+        String memoryType = resolveMemoryType(targetMemoryTypeInput);
+        String subType = resolveMemorySubType(targetMemoryTypeInput, targetSubTypeInput);
+        validatePreferenceScope(targetScope, memoryType);
+        String title = StringUtils.isBlank(request.getTitle())
+                ? StringUtils.defaultIfBlank(memory.getTitle(), resolveTitle(null, content))
+                : resolveTitle(request.getTitle(), content);
+        String reason = StringUtils.isBlank(request.getReason())
+                ? StringUtils.trimToNull(memory.getReason())
+                : StringUtils.trimToNull(request.getReason());
+        MemoryMutationConverter.Mutation mutation = new MemoryMutationConverter.Mutation(
+                memory.getConversationId(),
+                targetScope,
+                memoryType,
+                subType,
+                AGENT_SOURCE_TYPE,
+                title,
+                content,
+                reason,
+                memory.getEnable(),
+                memory.getAccessCount(),
+                LocalDateTime.now()
+        );
+        MemoryMutationConverter.apply(memory, mutation);
+        updateById(memory);
+        disableConflictingEnabledPreferenceMemories(memory.getUserId(), subType, memory.getId(), memory.getUpdatedAt());
+        rebuildEmbedding(memory);
+        return new MutationExecution(memory, MemoryToolActionEnum.UPDATED);
+    }
+
+    private MutationExecution softDeleteAgentMemory(MemoryMutationRequest request) {
+        Long memoryId = requireMutationMemoryId(request.getMemoryId(), MemoryOperationEnum.DELETE);
+        AiMemory memory = getByIdForCurrentUser(memoryId);
+        memory.setEnable(MemoryEnableEnum.DISABLE.getCode());
+        memory.setUpdatedAt(LocalDateTime.now());
+        updateById(memory);
+        removeEmbeddingQuietly(memory.getId());
+        return new MutationExecution(memory, MemoryToolActionEnum.DELETED);
+    }
+
+    private Long requireMutationMemoryId(Long memoryId, MemoryOperationEnum operation) {
+        if (memoryId == null || memoryId <= 0L) {
+            throw BusinessException.badRequest("memoryId is required for operation '%s'.", operation.getCode());
+        }
+        return memoryId;
+    }
+
+    private String requireMutationContent(String contentValue) {
+        String content = StringUtils.trimToEmpty(contentValue);
+        if (content.isBlank()) {
+            throw BusinessException.badRequest("memory content is required");
+        }
+        return content;
     }
 
     private void validatePreferenceScope(String scope, String memoryType) {

@@ -3,6 +3,14 @@ export type ToolCallPreviewFieldKey =
   | 'userQuestion'
   | 'taskInstructions'
   | 'connectionIds'
+  | 'operation'
+  | 'memoryId'
+  | 'scope'
+  | 'memoryType'
+  | 'subType'
+  | 'title'
+  | 'content'
+  | 'reason'
   | 'databaseName'
   | 'schemaName'
   | 'sql';
@@ -46,6 +54,14 @@ const TOOL_CALL_PREVIEW_CONFIGS: Record<string, ToolCallPreviewConfig> = {
   },
   executeNonSelectSql: {
     fields: ['databaseName', 'schemaName', 'sql'],
+    fallbackByPhase: {
+      streaming: 'none',
+      executing: 'raw',
+      completed: 'raw',
+    },
+  },
+  updateMemory: {
+    fields: ['operation', 'memoryId', 'scope', 'memoryType', 'subType', 'title', 'content', 'reason'],
     fallbackByPhase: {
       streaming: 'none',
       executing: 'raw',

@@ -33,6 +33,7 @@ import dev.langchain4j.store.embedding.EmbeddingStore;
 import edu.zsc.ai.common.constant.MemoryLogConstant;
 import edu.zsc.ai.common.constant.MemoryRecallLogConstant;
 import edu.zsc.ai.common.enums.ai.MemoryEnableEnum;
+import edu.zsc.ai.common.enums.ai.MemoryOperationEnum;
 import edu.zsc.ai.common.enums.ai.MemoryToolActionEnum;
 import edu.zsc.ai.config.ai.MemoryProperties;
 import edu.zsc.ai.context.RequestContext;
@@ -40,7 +41,7 @@ import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.exception.BusinessException;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryCreateRequest;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryUpdateRequest;
-import edu.zsc.ai.domain.model.dto.request.ai.MemoryWriteRequest;
+import edu.zsc.ai.domain.model.dto.request.ai.MemoryMutationRequest;
 import edu.zsc.ai.domain.model.entity.ai.AiMemory;
 import edu.zsc.ai.domain.service.ai.model.MemoryMaintenanceReport;
 import edu.zsc.ai.domain.service.ai.model.MemorySearchResult;
@@ -131,13 +132,14 @@ class MemoryServiceImplTest {
     }
 
     @Test
-    void writeAgentMemory_alwaysCreatesNewMemory() {
+    void mutateAgentMemory_createAlwaysCreatesNewMemory() {
         RequestContext.set(RequestContextInfo.builder()
                 .userId(42L)
                 .conversationId(7L)
                 .build());
 
-        MemoryWriteResult created = service.writeAgentMemory(MemoryWriteRequest.builder()
+        MemoryWriteResult created = service.mutateAgentMemory(MemoryMutationRequest.builder()
+                .operation(MemoryOperationEnum.CREATE.getCode())
                 .scope("user")
                 .memoryType("workflow_constraint")
                 .subType("implementation_constraint")
@@ -146,7 +148,8 @@ class MemoryServiceImplTest {
                 .reason("User explicitly corrected the naming.")
                 .build());
 
-        MemoryWriteResult updated = service.writeAgentMemory(MemoryWriteRequest.builder()
+        MemoryWriteResult updated = service.mutateAgentMemory(MemoryMutationRequest.builder()
+                .operation(MemoryOperationEnum.CREATE.getCode())
                 .scope("user")
                 .memoryType("workflow_constraint")
                 .subType("implementation_constraint")
@@ -173,13 +176,14 @@ class MemoryServiceImplTest {
     }
 
     @Test
-    void writeAgentMemory_overwritesExistingPreferenceSubtype() {
+    void mutateAgentMemory_updatesExistingMemoryById() {
         RequestContext.set(RequestContextInfo.builder()
                 .userId(42L)
                 .conversationId(7L)
                 .build());
 
-        MemoryWriteResult created = service.writeAgentMemory(MemoryWriteRequest.builder()
+        MemoryWriteResult created = service.mutateAgentMemory(MemoryMutationRequest.builder()
+                .operation(MemoryOperationEnum.CREATE.getCode())
                 .scope("user")
                 .memoryType("preference")
                 .subType("language_preference")
@@ -188,10 +192,9 @@ class MemoryServiceImplTest {
                 .reason("用户明确要求后续用中文回答。")
                 .build());
 
-        MemoryWriteResult updated = service.writeAgentMemory(MemoryWriteRequest.builder()
-                .scope("user")
-                .memoryType("preference")
-                .subType("language_preference")
+        MemoryWriteResult updated = service.mutateAgentMemory(MemoryMutationRequest.builder()
+                .operation(MemoryOperationEnum.UPDATE.getCode())
+                .memoryId(created.getMemory().getId())
                 .title("语言偏好更新")
                 .content("用户默认希望使用简体中文回答。")
                 .reason("用户再次明确了中文偏好。")
@@ -208,9 +211,44 @@ class MemoryServiceImplTest {
     }
 
     @Test
-    void writeAgentMemory_rejectsPreferenceConversationScope() {
-        BusinessException exception = assertThrows(BusinessException.class, () -> service.writeAgentMemory(
-                MemoryWriteRequest.builder()
+    void mutateAgentMemory_softDeletesMemoryById() {
+        MemoryWriteResult created = service.mutateAgentMemory(MemoryMutationRequest.builder()
+                .operation(MemoryOperationEnum.CREATE.getCode())
+                .scope("conversation")
+                .memoryType("workflow_constraint")
+                .subType("implementation_constraint")
+                .title("Scope guard")
+                .content("Always use catalogName instead of databaseName.")
+                .reason("User explicitly corrected the naming.")
+                .build());
+
+        MemoryWriteResult deleted = service.mutateAgentMemory(MemoryMutationRequest.builder()
+                .operation(MemoryOperationEnum.DELETE.getCode())
+                .memoryId(created.getMemory().getId())
+                .build());
+
+        assertEquals(MemoryToolActionEnum.DELETED.getCode(), deleted.getAction().getCode());
+        assertEquals(MemoryEnableEnum.DISABLE.getCode(), deleted.getMemory().getEnable());
+        assertEquals(MemoryEnableEnum.DISABLE.getCode(),
+                service.getByIdForCurrentUser(created.getMemory().getId()).getEnable());
+    }
+
+    @Test
+    void mutateAgentMemory_rejectsUpdateWithoutMemoryId() {
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.mutateAgentMemory(
+                MemoryMutationRequest.builder()
+                        .operation(MemoryOperationEnum.UPDATE.getCode())
+                        .content("用户偏好使用中文回答。")
+                        .build()));
+
+        assertEquals("memoryId is required for operation 'UPDATE'.", exception.getMessage());
+    }
+
+    @Test
+    void mutateAgentMemory_rejectsPreferenceConversationScope() {
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.mutateAgentMemory(
+                MemoryMutationRequest.builder()
+                        .operation(MemoryOperationEnum.CREATE.getCode())
                         .scope("conversation")
                         .memoryType("preference")
                         .subType("language_preference")
@@ -221,9 +259,10 @@ class MemoryServiceImplTest {
     }
 
     @Test
-    void writeAgentMemory_rejectsUnsupportedWorkspaceScope() {
-        BusinessException exception = assertThrows(BusinessException.class, () -> service.writeAgentMemory(
-                MemoryWriteRequest.builder()
+    void mutateAgentMemory_rejectsUnsupportedWorkspaceScope() {
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.mutateAgentMemory(
+                MemoryMutationRequest.builder()
+                        .operation(MemoryOperationEnum.CREATE.getCode())
                         .scope("workspace")
                         .memoryType("workflow_constraint")
                         .subType("implementation_constraint")

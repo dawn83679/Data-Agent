@@ -16,6 +16,14 @@ export interface ToolCallPreviewField {
 export interface ToolCallPreview {
   instruction?: string;
   userQuestion?: string;
+  operation?: string;
+  memoryId?: number;
+  scope?: string;
+  memoryType?: string;
+  subType?: string;
+  title?: string;
+  content?: string;
+  reason?: string;
   connectionIds?: number[];
   databaseName?: string;
   schemaName?: string;
@@ -246,6 +254,14 @@ function buildPreviewFields(
   data: {
   instruction?: string;
   userQuestion?: string;
+  operation?: string;
+  memoryId?: number;
+  scope?: string;
+  memoryType?: string;
+  subType?: string;
+  title?: string;
+  content?: string;
+  reason?: string;
   connectionIds?: number[];
   databaseName?: string;
   schemaName?: string;
@@ -283,6 +299,46 @@ function buildPreviewFields(
             label: data.connectionIds.length > 1 ? 'Connections' : 'Connection',
             value: data.connectionIds.join(', '),
           });
+        }
+        break;
+      case 'operation':
+        if (data.operation) {
+          fields.push({ key: 'operation', label: 'Operation', value: data.operation });
+        }
+        break;
+      case 'memoryId':
+        if (data.memoryId != null) {
+          fields.push({ key: 'memoryId', label: 'Memory ID', value: String(data.memoryId) });
+        }
+        break;
+      case 'scope':
+        if (data.scope) {
+          fields.push({ key: 'scope', label: 'Scope', value: data.scope });
+        }
+        break;
+      case 'memoryType':
+        if (data.memoryType) {
+          fields.push({ key: 'memoryType', label: 'Memory Type', value: data.memoryType });
+        }
+        break;
+      case 'subType':
+        if (data.subType) {
+          fields.push({ key: 'subType', label: 'Sub Type', value: data.subType });
+        }
+        break;
+      case 'title':
+        if (data.title) {
+          fields.push({ key: 'title', label: 'Title', value: data.title });
+        }
+        break;
+      case 'content':
+        if (data.content) {
+          fields.push({ key: 'content', label: 'Content', value: data.content });
+        }
+        break;
+      case 'reason':
+        if (data.reason) {
+          fields.push({ key: 'reason', label: 'Reason', value: data.reason });
         }
         break;
       case 'databaseName':
@@ -326,6 +382,30 @@ export function resolveToolCallPreview(
   const directUserQuestion = typeof parsed?.userQuestion === 'string'
     ? parsed.userQuestion.trim()
     : extractFirstStringField(parametersData, 'userQuestion');
+  const operation = typeof parsed?.operation === 'string'
+    ? parsed.operation.trim()
+    : extractFirstStringField(parametersData, 'operation');
+  const memoryId = typeof parsed?.memoryId === 'number'
+    ? parsed.memoryId
+    : extractAllNumberFields(parametersData, 'memoryId')[0];
+  const scope = typeof parsed?.scope === 'string'
+    ? parsed.scope.trim()
+    : extractFirstStringField(parametersData, 'scope');
+  const memoryType = typeof parsed?.memoryType === 'string'
+    ? parsed.memoryType.trim()
+    : extractFirstStringField(parametersData, 'memoryType');
+  const subType = typeof parsed?.subType === 'string'
+    ? parsed.subType.trim()
+    : extractFirstStringField(parametersData, 'subType');
+  const title = typeof parsed?.title === 'string'
+    ? parsed.title.trim()
+    : extractFirstStringField(parametersData, 'title');
+  const content = typeof parsed?.content === 'string'
+    ? parsed.content.trim()
+    : extractFirstStringField(parametersData, 'content');
+  const reason = typeof parsed?.reason === 'string'
+    ? parsed.reason.trim()
+    : extractFirstStringField(parametersData, 'reason');
   const taskInstructions = uniqueStrings([
     ...(parsedTasks.taskInstructions ?? []),
     ...(partialTasks.taskInstructions ?? []),
@@ -350,6 +430,14 @@ export function resolveToolCallPreview(
   const preview: ToolCallPreview = {
     instruction: instruction || undefined,
     userQuestion: userQuestion || undefined,
+    operation: operation || undefined,
+    memoryId: memoryId != null ? memoryId : undefined,
+    scope: scope || undefined,
+    memoryType: memoryType || undefined,
+    subType: subType || undefined,
+    title: title || undefined,
+    content: content || undefined,
+    reason: reason || undefined,
     connectionIds: connectionIds.length > 0 ? connectionIds : undefined,
     databaseName: databaseName || undefined,
     schemaName: schemaName || undefined,

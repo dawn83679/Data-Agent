@@ -40,8 +40,10 @@ class SystemPromptManagerTest {
         assertFalse(prompt.contains(SkillPromptTagConstant.open("memory")));
         assertFalse(prompt.contains(SkillPromptTagConstant.close("memory")));
         assertTrue(prompt.contains(SkillPromptTagConstant.open(SkillEnum.CHART.getSkillName())));
-        assertTrue(prompt.contains("writeMemory"));
+        assertTrue(prompt.contains("updateMemory"));
         assertTrue(prompt.contains("examples of memory-worthy signals"));
+        assertTrue(prompt.contains("field-definition clarifications"),
+                "System prompt should mention field-definition clarification as a memory-worthy signal");
     }
 
     @Test

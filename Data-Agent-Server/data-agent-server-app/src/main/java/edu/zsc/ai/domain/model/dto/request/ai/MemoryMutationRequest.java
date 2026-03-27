@@ -5,7 +5,11 @@ import lombok.Data;
 
 @Data
 @Builder
-public class MemoryWriteRequest {
+public class MemoryMutationRequest {
+
+    private String operation;
+
+    private Long memoryId;
 
     private String scope;
 

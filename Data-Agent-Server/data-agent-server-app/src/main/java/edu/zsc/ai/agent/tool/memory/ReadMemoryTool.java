@@ -38,25 +38,14 @@ public class ReadMemoryTool {
 
     private final MemoryRecallManager memoryRecallManager;
     private final MemoryService memoryService;
-    private static final String MEMORY_TYPE_GUIDE =
-            "PREFERENCE (RESPONSE_FORMAT, LANGUAGE_PREFERENCE); "
-                    + "BUSINESS_RULE (PRODUCT_RULE, DOMAIN_RULE, GOVERNANCE_RULE, SAFETY_RULE); "
-                    + "KNOWLEDGE_POINT (ARCHITECTURE_KNOWLEDGE, DOMAIN_KNOWLEDGE, GLOSSARY, OBJECT_KNOWLEDGE); "
-                    + "WORKFLOW_CONSTRAINT (PROCESS_RULE, APPROVAL_RULE, IMPLEMENTATION_CONSTRAINT, REVIEW_CONSTRAINT); "
-                    + "GOLDEN_SQL_CASE (QUERY_PATTERN, JOIN_STRATEGY, VALIDATED_SQL, METRIC_CALCULATION).";
-
     @Tool({
-            "Value: recalls durable memory across conversation and user dimensions when prompt-injected memory is not enough.",
-            "Use When: call when the current task depends on durable context that is missing, insufficient, or ambiguous in the current prompt.",
-            "Common Cases: checking a stable user preference, a durable workflow rule, or a reusable domain rule before deciding how to answer.",
-            "Preconditions: intent must describe the durable context you want; optional scope, memoryType, and subType should narrow recall to the smallest useful slice.",
-            "Scope Guidance: prefer the narrowest valid scope. Use USER for cross-conversation durable memory and CONVERSATION only for short-lived but reusable context within this conversation.",
-            "Classification Guidance: use memoryType/subType only when you already know the likely class of memory. If unsure, leave filters empty rather than guessing wrong.",
-            "Valid Classes: " + MEMORY_TYPE_GUIDE,
-            "Subtype Rule: subType must be one of the exact uppercase values above. Do not invent labels such as DATABASE_SCHEMA. If unsure, omit subType.",
-            "After Success: use only the returned durable memory that directly helps the task; do not narrate the tool call itself to the user.",
-            "After Failure: refine the intent or filters and retry only if durable context is still needed.",
-            "Do Not Use When: prompt-injected memory already covers the need, or when you only need transient turn context, current-turn emotions, or one-off task instructions."
+            "Use this tool only to fetch durable memory that may change the current decision.",
+            "Call it when a stable preference, business rule, field definition, object fact, or reusable SQL pattern is missing or still ambiguous.",
+            "Do not call it for temporary task instructions, current-turn emotions, or facts already clear in the prompt.",
+            "intent must say exactly what you want to confirm or retrieve.",
+            "Add scope, memoryType, or subType only when you already know them; otherwise leave them empty instead of guessing.",
+            "If you plan to UPDATE or DELETE memory, usually call readMemory first to find the target memoryId.",
+            "After reading, use only the returned memory that materially helps the task. Ignore irrelevant recalls."
     })
     public AgentToolResult readMemory(
             @P("What durable context you want to recall") String intent,

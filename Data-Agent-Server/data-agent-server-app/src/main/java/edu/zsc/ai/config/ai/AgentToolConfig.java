@@ -11,7 +11,7 @@ import edu.zsc.ai.agent.tool.ask.AskUserQuestionTool;
 import edu.zsc.ai.agent.tool.chart.ChartTool;
 import edu.zsc.ai.agent.tool.export.ExportFileTool;
 import edu.zsc.ai.agent.tool.memory.ReadMemoryTool;
-import edu.zsc.ai.agent.tool.memory.WriteMemoryTool;
+import edu.zsc.ai.agent.tool.memory.UpdateMemoryTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingExplorerTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingPlannerTool;
 import edu.zsc.ai.agent.tool.skill.ActivateSkillTool;
@@ -53,7 +53,7 @@ public class AgentToolConfig {
                     TodoTool.class,
                     ActivateSkillTool.class,
                     ReadMemoryTool.class,
-                    WriteMemoryTool.class,
+                    UpdateMemoryTool.class,
                     ExportFileTool.class
             ),
             ToolScope.MAIN_PLAN, Set.of(

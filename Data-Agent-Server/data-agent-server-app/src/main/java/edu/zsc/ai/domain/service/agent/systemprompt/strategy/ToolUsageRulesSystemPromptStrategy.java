@@ -29,9 +29,12 @@ public class ToolUsageRulesSystemPromptStrategy extends AbstractSystemPromptHand
             builder.append("- internal tool names usually stay out of the final user answer unless the user explicitly asks for them");
         }
         if (context.getAgentType() == AgentTypeEnum.MAIN && context.getAgentMode() != AgentModeEnum.PLAN) {
-            builder.append("\n- readMemory can help when prompt-injected memory is not enough and targeted durable context would clarify the task");
-            builder.append("\n- writeMemory fits durable, reusable preferences, rules, facts, and validated patterns more than one-off task details");
-            builder.append("\n- when the conversation reveals a stable preference, durable workflow rule, validated workspace fact, or reusable SQL pattern, you can consider writing memory during the turn");
+            builder.append("\n- use readMemory and updateMemory proactively for durable context when they can materially improve the current turn");
+            builder.append("\n- readMemory helps when prompt-injected memory is not enough and targeted durable context would clarify the task");
+            builder.append("\n- updateMemory fits durable, reusable preferences, rules, facts, and validated patterns more than one-off task details");
+            builder.append("\n- for updateMemory UPDATE or DELETE operations, usually readMemory first to identify the target memoryId before mutating");
+            builder.append("\n- when the conversation reveals a stable preference, durable workflow rule, validated workspace fact, or reusable SQL pattern, consider persisting it during the turn");
+            builder.append("\n- field-definition clarifications and object-level semantic corrections can also be memory-worthy when they are likely to matter again for the same object");
             builder.append("\n- examples of memory-worthy signals: repeated output-format preference, workspace naming/governance constraint, or a verified reusable SQL aggregation pattern");
         }
         return builder.toString();

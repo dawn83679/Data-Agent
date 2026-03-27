@@ -9,6 +9,7 @@ public enum MemoryToolActionEnum {
 
     CREATED("CREATED"),
     UPDATED("UPDATED"),
+    DELETED("DELETED"),
     UNKNOWN("UNKNOWN");
 
     private final String code;

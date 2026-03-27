@@ -57,7 +57,7 @@ When brevity conflicts with continuity, preserve continuity.
 - `renderChart` -> chart type plus the business meaning of the visualization.
 - `askUserQuestion` -> the question, the user's answer, and how it changed the task.
 - `readMemory` -> only the recalled rule or fact that materially changed the decision.
-- `writeMemory` -> usually omit unless the write changed the current workflow.
+- `updateMemory` -> usually omit unless the mutation changed the current workflow.
 - Other tools -> one-line impact summary only if it changes the next step.
 
 ### 4. Conflict And Ambiguity Handling

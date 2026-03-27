@@ -48,7 +48,7 @@ public enum ToolNameEnum {
 
     // ── Memory ──
     READ_MEMORY("readMemory"),
-    WRITE_MEMORY("writeMemory"),
+    UPDATE_MEMORY("updateMemory"),
     ;
 
     private final String toolName;

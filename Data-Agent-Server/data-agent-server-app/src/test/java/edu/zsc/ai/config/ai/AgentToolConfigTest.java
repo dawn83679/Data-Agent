@@ -11,7 +11,7 @@ import edu.zsc.ai.agent.tool.ask.AskUserQuestionTool;
 import edu.zsc.ai.agent.tool.chart.ChartTool;
 import edu.zsc.ai.agent.tool.export.ExportFileTool;
 import edu.zsc.ai.agent.tool.memory.ReadMemoryTool;
-import edu.zsc.ai.agent.tool.memory.WriteMemoryTool;
+import edu.zsc.ai.agent.tool.memory.UpdateMemoryTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingExplorerTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingPlannerTool;
 import edu.zsc.ai.agent.tool.plan.EnterPlanModeTool;
@@ -58,7 +58,7 @@ class AgentToolConfigTest {
     private ActivateSkillTool activateSkillTool;
     private ChartTool chartTool;
     private ReadMemoryTool readMemoryTool;
-    private WriteMemoryTool writeMemoryTool;
+    private UpdateMemoryTool updateMemoryTool;
     private ExportFileTool exportFileTool;
 
     @BeforeEach
@@ -78,7 +78,7 @@ class AgentToolConfigTest {
         activateSkillTool = new ActivateSkillTool(new AgentSkillConfig());
         chartTool = new ChartTool();
         readMemoryTool = new ReadMemoryTool(null, null);
-        writeMemoryTool = new WriteMemoryTool(null);
+        updateMemoryTool = new UpdateMemoryTool(null);
         exportFileTool = new ExportFileTool(null);
 
         allTools = List.of(
@@ -95,7 +95,7 @@ class AgentToolConfigTest {
                 activateSkillTool,
                 chartTool,
                 readMemoryTool,
-                writeMemoryTool,
+                updateMemoryTool,
                 exportFileTool
         );
     }
@@ -118,7 +118,7 @@ class AgentToolConfigTest {
             assertTrue(tools.contains(activateSkillTool));
             assertTrue(tools.contains(chartTool));
             assertTrue(tools.contains(readMemoryTool));
-            assertTrue(tools.contains(writeMemoryTool));
+            assertTrue(tools.contains(updateMemoryTool));
             assertTrue(tools.contains(exportFileTool));
 
             assertFalse(tools.contains(enterPlanModeTool));
@@ -139,7 +139,7 @@ class AgentToolConfigTest {
             assertFalse(tools.contains(activateSkillTool));
             assertFalse(tools.contains(chartTool));
             assertFalse(tools.contains(readMemoryTool));
-            assertFalse(tools.contains(writeMemoryTool));
+            assertFalse(tools.contains(updateMemoryTool));
             assertFalse(tools.contains(exportFileTool));
             assertFalse(tools.contains(searchObjectsTool));
             assertFalse(tools.contains(getObjectDetailTool));
@@ -185,7 +185,7 @@ class AgentToolConfigTest {
             assertFalse(tools.contains(activateSkillTool), "Planner should NOT have ActivateSkillTool");
             assertFalse(tools.contains(chartTool), "Planner should NOT have ChartTool");
             assertFalse(tools.contains(readMemoryTool), "Planner should NOT have ReadMemoryTool");
-            assertFalse(tools.contains(writeMemoryTool), "Planner should NOT have WriteMemoryTool");
+            assertFalse(tools.contains(updateMemoryTool), "Planner should NOT have UpdateMemoryTool");
             assertFalse(tools.contains(enterPlanModeTool), "Planner should NOT have EnterPlanModeTool");
             assertFalse(tools.contains(exitPlanModeTool), "Planner should NOT have ExitPlanModeTool");
         }

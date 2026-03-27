@@ -23,6 +23,7 @@ import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.agent.tool.error.ToolErrorMapper;
 import edu.zsc.ai.aspect.AgentToolContextAspect;
 import edu.zsc.ai.common.constant.InvocationContextConstant;
+import edu.zsc.ai.common.enums.ai.MemoryOperationEnum;
 import edu.zsc.ai.common.enums.ai.MemoryScopeEnum;
 import edu.zsc.ai.common.enums.ai.MemorySubTypeEnum;
 import edu.zsc.ai.common.enums.ai.MemoryToolActionEnum;
@@ -34,10 +35,10 @@ import edu.zsc.ai.domain.model.entity.ai.AiMemory;
 import edu.zsc.ai.domain.service.ai.MemoryService;
 import edu.zsc.ai.domain.service.ai.model.MemoryWriteResult;
 
-class WriteMemoryToolTest {
+class UpdateMemoryToolTest {
 
     private final MemoryService memoryService = mock(MemoryService.class);
-    private final WriteMemoryTool tool = new WriteMemoryTool(memoryService);
+    private final UpdateMemoryTool tool = new UpdateMemoryTool(memoryService);
 
     @AfterEach
     void tearDown() {
@@ -45,12 +46,12 @@ class WriteMemoryToolTest {
     }
 
     @Test
-    void mainAgentCanWriteMemory() {
+    void mainAgentCanCreateMemory() {
         AgentRequestContext.set(AgentRequestContextInfo.builder()
                 .agentType("main")
                 .agentMode("agent")
                 .build());
-        when(memoryService.writeAgentMemory(any())).thenReturn(MemoryWriteResult.builder()
+        when(memoryService.mutateAgentMemory(any())).thenReturn(MemoryWriteResult.builder()
                 .memory(AiMemory.builder()
                         .id(7L)
                         .scope("USER")
@@ -64,7 +65,9 @@ class WriteMemoryToolTest {
                 .action(MemoryToolActionEnum.CREATED)
                 .build());
 
-        AgentToolResult result = tool.writeMemory(
+        AgentToolResult result = tool.updateMemory(
+                MemoryOperationEnum.CREATE,
+                null,
                 MemoryScopeEnum.USER,
                 MemoryTypeEnum.PREFERENCE,
                 MemorySubTypeEnum.RESPONSE_FORMAT,
@@ -83,7 +86,7 @@ class WriteMemoryToolTest {
                 .agentType("main")
                 .agentMode("agent")
                 .build());
-        when(memoryService.writeAgentMemory(any())).thenReturn(MemoryWriteResult.builder()
+        when(memoryService.mutateAgentMemory(any())).thenReturn(MemoryWriteResult.builder()
                 .memory(AiMemory.builder()
                         .id(8L)
                         .scope("USER")
@@ -95,7 +98,9 @@ class WriteMemoryToolTest {
                 .action(MemoryToolActionEnum.UPDATED)
                 .build());
 
-        AgentToolResult result = tool.writeMemory(
+        AgentToolResult result = tool.updateMemory(
+                MemoryOperationEnum.UPDATE,
+                8L,
                 MemoryScopeEnum.USER,
                 MemoryTypeEnum.PREFERENCE,
                 MemorySubTypeEnum.RESPONSE_FORMAT,
@@ -109,13 +114,15 @@ class WriteMemoryToolTest {
     }
 
     @Test
-    void plannerCannotWriteMemory() {
+    void plannerCannotUpdateMemory() {
         AgentRequestContext.set(AgentRequestContextInfo.builder()
                 .agentType("planner")
                 .agentMode("agent")
                 .build());
 
-        AgentToolResult result = tool.writeMemory(
+        AgentToolResult result = tool.updateMemory(
+                MemoryOperationEnum.CREATE,
+                null,
                 MemoryScopeEnum.USER,
                 MemoryTypeEnum.PREFERENCE,
                 MemorySubTypeEnum.RESPONSE_FORMAT,
@@ -129,9 +136,9 @@ class WriteMemoryToolTest {
     }
 
     @Test
-    void invocationParametersRestoreUserContextForWriteMemory() {
-        WriteMemoryTool proxy = proxy(new WriteMemoryTool(memoryService));
-        when(memoryService.writeAgentMemory(any())).thenAnswer(invocation -> {
+    void invocationParametersRestoreUserContextForUpdateMemory() {
+        UpdateMemoryTool proxy = proxy(new UpdateMemoryTool(memoryService));
+        when(memoryService.mutateAgentMemory(any())).thenAnswer(invocation -> {
             assertEquals(42L, RequestContext.getUserId());
             return MemoryWriteResult.builder()
                     .memory(AiMemory.builder()
@@ -144,7 +151,9 @@ class WriteMemoryToolTest {
                     .build();
         });
 
-        AgentToolResult result = proxy.writeMemory(
+        AgentToolResult result = proxy.updateMemory(
+                MemoryOperationEnum.CREATE,
+                null,
                 MemoryScopeEnum.USER,
                 MemoryTypeEnum.PREFERENCE,
                 MemorySubTypeEnum.LANGUAGE_PREFERENCE,
@@ -158,13 +167,15 @@ class WriteMemoryToolTest {
                 )));
 
         assertTrue(result.isSuccess());
-        verify(memoryService).writeAgentMemory(any());
+        verify(memoryService).mutateAgentMemory(any());
     }
 
     @Test
     void toolGuidance_requiresExecutableScopeIdentifiersForObjectKnowledge() throws Exception {
-        Method method = WriteMemoryTool.class.getMethod(
-                "writeMemory",
+        Method method = UpdateMemoryTool.class.getMethod(
+                "updateMemory",
+                MemoryOperationEnum.class,
+                Long.class,
                 MemoryScopeEnum.class,
                 MemoryTypeEnum.class,
                 MemorySubTypeEnum.class,
@@ -178,15 +189,17 @@ class WriteMemoryToolTest {
         assertNotNull(annotation);
 
         String joined = String.join("\n", annotation.value());
-        assertTrue(joined.contains("connectionId"),
-                "WriteMemoryTool guidance should require connectionId in object-level durable scope memory when known");
-        assertTrue(joined.contains("catalog/database"),
-                "WriteMemoryTool guidance should require catalog or database identifiers in object-level durable scope memory when known");
-        assertTrue(joined.contains("table=chat2db_user"),
-                "WriteMemoryTool guidance should include an executable scope example for object knowledge");
+        assertTrue(joined.contains("readMemory first"),
+                "UpdateMemoryTool guidance should require readMemory before UPDATE or DELETE when memoryId is unknown");
+        assertTrue(joined.contains("memoryId"),
+                "UpdateMemoryTool guidance should describe memoryId for targeted mutations");
+        assertTrue(joined.contains("exact identifiers"),
+                "UpdateMemoryTool guidance should require exact identifiers for concrete objects");
+        assertFalse(joined.contains("chat2db_user"),
+                "UpdateMemoryTool guidance should not hardcode a specific object example");
     }
 
-    private static WriteMemoryTool proxy(WriteMemoryTool target) {
+    private static UpdateMemoryTool proxy(UpdateMemoryTool target) {
         AspectJProxyFactory factory = new AspectJProxyFactory(target);
         factory.addAspect(new AgentToolContextAspect(new ToolErrorMapper()));
         return factory.getProxy();

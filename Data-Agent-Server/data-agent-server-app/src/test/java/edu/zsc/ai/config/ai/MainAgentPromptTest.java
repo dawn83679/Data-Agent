@@ -116,6 +116,22 @@ class MainAgentPromptTest {
                 "Prompt should describe environment overview as a runtime scoping tool");
         assertTrue(promptContent.contains("使用 renderChart 交付更直观的结果"),
                 "Prompt should include visualization in the runtime workflow");
+        assertTrue(promptContent.contains("readMemory 和 updateMemory"),
+                "Prompt should encourage active durable-memory handling with readMemory and updateMemory");
+        assertTrue(promptContent.contains("固定字段口径、默认对象范围或稳定偏好"),
+                "Prompt should call out missing durable context such as field definitions or object scope");
+        assertTrue(promptContent.contains("不要写入 memory"),
+                "Prompt should exclude one-off notes and temporary filters from memory");
+        assertFalse(promptContent.contains("writeMemory"),
+                "Prompt should no longer suggest writeMemory as the active mutation tool");
+        assertTrue(promptContentEn.contains("readMemory and updateMemory"),
+                "EN prompt should encourage active durable-memory handling with readMemory and updateMemory");
+        assertTrue(promptContentEn.contains("fixed field definitions, default object scope, or stable preferences"),
+                "EN prompt should call out missing durable context such as field definitions or object scope");
+        assertTrue(promptContentEn.contains("do not write it to memory"),
+                "EN prompt should exclude one-off notes and temporary filters from memory");
+        assertFalse(promptContentEn.contains("writeMemory"),
+                "EN prompt should no longer suggest writeMemory as the active mutation tool");
     }
 
     @Test
@@ -151,8 +167,18 @@ class MainAgentPromptTest {
                 "Prompt should include a planner-oriented example");
         assertTrue(promptContent.contains("示例 E：稳定约束已存在"),
                 "Prompt should include an example about existing stable constraints");
-        assertFalse(promptContent.contains("示例 F：写入记忆"),
-                "Prompt examples should stay compact instead of expanding memory-specific cases");
+        assertTrue(promptContent.contains("再用 updateMemory 落库稳定变更"),
+                "Prompt example E should mention persisting durable changes with updateMemory");
+        assertTrue(promptContentEn.contains("then use updateMemory when a durable change should be persisted"),
+                "EN prompt example E should mention persisting durable changes with updateMemory");
+        assertTrue(promptContent.contains("示例 F：字段口径被用户澄清"),
+                "Prompt should include a field-semantics clarification example");
+        assertTrue(promptContent.contains("示例 G：已有对象知识可能存在"),
+                "Prompt should include an existing object-knowledge recall example");
+        assertTrue(promptContentEn.contains("Example F: Field semantics were clarified"),
+                "EN prompt should include a field-semantics clarification example");
+        assertTrue(promptContentEn.contains("Example G: Object knowledge may already exist"),
+                "EN prompt should include an existing object-knowledge recall example");
     }
 
     @Test
