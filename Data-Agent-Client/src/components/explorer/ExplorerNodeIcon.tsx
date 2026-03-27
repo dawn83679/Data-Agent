@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { ExplorerNodeType, FolderName, RoutineIconLetter } from '../../constants/explorer';
 import type { ExplorerNode } from '../../types/explorer';
+import { DatabaseTypeIcon } from '../common/DatabaseTypeIcon';
 
 const ICON_CLASS = 'w-3.5 h-3.5';
 
@@ -27,15 +28,16 @@ function RoutineIcon({ letter }: { letter: (typeof RoutineIconLetter)[keyof type
 }
 
 interface ExplorerNodeIconProps {
-  node: Pick<ExplorerNode, 'type' | 'folderName' | 'isPrimaryKey'>;
+  node: Pick<ExplorerNode, 'type' | 'folderName' | 'isPrimaryKey' | 'dbConnection'>;
 }
 
 export function ExplorerNodeIcon({ node }: ExplorerNodeIconProps) {
-  const { type, folderName, isPrimaryKey } = node;
+  const { type, folderName, isPrimaryKey, dbConnection } = node;
+  const dbType = dbConnection?.dbType;
 
   switch (type) {
     case ExplorerNodeType.ROOT:
-      return <Database className={`${ICON_CLASS} text-blue-400`} />;
+      return <DatabaseTypeIcon dbType={dbType} className={ICON_CLASS} fallbackClassName="text-blue-400" />;
     case ExplorerNodeType.DB:
       return <Database className={`${ICON_CLASS} text-teal-400`} />;
     case ExplorerNodeType.SCHEMA:

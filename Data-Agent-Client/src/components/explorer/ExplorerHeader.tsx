@@ -12,6 +12,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuPortal,
 } from '../ui/DropdownMenu';
+import { DatabaseTypeIcon } from '../common/DatabaseTypeIcon';
 
 interface ExplorerHeaderProps {
   searchTerm: string;
@@ -90,7 +91,11 @@ export function ExplorerHeader({
                     ) : (
                       supportedDbTypes.map((type) => (
                         <DropdownMenuItem key={type.code} onClick={() => onAddDatabase(type.code)}>
-                          <Database className="w-4 h-4 mr-2 text-blue-400" />
+                          <DatabaseTypeIcon
+                            dbType={type.code}
+                            className="w-4 h-4 mr-2"
+                            fallbackClassName="text-blue-400"
+                          />
                           <span>{type.displayName}</span>
                         </DropdownMenuItem>
                       ))
@@ -113,7 +118,11 @@ export function ExplorerHeader({
                     ) : (
                       supportedDbTypes.map((type) => (
                         <DropdownMenuItem key={type.code} onClick={() => onManageDriver(type.code)}>
-                          <Database className="w-4 h-4 mr-2 text-blue-400" />
+                          <DatabaseTypeIcon
+                            dbType={type.code}
+                            className="w-4 h-4 mr-2"
+                            fallbackClassName="text-blue-400"
+                          />
                           <span>{type.displayName}</span>
                         </DropdownMenuItem>
                       ))
