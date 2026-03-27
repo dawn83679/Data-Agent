@@ -49,9 +49,13 @@ pipeline {
                 dir("${env.BACKEND_ROOT}") {
                     sh '''
                         set -e
+                        echo "JAVA_HOME=$JAVA_HOME"
+                        which java || true
+                        which javac || true
                         java -version
+                        javac -version
                         mvn -version
-                        mvn -pl data-agent-server-app -am clean package -DskipTests
+                        mvn -pl ${BACKEND_MODULE} -am clean package -DskipTests -e
                     '''
                 }
             }
