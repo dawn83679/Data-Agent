@@ -26,17 +26,20 @@ pipeline {
 
         stage('Build Frontend') {
             steps {
-        dir("${env.BACKEND_ROOT}") {
-            sh '''
-                set -e
-                echo "JAVA_HOME=$JAVA_HOME"
-                which java || true
-                which javac || true
-                java -version
-                javac -version
-                mvn -version
-                mvn -pl data-agent-server-app -am clean package -DskipTests -e
-            '''
+                dir("${env.FRONTEND_DIR}") {
+                    sh '''
+                        set -e
+                        node -v
+                        npm -v
+
+                        if [ -f package-lock.json ]; then
+                          npm ci
+                        else
+                          npm install
+                        fi
+
+                        npm run build
+                    '''
                 }
             }
         }
