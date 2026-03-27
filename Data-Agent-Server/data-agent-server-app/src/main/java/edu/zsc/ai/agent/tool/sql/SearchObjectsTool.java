@@ -34,9 +34,6 @@ import java.util.Objects;
 @Component
 @RequiredArgsConstructor
 public class SearchObjectsTool {
-
-    private static final int LARGE_FUZZY_CANDIDATE_THRESHOLD = 8;
-
     private final DiscoveryService discoveryService;
 
     @Tool({
@@ -135,20 +132,17 @@ public class SearchObjectsTool {
                                       String schemaName) {
         String errorSummary = String.join("; ", response.errors());
         String scope = buildScopeLabel(objectNamePattern, connectionId, databaseName, schemaName);
+        String baseMessage = "Object search encountered scope failures for " + scope + ". Scope failures: " + errorSummary + ".";
         if (CollectionUtils.isNotEmpty(response.results())) {
             return ToolMessageSupport.sentence(
-                    "Object search returned partial results for " + scope + ". Scope failures: " + errorSummary + ".",
-                    ToolMessageSupport.continueOnlyWith("the currently returned matches"),
-                    "Treat these matches as candidates until the target scope is confirmed.",
-                    ToolMessageSupport.askUserWhether("keep these matches or adjust the connection or scope"),
-                    ToolMessageSupport.DO_NOT_CONTINUE_OBJECT_DISCOVERY_UNTIL_USER_REPLIES
+                    baseMessage,
+                    "Use askUserQuestion to ask the user to clarify the target scope before continuing."
             );
         }
 
         return ToolMessageSupport.sentence(
-                "Object search could not return reliable matches for " + scope + ". Scope failures: " + errorSummary + ".",
-                ToolMessageSupport.askUserWhether("retry with another connection or scope"),
-                ToolMessageSupport.DO_NOT_CONTINUE_OBJECT_DISCOVERY_UNTIL_USER_REPLIES
+                baseMessage,
+                "Use askUserQuestion to ask the user to clarify the target scope before continuing."
         );
     }
 
@@ -161,28 +155,15 @@ public class SearchObjectsTool {
         String truncation = response.truncated()
                 ? " The result set is truncated, so refine the search before assuming all matches are visible."
                 : "";
-        boolean broadFuzzySearch = isFuzzyPattern(objectNamePattern)
-                && response.totalCount() >= LARGE_FUZZY_CANDIDATE_THRESHOLD;
-        if (response.totalCount() == 1) {
+        if (isFuzzyPattern(objectNamePattern)) {
             return ToolMessageSupport.sentence(
-                    "Object search found 1 candidate for " + scope + ".",
-                    "Use this match to request object details or continue planning only if the target scope is already validated and it matches the user's intent."
-                            + truncation
-            );
-        }
-        if (broadFuzzySearch) {
-            return ToolMessageSupport.sentence(
-                    "Object search found " + response.totalCount() + " candidate(s) for " + scope + ", which is still a broad fuzzy search result.",
-                    "Broad fuzzy discovery over many similarly named objects is expensive.",
-                    "Prefer askUserQuestion to confirm the intended table name, object scope, or expected result shape before requesting details, planning SQL, or answering."
-                            + truncation
+                    "Object search found " + response.totalCount() + " candidate(s) for " + scope + ".",
+                    "Use askUserQuestion to ask the user to narrow the target object before continuing." + truncation
             );
         }
         return ToolMessageSupport.sentence(
                 "Object search found " + response.totalCount() + " candidate(s) for " + scope + ".",
-                "Use these matches to narrow down the target object; do not treat them as the final answer yet.",
-                "If multiple candidates remain plausible, prefer askUserQuestion to confirm the intended object, table name, object scope, or expected result shape before requesting details, planning SQL, or answering."
-                        + truncation
+                "Use askUserQuestion to ask the user to narrow the target object before continuing." + truncation
         );
     }
 
@@ -193,8 +174,7 @@ public class SearchObjectsTool {
         return ToolMessageSupport.sentence(
                 "Object search returned no matches for "
                         + buildScopeLabel(objectNamePattern, connectionId, databaseName, schemaName) + ".",
-                "Do not assume the object exists.",
-                "Adjust the pattern or scope, or ask the user to clarify the target before proceeding."
+                "Use askUserQuestion to ask the user to clarify the target before continuing."
         );
     }
 

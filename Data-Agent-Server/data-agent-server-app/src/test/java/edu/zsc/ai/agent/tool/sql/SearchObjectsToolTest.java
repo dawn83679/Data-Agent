@@ -160,12 +160,10 @@ class SearchObjectsToolTest {
         );
 
         assertTrue(result.isSuccess());
-        assertTrue(result.getMessage().contains("Object search returned partial results"));
+        assertTrue(result.getMessage().contains("Object search encountered scope failures"));
         assertTrue(result.getMessage().contains("pattern=%user%"));
         assertTrue(result.getMessage().contains("connectionId=7 timeout"));
-        assertTrue(result.getMessage().contains("Continue only with the currently returned matches"));
-        assertTrue(result.getMessage().contains("Ask the user whether to keep these matches or adjust the connection or scope"));
-        assertTrue(result.getMessage().contains("Do not continue object discovery until the user replies"));
+        assertTrue(result.getMessage().contains("Use askUserQuestion to ask the user to clarify the target scope before continuing."));
     }
 
     @Test
@@ -179,16 +177,32 @@ class SearchObjectsToolTest {
         );
 
         assertTrue(result.isSuccess());
-        assertTrue(result.getMessage().contains("Object search could not return reliable matches"));
+        assertTrue(result.getMessage().contains("Object search encountered scope failures"));
         assertTrue(result.getMessage().contains("pattern=%user%, connectionId=5"));
         assertTrue(result.getMessage().contains("connectionId=5 closed"));
-        assertTrue(result.getMessage().contains("Ask the user whether to retry with another connection or scope"));
-        assertTrue(result.getMessage().contains("Do not continue object discovery until the user replies"));
+        assertTrue(result.getMessage().contains("Use askUserQuestion to ask the user to clarify the target scope before continuing."));
     }
 
     @Test
-    void returnsExpensiveFuzzySearchGuidanceWhenManyCandidatesMatch() {
-        List<ObjectSearchResult> candidates = IntStream.range(0, 18)
+    void returnsNarrowingMessageWhenSingleCandidateMatches() {
+        when(discoveryService.searchObjects("chat2db_user", DatabaseObjectTypeEnum.TABLE, 3L, "enterprise_gateway_dev", null))
+                .thenReturn(new ObjectSearchResponse(List.of(
+                        new ObjectSearchResult(3L, "test3", "mysql", "enterprise_gateway_dev", null, "chat2db_user", "TABLE")
+                ), 1, false, null));
+
+        AgentToolResult result = tool.searchObjects(
+                new ObjectSearchQuery("chat2db_user", "TABLE", 3L, "enterprise_gateway_dev", null),
+                InvocationParameters.from(Map.of())
+        );
+
+        assertTrue(result.isSuccess());
+        assertTrue(result.getMessage().contains("Object search found 1 candidate(s)"));
+        assertTrue(result.getMessage().contains("Use askUserQuestion to ask the user to narrow the target object before continuing."));
+    }
+
+    @Test
+    void returnsExpensiveFuzzySearchGuidanceWhenMultipleCandidatesMatch() {
+        List<ObjectSearchResult> candidates = IntStream.range(0, 2)
                 .mapToObj(index -> new ObjectSearchResult(
                         3L,
                         "test3",
@@ -200,7 +214,7 @@ class SearchObjectsToolTest {
                 ))
                 .toList();
         when(discoveryService.searchObjects("%user%", DatabaseObjectTypeEnum.TABLE, 3L, "enterprise_gateway_dev", null))
-                .thenReturn(new ObjectSearchResponse(candidates, 18, false, null));
+                .thenReturn(new ObjectSearchResponse(candidates, 2, false, null));
 
         AgentToolResult result = tool.searchObjects(
                 new ObjectSearchQuery("%user%", "TABLE", 3L, "enterprise_gateway_dev", null),
@@ -208,9 +222,8 @@ class SearchObjectsToolTest {
         );
 
         assertTrue(result.isSuccess());
-        assertTrue(result.getMessage().contains("broad fuzzy search result"));
-        assertTrue(result.getMessage().contains("Broad fuzzy discovery over many similarly named objects is expensive."));
-        assertTrue(result.getMessage().contains("Prefer askUserQuestion to confirm the intended table name, object scope, or expected result shape"));
+        assertTrue(result.getMessage().contains("Object search found 2 candidate(s)"));
+        assertTrue(result.getMessage().contains("Use askUserQuestion to ask the user to narrow the target object before continuing."));
     }
 
     private SearchObjectsTool proxiedTool() {

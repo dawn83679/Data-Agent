@@ -24,9 +24,6 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class GetEnvironmentOverviewTool {
-
-    private static final int LARGE_ENVIRONMENT_CONNECTION_THRESHOLD = 3;
-
     private final DiscoveryService discoveryService;
 
     @Tool({
@@ -44,7 +41,7 @@ public class GetEnvironmentOverviewTool {
         if (CollectionUtils.isEmpty(overview)) {
             log.info("[Tool done] getEnvironmentOverview -> empty");
             return AgentToolResult.empty(
-                    "Environment overview returned no available connections. Check the connection configuration or retry later. Do not continue discovery, planning, or execution until a usable connection is available.");
+                    "Environment overview returned no usable connections. Use askUserQuestion to ask the user whether to retry later or check the connection configuration.");
         }
         log.info("[Tool done] getEnvironmentOverview, connections={}", overview.size());
         return AgentToolResult.success(overview, buildOverviewMessage(overview));
@@ -54,34 +51,21 @@ public class GetEnvironmentOverviewTool {
         List<ConnectionOverview> unavailableConnections = overview.stream()
                 .filter(connection -> StringUtils.isNotBlank(connection.error()))
                 .toList();
-        if (CollectionUtils.isEmpty(unavailableConnections)) {
-            if (overview.size() >= LARGE_ENVIRONMENT_CONNECTION_THRESHOLD) {
-                return "Environment overview is available for " + overview.size()
-                        + " connection(s), which is a relatively large search space. Prefer askUserQuestion to narrow the scope as much as possible before comparing connections. Only compare these connections when the current instruction, mention, connectionId, catalog, or schema still does not identify a unique target. Broad fuzzy discovery across many connections is expensive, so stay within the current grounding whenever it is already sufficient.";
-            }
-            return "Environment overview is available for " + overview.size()
-                    + " connection(s). Compare these connections only when the current instruction, mention, connectionId, catalog, or schema still does not identify a unique target. If the current grounding is already sufficient, continue within that scope instead of asking the user to reconfirm it.";
-        }
-
-        String unavailableSummary = unavailableConnections.stream()
-                .map(connection -> String.format("%s(id=%s): %s",
-                        connection.name(),
-                        connection.id(),
-                        connection.error()))
-                .collect(Collectors.joining("; "));
-
         long availableCount = overview.size() - unavailableConnections.size();
         if (availableCount > 0) {
-            if (availableCount >= LARGE_ENVIRONMENT_CONNECTION_THRESHOLD) {
-                return "Environment overview is only partially available. Failed connections: " + unavailableSummary
-                        + ". There are still " + availableCount
-                        + " available connection(s), so prefer askUserQuestion to narrow the search space as much as possible before comparing across connections. Broad fuzzy discovery is expensive. Ask the user whether to switch to an available connection or retry later only when the task still depends on an unavailable connection.";
-            }
-            return "Environment overview is only partially available. Failed connections: " + unavailableSummary
-                    + ". Continue with the remaining available connections. Ask the user whether to switch to an available connection or retry later only when the task still depends on an unavailable connection.";
+            String failedSummary = CollectionUtils.isEmpty(unavailableConnections)
+                    ? ""
+                    : " Failed connections: " + unavailableConnections.stream()
+                    .map(connection -> String.format("%s(id=%s): %s",
+                            connection.name(),
+                            connection.id(),
+                            connection.error()))
+                    .collect(Collectors.joining("; ")) + ".";
+            return "Environment overview found " + availableCount
+                    + " usable connection(s)." + failedSummary
+                    + " Use askUserQuestion to ask the user to narrow the search scope before continuing.";
         }
 
-        return "Environment overview could not find any usable connection. Failed connections: " + unavailableSummary
-                + ". Ask the user whether to retry later or check the connection configuration. Do not continue object discovery until a usable connection is available.";
+        return "Environment overview returned no usable connections. Use askUserQuestion to ask the user whether to retry later or check the connection configuration.";
     }
 }

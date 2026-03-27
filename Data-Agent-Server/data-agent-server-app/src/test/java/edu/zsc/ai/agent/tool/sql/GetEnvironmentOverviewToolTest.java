@@ -29,9 +29,8 @@ class GetEnvironmentOverviewToolTest {
         AgentToolResult result = tool.getEnvironmentOverview(InvocationParameters.from(Map.of()));
 
         assertTrue(result.isSuccess());
-        assertTrue(result.getMessage().contains("Environment overview is available for 2 connection(s)."));
-        assertTrue(result.getMessage().contains("current instruction, mention, connectionId, catalog, or schema"));
-        assertTrue(result.getMessage().contains("continue within that scope instead of asking the user to reconfirm it"));
+        assertTrue(result.getMessage().contains("Environment overview found 2 usable connection(s)."));
+        assertTrue(result.getMessage().contains("Use askUserQuestion to ask the user to narrow the search scope before continuing."));
     }
 
     @Test
@@ -44,10 +43,9 @@ class GetEnvironmentOverviewToolTest {
         AgentToolResult result = tool.getEnvironmentOverview(InvocationParameters.from(Map.of()));
 
         assertTrue(result.isSuccess());
-        assertTrue(result.getMessage().contains("Environment overview is only partially available."));
+        assertTrue(result.getMessage().contains("Environment overview found 1 usable connection(s)."));
         assertTrue(result.getMessage().contains("test2(id=2): Connection unreachable or error: timeout"));
-        assertTrue(result.getMessage().contains("Continue with the remaining available connections."));
-        assertTrue(result.getMessage().contains("only when the task still depends on an unavailable connection"));
+        assertTrue(result.getMessage().contains("Use askUserQuestion to ask the user to narrow the search scope before continuing."));
     }
 
     @Test
@@ -59,10 +57,8 @@ class GetEnvironmentOverviewToolTest {
         AgentToolResult result = tool.getEnvironmentOverview(InvocationParameters.from(Map.of()));
 
         assertTrue(result.isSuccess());
-        assertTrue(result.getMessage().contains("Environment overview could not find any usable connection."));
-        assertTrue(result.getMessage().contains("test3(id=3): Connection unreachable or error: connection closed"));
-        assertTrue(result.getMessage().contains("Ask the user whether to retry later or check the connection configuration"));
-        assertTrue(result.getMessage().contains("Do not continue object discovery until a usable connection is available"));
+        assertTrue(result.getMessage().contains("Environment overview returned no usable connections."));
+        assertTrue(result.getMessage().contains("Use askUserQuestion to ask the user whether to retry later or check the connection configuration."));
     }
 
     @Test
@@ -74,12 +70,12 @@ class GetEnvironmentOverviewToolTest {
         AgentToolResult result = tool.getEnvironmentOverview(InvocationParameters.from(Map.of("language", "zh")));
 
         assertTrue(result.isSuccess());
-        assertTrue(result.getMessage().contains("Environment overview is available for 1 connection(s)."));
-        assertTrue(result.getMessage().contains("current instruction, mention, connectionId, catalog, or schema"));
+        assertTrue(result.getMessage().contains("Environment overview found 1 usable connection(s)."));
+        assertTrue(result.getMessage().contains("Use askUserQuestion to ask the user to narrow the search scope before continuing."));
     }
 
     @Test
-    void returnsAskUserQuestionHintWhenReachableConnectionsExceedThreshold() {
+    void returnsScopeClarificationMessageWhenReachableConnectionsExceedPreviousThreshold() {
         when(discoveryService.getEnvironmentOverview()).thenReturn(List.of(
                 new ConnectionOverview(1L, "test1", "mysql", List.of(new CatalogInfo("db1", List.of())), null),
                 new ConnectionOverview(2L, "test2", "mysql", List.of(new CatalogInfo("db2", List.of())), null),
@@ -90,12 +86,12 @@ class GetEnvironmentOverviewToolTest {
         AgentToolResult result = tool.getEnvironmentOverview(InvocationParameters.from(Map.of()));
 
         assertTrue(result.isSuccess());
-        assertTrue(result.getMessage().contains("Prefer askUserQuestion to narrow the scope as much as possible"));
-        assertTrue(result.getMessage().contains("Broad fuzzy discovery across many connections is expensive"));
+        assertTrue(result.getMessage().contains("Environment overview found 4 usable connection(s)."));
+        assertTrue(result.getMessage().contains("Use askUserQuestion to ask the user to narrow the search scope before continuing."));
     }
 
     @Test
-    void stillReturnsEnglishAskUserQuestionHintWhenInvocationLanguageIsChinese() {
+    void stillReturnsEnglishScopeClarificationMessageWhenInvocationLanguageIsChinese() {
         when(discoveryService.getEnvironmentOverview()).thenReturn(List.of(
                 new ConnectionOverview(1L, "test1", "mysql", List.of(new CatalogInfo("db1", List.of())), null),
                 new ConnectionOverview(2L, "test2", "mysql", List.of(new CatalogInfo("db2", List.of())), null),
@@ -106,12 +102,12 @@ class GetEnvironmentOverviewToolTest {
         AgentToolResult result = tool.getEnvironmentOverview(InvocationParameters.from(Map.of("language", "zh")));
 
         assertTrue(result.isSuccess());
-        assertTrue(result.getMessage().contains("Prefer askUserQuestion to narrow the scope as much as possible"));
-        assertTrue(result.getMessage().contains("Broad fuzzy discovery across many connections is expensive"));
+        assertTrue(result.getMessage().contains("Environment overview found 4 usable connection(s)."));
+        assertTrue(result.getMessage().contains("Use askUserQuestion to ask the user to narrow the search scope before continuing."));
     }
 
     @Test
-    void returnsAskUserQuestionHintWhenReachableConnectionsMeetThreshold() {
+    void returnsScopeClarificationMessageWhenReachableConnectionsMeetPreviousThreshold() {
         when(discoveryService.getEnvironmentOverview()).thenReturn(List.of(
                 new ConnectionOverview(1L, "test1", "mysql", List.of(new CatalogInfo("db1", List.of())), null),
                 new ConnectionOverview(2L, "test2", "mysql", List.of(new CatalogInfo("db2", List.of())), null),
@@ -121,6 +117,7 @@ class GetEnvironmentOverviewToolTest {
         AgentToolResult result = tool.getEnvironmentOverview(InvocationParameters.from(Map.of("language", "zh")));
 
         assertTrue(result.isSuccess());
-        assertTrue(result.getMessage().contains("Prefer askUserQuestion to narrow the scope as much as possible"));
+        assertTrue(result.getMessage().contains("Environment overview found 3 usable connection(s)."));
+        assertTrue(result.getMessage().contains("Use askUserQuestion to ask the user to narrow the search scope before continuing."));
     }
 }
