@@ -250,6 +250,63 @@ class UserPromptTemplateServiceTest {
     }
 
     @Test
+    void render_includesConversationFallbackMemoriesInPromptButStillExcludesUserFallbackMemories() {
+        UserPromptManager manager = new UserPromptManager(
+                createChain(),
+                PromptConfig.loadClassPathResource(UserPromptManager.TEMPLATE_PATH));
+
+        UserPromptAssemblyContext context = UserPromptAssemblyContext.builder()
+                .userMessage("Please analyze 2013 monthly revenue")
+                .language("en")
+                .agentMode("normal")
+                .modelName("qwen3-max")
+                .currentDate(LocalDate.of(2026, 3, 24))
+                .timezone("Asia/Shanghai")
+                .memoryPromptContext(MemoryPromptContext.builder()
+                        .recallResult(MemoryRecallResult.builder()
+                                .items(List.of(
+                                        MemoryRecallItem.builder()
+                                                .id(10L)
+                                                .scope("CONVERSATION")
+                                                .memoryType("WORKFLOW_CONSTRAINT")
+                                                .subType("PROCESS_RULE")
+                                                .content("Use table analytics.monthly_revenue rather than staging.monthly_revenue for this task.")
+                                                .score(0.0)
+                                                .executionPath(MemoryRecallLogConstant.EXECUTION_PATH_HYBRID_CONVERSATION_BROWSE_FALLBACK)
+                                                .usedFallback(true)
+                                                .build(),
+                                        MemoryRecallItem.builder()
+                                                .id(11L)
+                                                .scope("CONVERSATION")
+                                                .memoryType("KNOWLEDGE_POINT")
+                                                .subType("OBJECT_KNOWLEDGE")
+                                                .content("The authoritative monthly revenue view is analytics.public.monthly_revenue.")
+                                                .score(0.0)
+                                                .executionPath(MemoryRecallLogConstant.EXECUTION_PATH_HYBRID_CONVERSATION_BROWSE_FALLBACK)
+                                                .usedFallback(true)
+                                                .build(),
+                                        MemoryRecallItem.builder()
+                                                .id(12L)
+                                                .scope("USER")
+                                                .memoryType("BUSINESS_RULE")
+                                                .subType("DOMAIN_RULE")
+                                                .content("User-scope fallback memory should still stay out of the prompt.")
+                                                .score(0.0)
+                                                .executionPath(MemoryRecallLogConstant.EXECUTION_PATH_HYBRID_BROWSE_FALLBACK)
+                                                .usedFallback(true)
+                                                .build()))
+                                .build())
+                        .build())
+                .build();
+
+        String prompt = manager.render(context).renderedPrompt();
+
+        assertTrue(prompt.contains("Use table analytics.monthly_revenue rather than staging.monthly_revenue for this task."));
+        assertTrue(prompt.contains("The authoritative monthly revenue view is analytics.public.monthly_revenue."));
+        assertTrue(!prompt.contains("User-scope fallback memory should still stay out of the prompt."));
+    }
+
+    @Test
     void render_throwsWhenSectionHandlerIsMissing() {
         UserPromptHandlerChain chain = new UserPromptHandlerChain(List.of(
                 new SystemContextPromptStrategy(),

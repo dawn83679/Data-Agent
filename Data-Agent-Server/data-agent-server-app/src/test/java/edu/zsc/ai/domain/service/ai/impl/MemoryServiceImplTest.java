@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -622,6 +623,247 @@ class MemoryServiceImplTest {
     }
 
     @Test
+    void recallAccessibleMemories_promptHybridFallsBackToRecentConversationMemoriesWhenSemanticMisses() {
+        @SuppressWarnings("unchecked")
+        EmbeddingSearchResult<TextSegment> searchResult = mock(EmbeddingSearchResult.class);
+        when(searchResult.matches()).thenReturn(List.of());
+        when(embeddingStore.search(any())).thenReturn(searchResult);
+
+        LocalDateTime now = LocalDateTime.now();
+        service.seedMemory(AiMemory.builder()
+                .userId(42L)
+                .conversationId(7L)
+                .scope("CONVERSATION")
+                .memoryType("WORKFLOW_CONSTRAINT")
+                .subType("PROCESS_RULE")
+                .sourceType("MANUAL")
+                .title("Oldest")
+                .content("Oldest conversation memory.")
+                .enable(MemoryEnableEnum.ENABLE.getCode())
+                .accessCount(100)
+                .createdAt(now.minusHours(6))
+                .updatedAt(now.minusHours(6))
+                .build());
+        service.seedMemory(AiMemory.builder()
+                .userId(42L)
+                .conversationId(7L)
+                .scope("CONVERSATION")
+                .memoryType("WORKFLOW_CONSTRAINT")
+                .subType("APPROVAL_RULE")
+                .sourceType("MANUAL")
+                .title("Fifth newest")
+                .content("Fifth newest conversation memory.")
+                .enable(MemoryEnableEnum.ENABLE.getCode())
+                .createdAt(now.minusHours(5))
+                .updatedAt(now.minusHours(5))
+                .build());
+        service.seedMemory(AiMemory.builder()
+                .userId(42L)
+                .conversationId(7L)
+                .scope("CONVERSATION")
+                .memoryType("WORKFLOW_CONSTRAINT")
+                .subType("IMPLEMENTATION_CONSTRAINT")
+                .sourceType("MANUAL")
+                .title("Fourth newest")
+                .content("Fourth newest conversation memory.")
+                .enable(MemoryEnableEnum.ENABLE.getCode())
+                .createdAt(now.minusHours(4))
+                .updatedAt(now.minusHours(4))
+                .build());
+        service.seedMemory(AiMemory.builder()
+                .userId(42L)
+                .conversationId(7L)
+                .scope("CONVERSATION")
+                .memoryType("KNOWLEDGE_POINT")
+                .subType("OBJECT_KNOWLEDGE")
+                .sourceType("MANUAL")
+                .title("Third newest")
+                .content("Third newest conversation memory.")
+                .enable(MemoryEnableEnum.ENABLE.getCode())
+                .createdAt(now.minusHours(3))
+                .updatedAt(now.minusHours(3))
+                .build());
+        service.seedMemory(AiMemory.builder()
+                .userId(42L)
+                .conversationId(7L)
+                .scope("CONVERSATION")
+                .memoryType("BUSINESS_RULE")
+                .subType("DOMAIN_RULE")
+                .sourceType("MANUAL")
+                .title("Second newest")
+                .content("Second newest conversation memory.")
+                .enable(MemoryEnableEnum.ENABLE.getCode())
+                .createdAt(now.minusHours(2))
+                .updatedAt(now.minusHours(2))
+                .build());
+        service.seedMemory(AiMemory.builder()
+                .userId(42L)
+                .conversationId(7L)
+                .scope("CONVERSATION")
+                .memoryType("WORKFLOW_CONSTRAINT")
+                .subType("REVIEW_CONSTRAINT")
+                .sourceType("MANUAL")
+                .title("Newest")
+                .content("Newest conversation memory.")
+                .enable(MemoryEnableEnum.ENABLE.getCode())
+                .createdAt(now.minusHours(1))
+                .updatedAt(now.minusHours(1))
+                .build());
+        service.seedMemory(AiMemory.builder()
+                .userId(42L)
+                .conversationId(7L)
+                .scope("CONVERSATION")
+                .memoryType("KNOWLEDGE_POINT")
+                .subType("DOMAIN_KNOWLEDGE")
+                .sourceType("MANUAL")
+                .title("Disabled")
+                .content("Disabled conversation memory.")
+                .enable(MemoryEnableEnum.DISABLE.getCode())
+                .createdAt(now.minusMinutes(30))
+                .updatedAt(now.minusMinutes(30))
+                .build());
+        service.seedMemory(AiMemory.builder()
+                .userId(42L)
+                .conversationId(8L)
+                .scope("CONVERSATION")
+                .memoryType("WORKFLOW_CONSTRAINT")
+                .subType("PROCESS_RULE")
+                .sourceType("MANUAL")
+                .title("Other conversation")
+                .content("Other conversation memory.")
+                .enable(MemoryEnableEnum.ENABLE.getCode())
+                .createdAt(now.minusMinutes(20))
+                .updatedAt(now.minusMinutes(20))
+                .build());
+        service.seedMemory(AiMemory.builder()
+                .userId(42L)
+                .conversationId(7L)
+                .scope("USER")
+                .memoryType("KNOWLEDGE_POINT")
+                .subType("GLOSSARY")
+                .sourceType("MANUAL")
+                .title("User scope")
+                .content("User scope memory.")
+                .enable(MemoryEnableEnum.ENABLE.getCode())
+                .createdAt(now.minusMinutes(10))
+                .updatedAt(now.minusMinutes(10))
+                .build());
+
+        @SuppressWarnings("unchecked")
+        List<MemorySearchResult> results = (List<MemorySearchResult>) (List<?>) service.recallAccessibleMemories(new MemoryRecallQuery(
+                "prompt_hybrid_conversation",
+                "prompt_hybrid_conversation_test",
+                "CONVERSATION",
+                7L,
+                "Analyze gas consumption by currency in 2012",
+                null,
+                null,
+                0.0D,
+                MemoryRecallMode.PROMPT,
+                MemoryRecallQueryStrategy.HYBRID,
+                0));
+
+        assertEquals(5, results.size());
+        assertEquals(List.of("Newest", "Second newest", "Third newest", "Fourth newest", "Fifth newest"),
+                results.stream().map(MemorySearchResult::getTitle).toList());
+        assertEquals(List.of(7L, 7L, 7L, 7L, 7L),
+                results.stream().map(MemorySearchResult::getConversationId).toList());
+        assertEquals(List.of(true, true, true, true, true),
+                results.stream().map(MemorySearchResult::isUsedFallback).toList());
+        assertEquals(0, service.maintenanceListQueryCount());
+        assertEquals(1, service.conversationFallbackQueryCount());
+
+        AgentLogEvent event = agentLogService.lastEvent();
+        assertEquals(MemoryRecallLogConstant.EXECUTION_PATH_HYBRID_CONVERSATION_BROWSE_FALLBACK,
+                event.getPayload().get(MemoryRecallLogConstant.FIELD_EXECUTION_PATH));
+        assertEquals(true, event.getPayload().get(MemoryRecallLogConstant.FIELD_USED_FALLBACK));
+    }
+
+    @Test
+    void recallAccessibleMemories_promptHybridConversationFallbackPreservesExplicitTypeAndSubtypeFilters() {
+        @SuppressWarnings("unchecked")
+        EmbeddingSearchResult<TextSegment> searchResult = mock(EmbeddingSearchResult.class);
+        when(searchResult.matches()).thenReturn(List.of());
+        when(embeddingStore.search(any())).thenReturn(searchResult);
+
+        LocalDateTime now = LocalDateTime.now();
+        service.seedMemory(AiMemory.builder()
+                .userId(42L)
+                .conversationId(7L)
+                .scope("CONVERSATION")
+                .memoryType("WORKFLOW_CONSTRAINT")
+                .subType("PROCESS_RULE")
+                .sourceType("MANUAL")
+                .title("Matched newest")
+                .content("Matched newest conversation memory.")
+                .enable(MemoryEnableEnum.ENABLE.getCode())
+                .createdAt(now.minusMinutes(5))
+                .updatedAt(now.minusMinutes(5))
+                .build());
+        service.seedMemory(AiMemory.builder()
+                .userId(42L)
+                .conversationId(7L)
+                .scope("CONVERSATION")
+                .memoryType("WORKFLOW_CONSTRAINT")
+                .subType("PROCESS_RULE")
+                .sourceType("MANUAL")
+                .title("Matched older")
+                .content("Matched older conversation memory.")
+                .enable(MemoryEnableEnum.ENABLE.getCode())
+                .createdAt(now.minusMinutes(10))
+                .updatedAt(now.minusMinutes(10))
+                .build());
+        service.seedMemory(AiMemory.builder()
+                .userId(42L)
+                .conversationId(7L)
+                .scope("CONVERSATION")
+                .memoryType("WORKFLOW_CONSTRAINT")
+                .subType("APPROVAL_RULE")
+                .sourceType("MANUAL")
+                .title("Wrong subtype")
+                .content("Wrong subtype conversation memory.")
+                .enable(MemoryEnableEnum.ENABLE.getCode())
+                .createdAt(now.minusMinutes(3))
+                .updatedAt(now.minusMinutes(3))
+                .build());
+        service.seedMemory(AiMemory.builder()
+                .userId(42L)
+                .conversationId(7L)
+                .scope("CONVERSATION")
+                .memoryType("BUSINESS_RULE")
+                .subType("DOMAIN_RULE")
+                .sourceType("MANUAL")
+                .title("Wrong type")
+                .content("Wrong type conversation memory.")
+                .enable(MemoryEnableEnum.ENABLE.getCode())
+                .createdAt(now.minusMinutes(1))
+                .updatedAt(now.minusMinutes(1))
+                .build());
+
+        @SuppressWarnings("unchecked")
+        List<MemorySearchResult> results = (List<MemorySearchResult>) (List<?>) service.recallAccessibleMemories(new MemoryRecallQuery(
+                "prompt_hybrid_conversation_filtered",
+                "prompt_hybrid_conversation_filtered_test",
+                "CONVERSATION",
+                7L,
+                "Need current conversation process rules",
+                "WORKFLOW_CONSTRAINT",
+                "PROCESS_RULE",
+                0.0D,
+                MemoryRecallMode.PROMPT,
+                MemoryRecallQueryStrategy.HYBRID,
+                0));
+
+        assertEquals(2, results.size());
+        assertEquals(List.of("Matched newest", "Matched older"),
+                results.stream().map(MemorySearchResult::getTitle).toList());
+        assertEquals(List.of("WORKFLOW_CONSTRAINT", "WORKFLOW_CONSTRAINT"),
+                results.stream().map(MemorySearchResult::getMemoryType).toList());
+        assertEquals(List.of("PROCESS_RULE", "PROCESS_RULE"),
+                results.stream().map(MemorySearchResult::getSubType).toList());
+    }
+
+    @Test
     void browseRecallPrefersMoreFrequentlyAccessedMemoryWhenOtherSignalsMatch() {
         LocalDateTime now = LocalDateTime.now();
 
@@ -688,6 +930,8 @@ class MemoryServiceImplTest {
 
         private final List<AiMemory> store = new ArrayList<>();
         private final EmbeddingModel embeddingModel;
+        private int maintenanceListQueryCount;
+        private int conversationFallbackQueryCount;
         private long nextId = 1L;
 
         private InMemoryMemoryService(EmbeddingStore<TextSegment> embeddingStore,
@@ -761,8 +1005,29 @@ class MemoryServiceImplTest {
 
         @Override
         protected List<AiMemory> listMemoriesForMaintenance(Long userId) {
+            maintenanceListQueryCount++;
             return store.stream()
                     .filter(memory -> userId == null || userId.equals(memory.getUserId()))
+                    .toList();
+        }
+
+        @Override
+        protected List<AiMemory> queryConversationFallbackMemories(Long userId,
+                                                                   Long conversationId,
+                                                                   String memoryType,
+                                                                   String subType,
+                                                                   int limit) {
+            conversationFallbackQueryCount++;
+            return store.stream()
+                    .filter(memory -> userId != null && userId.equals(memory.getUserId()))
+                    .filter(memory -> conversationId != null && conversationId.equals(memory.getConversationId()))
+                    .filter(memory -> memory.getEnable() != null && memory.getEnable() == MemoryEnableEnum.ENABLE.getCode())
+                    .filter(memory -> "CONVERSATION".equalsIgnoreCase(memory.getScope()))
+                    .filter(memory -> memoryType == null || memoryType.equalsIgnoreCase(memory.getMemoryType()))
+                    .filter(memory -> subType == null || subType.equalsIgnoreCase(memory.getSubType()))
+                    .sorted(Comparator.comparing(AiMemory::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                            .thenComparing(AiMemory::getId, Comparator.nullsLast(Comparator.reverseOrder())))
+                    .limit(limit)
                     .toList();
         }
 
@@ -772,6 +1037,14 @@ class MemoryServiceImplTest {
 
         private int memoryStoreSize() {
             return store.size();
+        }
+
+        private int maintenanceListQueryCount() {
+            return maintenanceListQueryCount;
+        }
+
+        private int conversationFallbackQueryCount() {
+            return conversationFallbackQueryCount;
         }
     }
 

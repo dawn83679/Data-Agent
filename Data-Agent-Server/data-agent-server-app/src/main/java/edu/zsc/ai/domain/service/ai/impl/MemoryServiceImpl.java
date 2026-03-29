@@ -69,6 +69,7 @@ import lombok.extern.slf4j.Slf4j;
 public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> implements MemoryService {
 
     private static final int ENABLED_MEMORY_VALUE = MemoryEnableEnum.ENABLE.getCode();
+    private static final int CONVERSATION_FALLBACK_LIMIT = 5;
     private static final String DEFAULT_SCOPE = MemoryConstant.DEFAULT_SCOPE;
     private static final String DEFAULT_SOURCE_TYPE = MemorySourceTypeEnum.MANUAL.getCode();
     private static final String AGENT_SOURCE_TYPE = MemorySourceTypeEnum.AGENT.getCode();
@@ -205,6 +206,16 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
                     semanticResult.results(),
                     MemoryRecallLogConstant.EXECUTION_PATH_HYBRID_SEMANTIC,
                     false);
+        }
+        if (recallMode == MemoryRecallMode.PROMPT && shouldUseConversationPromptFallback(normalizedScope, conversationId)) {
+            List<MemorySearchResult> fallbackResults = browseConversationFallbackMemories(
+                    userId, conversationId, normalizedMemoryType, normalizedSubType);
+            if (!fallbackResults.isEmpty()) {
+                return new RecallExecutionResult(
+                        fallbackResults,
+                        MemoryRecallLogConstant.EXECUTION_PATH_HYBRID_CONVERSATION_BROWSE_FALLBACK,
+                        true);
+            }
         }
         if (recallMode == MemoryRecallMode.PROMPT) {
             return new RecallExecutionResult(
@@ -894,6 +905,10 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         return false;
     }
 
+    private boolean shouldUseConversationPromptFallback(String normalizedScope, Long conversationId) {
+        return conversationId != null && MemoryScopeEnum.CONVERSATION.matches(normalizedScope);
+    }
+
     private Comparator<MemorySearchResult> promptMemoryComparator() {
         return Comparator
                 .comparingInt(this::scopePriority)
@@ -982,6 +997,44 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
                 .filter(result -> isVisibleToCurrentContext(result, conversationId))
                 .sorted(promptMemoryComparator())
                 .toList();
+    }
+
+    private List<MemorySearchResult> browseConversationFallbackMemories(Long userId,
+                                                                        Long conversationId,
+                                                                        String memoryType,
+                                                                        String subType) {
+        if (userId == null || conversationId == null) {
+            return List.of();
+        }
+        return queryConversationFallbackMemories(userId, conversationId, memoryType, subType, CONVERSATION_FALLBACK_LIMIT).stream()
+                .limit(CONVERSATION_FALLBACK_LIMIT)
+                .map(memory -> toMemorySearchResult(memory, 0.0D))
+                .toList();
+    }
+
+    protected List<AiMemory> queryConversationFallbackMemories(Long userId,
+                                                               Long conversationId,
+                                                               String memoryType,
+                                                               String subType,
+                                                               int limit) {
+        if (userId == null || conversationId == null || limit <= 0) {
+            return List.of();
+        }
+        LambdaQueryWrapper<AiMemory> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(AiMemory::getUserId, userId)
+                .eq(AiMemory::getConversationId, conversationId)
+                .eq(AiMemory::getEnable, ENABLED_MEMORY_VALUE)
+                .eq(AiMemory::getScope, MemoryScopeEnum.CONVERSATION.getCode())
+                .orderByDesc(AiMemory::getUpdatedAt)
+                .orderByDesc(AiMemory::getId);
+        if (StringUtils.isNotBlank(memoryType)) {
+            wrapper.eq(AiMemory::getMemoryType, memoryType);
+        }
+        if (StringUtils.isNotBlank(subType)) {
+            wrapper.eq(AiMemory::getSubType, subType);
+        }
+        Page<AiMemory> page = new Page<>(1, limit, false);
+        return page(page, wrapper).getRecords();
     }
 
     private boolean matchesScope(MemorySearchResult result, String scope) {

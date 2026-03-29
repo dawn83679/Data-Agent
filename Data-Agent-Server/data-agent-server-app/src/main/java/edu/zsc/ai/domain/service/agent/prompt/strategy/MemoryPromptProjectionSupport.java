@@ -8,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import edu.zsc.ai.common.constant.MemoryRecallLogConstant;
 import edu.zsc.ai.common.constant.MemoryConstant;
 import edu.zsc.ai.common.constant.PromptConstant;
+import edu.zsc.ai.common.enums.ai.MemoryScopeEnum;
 import edu.zsc.ai.common.enums.ai.MemorySubTypeEnum;
 import edu.zsc.ai.domain.service.agent.prompt.PromptTextUtil;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallItem;
@@ -57,7 +58,7 @@ final class MemoryPromptProjectionSupport {
             return false;
         }
         if (memory.isUsedFallback()) {
-            return false;
+            return MemoryScopeEnum.CONVERSATION.matches(memory.getScope());
         }
         return SEMANTIC_EXECUTION_PATHS.contains(StringUtils.defaultString(memory.getExecutionPath()));
     }
