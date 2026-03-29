@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -126,6 +127,37 @@ class SearchObjectsToolTest {
         assertTrue(result.isSuccess());
         assertTrue(result.getElapsedMs() != null && result.getElapsedMs() >= 0);
         verify(discoveryService).searchObjects("%user%", null, 5L, "app", null);
+    }
+
+    @Test
+    void rejectsSchemaPatternWithoutDatabasePattern() {
+        AgentToolResult result = tool.searchObjects(
+                new ObjectSearchQuery("%user%", null, 5L, null, "pub%"),
+                InvocationParameters.from(Map.of(InvocationContextConstant.CONNECTION_ID, "5"))
+        );
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getMessage().contains("schemaNamePattern requires databaseNamePattern"));
+        verifyNoInteractions(discoveryService);
+    }
+
+    @Test
+    void objectSearchQuery_acceptsLegacyDatabaseAndSchemaFieldNames() throws Exception {
+        com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+
+        ObjectSearchQuery query = objectMapper.readValue("""
+                {
+                  "objectNamePattern": "%user%",
+                  "connectionId": 5,
+                  "databaseName": "app%",
+                  "schemaName": "pub%"
+                }
+                """, ObjectSearchQuery.class);
+
+        assertEquals("%user%", query.getObjectNamePattern());
+        assertEquals(5L, query.getConnectionId());
+        assertEquals("app%", query.getDatabaseNamePattern());
+        assertEquals("pub%", query.getSchemaNamePattern());
     }
 
     @Test

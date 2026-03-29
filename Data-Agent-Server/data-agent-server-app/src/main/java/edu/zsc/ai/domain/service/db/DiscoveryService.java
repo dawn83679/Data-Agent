@@ -15,8 +15,8 @@ public interface DiscoveryService {
     List<ConnectionOverview> getEnvironmentOverview();
 
     ObjectSearchResponse searchObjects(String pattern, DatabaseObjectTypeEnum type,
-                                       Long connectionId, String catalog,
-                                       String schema);
+                                       Long connectionId, String databaseNamePattern,
+                                       String schemaNamePattern);
 
     ObjectDetail getObjectDetail(DatabaseObjectTypeEnum type, String objectName, DbContext db);
 

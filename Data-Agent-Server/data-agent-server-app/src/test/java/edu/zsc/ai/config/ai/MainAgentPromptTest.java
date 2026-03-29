@@ -84,8 +84,8 @@ class MainAgentPromptTest {
     void workflow_usesSemanticConstraintsInsteadOfUserPromptTags() {
         assertTrue(promptContent.contains("稳定偏好"),
                 "Prompt should describe stable preferences semantically");
-        assertTrue(promptContent.contains("durable context"),
-                "Prompt should describe durable context semantically");
+        assertFalse(promptContent.contains("durable context"),
+                "ZH prompt should not mention durable context");
         assertTrue(promptContent.contains("不要把任务文本里偶然出现的英文"),
                 "Prompt should reject incidental language as an override signal");
         assertTrue(promptContent.contains("确认最终语言、回答格式和可视化方式"),
@@ -116,42 +116,58 @@ class MainAgentPromptTest {
                 "Prompt should describe environment overview as a runtime scoping tool");
         assertTrue(promptContent.contains("使用 renderChart 交付更直观的结果"),
                 "Prompt should include visualization in the runtime workflow");
-        assertTrue(promptContent.contains("readMemory 和 updateMemory"),
-                "Prompt should encourage active durable-memory handling with readMemory and updateMemory");
         assertTrue(promptContent.contains("固定字段口径、默认对象范围或稳定偏好"),
-                "Prompt should call out missing durable context such as field definitions or object scope");
-        assertTrue(promptContent.contains("不要写入 memory"),
-                "Prompt should exclude one-off notes and temporary filters from memory");
+                "Prompt should call out missing contextual facts such as field definitions or object scope");
+        assertTrue(promptContent.contains("当前上下文里并未给出的信息"),
+                "Prompt should require grounding when needed information is missing");
+        assertFalse(promptContent.contains("readMemory"),
+                "ZH prompt should no longer mention readMemory");
+        assertFalse(promptContent.contains("updateMemory"),
+                "Prompt should no longer mention updateMemory");
+        assertFalse(promptContent.contains("durable context"),
+                "ZH prompt should no longer mention durable context");
+        assertFalse(promptContent.contains("memory agent"),
+                "ZH prompt should not mention the memory agent");
+        assertFalse(promptContent.contains("写入 memory"),
+                "ZH prompt should not discuss writing memory");
         assertFalse(promptContent.contains("writeMemory"),
                 "Prompt should no longer suggest writeMemory as the active mutation tool");
-        assertTrue(promptContentEn.contains("readMemory and updateMemory"),
-                "EN prompt should encourage active durable-memory handling with readMemory and updateMemory");
         assertTrue(promptContentEn.contains("fixed field definitions, default object scope, or stable preferences"),
-                "EN prompt should call out missing durable context such as field definitions or object scope");
-        assertTrue(promptContentEn.contains("do not write it to memory"),
-                "EN prompt should exclude one-off notes and temporary filters from memory");
+                "EN prompt should call out missing contextual facts such as field definitions or object scope");
+        assertTrue(promptContentEn.contains("information that is not present in the current context"),
+                "EN prompt should require grounding when needed information is missing");
+        assertFalse(promptContentEn.contains("readMemory"),
+                "EN prompt should no longer mention readMemory");
+        assertFalse(promptContentEn.contains("updateMemory"),
+                "EN prompt should no longer mention updateMemory");
+        assertFalse(promptContentEn.contains("durable context"),
+                "EN prompt should no longer mention durable context");
+        assertFalse(promptContentEn.contains("memory agent"),
+                "EN prompt should not mention the memory agent");
+        assertFalse(promptContentEn.contains("write it to memory"),
+                "EN prompt should not discuss writing memory");
         assertFalse(promptContentEn.contains("writeMemory"),
                 "EN prompt should no longer suggest writeMemory as the active mutation tool");
     }
 
     @Test
     void workflow_prefersGroundedScopeBeforeEnvironmentWideDiscovery() {
-        assertTrue(promptContent.contains("这些线索可以来自当前任务、runtime context、mention、explicit references、durable context，以及 scope hints。"),
+        assertTrue(promptContent.contains("这些线索可以来自当前任务、已有上下文，以及用户本轮明确给出的对象引用。"),
                 "ZH prompt should name the scope-grounding signals");
         assertTrue(promptContent.contains("不要因为习惯性 discovery 而先扩大到整个环境"),
                 "ZH prompt should discourage habitual environment-wide discovery");
         assertTrue(promptContent.contains("只有当连接或 catalog 本身仍是待判断前提时，才使用"),
                 "ZH prompt should narrow when getEnvironmentOverview is appropriate");
-        assertTrue(promptContent.contains("例如 memory 或当前提示已经指出了具体数据源、数据库或表。"),
+        assertTrue(promptContent.contains("例如当前上下文已经指出了具体数据源、数据库或表。"),
                 "ZH prompt example B should cover already-grounded object scope");
 
-        assertTrue(promptContentEn.contains("These signals can come from the current task, runtime context, mentions, explicit references, durable context, and scope hints."),
+        assertTrue(promptContentEn.contains("These signals can come from the current task, the available context, and the objects the user explicitly referenced in this turn."),
                 "EN prompt should name the scope-grounding signals");
         assertTrue(promptContentEn.contains("do not expand back to the whole environment just because discovery is available"),
                 "EN prompt should discourage habitual environment-wide discovery");
         assertTrue(promptContentEn.contains("use it only when the available connections or catalogs are themselves part of the decision"),
                 "EN prompt should narrow when getEnvironmentOverview is appropriate");
-        assertTrue(promptContentEn.contains("memory or the current prompt already points to a specific data source, database, or table"),
+        assertTrue(promptContentEn.contains("the current context already points to a specific data source, database, or table"),
                 "EN prompt example B should cover already-grounded object scope");
     }
 
@@ -167,10 +183,10 @@ class MainAgentPromptTest {
                 "Prompt should include a planner-oriented example");
         assertTrue(promptContent.contains("示例 E：稳定约束已存在"),
                 "Prompt should include an example about existing stable constraints");
-        assertTrue(promptContent.contains("再用 updateMemory 落库稳定变更"),
-                "Prompt example E should mention persisting durable changes with updateMemory");
-        assertTrue(promptContentEn.contains("then use updateMemory when a durable change should be persisted"),
-                "EN prompt example E should mention persisting durable changes with updateMemory");
+        assertTrue(promptContent.contains("如果当前证据仍不够，再继续查询、验证或追问"),
+                "Prompt example E should keep missing context grounded in evidence gathering");
+        assertTrue(promptContentEn.contains("if the current evidence is still incomplete, keep querying, validating, or asking follow-up questions"),
+                "EN prompt example E should keep missing context grounded in evidence gathering");
         assertTrue(promptContent.contains("示例 F：字段口径被用户澄清"),
                 "Prompt should include a field-semantics clarification example");
         assertTrue(promptContent.contains("示例 G：已有对象知识可能存在"),
@@ -179,6 +195,18 @@ class MainAgentPromptTest {
                 "EN prompt should include a field-semantics clarification example");
         assertTrue(promptContentEn.contains("Example G: Object knowledge may already exist"),
                 "EN prompt should include an existing object-knowledge recall example");
+        assertFalse(promptContent.contains("readMemory"),
+                "ZH examples should no longer mention readMemory");
+        assertFalse(promptContentEn.contains("readMemory"),
+                "EN examples should no longer mention readMemory");
+        assertFalse(promptContent.contains("updateMemory"),
+                "ZH examples should no longer mention updateMemory");
+        assertFalse(promptContentEn.contains("updateMemory"),
+                "EN examples should no longer mention updateMemory");
+        assertFalse(promptContent.contains("memory agent"),
+                "ZH examples should not mention the memory agent");
+        assertFalse(promptContentEn.contains("memory agent"),
+                "EN examples should not mention the memory agent");
     }
 
     @Test

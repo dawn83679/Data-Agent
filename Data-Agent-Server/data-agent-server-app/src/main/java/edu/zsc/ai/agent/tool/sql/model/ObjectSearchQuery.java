@@ -1,5 +1,6 @@
 package edu.zsc.ai.agent.tool.sql.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import dev.langchain4j.model.output.structured.Description;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,9 +20,11 @@ public class ObjectSearchQuery {
     @Description("Filter to a specific connection. Omit to search all connections.")
     private Long connectionId;
 
-    @Description("Filter to a specific database/catalog. Requires connectionId.")
-    private String databaseName;
+    @JsonAlias("databaseName")
+    @Description("Filter databases/catalogs by SQL wildcard pattern, e.g. 'app%' or '%prod%'. Requires connectionId.")
+    private String databaseNamePattern;
 
-    @Description("Filter to a specific schema. Requires connectionId + databaseName.")
-    private String schemaName;
+    @JsonAlias("schemaName")
+    @Description("Filter schemas by SQL wildcard pattern, e.g. 'public' or '%core%'. Requires connectionId + databaseNamePattern.")
+    private String schemaNamePattern;
 }

@@ -516,8 +516,8 @@ class CompressionServiceImplTest {
         assertTrue(prompt.contains("askUserQuestion"), "Missing tool rule: askUserQuestion");
         assertTrue(prompt.contains("callingExplorerSubAgent"), "Missing tool rule: callingExplorerSubAgent");
         assertTrue(prompt.contains("callingPlannerSubAgent"), "Missing tool rule: callingPlannerSubAgent");
-        assertTrue(prompt.contains("readMemory"), "Missing tool rule: readMemory");
-        assertTrue(prompt.contains("updateMemory"), "Missing tool rule: updateMemory");
+        assertFalse(prompt.contains("readMemory"), "Compression prompt should no longer mention readMemory");
+        assertFalse(prompt.contains("updateMemory"), "Compression prompt should no longer mention updateMemory");
         assertTrue(prompt.contains("<system_context>"), "Missing current runtime wrapper discard rule");
         assertTrue(prompt.contains("<scope_hints>"), "Missing current scope wrapper discard rule");
         assertTrue(prompt.contains("<task>"), "Missing current task wrapper discard rule");

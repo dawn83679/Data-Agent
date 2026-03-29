@@ -27,7 +27,7 @@ class SystemPromptManagerTest {
     )));
 
     @Test
-    void mainAgentPrompt_mentionsMemoryToolsWithoutMemorySkillBlock() {
+    void mainAgentPrompt_hasNoMemoryToolHintsWithoutMemorySkillBlock() {
         String prompt = manager.render(SystemPromptAssemblyContext.builder()
                 .promptEnum(PromptEnum.ZH)
                 .agentType(AgentTypeEnum.MAIN)
@@ -40,10 +40,10 @@ class SystemPromptManagerTest {
         assertFalse(prompt.contains(SkillPromptTagConstant.open("memory")));
         assertFalse(prompt.contains(SkillPromptTagConstant.close("memory")));
         assertTrue(prompt.contains(SkillPromptTagConstant.open(SkillEnum.CHART.getSkillName())));
-        assertTrue(prompt.contains("updateMemory"));
-        assertTrue(prompt.contains("examples of memory-worthy signals"));
-        assertTrue(prompt.contains("field-definition clarifications"),
-                "System prompt should mention field-definition clarification as a memory-worthy signal");
+        assertFalse(prompt.contains("readMemory"));
+        assertFalse(prompt.contains("updateMemory"));
+        assertFalse(prompt.contains("memory agent"),
+                "System prompt should not mention the memory agent");
     }
 
     @Test

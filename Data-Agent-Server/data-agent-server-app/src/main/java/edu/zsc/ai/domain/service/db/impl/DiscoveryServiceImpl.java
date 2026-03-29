@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.regex.Pattern;
 
 import static edu.zsc.ai.config.ExecutorConfig.SHARED_EXECUTOR_BEAN_NAME;
 
@@ -124,8 +125,8 @@ public class DiscoveryServiceImpl implements DiscoveryService {
 
     @Override
     public ObjectSearchResponse searchObjects(String pattern, DatabaseObjectTypeEnum type,
-                                              Long connectionId, String catalog,
-                                              String schema) {
+                                              Long connectionId, String databaseNamePattern,
+                                              String schemaNamePattern) {
         List<ConnectionResponse> connections = resolveConnections(connectionId);
         List<DatabaseObjectTypeEnum> typesToSearch = Objects.nonNull(type) ? List.of(type) : DEFAULT_SEARCH_TYPES;
 
@@ -133,7 +134,8 @@ public class DiscoveryServiceImpl implements DiscoveryService {
             return new ObjectSearchResponse(List.of(), 0, false, null);
         }
         if (connections.size() == 1) {
-            return searchConnectionAcrossDatabases(connections.get(0), pattern, typesToSearch, catalog, schema);
+            return searchConnectionAcrossDatabases(connections.get(0), pattern, typesToSearch,
+                    databaseNamePattern, schemaNamePattern);
         }
 
         RequestContextInfo requestContextSnapshot = RequestContext.snapshot();
@@ -142,7 +144,8 @@ public class DiscoveryServiceImpl implements DiscoveryService {
                 .map(conn -> CompletableFuture.supplyAsync(() -> {
                     applyContextSnapshots(requestContextSnapshot, agentRequestContextSnapshot);
                     try {
-                        return searchConnectionAcrossDatabases(conn, pattern, typesToSearch, catalog, schema);
+                        return searchConnectionAcrossDatabases(conn, pattern, typesToSearch,
+                                databaseNamePattern, schemaNamePattern);
                     } finally {
                         clearContextSnapshots();
                     }
@@ -175,11 +178,14 @@ public class DiscoveryServiceImpl implements DiscoveryService {
                 allErrors.isEmpty() ? null : allErrors);
     }
 
-    private ObjectSearchResponse searchConnectionAcrossDatabases(ConnectionResponse conn, String pattern,
+    private ObjectSearchResponse searchConnectionAcrossDatabases(ConnectionResponse conn,
+                                                                 String pattern,
                                                                  List<DatabaseObjectTypeEnum> typesToSearch,
-                                                                 String catalog, String schema) {
+                                                                 String databaseNamePattern,
+                                                                 String schemaNamePattern) {
         try {
-            return searchConnectionAcrossDatabasesOrThrow(conn, pattern, typesToSearch, catalog, schema);
+            return searchConnectionAcrossDatabasesOrThrow(conn, pattern, typesToSearch,
+                    databaseNamePattern, schemaNamePattern);
         } catch (Exception e) {
             log.warn("Search failed for connection {} ({}): {}", conn.getName(), conn.getId(), e.getMessage());
             String msg = StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getSimpleName());
@@ -189,13 +195,15 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         }
     }
 
-    private ObjectSearchResponse searchConnectionAcrossDatabasesOrThrow(ConnectionResponse conn, String pattern,
+    private ObjectSearchResponse searchConnectionAcrossDatabasesOrThrow(ConnectionResponse conn,
+                                                                        String pattern,
                                                                         List<DatabaseObjectTypeEnum> typesToSearch,
-                                                                        String catalog, String schema) {
+                                                                        String databaseNamePattern,
+                                                                        String schemaNamePattern) {
         List<ObjectSearchResult> results = new ArrayList<>();
         List<String> errors = new ArrayList<>();
-        for (String db : resolveDatabases(conn, catalog)) {
-            for (String s : resolveSchemas(conn.getId(), db, schema)) {
+        for (String db : resolveDatabases(conn, databaseNamePattern)) {
+            for (String s : resolveSchemas(conn.getId(), db, schemaNamePattern)) {
                 try {
                     collectSearchResults(conn, db, s, pattern, typesToSearch, results);
                 } catch (Exception e) {
@@ -231,21 +239,54 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         return CollectionUtils.isEmpty(all) ? Collections.emptyList() : all;
     }
 
-    private List<String> resolveDatabases(ConnectionResponse conn, String catalog) {
-        if (StringUtils.isNotBlank(catalog)) {
-            return List.of(catalog);
-        }
+    private List<String> resolveDatabases(ConnectionResponse conn, String databaseNamePattern) {
         List<String> dbs = databaseService.getDatabases(conn.getId());
-        return CollectionUtils.isEmpty(dbs) ? Collections.emptyList() : dbs;
+        if (CollectionUtils.isEmpty(dbs)) {
+            return Collections.emptyList();
+        }
+        return filterNamesBySqlPattern(dbs, databaseNamePattern);
     }
 
-    private List<String> resolveSchemas(Long connectionId, String database, String schema) {
-        if (StringUtils.isNotBlank(schema)) {
-            return List.of(schema);
-        }
+    private List<String> resolveSchemas(Long connectionId, String database, String schemaNamePattern) {
         List<String> schemas = getSchemas(connectionId, database);
-        // No schemas (e.g. MySQL) → use null as placeholder to still search the database
-        return CollectionUtils.isEmpty(schemas) ? Collections.singletonList(null) : schemas;
+        if (CollectionUtils.isEmpty(schemas)) {
+            // No schemas (e.g. MySQL) → use null as placeholder to still search the database
+            return StringUtils.isBlank(schemaNamePattern) ? Collections.singletonList(null) : Collections.emptyList();
+        }
+        return filterNamesBySqlPattern(schemas, schemaNamePattern);
+    }
+
+    private List<String> filterNamesBySqlPattern(List<String> names, String sqlPattern) {
+        if (CollectionUtils.isEmpty(names)) {
+            return Collections.emptyList();
+        }
+        if (StringUtils.isBlank(sqlPattern)) {
+            return names;
+        }
+        Pattern regex = Pattern.compile(toSqlLikeRegex(sqlPattern), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+        return names.stream()
+                .filter(Objects::nonNull)
+                .filter(name -> regex.matcher(name).matches())
+                .toList();
+    }
+
+    private String toSqlLikeRegex(String sqlPattern) {
+        StringBuilder regex = new StringBuilder("^");
+        for (int i = 0; i < sqlPattern.length(); i++) {
+            char current = sqlPattern.charAt(i);
+            switch (current) {
+                case '%' -> regex.append(".*");
+                case '_' -> regex.append('.');
+                default -> {
+                    if ("\\.^$|?*+()[]{}".indexOf(current) >= 0) {
+                        regex.append('\\');
+                    }
+                    regex.append(current);
+                }
+            }
+        }
+        regex.append('$');
+        return regex.toString();
     }
 
     private void collectSearchResults(ConnectionResponse conn, String database, String schema,

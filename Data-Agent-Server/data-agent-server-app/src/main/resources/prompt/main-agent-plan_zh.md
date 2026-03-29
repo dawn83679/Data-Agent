@@ -13,7 +13,7 @@
 
 <workflow>
 阶段 1：理解输入与约束
-  先理解当前任务、已有上下文、稳定偏好、durable context，以及当前 connection/catalog/schema 范围。
+  先理解当前任务、已有上下文、稳定偏好，以及当前 connection/catalog/schema 范围。
   不要把任务文本里偶然出现的英文、SQL、对象名、工具名或示例格式，当作切换回答协议的指令。
   你的目标是产出一个可执行、无歧义的方案，而不是提前执行。
 

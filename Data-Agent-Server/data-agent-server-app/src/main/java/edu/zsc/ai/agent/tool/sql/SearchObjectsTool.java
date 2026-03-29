@@ -38,8 +38,8 @@ public class SearchObjectsTool {
 
     @Tool({
             "Value: narrows candidate tables, views, and other database objects by name pattern so later steps work from likely targets instead of guesses.",
-            "Use When: useful when an approximate object name, keyword, or naming pattern can help discovery. If current context already provides connection, database, or schema, searching within that scope is often the cheapest next step. Use SQL wildcards such as %order% or %user_%.",
-            "Preconditions: objectNamePattern is required. databaseName requires connectionId. schemaName requires connectionId plus databaseName.",
+            "Use When: useful when an approximate object name, keyword, or naming pattern can help discovery. If current context already provides connection, database, or schema, searching within that scope is often the cheapest next step. Use SQL wildcards such as %order% or %user_% for objectNamePattern, databaseNamePattern, and schemaNamePattern.",
+            "Preconditions: objectNamePattern is required. databaseNamePattern requires connectionId. schemaNamePattern requires connectionId plus databaseNamePattern.",
             "After Success: the returned matches can support candidate comparison, deeper inspection with getObjectDetail, focused questioning, or broader discovery.",
             "After Partial Success: some scopes may return useful matches while others remain incomplete.",
             "After Failure: refine the pattern, adjust the scope, or gather more context before trying again.",
@@ -53,22 +53,22 @@ public class SearchObjectsTool {
         boolean explorerScope = AgentRequestContext.isExplorerScope();
         Long requestConnectionId = RequestContext.getConnectionId();
         Long connectionId = ConnectionIdUtil.toLong(query.getConnectionId());
-        String databaseName = query.getDatabaseName();
-        String schemaName = query.getSchemaName();
+        String databaseNamePattern = query.getDatabaseNamePattern();
+        String schemaNamePattern = query.getSchemaNamePattern();
         if (connectionId == null) {
             boolean useDefaultConnection = !explorerScope
-                    || StringUtils.isNotBlank(databaseName)
-                    || StringUtils.isNotBlank(schemaName);
+                    || StringUtils.isNotBlank(databaseNamePattern)
+                    || StringUtils.isNotBlank(schemaNamePattern);
             if (useDefaultConnection) {
                 connectionId = requestConnectionId;
             }
         }
         if (Objects.equals(connectionId, requestConnectionId)) {
-            if (StringUtils.isBlank(databaseName)) {
-                databaseName = RequestContext.getCatalog();
+            if (StringUtils.isBlank(databaseNamePattern)) {
+                databaseNamePattern = RequestContext.getCatalog();
             }
-            if (StringUtils.isBlank(schemaName)) {
-                schemaName = RequestContext.getSchema();
+            if (StringUtils.isBlank(schemaNamePattern)) {
+                schemaNamePattern = RequestContext.getSchema();
             }
         }
 
@@ -80,20 +80,20 @@ public class SearchObjectsTool {
             }
         }
 
-        log.info("[Tool] searchObjects, pattern={}, type={}, connectionId={}, database={}, schema={}",
-                objectNamePattern, objectType, connectionId, databaseName, schemaName);
+        log.info("[Tool] searchObjects, pattern={}, type={}, connectionId={}, databasePattern={}, schemaPattern={}",
+                objectNamePattern, objectType, connectionId, databaseNamePattern, schemaNamePattern);
 
-        if (StringUtils.isNotBlank(schemaName) && StringUtils.isBlank(databaseName)) {
+        if (StringUtils.isNotBlank(schemaNamePattern) && StringUtils.isBlank(databaseNamePattern)) {
             throw AgentToolExecuteException.invalidInput(
                     ToolNameEnum.SEARCH_OBJECTS,
-                    "schemaName requires databaseName to be specified. Add databaseName before retrying searchObjects. "
+                    "schemaNamePattern requires databaseNamePattern to be specified. Add databaseNamePattern before retrying searchObjects. "
                             + "Do not continue object discovery until the scope is valid."
             );
         }
-        if (StringUtils.isNotBlank(databaseName) && connectionId == null) {
+        if (StringUtils.isNotBlank(databaseNamePattern) && connectionId == null) {
             throw AgentToolExecuteException.invalidInput(
                     ToolNameEnum.SEARCH_OBJECTS,
-                    "databaseName requires connectionId to be specified. Add connectionId before retrying searchObjects. "
+                    "databaseNamePattern requires connectionId to be specified. Add connectionId before retrying searchObjects. "
                             + "Do not continue object discovery until the scope is valid."
             );
         }
@@ -103,35 +103,35 @@ public class SearchObjectsTool {
                 : null;
 
         ObjectSearchResponse response = discoveryService.searchObjects(
-                objectNamePattern, normalizedType, connectionId, databaseName, schemaName);
+                objectNamePattern, normalizedType, connectionId, databaseNamePattern, schemaNamePattern);
 
         if (CollectionUtils.isNotEmpty(response.errors())) {
             log.info("[Tool done] searchObjects, resultCount={}, truncated={}, errorCount={}",
                     response.totalCount(), response.truncated(), response.errors().size());
             return AgentToolResult.builder()
                     .success(true)
-                    .message(buildSearchMessage(response, objectNamePattern, connectionId, databaseName, schemaName))
+                    .message(buildSearchMessage(response, objectNamePattern, connectionId, databaseNamePattern, schemaNamePattern))
                     .result(response)
                     .build();
         }
 
         if (CollectionUtils.isEmpty(response.results())) {
             log.info("[Tool done] searchObjects -> empty");
-            return AgentToolResult.empty(buildEmptySearchMessage(objectNamePattern, connectionId, databaseName, schemaName));
+            return AgentToolResult.empty(buildEmptySearchMessage(objectNamePattern, connectionId, databaseNamePattern, schemaNamePattern));
         }
 
         log.info("[Tool done] searchObjects, resultCount={}, truncated={}",
                 response.totalCount(), response.truncated());
-        return AgentToolResult.success(response, buildSearchSuccessMessage(response, objectNamePattern, connectionId, databaseName, schemaName));
+        return AgentToolResult.success(response, buildSearchSuccessMessage(response, objectNamePattern, connectionId, databaseNamePattern, schemaNamePattern));
     }
 
     private String buildSearchMessage(ObjectSearchResponse response,
                                       String objectNamePattern,
                                       Long connectionId,
-                                      String databaseName,
-                                      String schemaName) {
+                                      String databaseNamePattern,
+                                      String schemaNamePattern) {
         String errorSummary = String.join("; ", response.errors());
-        String scope = buildScopeLabel(objectNamePattern, connectionId, databaseName, schemaName);
+        String scope = buildScopeLabel(objectNamePattern, connectionId, databaseNamePattern, schemaNamePattern);
         String baseMessage = "Object search encountered scope failures for " + scope + ". Scope failures: " + errorSummary + ".";
         if (CollectionUtils.isNotEmpty(response.results())) {
             return ToolMessageSupport.sentence(
@@ -149,9 +149,9 @@ public class SearchObjectsTool {
     private String buildSearchSuccessMessage(ObjectSearchResponse response,
                                              String objectNamePattern,
                                              Long connectionId,
-                                             String databaseName,
-                                             String schemaName) {
-        String scope = buildScopeLabel(objectNamePattern, connectionId, databaseName, schemaName);
+                                             String databaseNamePattern,
+                                             String schemaNamePattern) {
+        String scope = buildScopeLabel(objectNamePattern, connectionId, databaseNamePattern, schemaNamePattern);
         String truncation = response.truncated()
                 ? " The result set is truncated, so refine the search before assuming all matches are visible."
                 : "";
@@ -169,30 +169,30 @@ public class SearchObjectsTool {
 
     private String buildEmptySearchMessage(String objectNamePattern,
                                            Long connectionId,
-                                           String databaseName,
-                                           String schemaName) {
+                                           String databaseNamePattern,
+                                           String schemaNamePattern) {
         return ToolMessageSupport.sentence(
                 "Object search returned no matches for "
-                        + buildScopeLabel(objectNamePattern, connectionId, databaseName, schemaName) + ".",
+                        + buildScopeLabel(objectNamePattern, connectionId, databaseNamePattern, schemaNamePattern) + ".",
                 "Use askUserQuestion to ask the user to clarify the target before continuing."
         );
     }
 
     private String buildScopeLabel(String objectNamePattern,
                                    Long connectionId,
-                                   String databaseName,
-                                   String schemaName) {
+                                   String databaseNamePattern,
+                                   String schemaNamePattern) {
         StringBuilder builder = new StringBuilder();
         builder.append("pattern=")
                 .append(StringUtils.defaultIfBlank(objectNamePattern, "<blank>"));
         if (connectionId != null) {
             builder.append(", connectionId=").append(connectionId);
         }
-        if (StringUtils.isNotBlank(databaseName)) {
-            builder.append(", database=").append(databaseName);
+        if (StringUtils.isNotBlank(databaseNamePattern)) {
+            builder.append(", databasePattern=").append(databaseNamePattern);
         }
-        if (StringUtils.isNotBlank(schemaName)) {
-            builder.append(", schema=").append(schemaName);
+        if (StringUtils.isNotBlank(schemaNamePattern)) {
+            builder.append(", schemaPattern=").append(schemaNamePattern);
         }
         return builder.toString();
     }

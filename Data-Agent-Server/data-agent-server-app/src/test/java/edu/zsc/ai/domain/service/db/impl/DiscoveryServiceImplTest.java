@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
@@ -91,6 +92,39 @@ class DiscoveryServiceImplTest {
         assertEquals(2, response.results().size());
         assertEquals(List.of(5L, 7L), response.results().stream().map(item -> item.connectionId()).toList());
         verify(dbConnectionService, never()).getAllConnections();
+    }
+
+    @Test
+    void searchObjects_filtersDatabasesAndSchemasBySqlWildcardPattern() {
+        when(dbConnectionService.getConnectionById(5L)).thenReturn(connection(5L));
+        when(databaseService.getDatabases(5L)).thenReturn(List.of("app_core", "analytics"));
+        when(schemaService.listSchemas(5L, "app_core")).thenReturn(List.of("public", "internal"));
+        when(schemaService.listSchemas(5L, "analytics")).thenReturn(List.of("public"));
+        when(databaseObjectService.searchObjects(
+                eq(DatabaseObjectTypeEnum.TABLE),
+                eq("%user%"),
+                eq(new DbContext(5L, "app_core", "public")),
+                isNull()
+        )).thenReturn(List.of("users"));
+
+        ObjectSearchResponse response = discoveryService.searchObjects(
+                "%user%", DatabaseObjectTypeEnum.TABLE, 5L, "app_%", "pub%");
+
+        assertEquals(1, response.results().size());
+        assertEquals("app_core", response.results().get(0).databaseName());
+        assertEquals("public", response.results().get(0).schemaName());
+        verify(databaseObjectService, never()).searchObjects(
+                eq(DatabaseObjectTypeEnum.TABLE),
+                eq("%user%"),
+                argThat(db -> db != null && "analytics".equals(db.catalog())),
+                isNull()
+        );
+        verify(databaseObjectService, never()).searchObjects(
+                eq(DatabaseObjectTypeEnum.TABLE),
+                eq("%user%"),
+                eq(new DbContext(5L, "app_core", "internal")),
+                isNull()
+        );
     }
 
     @Test
