@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Configuration;
  * agent:
  *   sub-agent:
  *     explorer:
- *       timeout-seconds: 120
+ *       timeout-seconds: 180
  *       dispatch:
  *         max-concurrency: 3
  *         queue-capacity: 9
@@ -37,7 +37,7 @@ public class SubAgentProperties {
         private DispatchConfig dispatch = new DispatchConfig();
 
         public ExplorerConfig() {
-            super(120);
+            super(180);
         }
     }
 
@@ -46,7 +46,7 @@ public class SubAgentProperties {
         private long timeoutSeconds;
 
         public AgentConfig() {
-            this.timeoutSeconds = 120;
+            this.timeoutSeconds = 180;
         }
 
         public AgentConfig(long timeoutSeconds) {

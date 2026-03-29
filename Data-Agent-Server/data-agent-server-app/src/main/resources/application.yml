@@ -126,7 +126,7 @@ agent:
     runtime-log-dir: ~/.data-agent/logs/agent/runtime
   sub-agent:
     explorer:
-      timeout-seconds: 120
+      timeout-seconds: 180
       dispatch:
         max-concurrency: 3
         queue-capacity: 9

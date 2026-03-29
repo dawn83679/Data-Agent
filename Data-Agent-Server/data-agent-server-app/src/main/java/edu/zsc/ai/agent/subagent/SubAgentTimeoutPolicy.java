@@ -5,7 +5,7 @@ package edu.zsc.ai.agent.subagent;
  */
 public final class SubAgentTimeoutPolicy {
 
-    public static final long MIN_TIMEOUT_SECONDS = 120L;
+    public static final long MIN_TIMEOUT_SECONDS = 180L;
 
     private SubAgentTimeoutPolicy() {
     }

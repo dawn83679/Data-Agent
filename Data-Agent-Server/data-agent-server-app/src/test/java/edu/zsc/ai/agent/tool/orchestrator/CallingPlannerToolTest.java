@@ -291,7 +291,7 @@ class CallingPlannerToolTest {
                 .build();
         when(mockPlanner.invoke(any(PlannerRequest.class))).thenAnswer(invocation -> {
             PlannerRequest request = invocation.getArgument(0);
-            assertEquals(120L, request.getTimeoutSeconds());
+            assertEquals(180L, request.getTimeoutSeconds());
             return plan;
         });
 

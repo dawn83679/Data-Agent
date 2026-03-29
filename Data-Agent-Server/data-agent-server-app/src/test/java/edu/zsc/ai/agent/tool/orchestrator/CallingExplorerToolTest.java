@@ -74,7 +74,9 @@ class CallingExplorerToolTest {
 
         assertTrue(result.isSuccess());
         assertTrue(result.getMessage().contains("Explorer results are available for 1 task(s)"));
-        assertTrue(result.getMessage().contains("Use the returned summaries and objects to continue planning"));
+        assertTrue(result.getMessage().contains("Use the returned summaries and objects to continue planning or direct inspection"));
+        assertTrue(result.getMessage().contains("If one returned target already looks sufficient"));
+        assertTrue(result.getMessage().contains("If multiple targets remain plausible"));
         ExplorerResultEnvelope envelope = JsonUtil.json2Object((String) result.getResult(), ExplorerResultEnvelope.class);
         assertEquals(1, envelope.getTaskResults().size());
         assertEquals("users", envelope.getTaskResults().get(0).getObjects().get(0).getObjectName());
@@ -210,12 +212,12 @@ class CallingExplorerToolTest {
     void taskTimeoutOverridesDefaultTimeout() {
         when(mockExplorer.invoke(any(SubAgentRequest.class))).thenAnswer(invocation -> {
             SubAgentRequest request = invocation.getArgument(0);
-            assertEquals(120L, request.timeoutSeconds());
+            assertEquals(180L, request.timeoutSeconds());
             return buildTestSchema("users");
         });
 
         List<ExplorerTask> tasks = List.of(new ExplorerTask(1L, "retry", null, 45L));
-        AgentToolResult result = tool.callingExplorerSubAgent(tasks, 120L, null);
+        AgentToolResult result = tool.callingExplorerSubAgent(tasks, 180L, null);
 
         assertTrue(result.isSuccess());
         verify(mockExplorer).invoke(any(SubAgentRequest.class));
@@ -225,12 +227,27 @@ class CallingExplorerToolTest {
     void topLevelTimeoutBelowMinimum_isRaisedToMinimum() {
         when(mockExplorer.invoke(any(SubAgentRequest.class))).thenAnswer(invocation -> {
             SubAgentRequest request = invocation.getArgument(0);
-            assertEquals(120L, request.timeoutSeconds());
+            assertEquals(180L, request.timeoutSeconds());
             return buildTestSchema("users");
         });
 
         List<ExplorerTask> tasks = List.of(new ExplorerTask(1L, "retry", null, null));
         AgentToolResult result = tool.callingExplorerSubAgent(tasks, 60L, null);
+
+        assertTrue(result.isSuccess());
+        verify(mockExplorer).invoke(any(SubAgentRequest.class));
+    }
+
+    @Test
+    void explorerUsesDefaultTimeoutWhenNotProvided() {
+        when(mockExplorer.invoke(any(SubAgentRequest.class))).thenAnswer(invocation -> {
+            SubAgentRequest request = invocation.getArgument(0);
+            assertEquals(180L, request.timeoutSeconds());
+            return buildTestSchema("users");
+        });
+
+        List<ExplorerTask> tasks = List.of(new ExplorerTask(1L, "retry", null, null));
+        AgentToolResult result = tool.callingExplorerSubAgent(tasks, null, null);
 
         assertTrue(result.isSuccess());
         verify(mockExplorer).invoke(any(SubAgentRequest.class));

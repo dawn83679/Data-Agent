@@ -12,7 +12,7 @@ class SubAgentPropertiesTest {
     @Test
     void defaultValues_explorerTimeout() {
         SubAgentProperties props = new SubAgentProperties();
-        assertEquals(120, props.getExplorer().getTimeoutSeconds());
+        assertEquals(180, props.getExplorer().getTimeoutSeconds());
     }
 
     @Test
@@ -51,7 +51,7 @@ class SubAgentPropertiesTest {
     @Test
     void agentConfig_defaultConstructor() {
         SubAgentProperties.AgentConfig config = new SubAgentProperties.AgentConfig();
-        assertEquals(120, config.getTimeoutSeconds());
+        assertEquals(180, config.getTimeoutSeconds());
     }
 
     @Test

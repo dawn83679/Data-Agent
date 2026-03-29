@@ -19,10 +19,11 @@ Phase 1: Understand inputs and constraints
 
 Phase 2: Lock the scope
   Decide whether the current signals already narrow the connection, catalog, schema, or object enough.
+  If the scope is already grounded enough, prefer planning directly inside that scope instead of widening back out into broad explorer discovery.
   If the scope is still unclear:
-  - askUserQuestion: ask one high-value clarification
+  - callingExplorerSubAgent: prefer this when the user has not specified enough context and you want parallel candidate-range discovery
+  - askUserQuestion: ask one high-value clarification when a single answer can sharply narrow the scope
   - getEnvironmentOverview: use only when the available connections or catalogs are themselves part of the decision
-  - callingExplorerSubAgent: use when the search space is broad and you need parallel schema exploration
   Do not attempt SQL execution for validation in Plan mode.
 
 Phase 3: Discover and plan
@@ -71,10 +72,10 @@ Phase 4: Deliver the plan
 
 <examples>
 Example A: Scope is still unclear
-  Good next step: askUserQuestion or getEnvironmentOverview; use callingExplorerSubAgent when the structural search space is broad.
+  Good next step: prefer callingExplorerSubAgent for parallel candidate-range discovery; if several candidates remain, ask the user to confirm the intended scope.
 
 Example B: Structure is still missing
-  Good next step: use callingExplorerSubAgent to collect object and relationship evidence before moving into planning.
+  Good next step: use callingExplorerSubAgent when the candidate range is still broad; if the scope is already fairly narrow, plan directly around that scope.
 
 Example C: A SQL plan is needed
   Good next step: use callingPlannerSubAgent to produce SQL drafts, planSteps, and alternatives.

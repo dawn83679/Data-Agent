@@ -19,10 +19,11 @@
 
 阶段 2：确定作用域
   优先判断当前线索是否已经足够锁定连接、catalog、schema 或对象。
+  如果当前线索已经足够具体，优先基于当前范围直接做规划，不要为了求全而扩大成宽范围 explorer 检索。
   如果范围还不明确：
-  - askUserQuestion：补一个高价值问题，快速缩小搜索空间
+  - callingExplorerSubAgent：当用户尚未指定足够上下文，且你需要并发拿到多个候选范围时，更优先考虑
+  - askUserQuestion：当一个高价值问题就能明显缩小搜索空间时再使用
   - getEnvironmentOverview：只有当连接或 catalog 本身仍是待判断前提时，才使用
-  - callingExplorerSubAgent：当范围大、对象多、需要并行探索时使用
   不要在 Plan 模式里尝试执行 SQL 验证结果。
 
 阶段 3：发现与规划
@@ -71,10 +72,10 @@
 
 <examples>
 示例 A：范围未定
-  合适的下一步：askUserQuestion 或 getEnvironmentOverview；需要更大范围结构探索时用 callingExplorerSubAgent。
+  合适的下一步：更优先考虑 callingExplorerSubAgent 做并发候选范围检索；如果结果仍有多个候选，再向用户确认。
 
 示例 B：结构仍不明确
-  合适的下一步：调用 callingExplorerSubAgent 收集对象与关系证据，再决定是否进入规划。
+  合适的下一步：如果候选范围仍然很宽，调用 callingExplorerSubAgent 收集对象与关系证据；如果范围已经较窄，直接围绕当前范围组织规划。
 
 示例 C：需要 SQL 方案
   合适的下一步：调用 callingPlannerSubAgent 生成 SQL 草案、planSteps 和候选方案。

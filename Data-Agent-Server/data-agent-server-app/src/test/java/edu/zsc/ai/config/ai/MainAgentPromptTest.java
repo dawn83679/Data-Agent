@@ -120,6 +120,12 @@ class MainAgentPromptTest {
                 "Prompt should call out missing contextual facts such as field definitions or object scope");
         assertTrue(promptContent.contains("当前上下文里并未给出的信息"),
                 "Prompt should require grounding when needed information is missing");
+        assertTrue(promptContent.contains("更优先考虑并发调用"),
+                "ZH prompt should prefer concurrent explorer discovery when context is missing");
+        assertTrue(promptContent.contains("如果 explorer 返回后只剩一个高置信候选"),
+                "ZH prompt should allow direct continuation after a single strong explorer candidate");
+        assertTrue(promptContent.contains("如果仍有多个候选范围"),
+                "ZH prompt should ask the user to confirm scope when multiple explorer candidates remain");
         assertFalse(promptContent.contains("readMemory"),
                 "ZH prompt should no longer mention readMemory");
         assertFalse(promptContent.contains("updateMemory"),
@@ -136,6 +142,12 @@ class MainAgentPromptTest {
                 "EN prompt should call out missing contextual facts such as field definitions or object scope");
         assertTrue(promptContentEn.contains("information that is not present in the current context"),
                 "EN prompt should require grounding when needed information is missing");
+        assertTrue(promptContentEn.contains("prefer this when the user has not specified enough context"),
+                "EN prompt should prefer explorer when context is missing");
+        assertTrue(promptContentEn.contains("if one high-confidence target already looks sufficient"),
+                "EN prompt should allow direct continuation after a single strong explorer candidate");
+        assertTrue(promptContentEn.contains("If multiple plausible targets remain"),
+                "EN prompt should ask the user to confirm scope when multiple explorer candidates remain");
         assertFalse(promptContentEn.contains("readMemory"),
                 "EN prompt should no longer mention readMemory");
         assertFalse(promptContentEn.contains("updateMemory"),
@@ -154,6 +166,8 @@ class MainAgentPromptTest {
     void workflow_prefersGroundedScopeBeforeEnvironmentWideDiscovery() {
         assertTrue(promptContent.contains("这些线索可以来自当前任务、已有上下文，以及用户本轮明确给出的对象引用。"),
                 "ZH prompt should name the scope-grounding signals");
+        assertTrue(promptContent.contains("通常不需要再调用 callingExplorerSubAgent 做宽范围检索"),
+                "ZH prompt should discourage explorer when current scope is already grounded");
         assertTrue(promptContent.contains("不要因为习惯性 discovery 而先扩大到整个环境"),
                 "ZH prompt should discourage habitual environment-wide discovery");
         assertTrue(promptContent.contains("只有当连接或 catalog 本身仍是待判断前提时，才使用"),
@@ -163,6 +177,8 @@ class MainAgentPromptTest {
 
         assertTrue(promptContentEn.contains("These signals can come from the current task, the available context, and the objects the user explicitly referenced in this turn."),
                 "EN prompt should name the scope-grounding signals");
+        assertTrue(promptContentEn.contains("usually do not broaden back out into callingExplorerSubAgent"),
+                "EN prompt should discourage explorer when current scope is already grounded");
         assertTrue(promptContentEn.contains("do not expand back to the whole environment just because discovery is available"),
                 "EN prompt should discourage habitual environment-wide discovery");
         assertTrue(promptContentEn.contains("use it only when the available connections or catalogs are themselves part of the decision"),
@@ -187,6 +203,14 @@ class MainAgentPromptTest {
                 "Prompt example E should keep missing context grounded in evidence gathering");
         assertTrue(promptContentEn.contains("if the current evidence is still incomplete, keep querying, validating, or asking follow-up questions"),
                 "EN prompt example E should keep missing context grounded in evidence gathering");
+        assertTrue(promptContent.contains("更优先考虑并发调用 callingExplorerSubAgent"),
+                "ZH example A should prefer concurrent explorer discovery");
+        assertTrue(promptContentEn.contains("prefer concurrent callingExplorerSubAgent tasks"),
+                "EN example A should prefer concurrent explorer discovery");
+        assertTrue(promptContent.contains("或改成 callingExplorerSubAgent 把范围放大"),
+                "ZH example B should discourage broad explorer rediscovery");
+        assertTrue(promptContentEn.contains("widening the search back out through callingExplorerSubAgent"),
+                "EN example B should discourage broad explorer rediscovery");
         assertTrue(promptContent.contains("示例 F：字段口径被用户澄清"),
                 "Prompt should include a field-semantics clarification example");
         assertTrue(promptContent.contains("示例 G：已有对象知识可能存在"),

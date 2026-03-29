@@ -39,17 +39,17 @@ public class CallingPlannerTool extends SubAgentToolSupport {
 
     @Tool({
             "Value: turns verified schema context into a structured SQL plan with steps and SQL blocks you can review or execute.",
-            "Use When: call after callingExplorerSubAgent or equivalent discovery has produced usable schema context and you need SQL generation or optimization.",
+            "Use When: call after callingExplorerSubAgent or equivalent direct inspection has produced usable schema context and you need SQL generation or optimization.",
             "Preconditions: schemaSummaryJson is required. It may be a SchemaSummary JSON or a callingExplorerSubAgent taskResults envelope JSON. Include optimization context in instruction when relevant.",
             "After Success: review the returned planSteps and sqlBlocks against the user goal. For write SQL, call executeNonSelectSql and respect its returned status. For read SQL, verify scope and then call executeSelectSql.",
             "After Failure: gather missing schema context or improve the planner instruction and retry. Do not execute guessed SQL.",
             "Result Consumption: use summaryText for explanation, planSteps for the execution outline, and sqlBlocks as candidate SQL to verify before running.",
-            "Relation: usually after callingExplorerSubAgent and before executeSelectSql or executeNonSelectSql. Planner timeout defaults to 180 seconds, and lower values are raised to 120."
+            "Relation: usually after callingExplorerSubAgent or focused direct inspection and before executeSelectSql or executeNonSelectSql. When the current scope is already explicit and the read task is simple, direct execution may be better than planner delegation. Planner timeout defaults to 180 seconds, and lower values are raised to 180."
     })
     public AgentToolResult callingPlannerSubAgent(
             @P("Task instruction - describe what SQL to generate, include optimization context if needed") String instruction,
             @P("SchemaSummary JSON from a previous callingExplorerSubAgent result") String schemaSummaryJson,
-            @P(value = "Optional timeout in seconds for this planner sub-agent invocation. Default is 180 seconds. Values below 120 are automatically raised to 120.", required = false) Long timeoutSeconds,
+            @P(value = "Optional timeout in seconds for this planner sub-agent invocation. Default is 180 seconds. Values below 180 are automatically raised to 180.", required = false) Long timeoutSeconds,
             InvocationParameters parameters) {
         RequestContextInfo requestContextSnapshot = RequestContext.snapshot();
         String taskId = buildTaskId("plan", requestContextSnapshot);

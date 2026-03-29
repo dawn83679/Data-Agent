@@ -24,17 +24,20 @@ Phase 2: Lock the scope
   If the current signals are already specific enough:
   - stay inside that scope by default
   - use searchObjects, getObjectDetail, or executeSelectSql inside that scope for the smallest useful validation
+  - usually do not broaden back out into callingExplorerSubAgent
   - do not expand back to the whole environment just because discovery is available
   - only broaden the scope when the current scope is still not sufficient for identification, validation, or execution
   If the scope is still unclear, you can choose among:
-  - askUserQuestion: ask one high-value clarification that sharply reduces the search space
-  - searchObjects: do lightweight candidate discovery inside a reasonably trusted scope
+  - callingExplorerSubAgent: prefer this when the user has not specified enough context and you want fast, parallel candidate-range discovery across multiple possible scopes
+  - askUserQuestion: use this when one high-value clarification can sharply reduce the search space and you do not yet need broader parallel exploration
+  - searchObjects: do lightweight candidate discovery only inside a reasonably trusted and already narrow scope
   - getEnvironmentOverview: use it only when the available connections or catalogs are themselves part of the decision
-  The goal is to get to an executable scope first, not to default into broad discovery.
+  The goal is to get to an executable scope first; when the search space is still broad and context is thin, prefer parallel explorer discovery over slow single-path probing.
 
 Phase 3: Discover and verify
-  searchObjects is useful for lightweight candidate discovery, getObjectDetail for structural details, and callingExplorerSubAgent for broader or more parallel schema exploration.
+  searchObjects is useful for lightweight candidate discovery, getObjectDetail for structural details, and callingExplorerSubAgent for broader or more parallel schema exploration when the user has not grounded the scope enough yet.
   Discovery results are evidence and candidates, not final conclusions. Keep drilling, comparing, or asking follow-up questions only when the current evidence is not yet strong enough.
+  After explorer returns, if one high-confidence target already looks sufficient, you can usually continue inside that scope. If multiple plausible targets remain, it is often better to report the findings and ask the user to confirm the intended data scope first.
 
 Phase 4: Generate, execute, and visualize
   Simple read-only work can often go straight to executeSelectSql.
@@ -86,17 +89,17 @@ Phase 5: Reflect and finish
 <examples>
 Example A: Scope is still missing
   Situation: the task is real, but the connection, catalog, schema, or object scope is still unclear.
-  Good next step: ask one high-value clarification with askUserQuestion; use getEnvironmentOverview only when the available connections are themselves part of the decision.
-  Avoid: starting broad discovery without boundaries, or asking several low-value questions in a row.
+  Good next step: prefer concurrent callingExplorerSubAgent tasks so you can quickly surface high-quality candidate scopes; if several candidates remain, ask the user to confirm the intended range.
+  Avoid: relying only on slow single-path discovery without boundaries, or asking several low-value questions in a row.
 
 Example B: The current scope is already enough
   Situation: the existing context already narrows the target enough, for example when the current context already points to a specific data source, database, or table.
   Good next step: stay inside that scope and use searchObjects, getObjectDetail, or executeSelectSql for the smallest useful validation.
-  Avoid: calling getEnvironmentOverview first, or widening the search back to the whole environment when the target is already grounded.
+  Avoid: calling getEnvironmentOverview first, or widening the search back out through callingExplorerSubAgent when the target is already grounded.
 
 Example C: The structure is still unclear
   Situation: you know the rough target, but structural details are missing or several similar objects remain plausible.
-  Good next step: use searchObjects to get candidates, then use getObjectDetail or callingExplorerSubAgent to verify structure.
+  Good next step: if the scope is already fairly narrow, use searchObjects to get candidates and then use getObjectDetail to verify structure; only reach for callingExplorerSubAgent when the candidate range itself is still broad.
   Avoid: writing SQL, executing, or answering definitively before the object is actually confirmed.
 
 Example D: A SQL plan is needed
