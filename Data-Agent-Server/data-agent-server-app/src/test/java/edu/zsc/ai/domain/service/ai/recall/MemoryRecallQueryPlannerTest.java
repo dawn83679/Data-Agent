@@ -90,12 +90,20 @@ class MemoryRecallQueryPlannerTest {
                 .recallMode(MemoryRecallMode.PROMPT)
                 .build());
 
+        assertEquals(4, queries.size());
+        // first 2: default HYBRID queries
         assertEquals(List.of(
                         MemoryScopeEnum.CONVERSATION.getCode(),
-                        MemoryScopeEnum.USER.getCode()),
+                        MemoryScopeEnum.USER.getCode(),
+                        MemoryScopeEnum.USER.getCode(),
+                        MemoryScopeEnum.CONVERSATION.getCode()),
                 queries.stream().map(MemoryRecallQuery::targetScope).toList());
         assertEquals(MemoryRecallPlanningConstant.REASON_FALLBACK_DEFAULT_SCOPE_PLAN, queries.get(0).planningReason());
         assertEquals(MemoryRecallQueryStrategy.HYBRID, queries.get(0).queryStrategy());
         assertEquals(MemoryRecallQueryStrategy.HYBRID, queries.get(1).queryStrategy());
+        // last 2: auto-appended PREFERENCE BROWSE queries
+        assertEquals(MemoryRecallPlanningConstant.REASON_MEMORY_TYPE_PREFERENCE_DEFAULT, queries.get(2).planningReason());
+        assertEquals(MemoryRecallQueryStrategy.BROWSE, queries.get(2).queryStrategy());
+        assertEquals(MemoryRecallQueryStrategy.BROWSE, queries.get(3).queryStrategy());
     }
 }

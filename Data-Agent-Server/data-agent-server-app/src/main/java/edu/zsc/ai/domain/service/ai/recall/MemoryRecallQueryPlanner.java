@@ -50,7 +50,39 @@ public class MemoryRecallQueryPlanner {
             String reason = index == 0 && reorderedReason != null ? reorderedReason : rule.ruleName();
             queries.add(toQuery(context, scope, rule.strategyFor(scope), index, reason));
         }
+
+        if (context.getRecallMode() == MemoryRecallMode.PROMPT && memoryType == null) {
+            appendPreferenceQueries(context, queries);
+        }
+
         return queries;
+    }
+
+    private void appendPreferenceQueries(MemoryRecallContext context, List<MemoryRecallQuery> queries) {
+        MemoryRecallPlanningRule prefRule = planningRules.resolveRule(MemoryTypeEnum.PREFERENCE, context.getRecallMode());
+        int basePriority = queries.size();
+        for (int i = 0; i < prefRule.scopes().size(); i++) {
+            MemoryScopeEnum scope = prefRule.scopes().get(i);
+            queries.add(toPreferenceQuery(context, scope, prefRule.strategyFor(scope), basePriority + i));
+        }
+    }
+
+    private MemoryRecallQuery toPreferenceQuery(MemoryRecallContext context,
+                                                MemoryScopeEnum scope,
+                                                MemoryRecallQueryStrategy strategy,
+                                                int priority) {
+        return new MemoryRecallQuery(
+                buildQueryName(scope, MemoryTypeEnum.PREFERENCE.getCode(), null, strategy),
+                MemoryRecallPlanningConstant.REASON_MEMORY_TYPE_PREFERENCE_DEFAULT,
+                scope.getCode(),
+                context.getConversationId(),
+                context.getQueryText(),
+                MemoryTypeEnum.PREFERENCE.getCode(),
+                null,
+                null,
+                context.getRecallMode(),
+                strategy,
+                priority);
     }
 
     private List<MemoryScopeEnum> reorderScopes(List<MemoryScopeEnum> scopes, MemoryScopeEnum preferredScope) {
