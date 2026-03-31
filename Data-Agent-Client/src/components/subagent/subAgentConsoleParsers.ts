@@ -1,5 +1,6 @@
 import type { SubAgentConsoleTabMetadata, SubAgentInvocation } from '../../types/tab';
 import { PLANNER_SQL_BLOCK_KIND, type ExplorerResultPayload, type PlannerResultPayload, type PlannerSqlBlockKind } from './subAgentConsoleTypes';
+import { getToolDisplayName } from '../ai/blocks/sqlDiscoveryToolUtils';
 
 function normalizeRelevanceScore(value: unknown): number | undefined {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
@@ -16,19 +17,19 @@ export function getInvocationStatusText(invocation: SubAgentInvocation): string 
   const failedTool = [...tools].reverse().find((tool) => tool.responseError);
 
   if (invocation.status === 'error') {
-    return failedTool ? `Failed at ${failedTool.toolName}` : 'Agent failed';
+    return failedTool ? `Failed at ${getToolDisplayName(failedTool.toolName)}` : 'Agent failed';
   }
   if (invocation.status === 'complete') {
     return 'Complete';
   }
   if (runningTool) {
-    return `Calling ${runningTool.toolName}... (${completed}/${tools.length})`;
+    return `Calling ${getToolDisplayName(runningTool.toolName)}... (${completed}/${tools.length})`;
   }
   if (tools.length > 0 && completed === tools.length) {
     return 'Starting summary...';
   }
   if (lastCompletedTool) {
-    return `Called ${lastCompletedTool.toolName}... (${completed}/${tools.length})`;
+    return `Called ${getToolDisplayName(lastCompletedTool.toolName)}... (${completed}/${tools.length})`;
   }
   return 'Starting Agent...';
 }

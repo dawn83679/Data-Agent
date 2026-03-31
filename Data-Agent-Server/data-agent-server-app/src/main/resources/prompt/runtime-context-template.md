@@ -2,6 +2,10 @@
 {{SYSTEM_CONTEXT}}
 </system_context>
 
+<available_connections purpose="known_connections_inventory" apply_to="connection_selection,scope_resolution" strength="reference">
+{{AVAILABLE_CONNECTIONS}}
+</available_connections>
+
 <scope_hints purpose="query_scope_guidance" apply_to="tool_selection,object_search,sql_scope" strength="strong">
 {{SCOPE_HINTS}}
 </scope_hints>

@@ -112,8 +112,8 @@ class MainAgentPromptTest {
                 "Prompt should describe lightweight discovery capability");
         assertTrue(promptContent.contains("简单只读任务通常可以直接调用 executeSelectSql"),
                 "Prompt should keep a direct execution path for simple reads");
-        assertTrue(promptContent.contains("getEnvironmentOverview：只有当连接或 catalog 本身仍是待判断前提时，才使用"),
-                "Prompt should describe environment overview as a runtime scoping tool");
+        assertTrue(promptContent.contains("getDatabases / getSchemas：当你需要发现某个连接上的数据库或 schema 时使用"),
+                "Prompt should describe getDatabases/getSchemas as connection-scoped discovery tools");
         assertTrue(promptContent.contains("使用 renderChart 交付更直观的结果"),
                 "Prompt should include visualization in the runtime workflow");
         assertTrue(promptContent.contains("固定字段口径、默认对象范围或稳定偏好"),
@@ -170,8 +170,8 @@ class MainAgentPromptTest {
                 "ZH prompt should discourage explorer when current scope is already grounded");
         assertTrue(promptContent.contains("不要因为习惯性 discovery 而先扩大到整个环境"),
                 "ZH prompt should discourage habitual environment-wide discovery");
-        assertTrue(promptContent.contains("只有当连接或 catalog 本身仍是待判断前提时，才使用"),
-                "ZH prompt should narrow when getEnvironmentOverview is appropriate");
+        assertTrue(promptContent.contains("当你需要发现某个连接上的数据库或 schema 时使用"),
+                "ZH prompt should describe getDatabases/getSchemas scope");
         assertTrue(promptContent.contains("例如当前上下文已经指出了具体数据源、数据库或表。"),
                 "ZH prompt example B should cover already-grounded object scope");
 
@@ -181,8 +181,8 @@ class MainAgentPromptTest {
                 "EN prompt should discourage explorer when current scope is already grounded");
         assertTrue(promptContentEn.contains("do not expand back to the whole environment just because discovery is available"),
                 "EN prompt should discourage habitual environment-wide discovery");
-        assertTrue(promptContentEn.contains("use it only when the available connections or catalogs are themselves part of the decision"),
-                "EN prompt should narrow when getEnvironmentOverview is appropriate");
+        assertTrue(promptContentEn.contains("use when you need to discover the databases or schemas on a specific connection"),
+                "EN prompt should describe getDatabases/getSchemas scope");
         assertTrue(promptContentEn.contains("the current context already points to a specific data source, database, or table"),
                 "EN prompt example B should cover already-grounded object scope");
     }

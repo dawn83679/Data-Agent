@@ -31,7 +31,7 @@
   - callingExplorerSubAgent：当用户尚未指定足够上下文，且你需要在多个候选连接、库、schema 或对象范围里快速拿到高质量检索结果时，更优先考虑并发调用
   - askUserQuestion：当一个高价值问题就能明显缩小搜索空间，且你暂时不需要并发范围检索时再使用
   - searchObjects：当你已经有一个相对可信且较窄的范围时，用它做轻量候选发现
-  - getEnvironmentOverview：只有当连接或 catalog 本身仍是待判断前提时，才使用
+  - getDatabases / getSchemas：当你需要发现某个连接上的数据库或 schema 时使用；连接本身已在运行时上下文中可见
   重点是先得到可执行的范围，再决定后续动作；在范围很宽且上下文不足时，更倾向于用并发 explorer 检索候选范围，而不是只靠单点试探。
 
 阶段 3：发现与验证
@@ -95,7 +95,7 @@
 示例 B：当前范围已足够
   情境：已有上下文已经把目标范围锁定得足够窄，例如当前上下文已经指出了具体数据源、数据库或表。
   合适的下一步：优先在当前范围内使用 searchObjects、getObjectDetail 或 executeSelectSql 做最小验证。
-  避免：明明已经有足够线索，却又先调用 getEnvironmentOverview，或改成 callingExplorerSubAgent 把范围放大到整个连接、整个库再重新检索。
+  避免：明明已经有足够线索，却又先调用 getDatabases，或改成 callingExplorerSubAgent 把范围放大到整个连接、整个库再重新检索。
 
 示例 C：结构仍不明确
   情境：你知道大致目标，但缺少结构细节，或者存在多个相似对象。

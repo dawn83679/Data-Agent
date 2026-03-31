@@ -75,16 +75,16 @@ class CompressionServiceImplTest {
         // 模拟真实的数据库探索对话：用户问 → AI 调工具 → 工具返回 → AI 总结
         List<ChatMessage> messages = List.of(
                 UserMessage.from("Show me the structure of the orders table"),
-                // AI 发起 getEnvironmentOverview 工具调用
+                // AI 发起 getDatabases 工具调用
                 AiMessage.from(List.of(
                         ToolExecutionRequest.builder()
                                 .id("call-1")
-                                .name("getEnvironmentOverview")
-                                .arguments("{}")
+                                .name("getDatabases")
+                                .arguments("{\"connectionId\":1}")
                                 .build()
                 )),
-                ToolExecutionResultMessage.from("call-1", "getEnvironmentOverview",
-                        "{\"connections\":[{\"connectionId\":\"conn-1\",\"catalog\":\"mydb\",\"schemas\":[\"public\"]}]}"),
+                ToolExecutionResultMessage.from("call-1", "getDatabases",
+                        "[\"mydb\"]"),
                 // AI 发起 getObjectDetail 工具调用
                 AiMessage.from(List.of(
                         ToolExecutionRequest.builder()
@@ -108,9 +108,9 @@ class CompressionServiceImplTest {
 
         // 验证提示词中包含完整的工具调用结构（工具名、参数、结果）
         String prompt = capturePromptText();
-        assertTrue(prompt.contains("getEnvironmentOverview"), "Should contain tool name");
+        assertTrue(prompt.contains("getDatabases"), "Should contain tool name");
         assertTrue(prompt.contains("getObjectDetail"), "Should contain tool name");
-        assertTrue(prompt.contains("conn-1"), "Should contain connectionId from tool result");
+        assertTrue(prompt.contains("mydb"), "Should contain database name from tool result");
         assertTrue(prompt.contains("orders"), "Should contain table name from tool result");
     }
 
@@ -511,7 +511,7 @@ class CompressionServiceImplTest {
         assertTrue(prompt.contains("executeSelectSql"), "Missing tool rule: executeSelectSql");
         assertTrue(prompt.contains("executeNonSelectSql"), "Missing tool rule: executeNonSelectSql");
         assertTrue(prompt.contains("searchObjects"), "Missing tool rule: searchObjects");
-        assertTrue(prompt.contains("getEnvironmentOverview"), "Missing tool rule: getEnvironmentOverview");
+        assertTrue(prompt.contains("getDatabases"), "Missing tool rule: getDatabases");
         assertTrue(prompt.contains("renderChart"), "Missing tool rule: renderChart");
         assertTrue(prompt.contains("askUserQuestion"), "Missing tool rule: askUserQuestion");
         assertTrue(prompt.contains("callingExplorerSubAgent"), "Missing tool rule: callingExplorerSubAgent");

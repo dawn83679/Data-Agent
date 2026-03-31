@@ -15,6 +15,7 @@ import { useTheme } from '../../../hooks/useTheme';
 import { cn } from '../../../lib/utils';
 import { LightDataTable } from './LightDataTable';
 import { parseExecuteSelectResponse } from './executeSelectTypes';
+import { getToolDisplayName } from './sqlDiscoveryToolUtils';
 import {
   getToolCardClassName,
   getToolSectionShellClassName,
@@ -87,7 +88,7 @@ export function ExecuteSelectSqlBlock({
         )}
         <span className="min-w-0 flex-1 truncate text-[12px] font-medium theme-text-primary">
           {isHeaderError ? TOOL_RUN_LABEL_FAILED : TOOL_RUN_LABEL_RAN}
-          {toolName}
+          {getToolDisplayName(toolName)}
         </span>
         <span className={cn(TOOL_CARD_META_CLASSNAME, 'shrink-0')}>
           {parsed.resultSets.length} result{parsed.resultSets.length === 1 ? '' : 's'}

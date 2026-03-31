@@ -17,7 +17,7 @@ public class ExecutorConfig {
     public static final String SHARED_EXECUTOR_BEAN_NAME = "sharedExecutor";
 
     /**
-     * Global bounded thread pool. Used by discovery (getEnvironmentOverview / searchObjects),
+     * Global bounded thread pool. Used by discovery (getDatabases / getSchemas / searchObjects),
      * AsyncTaskManager, etc. Lifecycle managed by Spring (graceful shutdown).
      */
     @Bean(name = SHARED_EXECUTOR_BEAN_NAME)

@@ -23,7 +23,7 @@ Phase 2: Lock the scope
   If the scope is still unclear:
   - callingExplorerSubAgent: prefer this when the user has not specified enough context and you want parallel candidate-range discovery
   - askUserQuestion: ask one high-value clarification when a single answer can sharply narrow the scope
-  - getEnvironmentOverview: use only when the available connections or catalogs are themselves part of the decision
+  - getDatabases / getSchemas: use when you need to discover the databases or schemas on a specific connection; the connections themselves are already visible in the runtime context
   Do not attempt SQL execution for validation in Plan mode.
 
 Phase 3: Discover and plan

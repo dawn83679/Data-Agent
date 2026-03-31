@@ -30,7 +30,8 @@ public enum ToolNameEnum {
     ASK_USER_QUESTION("askUserQuestion"),
 
     // ── Discovery (database objects) ──
-    GET_ENVIRONMENT_OVERVIEW("getEnvironmentOverview"),
+    GET_DATABASES("getDatabases"),
+    GET_SCHEMAS("getSchemas"),
     SEARCH_OBJECTS("searchObjects"),
     GET_OBJECT_DETAIL("getObjectDetail"),
 

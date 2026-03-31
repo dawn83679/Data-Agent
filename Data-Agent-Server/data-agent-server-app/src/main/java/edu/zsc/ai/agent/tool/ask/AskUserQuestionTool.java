@@ -28,7 +28,7 @@ public class AskUserQuestionTool {
                     "After Success: the user's reply becomes new scope or preference information for the next step.",
                     "After Failure: if you still cannot phrase a helpful question, you may gather more context first and try again later.",
                     "Wait For User: this tool creates an explicit pause point for decisions that depend on the user's choice.",
-                    "Relation: often helpful after getEnvironmentOverview, searchObjects, or other discovery steps. Maximum 3 options per question."
+                    "Relation: often helpful after getDatabases, getSchemas, searchObjects, or other discovery steps. Maximum 3 options per question."
             },
             returnBehavior = ReturnBehavior.IMMEDIATE
     )

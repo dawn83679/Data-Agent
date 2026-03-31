@@ -28,7 +28,9 @@ import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
 import edu.zsc.ai.domain.service.agent.runtimecontext.RuntimeContextAssemblyContext;
 import edu.zsc.ai.domain.service.agent.runtimecontext.RuntimeContextManager;
+import edu.zsc.ai.domain.service.agent.runtimecontext.strategy.ConnectionSummary;
 import edu.zsc.ai.domain.service.ai.AiConversationService;
+import edu.zsc.ai.domain.service.db.DbConnectionService;
 import edu.zsc.ai.domain.service.ai.MemoryContextService;
 import edu.zsc.ai.domain.service.ai.model.MemoryPromptContext;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +50,7 @@ public class ChatSessionFactory {
     private final AiConversationService aiConversationService;
     private final MemoryContextService memoryContextService;
     private final RuntimeContextManager runtimeContextManager;
+    private final DbConnectionService dbConnectionService;
 
     /**
      * Build a ChatSession from an incoming ChatRequest.
@@ -71,12 +74,17 @@ public class ChatSessionFactory {
 
             String memoryId = MemoryIdUtil.build(RequestContext.getUserId(), conversationId, modelName);
 
+            List<ConnectionSummary> connections = dbConnectionService.getAllConnections().stream()
+                    .map(conn -> new ConnectionSummary(conn.getId(), conn.getName(), conn.getDbType()))
+                    .toList();
+
             MemoryPromptContext memoryPromptContext = memoryContextService.loadPromptContext(
                     RequestContext.getUserId(), conversationId, request.getMessage());
             RuntimeContextAssemblyContext runtimeCtx = RuntimeContextAssemblyContext.builder()
                     .language(request.getLanguage())
                     .currentDate(LocalDate.now(ZoneId.systemDefault()))
                     .timezone(ZoneId.systemDefault().getId())
+                    .availableConnections(connections)
                     .memoryPromptContext(memoryPromptContext)
                     .userMentions(request.getUserMentions() == null ? List.of() : request.getUserMentions())
                     .build();

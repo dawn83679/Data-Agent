@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExplorerTask {
-    /** Target database connection ID (from getEnvironmentOverview). */
+    /** Target database connection ID (from the available connections in the runtime context). */
     private Long connectionId;
 
     /** Task instruction — what schema info to explore for this connection. */

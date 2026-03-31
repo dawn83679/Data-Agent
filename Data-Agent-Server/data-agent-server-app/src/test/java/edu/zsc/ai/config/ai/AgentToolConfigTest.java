@@ -18,8 +18,9 @@ import edu.zsc.ai.agent.tool.plan.EnterPlanModeTool;
 import edu.zsc.ai.agent.tool.plan.ExitPlanModeTool;
 import edu.zsc.ai.agent.tool.skill.ActivateSkillTool;
 import edu.zsc.ai.agent.tool.sql.ExecuteSqlTool;
-import edu.zsc.ai.agent.tool.sql.GetEnvironmentOverviewTool;
+import edu.zsc.ai.agent.tool.sql.GetDatabasesTool;
 import edu.zsc.ai.agent.tool.sql.GetObjectDetailTool;
+import edu.zsc.ai.agent.tool.sql.GetSchemasTool;
 import edu.zsc.ai.agent.tool.sql.SearchObjectsTool;
 import edu.zsc.ai.agent.tool.todo.TodoTool;
 import edu.zsc.ai.common.enums.ai.AgentModeEnum;
@@ -45,7 +46,8 @@ class AgentToolConfigTest {
     private AgentToolConfig config;
     private List<Object> allTools;
 
-    private GetEnvironmentOverviewTool getEnvironmentOverviewTool;
+    private GetDatabasesTool getDatabasesTool;
+    private GetSchemasTool getSchemasTool;
     private SearchObjectsTool searchObjectsTool;
     private GetObjectDetailTool getObjectDetailTool;
     private ExecuteSqlTool executeSqlTool;
@@ -65,7 +67,8 @@ class AgentToolConfigTest {
     void setUp() {
         config = new AgentToolConfig();
 
-        getEnvironmentOverviewTool = new GetEnvironmentOverviewTool(null);
+        getDatabasesTool = new GetDatabasesTool(null);
+        getSchemasTool = new GetSchemasTool(null);
         searchObjectsTool = new SearchObjectsTool(null);
         getObjectDetailTool = new GetObjectDetailTool(null);
         executeSqlTool = new ExecuteSqlTool(null, null, null);
@@ -82,7 +85,8 @@ class AgentToolConfigTest {
         exportFileTool = new ExportFileTool(null);
 
         allTools = List.of(
-                getEnvironmentOverviewTool,
+                getDatabasesTool,
+                getSchemasTool,
                 searchObjectsTool,
                 getObjectDetailTool,
                 executeSqlTool,
@@ -107,7 +111,8 @@ class AgentToolConfigTest {
         void agentMode_exposesOnlyExecutionFacingMainTools() {
             List<Object> tools = config.resolveMainTools(allTools, AgentModeEnum.AGENT);
 
-            assertTrue(tools.contains(getEnvironmentOverviewTool));
+            assertTrue(tools.contains(getDatabasesTool));
+            assertTrue(tools.contains(getSchemasTool));
             assertTrue(tools.contains(searchObjectsTool));
             assertTrue(tools.contains(getObjectDetailTool));
             assertTrue(tools.contains(executeSqlTool));
@@ -129,7 +134,8 @@ class AgentToolConfigTest {
         void planMode_exposesOnlyPlanningFacingMainTools() {
             List<Object> tools = config.resolveMainTools(allTools, AgentModeEnum.PLAN);
 
-            assertTrue(tools.contains(getEnvironmentOverviewTool));
+            assertTrue(tools.contains(getDatabasesTool));
+            assertTrue(tools.contains(getSchemasTool));
             assertTrue(tools.contains(askUserQuestionTool));
             assertTrue(tools.contains(callingExplorerTool));
             assertTrue(tools.contains(callingPlannerTool));
@@ -156,7 +162,8 @@ class AgentToolConfigTest {
             List<Object> tools = config.resolveSubAgentTools(allTools, AgentTypeEnum.EXPLORER);
 
             assertEquals(4, tools.size(), "Explorer should have 4 scoped tools");
-            assertFalse(tools.contains(getEnvironmentOverviewTool), "Explorer should NOT have GetEnvironmentOverviewTool");
+            assertFalse(tools.contains(getDatabasesTool), "Explorer should NOT have GetDatabasesTool");
+            assertFalse(tools.contains(getSchemasTool), "Explorer should NOT have GetSchemasTool");
             assertTrue(tools.contains(todoTool), "Explorer should have TodoTool");
             assertTrue(tools.contains(searchObjectsTool), "Explorer should have SearchObjectsTool");
             assertTrue(tools.contains(getObjectDetailTool), "Explorer should have GetObjectDetailTool");
@@ -177,7 +184,8 @@ class AgentToolConfigTest {
         void planner_excludesBroadDiscoveryAndOrchestrationTools() {
             List<Object> tools = config.resolveSubAgentTools(allTools, AgentTypeEnum.PLANNER);
 
-            assertFalse(tools.contains(getEnvironmentOverviewTool), "Planner should NOT have GetEnvironmentOverviewTool");
+            assertFalse(tools.contains(getDatabasesTool), "Planner should NOT have GetDatabasesTool");
+            assertFalse(tools.contains(getSchemasTool), "Planner should NOT have GetSchemasTool");
             assertFalse(tools.contains(searchObjectsTool), "Planner should NOT have SearchObjectsTool");
             assertFalse(tools.contains(askUserQuestionTool), "Planner should NOT have AskUserQuestionTool");
             assertFalse(tools.contains(callingExplorerTool), "Planner should NOT have CallingExplorerTool");

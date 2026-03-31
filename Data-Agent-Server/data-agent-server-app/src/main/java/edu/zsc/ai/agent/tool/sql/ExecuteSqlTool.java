@@ -48,7 +48,7 @@ public class ExecuteSqlTool {
         "After Success: base the answer strictly on the returned results. If the user needs a visualization, pass the verified result set into renderChart.",
         "After Failure: inspect the statement-level errors, fix the SQL or scope, and retry only when the query is valid. Do not claim the query succeeded or fabricate results.",
         "Do Not Use When: the statement writes data or the referenced objects are still unverified.",
-        "Relation: typically after getEnvironmentOverview, searchObjects, and getObjectDetail, or after callingPlannerSubAgent for a read plan. Results are returned in the results array."
+        "Relation: typically after identifying the target connection from the runtime context, using getDatabases/getSchemas and searchObjects/getObjectDetail, or after callingPlannerSubAgent for a read plan. Results are returned in the results array."
     })
     @DisallowInPlanMode(ToolNameEnum.EXECUTE_SELECT_SQL)
     public AgentSqlResult executeSelectSql(
