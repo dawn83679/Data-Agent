@@ -1,5 +1,7 @@
 package edu.zsc.ai.config.ai;
 
+import org.apache.commons.lang3.StringUtils;
+
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
@@ -72,6 +74,10 @@ public class AgentManager {
         return AiServices.builder(ReActAgent.class)
                 .streamingChatModel(model)
                 .systemMessage(systemPrompt)
+                .systemMessageTransformer((msg, ctx) -> {
+                    String suffix = ctx.invocationParameters().get("runtimeSystemPromptSuffix");
+                    return StringUtils.isNotBlank(suffix) ? msg + "\n" + suffix : msg;
+                })
                 .chatMemoryProvider(chatMemoryProvider)
                 .tools(toolBundle.executors(), toolBundle.immediateReturnToolNames())
                 .build();

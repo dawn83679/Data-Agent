@@ -1,9 +1,13 @@
 package edu.zsc.ai.domain.service.agent;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,7 +26,11 @@ import edu.zsc.ai.context.AgentRequestContextInfo;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
+import edu.zsc.ai.domain.service.agent.runtimecontext.RuntimeContextAssemblyContext;
+import edu.zsc.ai.domain.service.agent.runtimecontext.RuntimeContextManager;
 import edu.zsc.ai.domain.service.ai.AiConversationService;
+import edu.zsc.ai.domain.service.ai.MemoryContextService;
+import edu.zsc.ai.domain.service.ai.model.MemoryPromptContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,6 +46,8 @@ public class ChatSessionFactory {
 
     private final ReActAgentProvider reActAgentProvider;
     private final AiConversationService aiConversationService;
+    private final MemoryContextService memoryContextService;
+    private final RuntimeContextManager runtimeContextManager;
 
     /**
      * Build a ChatSession from an incoming ChatRequest.
@@ -60,7 +70,23 @@ public class ChatSessionFactory {
             Long conversationId = ensureConversation(request);
 
             String memoryId = MemoryIdUtil.build(RequestContext.getUserId(), conversationId, modelName);
-            InvocationParameters parameters = InvocationParameters.from(buildInvocationContext());
+
+            MemoryPromptContext memoryPromptContext = memoryContextService.loadPromptContext(
+                    RequestContext.getUserId(), conversationId, request.getMessage());
+            RuntimeContextAssemblyContext runtimeCtx = RuntimeContextAssemblyContext.builder()
+                    .language(request.getLanguage())
+                    .currentDate(LocalDate.now(ZoneId.systemDefault()))
+                    .timezone(ZoneId.systemDefault().getId())
+                    .memoryPromptContext(memoryPromptContext)
+                    .userMentions(request.getUserMentions() == null ? List.of() : request.getUserMentions())
+                    .build();
+            String runtimeContext = runtimeContextManager.render(runtimeCtx).renderedPrompt();
+
+            Map<String, Object> invocationContext = buildInvocationContext();
+            if (StringUtils.isNotBlank(runtimeContext)) {
+                invocationContext.put("runtimeSystemPromptSuffix", runtimeContext);
+            }
+            InvocationParameters parameters = InvocationParameters.from(invocationContext);
             RequestContextInfo requestContextSnapshot = RequestContext.snapshot();
             AgentRequestContextInfo agentRequestContextSnapshot = AgentRequestContext.snapshot();
 
