@@ -3,6 +3,7 @@ import { isAskUserQuestionTool } from './askUserQuestionTypes';
 import { isEnterPlanModeTool } from './enterPlanModeTypes';
 import { isExitPlanModeTool } from './exitPlanModeTypes';
 import { isCallingSubAgentTool } from './subAgentTypes';
+import { isSqlDiscoveryListTool } from './sqlDiscoveryToolUtils';
 
 const CHART_TOOL_NAMES = new Set(['renderChart']);
 const THINKING_TOOL_NAMES = new Set(['thinking']);
@@ -41,6 +42,8 @@ export enum ToolType {
   EXECUTE_SELECT = 'EXECUTE_SELECT',
   /** getObjectDetail - renders structured DDL details. */
   GET_OBJECT_DETAIL = 'GET_OBJECT_DETAIL',
+  /** getDatabases/getSchemas - renders list-style SQL discovery results. */
+  SQL_DISCOVERY_LIST = 'SQL_DISCOVERY_LIST',
   /** SubAgent tools (exploreSchema, generateSqlPlan) - renders as SubAgent card with progress. */
   CALLING_SUB_AGENT = 'CALLING_SUB_AGENT',
   /** All other tools (including built-in database tools) - renders as ToolRunDetail */
@@ -64,6 +67,7 @@ export function getToolType(toolName: string): ToolType {
   if (FILE_EXPORT_TOOL_NAMES.has(toolName)) return ToolType.FILE_EXPORT;
   if (EXECUTE_SELECT_TOOL_NAMES.has(toolName)) return ToolType.EXECUTE_SELECT;
   if (GET_OBJECT_DETAIL_TOOL_NAMES.has(toolName)) return ToolType.GET_OBJECT_DETAIL;
+  if (isSqlDiscoveryListTool(toolName)) return ToolType.SQL_DISCOVERY_LIST;
   if (isCallingSubAgentTool(toolName)) return ToolType.CALLING_SUB_AGENT;
   return ToolType.GENERIC;
 }

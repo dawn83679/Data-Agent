@@ -2,7 +2,8 @@ import type { Segment } from './types';
 import { SegmentKind } from './types';
 
 const SQL_TOOL_GROUP_NAMES = new Set([
-  'getEnvironmentOverview',
+  'getDatabases',
+  'getSchemas',
   'searchObjects',
   'getObjectDetail',
   'executeSelectSql',

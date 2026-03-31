@@ -1,7 +1,5 @@
 package edu.zsc.ai.domain.service.db.impl;
 
-import edu.zsc.ai.agent.tool.sql.model.CatalogInfo;
-import edu.zsc.ai.agent.tool.sql.model.ConnectionOverview;
 import edu.zsc.ai.agent.tool.sql.model.NamedObjectDetail;
 import edu.zsc.ai.agent.tool.sql.model.ObjectQueryItem;
 import edu.zsc.ai.agent.tool.sql.model.ObjectSearchResponse;
@@ -168,19 +166,6 @@ class DiscoveryServiceImplTest {
         assertEquals("CREATE TABLE users ...", detail.ddl());
         assertEquals(12L, detail.rowCount());
         assertEquals(List.of(), detail.indexes());
-    }
-
-    @Test
-    void getEnvironmentOverview_treatsEmptySchemaListsAsAvailable() {
-        when(dbConnectionService.getAllConnections()).thenReturn(List.of(connection(5L)));
-        when(databaseService.getDatabases(5L)).thenReturn(List.of("app"));
-        when(schemaService.listSchemas(5L, "app")).thenReturn(List.of());
-
-        List<ConnectionOverview> overview = discoveryService.getEnvironmentOverview();
-
-        assertEquals(1, overview.size());
-        assertEquals(new ConnectionOverview(5L, "conn-5", "postgresql",
-                List.of(new CatalogInfo("app", List.of())), null), overview.get(0));
     }
 
     private static ConnectionResponse connection(Long id) {

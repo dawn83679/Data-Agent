@@ -49,7 +49,7 @@ When brevity conflicts with continuity, preserve continuity.
 - Raw tool payloads, full result rows, full DDL, repeated retries already superseded, pleasantries, and filler.
 
 **Keep only the decision-relevant fields:**
-- `getEnvironmentOverview` -> final relevant scope only.
+- `getDatabases` / `getSchemas` -> final relevant scope only.
 - `searchObjects` -> high-relevance candidates; if multiple plausible targets remain, write them under blocking / ambiguity.
 - `getObjectDetail` -> task-relevant structure only.
 - `executeSelectSql` -> exact SQL, row count, conclusion, and whether the result is verified.

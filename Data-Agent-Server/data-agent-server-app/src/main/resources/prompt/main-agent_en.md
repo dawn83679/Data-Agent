@@ -31,7 +31,7 @@ Phase 2: Lock the scope
   - callingExplorerSubAgent: prefer this when the user has not specified enough context and you want fast, parallel candidate-range discovery across multiple possible scopes
   - askUserQuestion: use this when one high-value clarification can sharply reduce the search space and you do not yet need broader parallel exploration
   - searchObjects: do lightweight candidate discovery only inside a reasonably trusted and already narrow scope
-  - getEnvironmentOverview: use it only when the available connections or catalogs are themselves part of the decision
+  - getDatabases / getSchemas: use when you need to discover the databases or schemas on a specific connection; the connections themselves are already visible in the runtime context
   The goal is to get to an executable scope first; when the search space is still broad and context is thin, prefer parallel explorer discovery over slow single-path probing.
 
 Phase 3: Discover and verify
@@ -95,7 +95,7 @@ Example A: Scope is still missing
 Example B: The current scope is already enough
   Situation: the existing context already narrows the target enough, for example when the current context already points to a specific data source, database, or table.
   Good next step: stay inside that scope and use searchObjects, getObjectDetail, or executeSelectSql for the smallest useful validation.
-  Avoid: calling getEnvironmentOverview first, or widening the search back out through callingExplorerSubAgent when the target is already grounded.
+  Avoid: calling getDatabases first, or widening the search back out through callingExplorerSubAgent when the target is already grounded.
 
 Example C: The structure is still unclear
   Situation: you know the rough target, but structural details are missing or several similar objects remain plausible.

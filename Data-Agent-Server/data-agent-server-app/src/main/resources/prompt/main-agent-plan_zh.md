@@ -23,7 +23,7 @@
   如果范围还不明确：
   - callingExplorerSubAgent：当用户尚未指定足够上下文，且你需要并发拿到多个候选范围时，更优先考虑
   - askUserQuestion：当一个高价值问题就能明显缩小搜索空间时再使用
-  - getEnvironmentOverview：只有当连接或 catalog 本身仍是待判断前提时，才使用
+  - getDatabases / getSchemas：当你需要发现某个连接上的数据库或 schema 时使用；连接本身已在运行时上下文中可见
   不要在 Plan 模式里尝试执行 SQL 验证结果。
 
 阶段 3：发现与规划

@@ -3,6 +3,7 @@ import { CheckCircle2, ChevronDown, ChevronRight, Database, Loader2, XCircle } f
 import { cn } from '../../../lib/utils';
 import { useTheme } from '../../../hooks/useTheme';
 import { getAgentTheming, getNestedToolStats } from './subAgentDataHelpers';
+import { getToolDisplayName } from './sqlDiscoveryToolUtils';
 import { ToolRunBlock } from './ToolRunBlock';
 import type { Segment } from '../messageListLib/types';
 import { SegmentKind } from '../messageListLib/types';
@@ -22,7 +23,7 @@ function formatToolSummary(segments: ToolRunSegment[]): string[] {
   });
 
   return [...counts.entries()].map(([toolName, count]) => (
-    count > 1 ? `${toolName} ×${count}` : toolName
+    count > 1 ? `${getToolDisplayName(toolName)} ×${count}` : getToolDisplayName(toolName)
   ));
 }
 

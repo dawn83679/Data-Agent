@@ -1,7 +1,5 @@
 package edu.zsc.ai.domain.service.db.impl;
 
-import edu.zsc.ai.agent.tool.sql.model.CatalogInfo;
-import edu.zsc.ai.agent.tool.sql.model.ConnectionOverview;
 import edu.zsc.ai.agent.tool.sql.model.NamedObjectDetail;
 import edu.zsc.ai.agent.tool.sql.model.ObjectDetail;
 import edu.zsc.ai.agent.tool.sql.model.ObjectQueryItem;
@@ -79,46 +77,6 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         this.schemaService = schemaService;
         this.databaseObjectService = databaseObjectService;
         this.indexService = indexService;
-    }
-
-    // ==================== getEnvironmentOverview ====================
-
-    @Override
-    public List<ConnectionOverview> getEnvironmentOverview() {
-        List<ConnectionResponse> connections = dbConnectionService.getAllConnections();
-        if (CollectionUtils.isEmpty(connections)) {
-            return Collections.emptyList();
-        }
-        RequestContextInfo requestContextSnapshot = RequestContext.snapshot();
-        AgentRequestContextInfo agentRequestContextSnapshot = AgentRequestContext.snapshot();
-        List<CompletableFuture<ConnectionOverview>> futures = connections.stream()
-                .map(conn -> CompletableFuture.supplyAsync(() -> {
-                    applyContextSnapshots(requestContextSnapshot, agentRequestContextSnapshot);
-                    try {
-                        return buildConnectionOverview(conn);
-                    } finally {
-                        clearContextSnapshots();
-                    }
-                }, sharedExecutor))
-                .toList();
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        return futures.stream().map(CompletableFuture::join).toList();
-    }
-
-    private ConnectionOverview buildConnectionOverview(ConnectionResponse conn) {
-        try {
-            List<String> databases = databaseService.getDatabases(conn.getId());
-            List<CatalogInfo> catalogs = databases.stream()
-                    .map(db -> new CatalogInfo(db, getSchemas(conn.getId(), db)))
-                    .toList();
-            return new ConnectionOverview(conn.getId(), conn.getName(), conn.getDbType(), catalogs, null);
-        } catch (Exception e) {
-            log.warn("Failed to get catalogs for connection {} ({}): {}",
-                    conn.getName(), conn.getId(), e.getMessage());
-            String msg = StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getSimpleName());
-            return new ConnectionOverview(conn.getId(), conn.getName(), conn.getDbType(),
-                    Collections.emptyList(), "Connection unreachable or error: " + msg);
-        }
     }
 
     // ==================== searchObjects ====================

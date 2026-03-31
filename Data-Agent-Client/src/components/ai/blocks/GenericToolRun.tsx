@@ -9,6 +9,7 @@ import {
   TOOL_CARD_HEADER_CLASSNAME,
   TOOL_CARD_META_CLASSNAME,
 } from './toolRunStyles';
+import { getToolDisplayName } from './sqlDiscoveryToolUtils';
 
 export interface GenericToolRunProps {
   toolName: string;
@@ -43,7 +44,7 @@ export function GenericToolRun({
         )}
         <span className="min-w-0 flex-1 truncate text-[12px] font-medium theme-text-primary">
           {responseError ? TOOL_RUN_LABEL_FAILED : TOOL_RUN_LABEL_RAN}
-          {toolName}
+          {getToolDisplayName(toolName)}
         </span>
         <span className={cn(TOOL_CARD_META_CLASSNAME, 'shrink-0')}>
           {responseError ? 'Error' : 'Tool'}

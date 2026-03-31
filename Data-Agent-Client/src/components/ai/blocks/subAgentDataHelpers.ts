@@ -1,6 +1,7 @@
 import type { Segment } from '../messageListLib/types';
 import { SegmentKind, ToolExecutionState } from '../messageListLib/types';
 import type { NestedToolCall } from '../../../types/tab';
+import { getToolDisplayName } from './sqlDiscoveryToolUtils';
 
 /* ─── Theming by agent type ─── */
 
@@ -99,7 +100,7 @@ export function getSubAgentStatusText(options: {
   const stats = getNestedToolStats(nestedToolRuns);
 
   if (isError) {
-    return stats.failedToolName ? `Failed at ${stats.failedToolName}` : 'Agent failed';
+    return stats.failedToolName ? `Failed at ${getToolDisplayName(stats.failedToolName)}` : 'Agent failed';
   }
 
   if (isComplete) {
@@ -107,7 +108,7 @@ export function getSubAgentStatusText(options: {
   }
 
   if (stats.runningToolName) {
-    return `Calling ${stats.runningToolName}... (${stats.completedCount}/${stats.totalCount})`;
+    return `Calling ${getToolDisplayName(stats.runningToolName)}... (${stats.completedCount}/${stats.totalCount})`;
   }
 
   if (stats.totalCount > 0 && stats.completedCount === stats.totalCount) {
@@ -115,7 +116,7 @@ export function getSubAgentStatusText(options: {
   }
 
   if (stats.lastCompletedToolName) {
-    return `Called ${stats.lastCompletedToolName}... (${stats.completedCount}/${stats.totalCount})`;
+    return `Called ${getToolDisplayName(stats.lastCompletedToolName)}... (${stats.completedCount}/${stats.totalCount})`;
   }
 
   return 'Starting Agent...';

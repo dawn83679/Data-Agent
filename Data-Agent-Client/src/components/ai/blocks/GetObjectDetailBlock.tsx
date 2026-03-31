@@ -17,6 +17,7 @@ import { cn } from '../../../lib/utils';
 import { connectionService } from '../../../services/connection.service';
 import { parseGetObjectDetailResponse } from './getObjectDetailTypes';
 import { SqlPreviewCard } from './SqlPreviewCard';
+import { getToolDisplayName } from './sqlDiscoveryToolUtils';
 import {
   getToolCardClassName,
   getToolSectionShellClassName,
@@ -142,7 +143,7 @@ export function GetObjectDetailBlock({
         )}
         <span className="min-w-0 flex-1 truncate text-[12px] font-medium theme-text-primary">
           {isHeaderError ? TOOL_RUN_LABEL_FAILED : TOOL_RUN_LABEL_RAN}
-          {toolName}
+          {getToolDisplayName(toolName)}
         </span>
         <span className={cn(TOOL_CARD_META_CLASSNAME, 'shrink-0')}>
           {parsed.items.length} object{parsed.items.length === 1 ? '' : 's'}

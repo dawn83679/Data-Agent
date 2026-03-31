@@ -13,8 +13,9 @@ import edu.zsc.ai.agent.tool.export.ExportFileTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingExplorerTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingPlannerTool;
 import edu.zsc.ai.agent.tool.skill.ActivateSkillTool;
-import edu.zsc.ai.agent.tool.sql.GetEnvironmentOverviewTool;
 import edu.zsc.ai.agent.tool.sql.GetObjectDetailTool;
+import edu.zsc.ai.agent.tool.sql.GetDatabasesTool;
+import edu.zsc.ai.agent.tool.sql.GetSchemasTool;
 import edu.zsc.ai.agent.tool.sql.SearchObjectsTool;
 import edu.zsc.ai.agent.tool.sql.ExecuteSqlTool;
 import edu.zsc.ai.agent.tool.todo.TodoTool;
@@ -40,7 +41,8 @@ public class AgentToolConfig {
 
     private static final Map<ToolScope, Set<Class<?>>> TOOL_SCOPE_ALLOWLISTS = Map.of(
             ToolScope.MAIN_AGENT, Set.of(
-                    GetEnvironmentOverviewTool.class,
+                    GetDatabasesTool.class,
+                    GetSchemasTool.class,
                     SearchObjectsTool.class,
                     GetObjectDetailTool.class,
                     ExecuteSqlTool.class,
@@ -53,7 +55,8 @@ public class AgentToolConfig {
                     ExportFileTool.class
             ),
             ToolScope.MAIN_PLAN, Set.of(
-                    GetEnvironmentOverviewTool.class,
+                    GetDatabasesTool.class,
+                    GetSchemasTool.class,
                     CallingExplorerTool.class,
                     CallingPlannerTool.class,
                     AskUserQuestionTool.class,

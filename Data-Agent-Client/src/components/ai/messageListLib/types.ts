@@ -51,7 +51,7 @@ export type Segment =
       progressEvents?: SubAgentProgressEvent[];
       /** Parent tool call ID for nesting under a SubAgent orchestrator segment. */
       parentToolCallId?: string;
-      /** Nested tool runs from SubAgent (getEnvironmentOverview, searchObjects, etc.). */
+      /** Nested tool runs from SubAgent (getDatabases, searchObjects, etc.). */
       nestedToolRuns?: Segment[];
       /** Identifies which parallel SubAgent task this segment belongs to. */
       subAgentTaskId?: string;

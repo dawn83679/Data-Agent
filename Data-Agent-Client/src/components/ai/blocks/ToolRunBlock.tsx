@@ -6,6 +6,7 @@ import { GenericToolRun } from './GenericToolRun';
 import { ChartToolBlock } from './ChartToolBlock';
 import { ExecuteSelectSqlBlock } from './ExecuteSelectSqlBlock';
 import { GetObjectDetailBlock } from './GetObjectDetailBlock';
+import { DiscoveryListToolBlock } from './DiscoveryListToolBlock';
 import { SkillToolBlock } from './SkillToolBlock';
 import { ExportFileToolBlock } from './ExportFileToolBlock';
 import { parseTodoListResponse } from './todoTypes';
@@ -46,7 +47,7 @@ export interface ToolRunBlockProps {
   allowAutoRetry?: boolean;
   /** SubAgent progress events collected from STATUS blocks (exploreSchema/generateSqlPlan only). */
   progressEvents?: SubAgentProgressEvent[];
-  /** Nested tool runs from SubAgent (getEnvironmentOverview, searchObjects, etc.). */
+  /** Nested tool runs from SubAgent (getDatabases, searchObjects, etc.). */
   nestedToolRuns?: Segment[];
   /** Historical messages can hide elapsed/timeout text while preserving the sub-agent block. */
   showElapsedText?: boolean;
@@ -61,7 +62,8 @@ export interface ToolRunBlockProps {
  * - TODO: TodoWrite → TodoListBlock
  * - ASK_USER: AskUserQuestion → AskUserQuestionCard (Inline)
  * - executeNonSelectSql (when confirmation required) → WriteExecutionConfirmCard (Inline)
- * - GENERIC: All other tools (database, etc.) → ToolRunDetail
+ * - SQL_DISCOVERY_LIST: getDatabases/getSchemas → DiscoveryListToolBlock
+ * - GENERIC: All other tools → ToolRunDetail
  */
 export function ToolRunBlock({
   toolName,
@@ -157,7 +159,12 @@ export function ToolRunBlock({
 
   // 2. Error fallback for non-specialized tools.
   // Chart/file export should still go through their dedicated blocks.
-  if (responseError && toolType !== ToolType.CHART && toolType !== ToolType.FILE_EXPORT) {
+  if (
+    responseError
+    && toolType !== ToolType.CHART
+    && toolType !== ToolType.FILE_EXPORT
+    && toolType !== ToolType.SQL_DISCOVERY_LIST
+  ) {
     return (
       <GenericToolRun
         toolName={toolName}
@@ -231,6 +238,16 @@ export function ToolRunBlock({
           responseData={executeNonSelectExecutionData}
           responseError={responseError}
           checkAvailability={isHistoricalMessage}
+        />
+      );
+
+    case ToolType.SQL_DISCOVERY_LIST:
+      return (
+        <DiscoveryListToolBlock
+          toolName={toolName}
+          formattedParameters={formattedParameters}
+          responseData={executeNonSelectExecutionData}
+          responseError={responseError}
         />
       );
 

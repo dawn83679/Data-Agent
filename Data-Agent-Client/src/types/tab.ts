@@ -61,7 +61,7 @@ export interface SubAgentConsoleTabMetadata {
   invocations: SubAgentInvocation[];
 }
 
-/** Minimal info for a nested tool call (e.g. getEnvironmentOverview, searchObjects) in Explorer Console. */
+/** Minimal info for a nested tool call (e.g. getDatabases, searchObjects) in Explorer Console. */
 export interface NestedToolCall {
   toolName: string;
   status: 'pending' | 'running' | 'complete';
@@ -76,7 +76,7 @@ export interface SubAgentInvocation {
   errorMessage?: string;
   params: SubAgentParamsSummary;
   progressEvents: import('../components/ai/blocks/subAgentTypes').SubAgentProgressEvent[];
-  /** Nested tool calls (getEnvironmentOverview, searchObjects, getObjectDetail) for real-time display. */
+  /** Nested tool calls (getDatabases, getSchemas, searchObjects, getObjectDetail) for real-time display. */
   nestedToolCalls?: NestedToolCall[];
   /** Full nested tool run segments for reuse in the console renderer. */
   nestedToolRuns?: import('../components/ai/messageListLib/types').Segment[];
