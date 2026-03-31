@@ -1,4 +1,4 @@
-package edu.zsc.ai.domain.service.agent.prompt.strategy;
+package edu.zsc.ai.domain.service.agent.runtimecontext.strategy;
 
 import java.util.List;
 import java.util.Locale;
@@ -10,7 +10,7 @@ import edu.zsc.ai.common.constant.MemoryConstant;
 import edu.zsc.ai.common.constant.PromptConstant;
 import edu.zsc.ai.common.enums.ai.MemoryScopeEnum;
 import edu.zsc.ai.common.enums.ai.MemorySubTypeEnum;
-import edu.zsc.ai.domain.service.agent.prompt.PromptTextUtil;
+import edu.zsc.ai.domain.service.agent.prompt.PromptFormatSupport;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallItem;
 
 final class MemoryPromptProjectionSupport {
@@ -65,18 +65,18 @@ final class MemoryPromptProjectionSupport {
 
     static String renderMemoryList(List<MemoryRecallItem> memories) {
         if (memories == null || memories.isEmpty()) {
-            return UserPromptBlockSupport.renderBullets(List.of(PromptConstant.NONE));
+            return PromptFormatSupport.renderBullets(List.of(PromptConstant.NONE));
         }
-        return UserPromptBlockSupport.renderBullets(memories.stream()
+        return PromptFormatSupport.renderBullets(memories.stream()
                 .map(MemoryPromptProjectionSupport::renderMemoryLine)
                 .toList());
     }
 
     static String renderScopeHintList(List<MemoryRecallItem> memories) {
         if (memories == null || memories.isEmpty()) {
-            return UserPromptBlockSupport.renderBullets(List.of(PromptConstant.NONE));
+            return PromptFormatSupport.renderBullets(List.of(PromptConstant.NONE));
         }
-        return UserPromptBlockSupport.renderBullets(memories.stream()
+        return PromptFormatSupport.renderBullets(memories.stream()
                 .map(MemoryPromptProjectionSupport::renderScopeHintLine)
                 .toList());
     }

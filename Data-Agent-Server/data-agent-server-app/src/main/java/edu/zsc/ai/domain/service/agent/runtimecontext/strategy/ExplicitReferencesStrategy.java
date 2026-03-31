@@ -1,4 +1,4 @@
-package edu.zsc.ai.domain.service.agent.prompt.strategy;
+package edu.zsc.ai.domain.service.agent.runtimecontext.strategy;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -10,20 +10,21 @@ import org.springframework.stereotype.Component;
 
 import edu.zsc.ai.api.model.request.ChatUserMention;
 import edu.zsc.ai.common.constant.PromptConstant;
-import edu.zsc.ai.domain.service.agent.prompt.AbstractUserPromptHandler;
-import edu.zsc.ai.domain.service.agent.prompt.UserPromptAssemblyContext;
-import edu.zsc.ai.domain.service.agent.prompt.UserPromptSection;
+import edu.zsc.ai.domain.service.agent.prompt.PromptFormatSupport;
+import edu.zsc.ai.domain.service.agent.runtimecontext.AbstractRuntimeContextHandler;
+import edu.zsc.ai.domain.service.agent.runtimecontext.RuntimeContextAssemblyContext;
+import edu.zsc.ai.domain.service.agent.runtimecontext.RuntimeContextSection;
 
 @Component
-public class UserMentionPromptStrategy extends AbstractUserPromptHandler {
+public class ExplicitReferencesStrategy extends AbstractRuntimeContextHandler {
 
     @Override
-    protected UserPromptSection targetSection() {
-        return UserPromptSection.EXPLICIT_REFERENCES;
+    protected RuntimeContextSection targetSection() {
+        return RuntimeContextSection.EXPLICIT_REFERENCES;
     }
 
     @Override
-    protected String buildContent(UserPromptAssemblyContext context) {
+    protected String buildContent(RuntimeContextAssemblyContext context) {
         List<ChatUserMention> mentions = context.getUserMentions().stream()
                 .filter(Objects::nonNull)
                 .filter(mention -> StringUtils.isNotBlank(mention.getObjectType()))
@@ -32,21 +33,21 @@ public class UserMentionPromptStrategy extends AbstractUserPromptHandler {
                 .toList();
 
         if (mentions.isEmpty()) {
-            return UserPromptBlockSupport.renderBlock(
-                    context,
+            return PromptFormatSupport.renderBlock(
+                    context.getLanguage(),
                     "本轮用户显式引用：",
                     "The user explicitly referenced:",
                     List.of(PromptConstant.NONE));
         }
 
-        return UserPromptBlockSupport.renderBlock(
-                context,
+        return PromptFormatSupport.renderBlock(
+                context.getLanguage(),
                 "本轮用户显式引用：",
                 "The user explicitly referenced:",
                 mentions.stream()
-                .map(this::toPayload)
-                .map(this::toLine)
-                .toList());
+                        .map(this::toPayload)
+                        .map(this::toLine)
+                        .toList());
     }
 
     private Map<String, Object> toPayload(ChatUserMention mention) {

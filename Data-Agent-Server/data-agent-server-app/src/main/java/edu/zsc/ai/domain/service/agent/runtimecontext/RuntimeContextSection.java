@@ -1,11 +1,10 @@
-package edu.zsc.ai.domain.service.agent.prompt;
+package edu.zsc.ai.domain.service.agent.runtimecontext;
 
 import java.util.List;
 
-public enum UserPromptSection {
+public enum RuntimeContextSection {
 
     SYSTEM_CONTEXT("{{SYSTEM_CONTEXT}}"),
-    TASK("{{TASK}}"),
     SCOPE_HINTS("{{SCOPE_HINTS}}"),
     RESPONSE_PREFERENCES("{{RESPONSE_PREFERENCES}}"),
     DURABLE_FACTS("{{DURABLE_FACTS}}"),
@@ -13,7 +12,7 @@ public enum UserPromptSection {
 
     private final String placeholder;
 
-    UserPromptSection(String placeholder) {
+    RuntimeContextSection(String placeholder) {
         this.placeholder = placeholder;
     }
 
@@ -21,7 +20,7 @@ public enum UserPromptSection {
         return placeholder;
     }
 
-    public static List<UserPromptSection> renderOrder() {
-        return List.of(SYSTEM_CONTEXT, TASK, SCOPE_HINTS, RESPONSE_PREFERENCES, DURABLE_FACTS, EXPLICIT_REFERENCES);
+    public static List<RuntimeContextSection> renderOrder() {
+        return List.of(SYSTEM_CONTEXT, SCOPE_HINTS, RESPONSE_PREFERENCES, DURABLE_FACTS, EXPLICIT_REFERENCES);
     }
 }

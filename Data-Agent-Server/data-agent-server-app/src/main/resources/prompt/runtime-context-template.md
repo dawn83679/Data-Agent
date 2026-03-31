@@ -2,10 +2,6 @@
 {{SYSTEM_CONTEXT}}
 </system_context>
 
-<task purpose="current_user_goal" apply_to="planning,answer_target" strength="highest">
-{{TASK}}
-</task>
-
 <scope_hints purpose="query_scope_guidance" apply_to="tool_selection,object_search,sql_scope" strength="strong">
 {{SCOPE_HINTS}}
 </scope_hints>

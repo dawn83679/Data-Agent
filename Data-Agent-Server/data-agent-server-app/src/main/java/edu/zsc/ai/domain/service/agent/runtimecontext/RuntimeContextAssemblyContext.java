@@ -1,4 +1,4 @@
-package edu.zsc.ai.domain.service.agent.prompt;
+package edu.zsc.ai.domain.service.agent.runtimecontext;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -14,15 +14,9 @@ import lombok.NoArgsConstructor;
 @Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserPromptAssemblyContext {
-
-    private String userMessage;
+public class RuntimeContextAssemblyContext {
 
     private String language;
-
-    private String agentMode;
-
-    private String modelName;
 
     private LocalDate currentDate;
 

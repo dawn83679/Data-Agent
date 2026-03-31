@@ -1,24 +1,24 @@
-package edu.zsc.ai.domain.service.agent.prompt.strategy;
+package edu.zsc.ai.domain.service.agent.runtimecontext.strategy;
 
 import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import edu.zsc.ai.domain.service.agent.prompt.AbstractUserPromptHandler;
-import edu.zsc.ai.domain.service.agent.prompt.UserPromptAssemblyContext;
-import edu.zsc.ai.domain.service.agent.prompt.UserPromptSection;
+import edu.zsc.ai.domain.service.agent.runtimecontext.AbstractRuntimeContextHandler;
+import edu.zsc.ai.domain.service.agent.runtimecontext.RuntimeContextAssemblyContext;
+import edu.zsc.ai.domain.service.agent.runtimecontext.RuntimeContextSection;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallItem;
 
 @Component
-public class ScopeHintsPromptStrategy extends AbstractUserPromptHandler {
+public class ScopeHintsStrategy extends AbstractRuntimeContextHandler {
 
     @Override
-    protected UserPromptSection targetSection() {
-        return UserPromptSection.SCOPE_HINTS;
+    protected RuntimeContextSection targetSection() {
+        return RuntimeContextSection.SCOPE_HINTS;
     }
 
     @Override
-    protected String buildContent(UserPromptAssemblyContext context) {
+    protected String buildContent(RuntimeContextAssemblyContext context) {
         List<MemoryRecallItem> scopeHintMemories = context.getMemoryPromptContext().getMemories().stream()
                 .filter(MemoryPromptProjectionSupport::isPromptInjectableNonPreferenceMemory)
                 .filter(MemoryPromptProjectionSupport::isScopeHintMemory)
