@@ -24,7 +24,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Bridges a LangChain4j {@link TokenStream} into a reactive
@@ -44,15 +43,11 @@ public class ChatStreamBridge {
      * Start the agent chat from the given session and bridge the resulting
      * {@link TokenStream} into a {@link Flux} of {@link ChatResponseBlock}.
      *
-     * @param session            the prepared chat session (agent + parameters)
-     * @param enterPlanTriggered set to {@code true} when the enterPlanMode tool fires
-     * @param emitDoneBlock      whether to emit a done-block when the stream completes
-     * @param toolTracker        shared tracker for recording tool invocations
+     * @param session     the prepared chat session (agent + parameters)
+     * @param toolTracker shared tracker for recording tool invocations
      */
     public Flux<ChatResponseBlock> bridge(
             ChatSession session,
-            AtomicBoolean enterPlanTriggered,
-            boolean emitDoneBlock,
             AgentToolTracker toolTracker) {
 
         Long conversationId = session.conversationId();
@@ -159,10 +154,6 @@ public class ChatStreamBridge {
                     req.name(), req.id(), toolExecution.hasFailed(),
                     toolExecution.result() != null ? toolExecution.result().toString().length() : 0);
 
-            if (ToolNameEnum.ENTER_PLAN_MODE.getToolName().equals(req.name())) {
-                enterPlanTriggered.set(true);
-            }
-
             if (ToolNameEnum.isSubAgentTool(req.name())) {
                 AgentExecutionContext.clear();
             }
@@ -200,11 +191,8 @@ public class ChatStreamBridge {
                             "toolCount", toolTracker.getTotalCount(),
                             "outputTokens", response.tokenUsage() != null ? response.tokenUsage().outputTokenCount() : null,
                             "totalTokens", response.tokenUsage() != null ? response.tokenUsage().totalTokenCount() : null));
-            publishTokenUsageIfPresent(response, conversationId, emitDoneBlock || !enterPlanTriggered.get());
-
-            if (emitDoneBlock) {
-                sink.tryEmitNext(ChatResponseBlock.doneBlock(buildDoneMetadata(conversationId, toolTracker)));
-            }
+            publishTokenUsageIfPresent(response, conversationId);
+            sink.tryEmitNext(ChatResponseBlock.doneBlock(buildDoneMetadata(conversationId, toolTracker)));
             sink.tryEmitComplete();
         });
 
@@ -231,8 +219,7 @@ public class ChatStreamBridge {
 
     private void publishTokenUsageIfPresent(
             dev.langchain4j.model.chat.response.ChatResponse response,
-            Long conversationId,
-            boolean finalTurn) {
+            Long conversationId) {
         if (Objects.isNull(response.tokenUsage())) {
             return;
         }
@@ -243,7 +230,7 @@ public class ChatStreamBridge {
             log.info("Chat completed for conversation {}: {} total tokens (output: {})",
                     conversationId, totalTokens, outputTokens);
             eventPublisher.publishEvent(
-                    new ChatCompletedEvent(this, conversationId, outputTokens, totalTokens, finalTurn));
+                    new ChatCompletedEvent(this, conversationId, outputTokens, totalTokens));
         } else {
             log.debug("No token usage available for conversation {}", conversationId);
         }

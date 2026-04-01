@@ -29,8 +29,7 @@ public class ExitPlanModeTool {
                     "After Success: wait for the user's decision before executing the plan or changing its scope.",
                     "After Failure: keep refining the plan in planning mode. Do not switch back to execution with an incomplete plan.",
                     "Wait For User: once the plan is presented, do not execute or broaden the scope until the user responds.",
-                    "Result Consumption: the tool arguments carry the plan title and ordered steps that the frontend presents to the user.",
-                    "Relation: this closes a plan flow started by enterPlanMode."
+                    "Result Consumption: the tool arguments carry the plan title and ordered steps that the frontend presents to the user."
             },
             returnBehavior = ReturnBehavior.IMMEDIATE
     )

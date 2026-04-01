@@ -19,7 +19,6 @@ public enum ToolNameEnum {
     CALLING_PLANNER_SUB_AGENT("callingPlannerSubAgent"),
 
     // ── Plan mode ──
-    ENTER_PLAN_MODE("enterPlanMode"),
     EXIT_PLAN_MODE("exitPlanMode"),
 
     // ── SQL execution ──

@@ -12,6 +12,7 @@ import edu.zsc.ai.agent.tool.chart.ChartTool;
 import edu.zsc.ai.agent.tool.export.ExportFileTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingExplorerTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingPlannerTool;
+import edu.zsc.ai.agent.tool.plan.ExitPlanModeTool;
 import edu.zsc.ai.agent.tool.skill.ActivateSkillTool;
 import edu.zsc.ai.agent.tool.sql.GetObjectDetailTool;
 import edu.zsc.ai.agent.tool.sql.GetDatabasesTool;
@@ -60,7 +61,8 @@ public class AgentToolConfig {
                     CallingExplorerTool.class,
                     CallingPlannerTool.class,
                     AskUserQuestionTool.class,
-                    TodoTool.class
+                    TodoTool.class,
+                    ExitPlanModeTool.class
             ),
             ToolScope.EXPLORER, Set.of(
                     TodoTool.class,
@@ -113,7 +115,7 @@ public class AgentToolConfig {
 
     /**
      * Resolve the exact tool set exposed to the Main Agent.
-     * EnterPlanModeTool / ExitPlanModeTool are intentionally not exposed.
+     * enterPlanMode is not exposed. exitPlanMode is exposed only in direct Plan mode.
      */
     public List<Object> resolveMainTools(List<Object> agentTools, AgentModeEnum mode) {
         ToolScope scope = mode == AgentModeEnum.PLAN ? ToolScope.MAIN_PLAN : ToolScope.MAIN_AGENT;

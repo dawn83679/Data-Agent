@@ -1,6 +1,5 @@
 import { isTodoTool } from './todoTypes';
 import { isAskUserQuestionTool } from './askUserQuestionTypes';
-import { isEnterPlanModeTool } from './enterPlanModeTypes';
 import { isExitPlanModeTool } from './exitPlanModeTypes';
 import { isCallingSubAgentTool } from './subAgentTypes';
 import { isSqlDiscoveryListTool } from './sqlDiscoveryToolUtils';
@@ -30,8 +29,6 @@ export enum ToolType {
   CHART = 'CHART',
   /** Thinking tool - renders as collapsible thought block. */
   THINKING = 'THINKING',
-  /** EnterPlanMode tool - renders as compact transition indicator. */
-  ENTER_PLAN = 'ENTER_PLAN',
   /** ExitPlanMode tool - renders as plan card with action buttons. */
   EXIT_PLAN = 'EXIT_PLAN',
   /** ActivateSkill tool - renders response as markdown. */
@@ -61,7 +58,6 @@ export function getToolType(toolName: string): ToolType {
   if (isAskUserQuestionTool(toolName)) return ToolType.ASK_USER;
   if (CHART_TOOL_NAMES.has(toolName)) return ToolType.CHART;
   if (THINKING_TOOL_NAMES.has(toolName)) return ToolType.THINKING;
-  if (isEnterPlanModeTool(toolName)) return ToolType.ENTER_PLAN;
   if (isExitPlanModeTool(toolName)) return ToolType.EXIT_PLAN;
   if (SKILL_TOOL_NAMES.has(toolName)) return ToolType.SKILL;
   if (FILE_EXPORT_TOOL_NAMES.has(toolName)) return ToolType.FILE_EXPORT;

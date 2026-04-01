@@ -105,45 +105,6 @@ public class ChatSessionFactory {
         }
     }
 
-    /**
-     * Build a follow-up ChatSession for Plan-mode continuation,
-     * reusing the conversation and model from the original session.
-     */
-    public ChatSession createPlanContinuation(ChatSession original, ChatRequest request) {
-        RequestContextInfo previousRequestContext = RequestContext.snapshot();
-        AgentRequestContextInfo previousAgentRequestContext = AgentRequestContext.snapshot();
-        try {
-            if (original.requestContextSnapshot() != null) {
-                RequestContext.set(original.requestContextSnapshot());
-            } else {
-                RequestContext.clear();
-            }
-
-            AgentRequestContextInfo planAgentContext = original.agentRequestContextSnapshot() != null
-                    ? original.agentRequestContextSnapshot().toBuilder()
-                    .agentMode(AgentModeEnum.PLAN.getCode())
-                    .build()
-                    : AgentRequestContextInfo.builder()
-                    .agentMode(AgentModeEnum.PLAN.getCode())
-                    .agentType(AgentTypeEnum.MAIN.getCode())
-                    .modelName(original.modelName())
-                    .language(request.getLanguage())
-                    .build();
-            AgentRequestContext.set(planAgentContext);
-
-            ReActAgent planAgent = reActAgentProvider.getAgent(
-                    original.modelName(), request.getLanguage(), AgentModeEnum.PLAN.getCode());
-            InvocationParameters planParams = InvocationParameters.from(buildInvocationContext());
-            String continuation = "Continue analyzing the user's request and create a structured execution plan.";
-
-            return new ChatSession(original.modelName(), AgentModeEnum.PLAN, planAgent,
-                    original.memoryId(), continuation, planParams,
-                    original.conversationId(), RequestContext.snapshot(), AgentRequestContext.snapshot());
-        } finally {
-            restoreContexts(previousRequestContext, previousAgentRequestContext);
-        }
-    }
-
     private String resolveModel(String model) {
         try {
             return ModelEnum.resolve(model).getModelName();
