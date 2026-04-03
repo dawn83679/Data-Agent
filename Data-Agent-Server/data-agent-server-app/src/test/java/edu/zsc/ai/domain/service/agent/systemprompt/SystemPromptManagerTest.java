@@ -33,7 +33,7 @@ class SystemPromptManagerTest {
                 .agentType(AgentTypeEnum.MAIN)
                 .agentMode(AgentModeEnum.AGENT)
                 .language("zh")
-                .modelName("qwen3-max")
+                .modelName("qwen3-max-2026-01-23")
                 .availableSkills(List.of(SkillEnum.CHART))
                 .build()).renderedPrompt();
 
@@ -53,7 +53,7 @@ class SystemPromptManagerTest {
                 .agentType(AgentTypeEnum.PLANNER)
                 .agentMode(AgentModeEnum.AGENT)
                 .language("zh")
-                .modelName("qwen3-max")
+                .modelName("qwen3-max-2026-01-23")
                 .availableSkills(List.of())
                 .build()).renderedPrompt();
 

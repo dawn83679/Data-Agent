@@ -68,7 +68,7 @@ class ChatMemoryCompressorTest {
                 UserMessage.from("u4")
         );
 
-        List<ChatMessage> result = compressor.compressIfNeeded(conversationId, "qwen3-max", messages);
+        List<ChatMessage> result = compressor.compressIfNeeded(conversationId, "qwen3-max-2026-01-23", messages);
 
         verify(aiConversationService).updateTokenCount(conversationId, 1350);
         assertEquals(2, result.size());
@@ -89,7 +89,7 @@ class ChatMemoryCompressorTest {
                 1350
         ));
 
-        compressor.compressIfNeeded(conversationId, "qwen3-max", List.of(
+        compressor.compressIfNeeded(conversationId, "qwen3-max-2026-01-23", List.of(
                 UserMessage.from("u1"),
                 UserMessage.from("u2"),
                 UserMessage.from("u3"),
