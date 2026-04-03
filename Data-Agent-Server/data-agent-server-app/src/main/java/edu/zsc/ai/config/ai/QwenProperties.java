@@ -10,6 +10,10 @@ public class QwenProperties {
 
     private String apiKey;
 
+    /**
+     * Optional gateway/base URL for OpenAI-compatible Qwen access.
+     * Bound from langchain4j.community.dashscope.streaming-chat-model.base-url.
+     */
     private String baseUrl;
 
     private Parameters parameters = new Parameters();

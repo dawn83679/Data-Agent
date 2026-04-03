@@ -18,6 +18,7 @@ import java.util.Map;
  */
 @Configuration
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "ai.qwen.gateway", name = "enabled", havingValue = "false")
 @EnableConfigurationProperties(QwenProperties.class)
 @ConditionalOnProperty(name = "ai.qwen.mode", havingValue = "native")
 public class QwenModelConfig implements ChatModelProvider {

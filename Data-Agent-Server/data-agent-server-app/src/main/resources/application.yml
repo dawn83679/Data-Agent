@@ -62,15 +62,14 @@ langchain4j:
     dashscope:
       chat-model:
         api-key: ${ALIYUN_AI_API_KEY:}
-        base-url: https://coding.dashscope.aliyuncs.com/v1
-        model-name: qwen3.5-plus
+        model-name: qwen3-max-2026-01-23
         parameters:
           enable-thinking: true
           thinking-budget: 1000
       streaming-chat-model:
         api-key: ${ALIYUN_AI_API_KEY:}
         base-url: https://coding.dashscope.aliyuncs.com/v1
-        model-name: qwen3.5-plus
+        model-name: qwen3-max-2026-01-23
         parameters:
           enable-thinking: true
           thinking-budget: 1000
@@ -79,34 +78,10 @@ langchain4j:
         model-name: text-embedding-v4
         dimension: 1024
 
-# Embedding 提供方配置（多模型接入时选择向量模型）
 ai:
-  embedding:
-    provider: qwen   # qwen(千问) | zhipu(智谱)，默认 qwen
-  zhipu:
-    chat-model:
-      api-key: ${zhipu_AI_API_KEY:}
-      base-url: https://coding.dashscope.aliyuncs.com/v1
-      model-name: glm-5
-      parameters:
-        temperature: 0.7
-    streaming-chat-model:
-      api-key: ${zhipu_AI_API_KEY:}
-      base-url: https://coding.dashscope.aliyuncs.com/v1
-      model-name: glm-5
-      parameters:
-        temperature: 0.7
-    embedding-model:
-      api-key: ${zhipu_AI_API_KEY:}
-      base-url: https://coding.dashscope.aliyuncs.com/v1
-      model-name: embedding-2
-      dimension: 1024
-  minimax:
-    api-key: ${MiniMax_AI_API_KEY:}
-    base-url: https://api.minimaxi.com/v1
-    model-name: MiniMax-M2.5
-    parameters:
-      temperature: 0.7
+  qwen:
+    gateway:
+      enabled: true
 
 # 全局通用线程池（发现、异步任务等共用）
 app:
