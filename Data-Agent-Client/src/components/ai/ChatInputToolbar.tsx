@@ -9,9 +9,10 @@ import { AGENT_COLORS, type AgentType } from './agentTypes';
 import type { ModelOption } from '../../types/ai';
 
 function modelDisplayLabel(option: ModelOption): string {
-  return option.supportThinking
-    ? (option.modelName.replace(/-thinking$/, '') || option.modelName)
-    : option.modelName;
+  const normalized = option.modelName
+    .replace(/-thinking$/, '')
+    .replace(/^(qwen3-max)-\d{4}-\d{2}-\d{2}$/i, '$1');
+  return normalized || option.modelName;
 }
 
 interface AgentOption {
