@@ -103,7 +103,7 @@
         <!-- Qwen (DashScope) Integration -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-community-dashscope-spring-boot-starter</artifactId>
+            <artifactId>langchain4j-community-dashscope</artifactId>
         </dependency>
 
         <!-- OpenAI-Compatible Qwen integration -->

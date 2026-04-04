@@ -12,6 +12,7 @@ import edu.zsc.ai.agent.subagent.contract.SchemaSummary;
 import edu.zsc.ai.common.constant.InvocationContextConstant;
 import edu.zsc.ai.config.ai.SubAgentFactory;
 import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
+import edu.zsc.ai.config.ai.AiModelCatalog;
 import edu.zsc.ai.config.ai.SubAgentProperties;
 import edu.zsc.ai.context.AgentExecutionContext;
 import edu.zsc.ai.context.AgentRequestContext;
@@ -48,6 +49,7 @@ public class ExplorerSubAgent extends AbstractSubAgent<SubAgentRequest, SchemaSu
 
     private final SubAgentFactory subAgentFactory;
     private final SubAgentProperties properties;
+    private final AiModelCatalog aiModelCatalog;
     private final SubAgentStreamBridge streamBridge;
     private final SseEmitterRegistry sseEmitterRegistry;
     private final AgentLogService agentLogService;
@@ -66,7 +68,7 @@ public class ExplorerSubAgent extends AbstractSubAgent<SubAgentRequest, SchemaSu
         RequestContextInfo requestContextSnapshot = RequestContext.snapshot();
         String taskId = AgentExecutionContext.getTaskId();
         String parentToolCallId = AgentExecutionContext.getParentToolCallId();
-        String modelName = resolveModelName(log);
+        String modelName = resolveModelName(log, aiModelCatalog);
         log.info("[Explorer] invoke start, conversationId={}, taskId={}, parentToolCallId={}, modelName={}, connectionIds={}, requestedTimeoutSeconds={}, effectiveTimeoutSeconds={}, hasRequestContext={}, hasAgentContext={}, hasContext={}, instructionLength={}, contextLength={}, instructionPreview={}, contextPreview={}",
                 requestContextSnapshot != null ? requestContextSnapshot.getConversationId() : conversationId,
                 taskId,

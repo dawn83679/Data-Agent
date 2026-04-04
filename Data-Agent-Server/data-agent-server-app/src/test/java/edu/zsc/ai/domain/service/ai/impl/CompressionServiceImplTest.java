@@ -8,7 +8,8 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
-import edu.zsc.ai.common.enums.ai.ModelEnum;
+import edu.zsc.ai.config.ai.AiModelCatalog;
+import edu.zsc.ai.config.ai.AiModelProperties;
 import edu.zsc.ai.domain.service.ai.model.CompressionResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,14 +27,18 @@ class CompressionServiceImplTest {
 
     private ChatModel mockChatModel;
     private CompressionServiceImpl compressionService;
+    private AiModelCatalog aiModelCatalog;
 
     @BeforeEach
     void setUp() {
         mockChatModel = mock(ChatModel.class);
+        AiModelProperties modelProperties = new AiModelProperties();
+        aiModelCatalog = new AiModelCatalog(modelProperties);
+        aiModelCatalog.initialize();
         Map<String, ChatModel> chatModelsByName = Map.of(
-                ModelEnum.QWEN_PLUS.getModelName(), mockChatModel
+                aiModelCatalog.compressionModelName(), mockChatModel
         );
-        compressionService = new CompressionServiceImpl(chatModelsByName);
+        compressionService = new CompressionServiceImpl(aiModelCatalog, chatModelsByName);
     }
 
     private void stubModelResponse(String responseText) {

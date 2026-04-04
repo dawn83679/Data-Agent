@@ -10,17 +10,9 @@ public class MemoryProperties {
 
     private boolean enabled = true;
 
-    private Embedding embedding = new Embedding();
-
     private Retrieval retrieval = new Retrieval();
 
     private Maintenance maintenance = new Maintenance();
-
-    @Data
-    public static class Embedding {
-
-        private int dimension = 1024;
-    }
 
     @Data
     public static class Retrieval {

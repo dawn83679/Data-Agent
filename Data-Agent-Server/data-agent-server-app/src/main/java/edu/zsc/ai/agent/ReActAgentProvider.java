@@ -9,7 +9,7 @@ public interface ReActAgentProvider {
     /**
      * Returns the ReActAgent for the given model name, prompt language, and agent mode.
      *
-     * @param modelName model name (must be validated with ModelEnum beforehand)
+     * @param modelName model name (must be validated against the configured AI model catalog beforehand)
      * @param language  prompt language (e.g. en, zh). Unknown values should fallback to default.
      * @param agentMode agent mode code (e.g. "agent", "plan"). Null/blank defaults to agent.
      * @return the agent for that combination

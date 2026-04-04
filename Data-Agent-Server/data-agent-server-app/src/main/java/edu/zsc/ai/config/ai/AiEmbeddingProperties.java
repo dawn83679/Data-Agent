@@ -4,12 +4,11 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Qwen (DashScope) embedding model configuration.
- * Config prefix: langchain4j.community.dashscope.embedding-model
+ * Embedding model configuration shared by the Qwen embedding client and pgvector store.
  */
 @Data
-@ConfigurationProperties(prefix = "langchain4j.community.dashscope.embedding-model")
-public class DashScopeEmbeddingProperties {
+@ConfigurationProperties(prefix = "ai.embedding")
+public class AiEmbeddingProperties {
 
     private String apiKey;
 

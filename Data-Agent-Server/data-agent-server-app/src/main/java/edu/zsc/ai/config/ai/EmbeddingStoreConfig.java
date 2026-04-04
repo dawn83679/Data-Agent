@@ -15,7 +15,7 @@ import dev.langchain4j.store.embedding.pgvector.MetadataStorageMode;
 import dev.langchain4j.store.embedding.pgvector.PgVectorEmbeddingStore;
 
 @Configuration
-@EnableConfigurationProperties(MemoryProperties.class)
+@EnableConfigurationProperties({MemoryProperties.class, AiEmbeddingProperties.class})
 public class EmbeddingStoreConfig {
 
     private static final String EMBEDDING_TABLE = "ai_memory_embedding";
@@ -23,11 +23,11 @@ public class EmbeddingStoreConfig {
 
     @Bean
     public EmbeddingStore<TextSegment> memoryEmbeddingStore(DataSource dataSource,
-                                                            MemoryProperties props) {
+                                                            AiEmbeddingProperties embeddingProperties) {
         return PgVectorEmbeddingStore.datasourceBuilder()
                 .datasource(dataSource)
                 .table(EMBEDDING_TABLE)
-                .dimension(props.getEmbedding().getDimension())
+                .dimension(embeddingProperties.getDimension())
                 .createTable(true)
                 .useIndex(true)
                 .indexListSize(INDEX_LIST_SIZE)

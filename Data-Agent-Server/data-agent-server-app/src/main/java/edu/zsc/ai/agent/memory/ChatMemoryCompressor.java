@@ -6,7 +6,7 @@ import dev.langchain4j.data.message.ChatMessageDeserializer;
 import dev.langchain4j.data.message.ChatMessageType;
 import dev.langchain4j.data.message.UserMessage;
 import edu.zsc.ai.common.constant.CompressionLogConstant;
-import edu.zsc.ai.common.enums.ai.ModelEnum;
+import edu.zsc.ai.config.ai.AiModelCatalog;
 import edu.zsc.ai.domain.event.MemoryCompressionStartedEvent;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
 import edu.zsc.ai.domain.model.entity.ai.StoredChatMessage;
@@ -46,6 +46,7 @@ public class ChatMemoryCompressor {
     private final CompressionService compressionService;
     private final ApplicationEventPublisher eventPublisher;
     private final AgentLogService agentLogService;
+    private final AiModelCatalog aiModelCatalog;
 
     private final Set<Long> compressingConversations = ConcurrentHashMap.newKeySet();
     private final Map<Long, Map<String, Object>> completedCompressionMetadata = new ConcurrentHashMap<>();
@@ -287,12 +288,11 @@ public class ChatMemoryCompressor {
     }
 
     private int resolveMemoryThreshold(String modelName) {
-        try {
-            return ModelEnum.fromModelName(modelName).getMemoryThreshold();
-        } catch (IllegalArgumentException e) {
-            log.warn("Unknown model '{}', falling back to QWEN3_MAX threshold", modelName);
-            return ModelEnum.QWEN3_MAX.getMemoryThreshold();
+        if (!aiModelCatalog.supports(modelName)) {
+            log.warn("Unknown model '{}', falling back to default threshold", modelName);
         }
+        int threshold = aiModelCatalog.resolveMemoryThreshold(modelName);
+        return threshold;
     }
 
     private void rememberDoneMetadata(Long conversationId,

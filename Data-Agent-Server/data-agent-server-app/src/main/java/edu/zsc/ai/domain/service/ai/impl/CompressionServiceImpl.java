@@ -6,7 +6,7 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
-import edu.zsc.ai.common.enums.ai.ModelEnum;
+import edu.zsc.ai.config.ai.AiModelCatalog;
 import edu.zsc.ai.common.enums.ai.PromptEnum;
 import edu.zsc.ai.config.ai.PromptConfig;
 import edu.zsc.ai.domain.service.ai.CompressionService;
@@ -23,6 +23,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class CompressionServiceImpl implements CompressionService {
 
+    private final AiModelCatalog aiModelCatalog;
     private final Map<String, ChatModel> chatModelsByName;
 
     @Override
@@ -31,7 +32,7 @@ public class CompressionServiceImpl implements CompressionService {
         String template = PromptConfig.getPrompt(PromptEnum.COMPRESSION);
         String prompt = String.format(template, serializedHistory);
 
-        ChatModel model = chatModelsByName.get(ModelEnum.QWEN_PLUS.getModelName());
+        ChatModel model = chatModelsByName.get(aiModelCatalog.compressionModelName());
         ChatRequest request = ChatRequest.builder()
                 .messages(UserMessage.from(prompt))
                 .build();

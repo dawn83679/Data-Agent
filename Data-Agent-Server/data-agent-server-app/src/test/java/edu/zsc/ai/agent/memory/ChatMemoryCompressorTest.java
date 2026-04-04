@@ -4,6 +4,8 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ChatMessageSerializer;
 import dev.langchain4j.data.message.UserMessage;
 import edu.zsc.ai.common.constant.CompressionLogConstant;
+import edu.zsc.ai.config.ai.AiModelCatalog;
+import edu.zsc.ai.config.ai.AiModelProperties;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
 import edu.zsc.ai.domain.model.entity.ai.StoredChatMessage;
 import edu.zsc.ai.domain.service.ai.AiConversationService;
@@ -39,14 +41,23 @@ class ChatMemoryCompressorTest {
     private final CompressionService compressionService = mock(CompressionService.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private final AgentLogService agentLogService = mock(AgentLogService.class);
+    private final AiModelCatalog aiModelCatalog;
 
-    private final ChatMemoryCompressor compressor = new ChatMemoryCompressor(
-            aiConversationService,
-            aiMessageService,
-            compressionService,
-            eventPublisher,
-            agentLogService
-    );
+    private final ChatMemoryCompressor compressor;
+
+    ChatMemoryCompressorTest() {
+        AiModelProperties modelProperties = new AiModelProperties();
+        aiModelCatalog = new AiModelCatalog(modelProperties);
+        aiModelCatalog.initialize();
+        compressor = new ChatMemoryCompressor(
+                aiConversationService,
+                aiMessageService,
+                compressionService,
+                eventPublisher,
+                agentLogService,
+                aiModelCatalog
+        );
+    }
 
     @Test
     void compressIfNeeded_updatesConversationTokenCountFromCompressionOutputTokens() {

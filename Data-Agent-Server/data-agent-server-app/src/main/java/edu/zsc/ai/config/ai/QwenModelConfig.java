@@ -5,12 +5,12 @@ import dev.langchain4j.community.model.dashscope.QwenChatRequestParameters;
 import dev.langchain4j.community.model.dashscope.QwenStreamingChatModel;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
-import edu.zsc.ai.common.enums.ai.ModelEnum;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Configuration
@@ -19,39 +19,40 @@ import java.util.Map;
 @EnableConfigurationProperties(QwenProperties.class)
 public class QwenModelConfig implements ChatModelProvider {
 
+    private final AiModelCatalog aiModelCatalog;
     private final QwenProperties qwenProperties;
 
     @Override
     public Map<String, StreamingChatModel> streamingChatModels() {
-        return Map.of(
-                ModelEnum.QWEN3_MAX.getModelName(), buildModel(ModelEnum.QWEN3_MAX, false),
-                ModelEnum.QWEN3_MAX_THINKING.getModelName(), buildModel(ModelEnum.QWEN3_MAX, true),
-                ModelEnum.QWEN_PLUS.getModelName(), buildModel(ModelEnum.QWEN_PLUS, false)
-        );
+        Map<String, StreamingChatModel> models = new LinkedHashMap<>();
+        for (AiModelProperties.ModelDefinition model : aiModelCatalog.listSupportedModels()) {
+            models.put(model.getModelName(), buildModel(model));
+        }
+        return models;
     }
 
     @Override
     public Map<String, ChatModel> chatModels() {
-        return Map.of(
-                ModelEnum.QWEN3_MAX.getModelName(), buildChatModel(ModelEnum.QWEN3_MAX),
-                ModelEnum.QWEN3_MAX_THINKING.getModelName(), buildChatModel(ModelEnum.QWEN3_MAX),
-                ModelEnum.QWEN_PLUS.getModelName(), buildChatModel(ModelEnum.QWEN_PLUS)
-        );
+        Map<String, ChatModel> models = new LinkedHashMap<>();
+        for (AiModelProperties.ModelDefinition model : aiModelCatalog.listSupportedModels()) {
+            models.put(model.getModelName(), buildChatModel(model));
+        }
+        return models;
     }
 
-    private StreamingChatModel buildModel(ModelEnum model, boolean enableThinking) {
+    private StreamingChatModel buildModel(AiModelProperties.ModelDefinition model) {
         return QwenStreamingChatModel.builder()
                 .apiKey(qwenProperties.getApiKey())
-                .modelName(model.getModelName())
-                .defaultRequestParameters(buildRequestParameters(enableThinking))
+                .modelName(model.getApiModelName())
+                .defaultRequestParameters(buildRequestParameters(model.isSupportThinking()))
                 .build();
     }
 
-    private ChatModel buildChatModel(ModelEnum model) {
+    private ChatModel buildChatModel(AiModelProperties.ModelDefinition model) {
         return QwenChatModel.builder()
                 .apiKey(qwenProperties.getApiKey())
-                .modelName(model.getModelName())
-                .defaultRequestParameters(buildRequestParameters(false))
+                .modelName(model.getApiModelName())
+                .defaultRequestParameters(buildRequestParameters(model.isSupportThinking()))
                 .build();
     }
 

@@ -11,6 +11,7 @@ import edu.zsc.ai.agent.subagent.contract.PlannerRequest;
 import edu.zsc.ai.agent.subagent.contract.SchemaSummary;
 import edu.zsc.ai.agent.subagent.contract.SqlPlan;
 import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
+import edu.zsc.ai.config.ai.AiModelCatalog;
 import edu.zsc.ai.config.ai.SubAgentFactory;
 import edu.zsc.ai.config.ai.SubAgentProperties;
 import edu.zsc.ai.context.AgentExecutionContext;
@@ -45,6 +46,7 @@ public class PlannerSubAgent extends AbstractSubAgent<PlannerRequest, SqlPlan> i
 
     private final SubAgentFactory subAgentFactory;
     private final SubAgentProperties properties;
+    private final AiModelCatalog aiModelCatalog;
     private final SubAgentStreamBridge streamBridge;
     private final SseEmitterRegistry sseEmitterRegistry;
     private final AgentLogService agentLogService;
@@ -63,7 +65,7 @@ public class PlannerSubAgent extends AbstractSubAgent<PlannerRequest, SqlPlan> i
         RequestContextInfo requestContextSnapshot = RequestContext.snapshot();
         String parentToolCallId = AgentExecutionContext.getParentToolCallId();
         String taskId = AgentExecutionContext.getTaskId();
-        String modelName = resolveModelName(log);
+        String modelName = resolveModelName(log, aiModelCatalog);
         SchemaSummary schemaSummary = request.getSchemaSummary();
 
         // SSE progress emitter (replaces AgentListener-based observability)

@@ -3,7 +3,7 @@ package edu.zsc.ai.api.controller.ai;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import edu.zsc.ai.agent.memory.ChatMemoryCompressor;
 import edu.zsc.ai.common.converter.ai.ConversationConverter;
-import edu.zsc.ai.common.enums.ai.ModelEnum;
+import edu.zsc.ai.config.ai.AiModelCatalog;
 import edu.zsc.ai.domain.model.dto.request.ai.ConversationCompactRequest;
 import edu.zsc.ai.domain.model.dto.request.base.PageRequest;
 import edu.zsc.ai.domain.model.dto.request.ai.ConversationUpdateRequest;
@@ -40,6 +40,7 @@ public class ConversationController {
 
     private final AiConversationService aiConversationService;
     private final ChatMemoryCompressor chatMemoryCompressor;
+    private final AiModelCatalog aiModelCatalog;
 
     @GetMapping
     public ApiResponse<PageResponse<ConversationResponse>> list(
@@ -86,7 +87,7 @@ public class ConversationController {
             @Valid @RequestBody ConversationCompactRequest request) {
         final String modelName;
         try {
-            modelName = ModelEnum.resolve(request.getModel()).getModelName();
+            modelName = aiModelCatalog.resolve(request.getModel()).getModelName();
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
