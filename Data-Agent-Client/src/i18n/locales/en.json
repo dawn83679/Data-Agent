@@ -640,7 +640,7 @@
     "sign_in_link": "Sign in",
     "fill_all": "Please fill in all fields.",
     "passwords_no_match": "Passwords do not match.",
-    "password_min_length": "Password must be at least 6 characters long.",
+    "password_min_length": "Password must be at least 8 characters long.",
     "register_success": "Account created successfully! You can now sign in.",
     "login_failed": "Login failed. Please check your credentials.",
     "register_failed": "Registration failed. Please try again.",
@@ -648,7 +648,7 @@
     "hide_password": "Hide password",
     "username_placeholder": "Your username",
     "email_placeholder": "m@example.com",
-    "password_placeholder": "At least 6 characters",
+    "password_placeholder": "At least 8 characters",
     "confirm_password_placeholder": "Re-enter your password"
   },
   "error": {

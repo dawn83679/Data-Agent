@@ -2,7 +2,7 @@ export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const PASSWORD_POLICY = {
   RESET_MIN_LENGTH: 8,
-  REGISTER_MIN_LENGTH: 6,
+  REGISTER_MIN_LENGTH: 8,
   REQUIRE_LETTER: /[A-Za-z]/,
   REQUIRE_DIGIT: /\d/,
 } as const;

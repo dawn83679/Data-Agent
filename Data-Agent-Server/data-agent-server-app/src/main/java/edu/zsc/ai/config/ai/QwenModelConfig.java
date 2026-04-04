@@ -7,6 +7,7 @@ import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import edu.zsc.ai.common.enums.ai.ModelEnum;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,6 +15,7 @@ import java.util.Map;
 
 @Configuration
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "ai.qwen.gateway", name = "enabled", havingValue = "false")
 @EnableConfigurationProperties(QwenProperties.class)
 public class QwenModelConfig implements ChatModelProvider {
 

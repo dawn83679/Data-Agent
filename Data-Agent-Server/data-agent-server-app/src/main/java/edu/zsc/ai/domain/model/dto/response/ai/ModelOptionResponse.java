@@ -19,7 +19,7 @@ public class ModelOptionResponse implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * Model identifier (e.g. qwen3.5-plus, qwen3-max, qwen3-max-thinking).
+     * Model identifier (e.g. qwen3.5-plus, qwen3-max-2026-01-23, qwen3-max-thinking).
      */
     private String modelName;
 

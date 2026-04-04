@@ -641,7 +641,7 @@
     "sign_in_link": "登录",
     "fill_all": "请填写所有必填项。",
     "passwords_no_match": "两次输入的密码不一致。",
-    "password_min_length": "密码至少需要 6 个字符。",
+    "password_min_length": "密码至少需要 8 个字符。",
     "register_success": "账户创建成功，现在可以登录。",
     "login_failed": "登录失败，请检查邮箱和密码。",
     "register_failed": "注册失败，请重试。",
@@ -649,7 +649,7 @@
     "hide_password": "隐藏密码",
     "username_placeholder": "您的用户名",
     "email_placeholder": "m@example.com",
-    "password_placeholder": "至少 6 个字符",
+    "password_placeholder": "至少 8 个字符",
     "confirm_password_placeholder": "再次输入密码"
   },
   "error": {

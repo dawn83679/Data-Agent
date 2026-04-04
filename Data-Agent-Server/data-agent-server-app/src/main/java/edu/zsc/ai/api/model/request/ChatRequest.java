@@ -19,7 +19,7 @@ public class ChatRequest extends BaseRequest {
     private String message;
 
     /**
-     * Model name for chat (e.g. qwen3.5-plus, qwen3-max, qwen3-max-thinking).
+     * Model name for chat (e.g. qwen3.5-plus, qwen3-max-2026-01-23, qwen3-max-thinking).
      * Optional; server defaults to qwen3.5-plus when blank.
      */
     private String model;
