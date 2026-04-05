@@ -5,7 +5,7 @@ import edu.zsc.ai.domain.service.ai.model.MemoryPromptContext;
 public interface MemoryContextService {
 
     /**
-     * Loads the memory payload used when assembling the runtime user prompt.
+     * Loads the durable-memory payload projected into the runtime prompt suffix.
      * Returns an empty payload if memory is disabled or parameters are null.
      */
     MemoryPromptContext loadPromptContext(Long userId, Long conversationId, String userMessage);

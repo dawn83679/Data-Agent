@@ -4,6 +4,5 @@ export * from './MemoryControlSidebar';
 export * from './MemoryDetailDialog';
 export * from './MemoryDetailPanel';
 export * from './MemoryListPanel';
-export * from './MemoryMaintenancePanel';
 export * from './MemoryOverviewHero';
 export * from './MemoryWorkbenchPanel';

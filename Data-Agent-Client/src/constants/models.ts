@@ -10,7 +10,6 @@ export const FALLBACK_MODELS: ModelOption[] = [
   { modelName: 'qwen3.5-plus', supportThinking: false, memoryThreshold: 900000, maxContextTokens: 1048576 },
   { modelName: 'qwen3-max-2026-01-23', supportThinking: false, memoryThreshold: 230000, maxContextTokens: 256000 },
   { modelName: 'qwen3-max-thinking', supportThinking: true, memoryThreshold: 230000, maxContextTokens: 256000 },
-  { modelName: 'qwen-plus', supportThinking: false, memoryThreshold: 900000, maxContextTokens: 1048576 },
 ];
 
 export const DEFAULT_MODEL = FALLBACK_MODELS[0]?.modelName ?? 'qwen3.5-plus';

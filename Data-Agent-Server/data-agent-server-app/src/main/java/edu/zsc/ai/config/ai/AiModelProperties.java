@@ -12,7 +12,7 @@ public class AiModelProperties {
 
     private String defaultModel = "qwen3.5-plus";
 
-    private String compressionModel = "qwen-plus";
+    private String compressionModel = "qwen3.5-plus";
 
     private List<ModelDefinition> supported = defaultSupportedModels();
 
@@ -38,7 +38,6 @@ public class AiModelProperties {
         models.add(model("qwen3.5-plus", "qwen3.5-plus", false, 1_048_576, 900_000));
         models.add(model("qwen3-max-2026-01-23", "qwen3-max-2026-01-23", false, 256_000, 230_000));
         models.add(model("qwen3-max-thinking", "qwen3-max-2026-01-23", true, 256_000, 230_000));
-        models.add(model("qwen-plus", "qwen-plus", false, 1_048_576, 900_000));
         return models;
     }
 

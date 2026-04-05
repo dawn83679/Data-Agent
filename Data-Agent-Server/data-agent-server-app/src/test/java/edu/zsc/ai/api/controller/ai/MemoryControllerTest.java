@@ -2,6 +2,7 @@ package edu.zsc.ai.api.controller.ai;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 import java.util.Arrays;
@@ -43,5 +44,16 @@ class MemoryControllerTest {
             assertNotNull(typeMetadata);
             assertEquals(MemorySubTypeEnum.validCodesFor(type), typeMetadata.getSubTypes());
         }
+    }
+
+    @Test
+    void maintenance_controller_service_and_report_areRemoved() {
+        assertThrows(NoSuchMethodException.class, () -> MemoryController.class.getDeclaredMethod("maintenanceSummary"));
+        assertThrows(NoSuchMethodException.class, () -> MemoryController.class.getDeclaredMethod("runMaintenance"));
+        assertThrows(NoSuchMethodException.class, () -> MemoryService.class.getMethod("inspectCurrentUserMaintenance"));
+        assertThrows(NoSuchMethodException.class, () -> MemoryService.class.getMethod("runCurrentUserMaintenance"));
+        assertThrows(NoSuchMethodException.class, () -> MemoryService.class.getMethod("runGlobalMaintenance"));
+        assertThrows(ClassNotFoundException.class,
+                () -> Class.forName("edu.zsc.ai.domain.service.ai.model.MemoryMaintenanceReport"));
     }
 }

@@ -24,7 +24,6 @@ import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.model.dto.response.base.PageResponse;
 import edu.zsc.ai.domain.model.entity.ai.AiMemory;
 import edu.zsc.ai.domain.service.ai.MemoryService;
-import edu.zsc.ai.domain.service.ai.model.MemoryMaintenanceReport;
 import edu.zsc.ai.domain.service.ai.model.MemorySearchResult;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -83,16 +82,6 @@ public class MemoryController {
                 request.getMemoryType() == null ? null : request.getMemoryType().getCode(),
                 request.getScope() == null ? null : request.getScope().getCode());
         return ApiResponse.success(results);
-    }
-
-    @GetMapping("/maintenance/summary")
-    public ApiResponse<MemoryMaintenanceReport> maintenanceSummary() {
-        return ApiResponse.success(memoryService.inspectCurrentUserMaintenance());
-    }
-
-    @PostMapping("/maintenance/run")
-    public ApiResponse<MemoryMaintenanceReport> runMaintenance() {
-        return ApiResponse.success(memoryService.runCurrentUserMaintenance());
     }
 
     @PostMapping

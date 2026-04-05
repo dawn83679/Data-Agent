@@ -6,6 +6,7 @@ import edu.zsc.ai.domain.service.ai.AiConversationService;
 import edu.zsc.ai.domain.service.ai.AiMessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -23,6 +24,7 @@ public class ChatEventListener {
     private final SseEmitterRegistry sseEmitterRegistry;
     private final AiMessageService aiMessageService;
     private final AiConversationService aiConversationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @EventListener
     public void onCompressionStarted(MemoryCompressionStartedEvent event) {
@@ -48,6 +50,7 @@ public class ChatEventListener {
         }
 
         aiConversationService.updateTokenCount(conversationId, totalTokens);
+        eventPublisher.publishEvent(new ConversationMemoryAutoWriteRequestedEvent(this, conversationId));
     }
 
     @Async

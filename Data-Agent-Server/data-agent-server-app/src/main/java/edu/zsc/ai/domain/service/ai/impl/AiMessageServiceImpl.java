@@ -51,6 +51,23 @@ public class AiMessageServiceImpl extends ServiceImpl<AiMessageMapper, StoredCha
     }
 
     @Override
+    public List<StoredChatMessage> getActiveMessagesForAutoWrite(Long conversationId) {
+        return getActiveByConversationIdOrderByCreatedAtAsc(conversationId);
+    }
+
+    @Override
+    public List<StoredChatMessage> getMessagesForAutoWriteAfter(Long conversationId, Long lastProcessedMessageId) {
+        LambdaQueryWrapper<StoredChatMessage> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(StoredChatMessage::getConversationId, conversationId)
+                .ne(StoredChatMessage::getStatus, MessageStatusEnum.COMPRESSED.getCode())
+                .ne(StoredChatMessage::getStatus, MessageStatusEnum.DELETED.getCode())
+                .gt(StoredChatMessage::getId, lastProcessedMessageId)
+                .orderByAsc(StoredChatMessage::getCreatedAt)
+                .orderByAsc(StoredChatMessage::getId);
+        return list(wrapper);
+    }
+
+    @Override
     public void saveBatchMessages(List<StoredChatMessage> messages) {
         saveBatch(messages);
     }

@@ -12,6 +12,10 @@ public interface AiMessageService extends IService<StoredChatMessage> {
 
     List<StoredChatMessage> getActiveByConversationIdOrderByCreatedAtAsc(Long conversationId);
 
+    List<StoredChatMessage> getActiveMessagesForAutoWrite(Long conversationId);
+
+    List<StoredChatMessage> getMessagesForAutoWriteAfter(Long conversationId, Long lastProcessedMessageId);
+
     void saveBatchMessages(List<StoredChatMessage> messages);
 
     int removeByConversationId(Long conversationId);

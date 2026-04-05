@@ -41,6 +41,11 @@ class CompressionServiceImplTest {
         compressionService = new CompressionServiceImpl(aiModelCatalog, chatModelsByName);
     }
 
+    @Test
+    void defaultCompressionModel_isQwen35Plus() {
+        assertEquals("qwen3.5-plus", aiModelCatalog.compressionModelName());
+    }
+
     private void stubModelResponse(String responseText) {
         ChatResponse response = mock(ChatResponse.class);
         when(response.aiMessage()).thenReturn(AiMessage.from(responseText));
