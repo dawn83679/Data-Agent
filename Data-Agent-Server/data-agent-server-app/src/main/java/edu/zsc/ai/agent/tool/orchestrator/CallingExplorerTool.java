@@ -15,6 +15,11 @@ import edu.zsc.ai.common.enums.ai.ToolNameEnum;
 import edu.zsc.ai.config.ai.ExplorerSubAgentExecutorConfig;
 import edu.zsc.ai.config.ai.SubAgentManager;
 import edu.zsc.ai.context.*;
+<<<<<<< HEAD
+=======
+import edu.zsc.ai.observability.AgentLogFields;
+import edu.zsc.ai.observability.AgentLogService;
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import edu.zsc.ai.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;

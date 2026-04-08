@@ -2,7 +2,10 @@ package edu.zsc.ai.domain.service.ai.impl;
 
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
+<<<<<<< HEAD
 import java.util.LinkedHashMap;
+=======
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -50,30 +53,49 @@ import edu.zsc.ai.domain.model.dto.request.ai.MemoryUpdateRequest;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryMutationRequest;
 import edu.zsc.ai.domain.model.dto.request.base.PageRequest;
 import edu.zsc.ai.domain.model.dto.response.base.PageResponse;
+<<<<<<< HEAD
 import edu.zsc.ai.domain.model.entity.ai.AiConversationMemoryCursor;
 import edu.zsc.ai.domain.model.entity.ai.AiMemory;
 import edu.zsc.ai.domain.service.ai.AiConversationMemoryCursorService;
+=======
+import edu.zsc.ai.domain.model.entity.ai.AiMemory;
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import edu.zsc.ai.domain.service.ai.MemoryService;
+import edu.zsc.ai.domain.service.ai.model.MemoryMaintenanceReport;
 import edu.zsc.ai.domain.service.ai.model.MemorySearchResult;
+<<<<<<< HEAD
 import edu.zsc.ai.domain.service.ai.model.MemoryWriteContext.MemorySummary;
 import edu.zsc.ai.domain.service.ai.model.MemoryWriteItem;
+=======
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import edu.zsc.ai.domain.service.ai.model.MemoryWriteResult;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallMode;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallQuery;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallQueryStrategy;
+<<<<<<< HEAD
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+=======
+import edu.zsc.ai.observability.AgentLogFields;
+import edu.zsc.ai.observability.AgentLogService;
+import edu.zsc.ai.observability.AgentLogType;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> implements MemoryService {
 
+<<<<<<< HEAD
     private static final Logger runtimeLog = LoggerFactory.getLogger(MemoryLogConstant.LOGGER_NAME);
 
 
+=======
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     private static final int ENABLED_MEMORY_VALUE = MemoryEnableEnum.ENABLE.getCode();
     private static final int CONVERSATION_FALLBACK_LIMIT = 5;
     private static final String DEFAULT_SCOPE = MemoryConstant.DEFAULT_SCOPE;
@@ -83,7 +105,11 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
     private final EmbeddingStore<TextSegment> memoryEmbeddingStore;
     private final EmbeddingModel embeddingModel;
     private final MemoryProperties memoryProperties;
+<<<<<<< HEAD
     private final AiConversationMemoryCursorService cursorService;
+=======
+    private final AgentLogService agentLogService;
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 
     @Override
     public List<MemorySearchResult> searchEnabledMemories(String queryText, int limit, double minScore, String memoryType, String scope) {
@@ -102,8 +128,13 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
                         0)).stream()
                 .limit(safeLimit)
                 .toList();
+<<<<<<< HEAD
         logRuntimeInfo(MemoryLogConstant.EVENT_MEMORY_SEARCH,
                 fieldsOf(
+=======
+        agentLogService.recordDebug(MemoryLogConstant.LOGGER_NAME, MemoryLogConstant.EVENT_MEMORY_SEARCH,
+                AgentLogFields.of(
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                         MemoryLogConstant.FIELD_USER_ID, RequestContext.getUserId(),
                         MemoryLogConstant.FIELD_QUERY_TEXT_PRESENT, StringUtils.isNotBlank(queryText),
                         MemoryLogConstant.FIELD_LIMIT, safeLimit,
@@ -329,9 +360,14 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
                                          String queryText,
                                          boolean usedFallback,
                                          String executionPath) {
+<<<<<<< HEAD
         Logger recallRuntimeLog = LoggerFactory.getLogger(MemoryRecallLogConstant.LOGGER_NAME);
         recallRuntimeLog.info("{} {}", MemoryRecallLogConstant.EVENT_RECALL_QUERY_RESULT,
                 fieldsOf(
+=======
+        agentLogService.recordDebug(MemoryRecallLogConstant.LOGGER_NAME, MemoryRecallLogConstant.EVENT_RECALL_QUERY_RESULT,
+                AgentLogFields.of(
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                         MemoryRecallLogConstant.FIELD_QUERY_NAME, query.queryName(),
                         MemoryRecallLogConstant.FIELD_PLANNING_REASON, query.planningReason(),
                         MemoryRecallLogConstant.FIELD_TARGET_SCOPE, normalizedScope,
@@ -470,7 +506,11 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
             case DELETE -> softDeleteAgentMemory(request);
         };
         recordMemoryMutation(MemoryLogConstant.EVENT_MEMORY_AGENT_WRITE, execution.memory(),
+<<<<<<< HEAD
                 fieldsOf(MemoryLogConstant.FIELD_ACTION, execution.action().getCode()));
+=======
+                AgentLogFields.of(MemoryLogConstant.FIELD_ACTION, execution.action().getCode()));
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         return MemoryWriteResult.builder()
                 .memory(execution.memory())
                 .action(execution.action())
@@ -509,6 +549,32 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
     }
 
     @Override
+<<<<<<< HEAD
+=======
+    public MemoryMaintenanceReport inspectCurrentUserMaintenance() {
+        Long userId = requireUserId();
+        MemoryMaintenanceReport report = inspectMaintenance(userId, LocalDateTime.now());
+        recordMaintenanceEvent(MemoryLogConstant.EVENT_MEMORY_MAINTENANCE_INSPECT, userId, report);
+        return report;
+    }
+
+    @Override
+    public MemoryMaintenanceReport runCurrentUserMaintenance() {
+        Long userId = requireUserId();
+        MemoryMaintenanceReport report = executeMaintenance(userId, LocalDateTime.now());
+        recordMaintenanceEvent(MemoryLogConstant.EVENT_MEMORY_MAINTENANCE_RUN, userId, report);
+        return report;
+    }
+
+    @Override
+    public MemoryMaintenanceReport runGlobalMaintenance() {
+        MemoryMaintenanceReport report = executeMaintenance(null, LocalDateTime.now());
+        recordMaintenanceEvent(MemoryLogConstant.EVENT_MEMORY_MAINTENANCE_RUN, null, report);
+        return report;
+    }
+
+    @Override
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     public void recordMemoryAccess(List<Long> memoryIds) {
         int processedCount = touchMemories(memoryIds);
         recordTouchEvent(MemoryLogConstant.EVENT_MEMORY_ACCESS_RECORDED, memoryIds, processedCount);
@@ -556,6 +622,47 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
                 .build();
     }
 
+<<<<<<< HEAD
+=======
+    private MemoryMaintenanceReport inspectMaintenance(Long userId, LocalDateTime now) {
+        List<AiMemory> memories = listMemoriesForMaintenance(userId);
+        List<AiMemory> enabledMemories = memories.stream()
+                .filter(this::isEnabledMemory)
+                .toList();
+
+        return MemoryMaintenanceReport.builder()
+                .generatedAt(now)
+                .enabledMemoryCount((int) enabledMemories.size())
+                .disabledMemoryCount((int) memories.stream().filter(this::isDisabledMemory).count())
+                .duplicateEnabledMemoryCount(0)
+                .processedDisabledCount(0)
+                .build();
+    }
+
+    private MemoryMaintenanceReport executeMaintenance(Long userId, LocalDateTime now) {
+        List<AiMemory> memories = listMemoriesForMaintenance(userId);
+
+        List<AiMemory> enabledMemories = memories.stream()
+                .filter(this::isEnabledMemory)
+                .toList();
+
+        MemoryMaintenanceReport report = MemoryMaintenanceReport.builder()
+                .generatedAt(now)
+                .enabledMemoryCount((int) enabledMemories.size())
+                .disabledMemoryCount((int) memories.stream().filter(this::isDisabledMemory).count())
+                .duplicateEnabledMemoryCount(0)
+                .processedDisabledCount(0)
+                .build();
+        log.info("Memory maintenance summary: userId={}, disabledProcessed={}, enabledCount={}, disabledCount={}, duplicateEnabledCount={}",
+                userId,
+                report.getProcessedDisabledCount(),
+                report.getEnabledMemoryCount(),
+                report.getDisabledMemoryCount(),
+                report.getDuplicateEnabledMemoryCount());
+        return report;
+    }
+
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     private void rebuildEmbedding(AiMemory memory) {
         removeEmbeddingQuietly(memory.getId());
         if (!Objects.equals(memory.getEnable(), ENABLED_MEMORY_VALUE) || StringUtils.isBlank(memory.getContent())) {
@@ -582,8 +689,16 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
                     List.of(TextSegment.from(memory.getContent(), metadata)));
         } catch (Exception e) {
             log.warn("Failed to rebuild memory embedding for memory {}", memory.getId(), e);
+<<<<<<< HEAD
             logRuntimeError(MemoryLogConstant.EVENT_MEMORY_EMBEDDING_REBUILD_FAILED, e,
                     fieldsOf(
+=======
+            agentLogService.recordError(AgentLogType.DEBUG_EVENT,
+                    MemoryLogConstant.LOGGER_NAME,
+                    MemoryLogConstant.EVENT_MEMORY_EMBEDDING_REBUILD_FAILED,
+                    e,
+                    AgentLogFields.of(
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                             MemoryLogConstant.FIELD_USER_ID, memory.getUserId(),
                             MemoryLogConstant.FIELD_MEMORY_ID, memory.getId(),
                             MemoryLogConstant.FIELD_SCOPE, memory.getScope(),
@@ -601,8 +716,16 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
             memoryEmbeddingStore.remove(embeddingStoreId(memoryId));
         } catch (Exception e) {
             log.warn("Failed to remove memory embedding for memory {}", memoryId, e);
+<<<<<<< HEAD
             logRuntimeError(MemoryLogConstant.EVENT_MEMORY_EMBEDDING_REMOVE_FAILED, e,
                     fieldsOf(MemoryLogConstant.FIELD_MEMORY_ID, memoryId));
+=======
+            agentLogService.recordError(AgentLogType.DEBUG_EVENT,
+                    MemoryLogConstant.LOGGER_NAME,
+                    MemoryLogConstant.EVENT_MEMORY_EMBEDDING_REMOVE_FAILED,
+                    e,
+                    AgentLogFields.of(MemoryLogConstant.FIELD_MEMORY_ID, memoryId));
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         }
     }
 
@@ -784,7 +907,11 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         if (memory == null) {
             return;
         }
+<<<<<<< HEAD
         Map<String, Object> fields = fieldsOf(
+=======
+        Map<String, Object> fields = AgentLogFields.of(
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                 MemoryLogConstant.FIELD_MEMORY_ID, memory.getId(),
                 MemoryLogConstant.FIELD_USER_ID, memory.getUserId(),
                 MemoryLogConstant.FIELD_CONVERSATION_ID, memory.getConversationId(),
@@ -796,7 +923,24 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         if (extraFields != null && !extraFields.isEmpty()) {
             fields.putAll(extraFields);
         }
+<<<<<<< HEAD
         logRuntimeInfo(eventName, fields);
+=======
+        agentLogService.recordDebug(MemoryLogConstant.LOGGER_NAME, eventName, fields);
+    }
+
+    private void recordMaintenanceEvent(String eventName, Long userId, MemoryMaintenanceReport report) {
+        if (report == null) {
+            return;
+        }
+        agentLogService.recordDebug(MemoryLogConstant.LOGGER_NAME, eventName,
+                AgentLogFields.of(
+                        MemoryLogConstant.FIELD_USER_ID, userId,
+                        MemoryLogConstant.FIELD_ENABLED_MEMORY_COUNT, report.getEnabledMemoryCount(),
+                        MemoryLogConstant.FIELD_DISABLED_MEMORY_COUNT, report.getDisabledMemoryCount(),
+                        MemoryLogConstant.FIELD_DUPLICATE_ENABLED_MEMORY_COUNT, report.getDuplicateEnabledMemoryCount(),
+                        MemoryLogConstant.FIELD_PROCESSED_DISABLED_COUNT, report.getProcessedDisabledCount()));
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     }
 
     private void recordTouchEvent(String eventName, List<Long> memoryIds, int processedCount) {
@@ -804,13 +948,19 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
+<<<<<<< HEAD
         logRuntimeInfo(eventName,
                 fieldsOf(
+=======
+        agentLogService.recordDebug(MemoryLogConstant.LOGGER_NAME, eventName,
+                AgentLogFields.of(
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                         MemoryLogConstant.FIELD_USER_ID, RequestContext.getUserId(),
                         MemoryLogConstant.FIELD_MEMORY_IDS, uniqueIds,
                         MemoryLogConstant.FIELD_PROCESSED_COUNT, processedCount));
     }
 
+<<<<<<< HEAD
     private void logRuntimeInfo(String eventName, Map<String, Object> fields) {
         runtimeLog.info("{} {}", eventName, fields);
     }
@@ -830,6 +980,8 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         return fields;
     }
 
+=======
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     private String resolveTitle(String title, String content) {
         String trimmedTitle = StringUtils.trimToNull(title);
         if (trimmedTitle != null) {
@@ -995,10 +1147,18 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         return StringUtils.isBlank(subType) || StringUtils.equalsIgnoreCase(subType, result.getSubType());
     }
 
+<<<<<<< HEAD
     protected List<AiMemory> listUserMemoriesByUpdatedAt(Long userId) {
         LambdaQueryWrapper<AiMemory> wrapper = new LambdaQueryWrapper<>();
         BusinessException.assertNotNull(userId, "error.not.login");
         wrapper.eq(AiMemory::getUserId, userId);
+=======
+    protected List<AiMemory> listMemoriesForMaintenance(Long userId) {
+        LambdaQueryWrapper<AiMemory> wrapper = new LambdaQueryWrapper<>();
+        if (userId != null) {
+            wrapper.eq(AiMemory::getUserId, userId);
+        }
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         wrapper.orderByDesc(AiMemory::getUpdatedAt).orderByDesc(AiMemory::getId);
         return list(wrapper);
     }
@@ -1010,7 +1170,11 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         if (!MemoryTypeEnum.PREFERENCE.matches(memoryType) || StringUtils.isBlank(subType) || userId == null) {
             return null;
         }
+<<<<<<< HEAD
         return listUserMemoriesByUpdatedAt(userId).stream()
+=======
+        return listMemoriesForMaintenance(userId).stream()
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                 .filter(this::isEnabledMemory)
                 .filter(memory -> userId.equals(memory.getUserId()))
                 .filter(memory -> MemoryTypeEnum.PREFERENCE.matches(memory.getMemoryType()))
@@ -1028,7 +1192,11 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         if (userId == null || StringUtils.isBlank(subType)) {
             return;
         }
+<<<<<<< HEAD
         listUserMemoriesByUpdatedAt(userId).stream()
+=======
+        listMemoriesForMaintenance(userId).stream()
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                 .filter(this::isEnabledMemory)
                 .filter(memory -> userId.equals(memory.getUserId()))
                 .filter(memory -> MemoryTypeEnum.PREFERENCE.matches(memory.getMemoryType()))
@@ -1083,6 +1251,7 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         return value == null ? defaultValue : value;
     }
 
+<<<<<<< HEAD
     @Override
     public List<MemorySummary> getEnabledMemorySummaries(Long userId) {
         LambdaQueryWrapper<AiMemory> wrapper = new LambdaQueryWrapper<>();
@@ -1230,6 +1399,8 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         removeEmbeddingQuietly(memory.getId());
     }
 
+=======
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     private Integer longToInt(Long value) {
         return value == null ? null : Math.toIntExact(value);
     }

@@ -32,7 +32,11 @@ public class CompressionServiceImpl implements CompressionService {
         String template = PromptConfig.getPrompt(PromptEnum.COMPRESSION);
         String prompt = String.format(template, serializedHistory);
 
+<<<<<<< HEAD
         ChatModel model = chatModelsByName.get(aiModelCatalog.compressionModelName());
+=======
+        ChatModel model = chatModelsByName.get(ModelEnum.QWEN3_5_PLUS.getModelName());
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         ChatRequest request = ChatRequest.builder()
                 .messages(UserMessage.from(prompt))
                 .build();

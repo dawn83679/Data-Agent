@@ -51,6 +51,7 @@ public class AiMessageServiceImpl extends ServiceImpl<AiMessageMapper, StoredCha
     }
 
     @Override
+<<<<<<< HEAD
     public List<StoredChatMessage> getActiveMessagesForAutoWrite(Long conversationId) {
         return getActiveByConversationIdOrderByCreatedAtAsc(conversationId);
     }
@@ -68,6 +69,8 @@ public class AiMessageServiceImpl extends ServiceImpl<AiMessageMapper, StoredCha
     }
 
     @Override
+=======
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     public void saveBatchMessages(List<StoredChatMessage> messages) {
         saveBatch(messages);
     }

@@ -1,5 +1,7 @@
 package edu.zsc.ai.config.ai;
 
+import org.apache.commons.lang3.StringUtils;
+
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
@@ -32,6 +34,11 @@ public class AgentManager {
     private final List<Object> agentTools;
     private final AgentSkillConfig agentSkillConfig;
     private final SystemPromptManager systemPromptManager;
+<<<<<<< HEAD
+=======
+
+    private final Map<String, ReActAgent> dynamicAgentCache = new ConcurrentHashMap<>();
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 
     @Bean
     @Primary
@@ -44,6 +51,7 @@ public class AgentManager {
                 throw new IllegalArgumentException(
                         "No StreamingChatModel configured for model=" + modelName);
             }
+<<<<<<< HEAD
             log.info("Create MainAgent dynamically: model={}, language={}, mode={}",
                     modelName, promptLanguage.getCode(), mode.getCode());
             String systemPrompt = systemPromptManager.render(SystemPromptAssemblyContext.builder()
@@ -56,6 +64,23 @@ public class AgentManager {
                             .build())
                     .renderedPrompt();
             return new PreparedReActAgent(buildMainAgent(model, mode, systemPrompt), systemPrompt, promptLanguage);
+=======
+            String cacheKey = buildCacheKey(modelName, promptLanguage.getCode(), mode.getCode(), AgentTypeEnum.MAIN);
+            return dynamicAgentCache.computeIfAbsent(cacheKey, key -> {
+                log.info("Create MainAgent dynamically: model={}, language={}, mode={}",
+                        modelName, promptLanguage.getCode(), mode.getCode());
+                String systemPrompt = systemPromptManager.render(SystemPromptAssemblyContext.builder()
+                                .promptEnum(promptLanguage)
+                                .agentType(AgentTypeEnum.MAIN)
+                                .agentMode(mode)
+                                .modelName(modelName)
+                                .language(promptLanguage.getCode())
+                                .availableSkills(agentSkillConfig.resolveAvailableSkills(AgentTypeEnum.MAIN, mode))
+                                .build())
+                        .renderedPrompt();
+                return buildMainAgent(model, mode, systemPrompt);
+            });
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         };
     }
 

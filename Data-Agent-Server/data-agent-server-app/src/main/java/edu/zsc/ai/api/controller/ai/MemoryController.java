@@ -24,6 +24,10 @@ import edu.zsc.ai.domain.model.dto.response.base.ApiResponse;
 import edu.zsc.ai.domain.model.dto.response.base.PageResponse;
 import edu.zsc.ai.domain.model.entity.ai.AiMemory;
 import edu.zsc.ai.domain.service.ai.MemoryService;
+<<<<<<< HEAD
+=======
+import edu.zsc.ai.domain.service.ai.model.MemoryMaintenanceReport;
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import edu.zsc.ai.domain.service.ai.model.MemorySearchResult;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -84,6 +88,19 @@ public class MemoryController {
         return ApiResponse.success(results);
     }
 
+<<<<<<< HEAD
+=======
+    @GetMapping("/maintenance/summary")
+    public ApiResponse<MemoryMaintenanceReport> maintenanceSummary() {
+        return ApiResponse.success(memoryService.inspectCurrentUserMaintenance());
+    }
+
+    @PostMapping("/maintenance/run")
+    public ApiResponse<MemoryMaintenanceReport> runMaintenance() {
+        return ApiResponse.success(memoryService.runCurrentUserMaintenance());
+    }
+
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     @PostMapping
     public ApiResponse<MemoryResponse> create(@Valid @RequestBody MemoryCreateRequest request) {
         AiMemory created = memoryService.createManualMemory(request);

@@ -2,7 +2,11 @@ package edu.zsc.ai.common.constant;
 
 public final class CompressionLogConstant {
 
+<<<<<<< HEAD
     public static final String LOGGER_NAME = AgentRuntimeLoggerNames.MEMORY_COMPRESSION;
+=======
+    public static final String LOGGER_NAME = "ChatMemoryCompressor";
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 
     public static final String EVENT_COMPRESSION_STARTED = "compression_started";
     public static final String EVENT_COMPRESSION_COMPLETED = "compression_completed";

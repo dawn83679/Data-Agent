@@ -19,21 +19,32 @@ import java.util.Map;
 @EnableConfigurationProperties(QwenProperties.class)
 public class QwenCompatibleModelConfig implements ChatModelProvider {
 
+<<<<<<< HEAD
     private final AiModelCatalog aiModelCatalog;
+=======
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     private final QwenProperties qwenProperties;
 
     @Override
     public Map<String, StreamingChatModel> streamingChatModels() {
         Map<String, StreamingChatModel> models = new LinkedHashMap<>();
+<<<<<<< HEAD
         for (AiModelProperties.ModelDefinition model : aiModelCatalog.listSupportedModels()) {
             models.put(model.getModelName(), buildStreamingModel(model));
         }
+=======
+        models.put(ModelEnum.QWEN3_5_PLUS.getModelName(), buildStreamingModel(ModelEnum.QWEN3_5_PLUS, false));
+        models.put(ModelEnum.QWEN3_MAX.getModelName(), buildStreamingModel(ModelEnum.QWEN3_MAX, false));
+        models.put(ModelEnum.QWEN3_MAX_THINKING.getModelName(), buildStreamingModel(ModelEnum.QWEN3_MAX, true));
+        models.put(ModelEnum.QWEN_PLUS.getModelName(), buildStreamingModel(ModelEnum.QWEN_PLUS, false));
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         return models;
     }
 
     @Override
     public Map<String, ChatModel> chatModels() {
         Map<String, ChatModel> models = new LinkedHashMap<>();
+<<<<<<< HEAD
         for (AiModelProperties.ModelDefinition model : aiModelCatalog.listSupportedModels()) {
             models.put(model.getModelName(), buildChatModel(model));
         }
@@ -55,6 +66,30 @@ public class QwenCompatibleModelConfig implements ChatModelProvider {
                 .baseUrl(qwenProperties.getGateway().getBaseUrl())
                 .modelName(model.getApiModelName())
                 .defaultRequestParameters(buildRequestParameters(model.isSupportThinking()))
+=======
+        models.put(ModelEnum.QWEN3_5_PLUS.getModelName(), buildChatModel(ModelEnum.QWEN3_5_PLUS, false));
+        models.put(ModelEnum.QWEN3_MAX.getModelName(), buildChatModel(ModelEnum.QWEN3_MAX, false));
+        models.put(ModelEnum.QWEN3_MAX_THINKING.getModelName(), buildChatModel(ModelEnum.QWEN3_MAX, true));
+        models.put(ModelEnum.QWEN_PLUS.getModelName(), buildChatModel(ModelEnum.QWEN_PLUS, false));
+        return models;
+    }
+
+    private StreamingChatModel buildStreamingModel(ModelEnum actualModel, boolean enableThinking) {
+        return OpenAiStreamingChatModel.builder()
+                .apiKey(qwenProperties.getApiKey())
+                .baseUrl(qwenProperties.getBaseUrl())
+                .modelName(actualModel.getModelName())
+                .defaultRequestParameters(buildRequestParameters(enableThinking))
+                .build();
+    }
+
+    private ChatModel buildChatModel(ModelEnum actualModel, boolean enableThinking) {
+        return OpenAiChatModel.builder()
+                .apiKey(qwenProperties.getApiKey())
+                .baseUrl(qwenProperties.getBaseUrl())
+                .modelName(actualModel.getModelName())
+                .defaultRequestParameters(buildRequestParameters(enableThinking))
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                 .build();
     }
 

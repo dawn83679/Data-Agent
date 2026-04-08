@@ -1,6 +1,7 @@
 package edu.zsc.ai.domain.service.ai.recall;
 
 import java.util.List;
+<<<<<<< HEAD
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -9,12 +10,24 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import edu.zsc.ai.common.constant.MemoryRecallLogConstant;
+=======
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
+
+import edu.zsc.ai.common.constant.MemoryRecallLogConstant;
+import edu.zsc.ai.observability.AgentLogFields;
+import edu.zsc.ai.observability.AgentLogService;
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
 public class MemoryRecallManager {
 
+<<<<<<< HEAD
     private static final Logger runtimeLog = LoggerFactory.getLogger(MemoryRecallLogConstant.LOGGER_NAME);
 
     private final MemoryRecallQueryPlanner queryPlanner;
@@ -27,6 +40,21 @@ public class MemoryRecallManager {
         this.queryPlanner = queryPlanner;
         this.handlerChain = handlerChain;
         this.postProcessor = postProcessor;
+=======
+    private final MemoryRecallQueryPlanner queryPlanner;
+    private final MemoryRecallHandlerChain handlerChain;
+    private final MemoryRecallPostProcessor postProcessor;
+    private final AgentLogService agentLogService;
+
+    public MemoryRecallManager(MemoryRecallQueryPlanner queryPlanner,
+                               MemoryRecallHandlerChain handlerChain,
+                               MemoryRecallPostProcessor postProcessor,
+                               AgentLogService agentLogService) {
+        this.queryPlanner = queryPlanner;
+        this.handlerChain = handlerChain;
+        this.postProcessor = postProcessor;
+        this.agentLogService = agentLogService;
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     }
 
     public MemoryRecallResult recall(MemoryRecallContext input) {
@@ -68,6 +96,7 @@ public class MemoryRecallManager {
     }
 
     private void recordRecallStart(MemoryRecallContext context) {
+<<<<<<< HEAD
         runtimeLog.info("{} recallMode={} queryText={} requestedScope={} requestedMemoryType={} requestedSubType={}",
                 MemoryRecallLogConstant.EVENT_RECALL_START,
                 context.getRecallMode() == null ? null : context.getRecallMode().name(),
@@ -109,6 +138,58 @@ public class MemoryRecallManager {
                 result.getItems() == null ? 0 : result.getItems().size(),
                 result.getSummary(),
                 result.getAppliedFilters());
+=======
+        agentLogService.recordDebug(MemoryRecallLogConstant.LOGGER_NAME, MemoryRecallLogConstant.EVENT_RECALL_START,
+                AgentLogFields.of(
+                        MemoryRecallLogConstant.FIELD_RECALL_MODE, context.getRecallMode() == null ? null : context.getRecallMode().name(),
+                        MemoryRecallLogConstant.FIELD_QUERY_TEXT, context.getQueryText(),
+                        MemoryRecallLogConstant.FIELD_REQUESTED_SCOPE, context.getScope(),
+                        MemoryRecallLogConstant.FIELD_REQUESTED_MEMORY_TYPE, context.getMemoryType(),
+                        MemoryRecallLogConstant.FIELD_REQUESTED_SUB_TYPE, context.getSubType()
+                ));
+    }
+
+    private void recordPlannedQueries(MemoryRecallContext context, List<MemoryRecallQuery> queries) {
+        agentLogService.recordDebug(MemoryRecallLogConstant.LOGGER_NAME, MemoryRecallLogConstant.EVENT_RECALL_PLANNED,
+                AgentLogFields.of(
+                        MemoryRecallLogConstant.FIELD_RECALL_MODE, context.getRecallMode() == null ? null : context.getRecallMode().name(),
+                        MemoryRecallLogConstant.FIELD_PLANNED_QUERIES, queries.stream().map(this::toQueryPayload).toList()
+                ));
+    }
+
+    private void recordQueryDispatch(MemoryRecallQuery query) {
+        agentLogService.recordDebug(MemoryRecallLogConstant.LOGGER_NAME, MemoryRecallLogConstant.EVENT_RECALL_QUERY_DISPATCH,
+                toQueryPayload(query));
+    }
+
+    private void recordPrePostProcess(MemoryRecallContext context, List<MemoryRecallItem> merged) {
+        agentLogService.recordDebug(MemoryRecallLogConstant.LOGGER_NAME, MemoryRecallLogConstant.EVENT_RECALL_POST_PROCESS,
+                AgentLogFields.of(
+                        MemoryRecallLogConstant.FIELD_RECALL_MODE, context.getRecallMode() == null ? null : context.getRecallMode().name(),
+                        MemoryRecallLogConstant.FIELD_MERGED_COUNT, merged.size(),
+                        MemoryRecallLogConstant.FIELD_RESULT_MEMORY_IDS, merged.stream().map(MemoryRecallItem::getId).toList()
+                ));
+    }
+
+    private void recordRecallComplete(MemoryRecallContext context, MemoryRecallResult result) {
+        agentLogService.recordDebug(MemoryRecallLogConstant.LOGGER_NAME, MemoryRecallLogConstant.EVENT_RECALL_COMPLETE,
+                AgentLogFields.of(
+                        MemoryRecallLogConstant.FIELD_RECALL_MODE, context.getRecallMode() == null ? null : context.getRecallMode().name(),
+                        MemoryRecallLogConstant.FIELD_FINAL_COUNT, result.getItems() == null ? 0 : result.getItems().size(),
+                        MemoryRecallLogConstant.FIELD_SUMMARY, result.getSummary(),
+                        MemoryRecallLogConstant.FIELD_APPLIED_FILTERS, result.getAppliedFilters()
+                ));
+    }
+
+    private Map<String, Object> toQueryPayload(MemoryRecallQuery query) {
+        return AgentLogFields.of(
+                MemoryRecallLogConstant.FIELD_QUERY_NAME, query.queryName(),
+                MemoryRecallLogConstant.FIELD_PLANNING_REASON, query.planningReason(),
+                MemoryRecallLogConstant.FIELD_TARGET_SCOPE, query.targetScope(),
+                MemoryRecallLogConstant.FIELD_QUERY_STRATEGY, query.queryStrategy() == null ? null : query.queryStrategy().name(),
+                MemoryRecallLogConstant.FIELD_PRIORITY, query.priority()
+        );
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     }
 
     private String summarizeQueries(List<MemoryRecallQuery> queries) {

@@ -12,7 +12,10 @@ import edu.zsc.ai.agent.subagent.contract.SchemaSummary;
 import edu.zsc.ai.agent.subagent.contract.SqlPlan;
 import edu.zsc.ai.common.constant.AgentRuntimeLoggerNames;
 import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
+<<<<<<< HEAD
 import edu.zsc.ai.config.ai.AiModelCatalog;
+=======
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import edu.zsc.ai.config.ai.SubAgentFactory;
 import edu.zsc.ai.config.ai.SubAgentProperties;
 import edu.zsc.ai.context.AgentExecutionContext;
@@ -107,7 +110,11 @@ public class PlannerSubAgent extends AbstractSubAgent<PlannerRequest, SqlPlan> i
                     StringUtils.length(message),
                     preview(message));
             String systemPrompt = "(managed by SystemPromptManager)";
+<<<<<<< HEAD
             PlannerAgentService agentService = subAgentFactory.buildPlannerAgent(modelName, conversationId);
+=======
+            PlannerAgentService agentService = subAgentFactory.buildPlannerAgent(modelName);
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 
             java.util.Map<String, Object> invocationContext = createInvocationContext(AgentTypeEnum.PLANNER);
             log.info("[Planner] schema summary serialized, taskId={}, objectCount={}, ddlObjectCount={}, summaryLength={}, rawResponseLength={}, objectPreview={}",

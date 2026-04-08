@@ -30,13 +30,21 @@ import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
 import edu.zsc.ai.domain.service.agent.runtimecontext.RuntimeContextAssemblyContext;
 import edu.zsc.ai.domain.service.agent.runtimecontext.RuntimeContextManager;
+<<<<<<< HEAD
+=======
+import edu.zsc.ai.domain.service.agent.runtimecontext.strategy.ConnectionSummary;
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import edu.zsc.ai.domain.service.ai.AiConversationService;
+import edu.zsc.ai.domain.service.db.DbConnectionService;
 import edu.zsc.ai.domain.service.ai.MemoryContextService;
 import edu.zsc.ai.domain.service.ai.model.MemoryPromptContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+<<<<<<< HEAD
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+=======
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 
 /**
  * Prepares all state needed before an agent invocation:
@@ -55,7 +63,11 @@ public class ChatSessionFactory {
     private final AiConversationService aiConversationService;
     private final MemoryContextService memoryContextService;
     private final RuntimeContextManager runtimeContextManager;
+<<<<<<< HEAD
     private final AiModelCatalog aiModelCatalog;
+=======
+    private final DbConnectionService dbConnectionService;
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 
     /**
      * Build a ChatSession from an incoming ChatRequest.
@@ -77,12 +89,18 @@ public class ChatSessionFactory {
 
             String memoryId = MemoryIdUtil.build(RequestContext.getUserId(), conversationId, modelName);
 
+<<<<<<< HEAD
             PreparedReActAgent preparedAgent = reActAgentProvider.getAgent(
                     modelName,
                     request.getLanguage(),
                     agentMode.getCode()
             );
             ReActAgent agent = preparedAgent.agent();
+=======
+            List<ConnectionSummary> connections = dbConnectionService.getAllConnections().stream()
+                    .map(conn -> new ConnectionSummary(conn.getId(), conn.getName(), conn.getDbType()))
+                    .toList();
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 
             MemoryPromptContext memoryPromptContext = memoryContextService.loadPromptContext(
                     RequestContext.getUserId(), conversationId, request.getMessage());
@@ -90,10 +108,15 @@ public class ChatSessionFactory {
                     .language(request.getLanguage())
                     .currentDate(LocalDate.now(ZoneId.systemDefault()))
                     .timezone(ZoneId.systemDefault().getId())
+<<<<<<< HEAD
+=======
+                    .availableConnections(connections)
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                     .memoryPromptContext(memoryPromptContext)
                     .userMentions(request.getUserMentions() == null ? List.of() : request.getUserMentions())
                     .build();
             String runtimeContext = runtimeContextManager.render(runtimeCtx).renderedPrompt();
+<<<<<<< HEAD
             // The runtime suffix carries time, memory projections, and explicit references.
             // Connection inventory is now discovered via getAvailableConnections on demand.
             String systemPrompt = StringUtils.defaultString(preparedAgent.systemPrompt());
@@ -136,6 +159,8 @@ public class ChatSessionFactory {
                     preparedAgent.promptEnum().getCode(),
                     combinedPrompt.length(),
                     combinedPrompt);
+=======
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 
             Map<String, Object> invocationContext = buildInvocationContext();
             if (StringUtils.isNotBlank(runtimeContext)) {

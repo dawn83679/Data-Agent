@@ -3,8 +3,12 @@ package edu.zsc.ai.agent.memory;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ChatMessageSerializer;
 import dev.langchain4j.data.message.UserMessage;
+<<<<<<< HEAD
 import edu.zsc.ai.config.ai.AiModelCatalog;
 import edu.zsc.ai.config.ai.AiModelProperties;
+=======
+import edu.zsc.ai.common.constant.CompressionLogConstant;
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
 import edu.zsc.ai.domain.model.entity.ai.StoredChatMessage;
 import edu.zsc.ai.domain.service.ai.AiConversationService;
@@ -12,6 +16,12 @@ import edu.zsc.ai.domain.service.ai.AiMessageService;
 import edu.zsc.ai.domain.service.ai.CompressionService;
 import edu.zsc.ai.domain.service.ai.model.CompressionDoneMetadata;
 import edu.zsc.ai.domain.service.ai.model.CompressionResult;
+<<<<<<< HEAD
+=======
+import edu.zsc.ai.observability.AgentLogEvent;
+import edu.zsc.ai.observability.AgentLogService;
+import edu.zsc.ai.observability.AgentLogType;
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -22,7 +32,13 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+<<<<<<< HEAD
 import static org.mockito.ArgumentMatchers.eq;
+=======
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -34,6 +50,7 @@ class ChatMemoryCompressorTest {
     private final AiMessageService aiMessageService = mock(AiMessageService.class);
     private final CompressionService compressionService = mock(CompressionService.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
+<<<<<<< HEAD
     private final AiModelCatalog aiModelCatalog;
 
     private final ChatMemoryCompressor compressor;
@@ -50,6 +67,17 @@ class ChatMemoryCompressorTest {
                 aiModelCatalog
         );
     }
+=======
+    private final AgentLogService agentLogService = mock(AgentLogService.class);
+
+    private final ChatMemoryCompressor compressor = new ChatMemoryCompressor(
+            aiConversationService,
+            aiMessageService,
+            compressionService,
+            eventPublisher,
+            agentLogService
+    );
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 
     @Test
     void compressIfNeeded_updatesConversationTokenCountFromCompressionOutputTokens() {
@@ -108,6 +136,19 @@ class ChatMemoryCompressorTest {
         assertEquals(1350, doneMetadata.get("compressionOutputTokens"));
         assertEquals(4821, doneMetadata.get("compressionTotalTokens"));
         assertTrue(compressor.consumeDoneMetadata(conversationId).isEmpty());
+<<<<<<< HEAD
+=======
+
+        ArgumentCaptor<AgentLogEvent> captor = ArgumentCaptor.forClass(AgentLogEvent.class);
+        verify(agentLogService, atLeastOnce()).record(captor.capture());
+        assertTrue(captor.getAllValues().stream().anyMatch(event ->
+                "compression_started".equals(event.getMessage())
+                        && conversationId.equals(event.getConversationId())));
+        assertTrue(captor.getAllValues().stream().anyMatch(event ->
+                "compression_completed".equals(event.getMessage())
+                        && conversationId.equals(event.getConversationId())
+                        && Integer.valueOf(1350).equals(event.getPayload().get("tokenCountAfter"))));
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         verify(eventPublisher).publishEvent(any());
     }
 
@@ -146,6 +187,19 @@ class ChatMemoryCompressorTest {
         assertEquals(2, captor.getValue().size());
         assertTrue(ChatMemoryCompressor.isSummaryMessage(captor.getValue().get(1)));
         assertTrue(compressor.consumeDoneMetadata(conversationId).isEmpty());
+<<<<<<< HEAD
+=======
+
+        ArgumentCaptor<AgentLogEvent> logCaptor = ArgumentCaptor.forClass(AgentLogEvent.class);
+        verify(agentLogService, atLeastOnce()).record(logCaptor.capture());
+        assertTrue(logCaptor.getAllValues().stream().anyMatch(event ->
+                CompressionLogConstant.EVENT_COMPRESSION_STARTED.equals(event.getMessage())
+                        && conversationId.equals(event.getConversationId())));
+        assertTrue(logCaptor.getAllValues().stream().anyMatch(event ->
+                CompressionLogConstant.EVENT_COMPRESSION_COMPLETED.equals(event.getMessage())
+                        && conversationId.equals(event.getConversationId())
+                        && Integer.valueOf(700).equals(event.getPayload().get("tokenCountAfter"))));
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     }
 
     @Test
@@ -167,6 +221,16 @@ class ChatMemoryCompressorTest {
         assertEquals(900, result.tokenCountBefore());
         assertEquals(900, result.tokenCountAfter());
         assertEquals(null, result.summary());
+<<<<<<< HEAD
+=======
+
+        ArgumentCaptor<AgentLogEvent> logCaptor = ArgumentCaptor.forClass(AgentLogEvent.class);
+        verify(agentLogService, atLeastOnce()).record(logCaptor.capture());
+        assertTrue(logCaptor.getAllValues().stream().anyMatch(event ->
+                CompressionLogConstant.EVENT_COMPRESSION_SKIPPED.equals(event.getMessage())
+                        && conversationId.equals(event.getConversationId())
+                        && CompressionLogConstant.DECISION_SKIP_NOT_ENOUGH_MESSAGES.equals(event.getPayload().get("decision"))));
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         verify(aiMessageService, never()).replaceConversationMessages(any(), any());
     }
 
@@ -191,6 +255,17 @@ class ChatMemoryCompressorTest {
         assertEquals(4200, result.tokenCountBefore());
         assertEquals(4200, result.tokenCountAfter());
         assertEquals(null, result.summary());
+<<<<<<< HEAD
+=======
+
+        verify(agentLogService).recordError(
+                eq(AgentLogType.DEBUG_EVENT),
+                eq(CompressionLogConstant.LOGGER_NAME),
+                eq(CompressionLogConstant.EVENT_COMPRESSION_FAILED),
+                any(IllegalStateException.class),
+                anyMap()
+        );
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         verify(aiMessageService, never()).replaceConversationMessages(any(), any());
     }
 

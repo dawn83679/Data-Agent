@@ -38,6 +38,10 @@ public class ChatStreamBridge {
 
     private final SseEmitterRegistry sseEmitterRegistry;
     private final ApplicationEventPublisher eventPublisher;
+<<<<<<< HEAD
+=======
+    private final AgentLogService agentLogService;
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     private final ChatMemoryCompressor chatMemoryCompressor;
 
     /**

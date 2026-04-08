@@ -20,7 +20,11 @@ public class ChatRequest extends BaseRequest {
 
     /**
      * Model name for chat (e.g. qwen3.5-plus, qwen3-max-2026-01-23, qwen3-max-thinking).
+<<<<<<< HEAD
      * Optional; server defaults to ai.models.default-model when blank.
+=======
+     * Optional; server defaults to qwen3.5-plus when blank.
+>>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
      */
     private String model;
 
