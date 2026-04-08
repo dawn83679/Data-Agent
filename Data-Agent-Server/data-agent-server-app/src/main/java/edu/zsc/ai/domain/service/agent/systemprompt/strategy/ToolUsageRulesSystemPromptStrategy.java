@@ -1,10 +1,7 @@
 package edu.zsc.ai.domain.service.agent.systemprompt.strategy;
 
-<<<<<<< HEAD
 import java.util.Locale;
 
-=======
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import org.springframework.stereotype.Component;
 
 import edu.zsc.ai.common.enums.ai.AgentModeEnum;
@@ -33,7 +30,6 @@ public class ToolUsageRulesSystemPromptStrategy extends AbstractSystemPromptHand
             builder.append("- no optional skills are available in this session\n");
             builder.append("- internal tool names usually stay out of the final user answer unless the user explicitly asks for them");
         }
-<<<<<<< HEAD
         builder.append("\n");
         String language = context.getLanguage();
         boolean isZh = language != null && language.toLowerCase(Locale.ROOT).startsWith("zh");
@@ -42,8 +38,6 @@ public class ToolUsageRulesSystemPromptStrategy extends AbstractSystemPromptHand
         } else {
             builder.append("- Only call getAvailableConnections when the connection/catalog/schema/object scope is still undefined or the user explicitly asks for the available connections; rely on explicit references instead of calling it first when they already ground the scope.\n");
         }
-=======
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         return builder.toString();
     }
 }

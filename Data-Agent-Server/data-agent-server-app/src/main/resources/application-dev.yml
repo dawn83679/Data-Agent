@@ -1,15 +1,1 @@
-<<<<<<< HEAD
 
-=======
-agent:
-  observability:
-    enabled: true
-    runtime-log-enabled: true
-    console-log-enabled: true
-    sse-event-log-enabled: true
-    model-event-log-enabled: true
-    tool-event-log-enabled: true
-    include-response: true
-    include-token-stream: true
-    runtime-log-dir: ~/.data-agent/logs/agent/runtime
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793

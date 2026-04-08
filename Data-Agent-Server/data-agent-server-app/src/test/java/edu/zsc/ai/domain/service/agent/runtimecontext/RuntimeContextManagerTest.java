@@ -13,11 +13,6 @@ import edu.zsc.ai.api.model.request.ChatUserMention;
 import edu.zsc.ai.common.constant.MemoryRecallLogConstant;
 import edu.zsc.ai.config.ai.PromptConfig;
 import edu.zsc.ai.domain.service.agent.prompt.PromptRenderResult;
-<<<<<<< HEAD
-=======
-import edu.zsc.ai.domain.service.agent.runtimecontext.strategy.AvailableConnectionsStrategy;
-import edu.zsc.ai.domain.service.agent.runtimecontext.strategy.ConnectionSummary;
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import edu.zsc.ai.domain.service.agent.runtimecontext.strategy.DurableFactsStrategy;
 import edu.zsc.ai.domain.service.agent.runtimecontext.strategy.ExplicitReferencesStrategy;
 import edu.zsc.ai.domain.service.agent.runtimecontext.strategy.ResponsePreferencesStrategy;
@@ -165,26 +160,14 @@ class RuntimeContextManagerTest {
                 .language("en")
                 .currentDate(LocalDate.of(2026, 3, 31))
                 .timezone("Asia/Shanghai")
-<<<<<<< HEAD
-=======
-                .availableConnections(List.of(
-                        new ConnectionSummary(7L, "analytics-prod", "POSTGRESQL"),
-                        new ConnectionSummary(9L, "crm-main", "MYSQL")))
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                 .build();
 
         PromptRenderResult<RuntimeContextSection> result = manager.render(context);
         String rendered = result.renderedPrompt();
 
-<<<<<<< HEAD
         assertTrue(!rendered.contains("<available_connections"));
         assertTrue(!rendered.contains("analytics-prod"));
         assertTrue(!rendered.contains("crm-main"));
-=======
-        assertTrue(rendered.contains("<available_connections purpose=\"known_connections_inventory\""));
-        assertTrue(rendered.contains("id=7, name=analytics-prod, type=POSTGRESQL"));
-        assertTrue(rendered.contains("id=9, name=crm-main, type=MYSQL"));
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     }
 
     @Test
@@ -276,10 +259,6 @@ class RuntimeContextManagerTest {
     void render_throwsWhenHandlerMissing() {
         RuntimeContextHandlerChain incompleteChain = new RuntimeContextHandlerChain(List.of(
                 new SystemContextStrategy(),
-<<<<<<< HEAD
-=======
-                new AvailableConnectionsStrategy(),
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                 new ScopeHintsStrategy(),
                 new ResponsePreferencesStrategy(),
                 new DurableFactsStrategy()));
@@ -310,21 +289,12 @@ class RuntimeContextManagerTest {
         String rendered = manager.render(context).renderedPrompt();
 
         int systemCtxPos = rendered.indexOf("<system_context");
-<<<<<<< HEAD
-=======
-        int connPos = rendered.indexOf("<available_connections");
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         int scopePos = rendered.indexOf("<scope_hints");
         int prefPos = rendered.indexOf("<response_preferences");
         int factsPos = rendered.indexOf("<durable_facts");
         int refsPos = rendered.indexOf("<explicit_references");
 
-<<<<<<< HEAD
         assertTrue(systemCtxPos < scopePos);
-=======
-        assertTrue(systemCtxPos < connPos);
-        assertTrue(connPos < scopePos);
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         assertTrue(scopePos < prefPos);
         assertTrue(prefPos < factsPos);
         assertTrue(factsPos < refsPos);
@@ -333,10 +303,6 @@ class RuntimeContextManagerTest {
     private RuntimeContextManager createManager() {
         RuntimeContextHandlerChain chain = new RuntimeContextHandlerChain(List.of(
                 new SystemContextStrategy(),
-<<<<<<< HEAD
-=======
-                new AvailableConnectionsStrategy(),
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                 new ScopeHintsStrategy(),
                 new ResponsePreferencesStrategy(),
                 new DurableFactsStrategy(),

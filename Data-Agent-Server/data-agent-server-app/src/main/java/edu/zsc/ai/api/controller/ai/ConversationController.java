@@ -3,11 +3,7 @@ package edu.zsc.ai.api.controller.ai;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import edu.zsc.ai.agent.memory.ChatMemoryCompressor;
 import edu.zsc.ai.common.converter.ai.ConversationConverter;
-<<<<<<< HEAD
 import edu.zsc.ai.config.ai.AiModelCatalog;
-=======
-import edu.zsc.ai.common.enums.ai.ModelEnum;
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import edu.zsc.ai.domain.model.dto.request.ai.ConversationCompactRequest;
 import edu.zsc.ai.domain.model.dto.request.base.PageRequest;
 import edu.zsc.ai.domain.model.dto.request.ai.ConversationUpdateRequest;
@@ -44,10 +40,7 @@ public class ConversationController {
 
     private final AiConversationService aiConversationService;
     private final ChatMemoryCompressor chatMemoryCompressor;
-<<<<<<< HEAD
     private final AiModelCatalog aiModelCatalog;
-=======
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 
     @GetMapping
     public ApiResponse<PageResponse<ConversationResponse>> list(
@@ -94,11 +87,7 @@ public class ConversationController {
             @Valid @RequestBody ConversationCompactRequest request) {
         final String modelName;
         try {
-<<<<<<< HEAD
             modelName = aiModelCatalog.resolve(request.getModel()).getModelName();
-=======
-            modelName = ModelEnum.resolve(request.getModel()).getModelName();
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }

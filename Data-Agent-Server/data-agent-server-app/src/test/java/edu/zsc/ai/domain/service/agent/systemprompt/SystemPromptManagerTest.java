@@ -37,15 +37,12 @@ class SystemPromptManagerTest {
                 .availableSkills(List.of(SkillEnum.CHART))
                 .build()).renderedPrompt();
 
-<<<<<<< HEAD
         assertFalse(prompt.contains("<available_connections"));
         assertFalse(prompt.contains("<name>test1</name>"));
         assertFalse(prompt.contains("<name>test2</name>"));
         assertFalse(prompt.contains("<name>test3</name>"));
         assertTrue(prompt.contains("可用连接"));
         assertTrue(prompt.contains("getAvailableConnections"));
-=======
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         assertFalse(prompt.contains(SkillPromptTagConstant.open("memory")));
         assertFalse(prompt.contains(SkillPromptTagConstant.close("memory")));
         assertTrue(prompt.contains(SkillPromptTagConstant.open(SkillEnum.CHART.getSkillName())));
@@ -66,10 +63,7 @@ class SystemPromptManagerTest {
                 .availableSkills(List.of())
                 .build()).renderedPrompt();
 
-<<<<<<< HEAD
         assertFalse(prompt.contains("<available_connections"));
-=======
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         assertFalse(prompt.contains(SkillPromptTagConstant.open(SkillEnum.CHART.getSkillName())));
         assertFalse(prompt.contains(SkillPromptTagConstant.open("memory")));
         assertFalse(prompt.contains(SkillPromptTagConstant.close("memory")));

@@ -7,12 +7,7 @@ public enum ModelEnum {
 
     QWEN3_5_PLUS("qwen3.5-plus", 1048576, 900000, false),
     QWEN3_MAX("qwen3-max-2026-01-23", 256000, 230000, false),
-<<<<<<< HEAD
     QWEN3_MAX_THINKING("qwen3-max-thinking", 256000, 230000, true);
-=======
-    QWEN3_MAX_THINKING("qwen3-max-thinking", 256000, 230000, true),
-    QWEN_PLUS("qwen-plus", 1048576, 900000, false);
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 
     private final String modelName;
     private final int maxContextTokens;

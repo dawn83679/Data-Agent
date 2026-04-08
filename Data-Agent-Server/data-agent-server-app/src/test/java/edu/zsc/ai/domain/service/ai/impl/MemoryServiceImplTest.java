@@ -31,11 +31,6 @@ import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.output.Response;
 import dev.langchain4j.store.embedding.EmbeddingSearchResult;
 import dev.langchain4j.store.embedding.EmbeddingStore;
-<<<<<<< HEAD
-=======
-import edu.zsc.ai.common.constant.MemoryLogConstant;
-import edu.zsc.ai.common.constant.MemoryRecallLogConstant;
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import edu.zsc.ai.common.enums.ai.MemoryEnableEnum;
 import edu.zsc.ai.common.enums.ai.MemoryOperationEnum;
 import edu.zsc.ai.common.enums.ai.MemoryToolActionEnum;
@@ -47,29 +42,16 @@ import edu.zsc.ai.domain.model.dto.request.ai.MemoryCreateRequest;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryUpdateRequest;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryMutationRequest;
 import edu.zsc.ai.domain.model.entity.ai.AiMemory;
-<<<<<<< HEAD
-=======
-import edu.zsc.ai.domain.service.ai.model.MemoryMaintenanceReport;
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import edu.zsc.ai.domain.service.ai.model.MemorySearchResult;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallMode;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallQuery;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallQueryStrategy;
 import edu.zsc.ai.domain.service.ai.model.MemoryWriteResult;
-<<<<<<< HEAD
-=======
-import edu.zsc.ai.observability.AgentLogEvent;
-import edu.zsc.ai.observability.AgentLogService;
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 
 class MemoryServiceImplTest {
 
     private EmbeddingStore<TextSegment> embeddingStore;
     private InMemoryMemoryService service;
-<<<<<<< HEAD
-=======
-    private CaptureAgentLogService agentLogService;
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 
     @BeforeEach
     void setUp() {
@@ -80,15 +62,8 @@ class MemoryServiceImplTest {
         when(embeddingModel.embed(any(String.class))).thenReturn(Response.from(Embedding.from(new float[]{1.0f, 2.0f})));
 
         MemoryProperties memoryProperties = new MemoryProperties();
-<<<<<<< HEAD
 
         service = new InMemoryMemoryService(store, embeddingModel, memoryProperties);
-=======
-        memoryProperties.getMaintenance().setDisableDuplicateEnabled(true);
-
-        agentLogService = new CaptureAgentLogService();
-        service = new InMemoryMemoryService(store, embeddingModel, memoryProperties, agentLogService);
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         RequestContext.set(RequestContextInfo.builder().userId(42L).conversationId(7L).build());
     }
 
@@ -140,16 +115,6 @@ class MemoryServiceImplTest {
 
         service.deleteMemory(created.getId());
         assertThrows(BusinessException.class, () -> service.getByIdForCurrentUser(created.getId()));
-<<<<<<< HEAD
-=======
-        assertEquals(List.of(
-                        MemoryLogConstant.EVENT_MEMORY_MANUAL_CREATE,
-                        MemoryLogConstant.EVENT_MEMORY_MANUAL_UPDATE,
-                        MemoryLogConstant.EVENT_MEMORY_DISABLE,
-                        MemoryLogConstant.EVENT_MEMORY_ENABLE,
-                        MemoryLogConstant.EVENT_MEMORY_DELETE),
-                agentLogService.eventNames());
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     }
 
     @Test
@@ -188,17 +153,8 @@ class MemoryServiceImplTest {
         assertEquals("AGENT", updated.getMemory().getSourceType());
         assertEquals("Memory V2", updated.getMemory().getTitle());
         assertEquals("Always use catalogName instead of databaseName!", updated.getMemory().getContent());
-<<<<<<< HEAD
         assertEquals(MemoryToolActionEnum.CREATED.getCode(), created.getAction().getCode());
         assertEquals(MemoryToolActionEnum.CREATED.getCode(), updated.getAction().getCode());
-=======
-        assertEquals(List.of(MemoryLogConstant.EVENT_MEMORY_AGENT_WRITE, MemoryLogConstant.EVENT_MEMORY_AGENT_WRITE),
-                agentLogService.eventNames());
-        assertEquals(MemoryToolActionEnum.CREATED.getCode(),
-                agentLogService.event(0).getPayload().get(MemoryLogConstant.FIELD_ACTION));
-        assertEquals(MemoryToolActionEnum.CREATED.getCode(),
-                agentLogService.event(1).getPayload().get(MemoryLogConstant.FIELD_ACTION));
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     }
 
     @Test
@@ -362,71 +318,6 @@ class MemoryServiceImplTest {
                 exception.getMessage());
     }
 
-<<<<<<< HEAD
-=======
-    @Test
-    void runCurrentUserMaintenance_keepsDuplicatesUntouched() {
-        LocalDateTime now = LocalDateTime.now();
-
-        service.seedMemory(AiMemory.builder()
-                .userId(42L)
-                .conversationId(7L)
-                .scope("USER")
-                .memoryType("BUSINESS_RULE")
-                .subType("PROCESS_RULE")
-                .sourceType("MANUAL")
-                .title("Duplicate older")
-                .content("Always verify write SQL on staging first")
-                .enable(MemoryEnableEnum.ENABLE.getCode())
-                .createdAt(now.minusDays(8))
-                .updatedAt(now.minusDays(8))
-                .build());
-
-        service.seedMemory(AiMemory.builder()
-                .userId(42L)
-                .conversationId(7L)
-                .scope("USER")
-                .memoryType("BUSINESS_RULE")
-                .subType("PROCESS_RULE")
-                .sourceType("MANUAL")
-                .title("Duplicate newer")
-                .content("Always verify write SQL on staging first")
-                .enable(MemoryEnableEnum.ENABLE.getCode())
-                .createdAt(now.minusDays(4))
-                .updatedAt(now.minusDays(1))
-                .build());
-
-        service.seedMemory(AiMemory.builder()
-                .userId(42L)
-                .conversationId(7L)
-                .scope("USER")
-                .memoryType("KNOWLEDGE_POINT")
-                .subType("DOMAIN_KNOWLEDGE")
-                .sourceType("MANUAL")
-                .title("Healthy")
-                .content("The revenue table is partitioned by day")
-                .enable(MemoryEnableEnum.ENABLE.getCode())
-                .createdAt(now.minusDays(3))
-                .updatedAt(now.minusDays(1))
-                .build());
-
-        MemoryMaintenanceReport preview = service.inspectCurrentUserMaintenance();
-        assertEquals(3, preview.getEnabledMemoryCount());
-        assertEquals(0, preview.getDuplicateEnabledMemoryCount());
-
-        MemoryMaintenanceReport report = service.runCurrentUserMaintenance();
-
-        assertEquals(0, report.getProcessedDisabledCount());
-        assertEquals(3, report.getEnabledMemoryCount());
-        assertEquals(0, report.getDisabledMemoryCount());
-        assertEquals(0, report.getDuplicateEnabledMemoryCount());
-        AgentLogEvent event = agentLogService.lastEvent();
-        assertEquals(MemoryLogConstant.EVENT_MEMORY_MAINTENANCE_RUN, event.getPayload().get("eventName"));
-        assertEquals(0, event.getPayload().get(MemoryLogConstant.FIELD_PROCESSED_DISABLED_COUNT));
-    }
-
-    @Test
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     void recordMemoryAccess_updatesCounters() {
         AiMemory memory = service.createManualMemory(buildCreateRequest());
 
@@ -435,16 +326,6 @@ class MemoryServiceImplTest {
         AiMemory updated = service.getById(memory.getId());
         assertEquals(1, updated.getAccessCount());
         assertNotNull(updated.getLastAccessedAt());
-<<<<<<< HEAD
-=======
-        assertEquals(List.of(
-                        MemoryLogConstant.EVENT_MEMORY_MANUAL_CREATE,
-                        MemoryLogConstant.EVENT_MEMORY_ACCESS_RECORDED),
-                agentLogService.eventNames());
-        assertEquals(List.of(memory.getId()),
-                agentLogService.event(1).getPayload().get(MemoryLogConstant.FIELD_MEMORY_IDS));
-        assertEquals(1, agentLogService.event(1).getPayload().get(MemoryLogConstant.FIELD_PROCESSED_COUNT));
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     }
 
     @Test
@@ -454,23 +335,11 @@ class MemoryServiceImplTest {
         when(searchResult.matches()).thenReturn(List.of());
         when(embeddingStore.search(any())).thenReturn(searchResult);
 
-<<<<<<< HEAD
         service.createManualMemory(buildCreateRequest());
-=======
-        AiMemory memory = service.createManualMemory(buildCreateRequest());
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 
         List<?> results = service.searchEnabledMemories("concise output", 5, 0.2D, null, null);
 
         assertEquals(0, results.size());
-<<<<<<< HEAD
-=======
-        AgentLogEvent event = agentLogService.lastEvent();
-        assertEquals(MemoryLogConstant.EVENT_MEMORY_SEARCH, event.getPayload().get("eventName"));
-        assertEquals(true, event.getPayload().get(MemoryLogConstant.FIELD_QUERY_TEXT_PRESENT));
-        assertEquals(5, event.getPayload().get(MemoryLogConstant.FIELD_LIMIT));
-        assertEquals(List.of(), event.getPayload().get(MemoryLogConstant.FIELD_MEMORY_IDS));
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     }
 
     @Test
@@ -529,13 +398,6 @@ class MemoryServiceImplTest {
 
         assertEquals(1, results.size());
         verify(service.embeddingModel, never()).embed(any(String.class));
-<<<<<<< HEAD
-=======
-        AgentLogEvent event = agentLogService.lastEvent();
-        assertEquals(MemoryRecallLogConstant.EVENT_RECALL_QUERY_RESULT, event.getPayload().get("eventName"));
-        assertEquals(MemoryRecallLogConstant.EXECUTION_PATH_BROWSE,
-                event.getPayload().get(MemoryRecallLogConstant.FIELD_EXECUTION_PATH));
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     }
 
     @Test
@@ -573,13 +435,6 @@ class MemoryServiceImplTest {
 
         assertEquals(0, results.size());
         verify(service.embeddingModel).embed("preference");
-<<<<<<< HEAD
-=======
-        AgentLogEvent event = agentLogService.lastEvent();
-        assertEquals(MemoryRecallLogConstant.EXECUTION_PATH_SEMANTIC,
-                event.getPayload().get(MemoryRecallLogConstant.FIELD_EXECUTION_PATH));
-        assertEquals(false, event.getPayload().get(MemoryRecallLogConstant.FIELD_USED_FALLBACK));
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     }
 
     @Test
@@ -618,13 +473,6 @@ class MemoryServiceImplTest {
                 0));
 
         assertEquals(0, results.size());
-<<<<<<< HEAD
-=======
-        AgentLogEvent event = agentLogService.lastEvent();
-        assertEquals(MemoryRecallLogConstant.EXECUTION_PATH_SEMANTIC,
-                event.getPayload().get(MemoryRecallLogConstant.FIELD_EXECUTION_PATH));
-        assertEquals(false, event.getPayload().get(MemoryRecallLogConstant.FIELD_USED_FALLBACK));
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     }
 
     @Test
@@ -663,13 +511,6 @@ class MemoryServiceImplTest {
                 0));
 
         assertEquals(0, results.size());
-<<<<<<< HEAD
-=======
-        AgentLogEvent event = agentLogService.lastEvent();
-        assertEquals(MemoryRecallLogConstant.EXECUTION_PATH_HYBRID_SEMANTIC,
-                event.getPayload().get(MemoryRecallLogConstant.FIELD_EXECUTION_PATH));
-        assertEquals(false, event.getPayload().get(MemoryRecallLogConstant.FIELD_USED_FALLBACK));
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     }
 
     @Test
@@ -820,18 +661,8 @@ class MemoryServiceImplTest {
                 results.stream().map(MemorySearchResult::getConversationId).toList());
         assertEquals(List.of(true, true, true, true, true),
                 results.stream().map(MemorySearchResult::isUsedFallback).toList());
-<<<<<<< HEAD
         assertEquals(0, service.userMemoryListQueryCount());
         assertEquals(1, service.conversationFallbackQueryCount());
-=======
-        assertEquals(0, service.maintenanceListQueryCount());
-        assertEquals(1, service.conversationFallbackQueryCount());
-
-        AgentLogEvent event = agentLogService.lastEvent();
-        assertEquals(MemoryRecallLogConstant.EXECUTION_PATH_HYBRID_CONVERSATION_BROWSE_FALLBACK,
-                event.getPayload().get(MemoryRecallLogConstant.FIELD_EXECUTION_PATH));
-        assertEquals(true, event.getPayload().get(MemoryRecallLogConstant.FIELD_USED_FALLBACK));
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     }
 
     @Test
@@ -985,24 +816,14 @@ class MemoryServiceImplTest {
 
         private final List<AiMemory> store = new ArrayList<>();
         private final EmbeddingModel embeddingModel;
-<<<<<<< HEAD
         private int userMemoryListQueryCount;
-=======
-        private int maintenanceListQueryCount;
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         private int conversationFallbackQueryCount;
         private long nextId = 1L;
 
         private InMemoryMemoryService(EmbeddingStore<TextSegment> embeddingStore,
                                       EmbeddingModel embeddingModel,
-<<<<<<< HEAD
                                       MemoryProperties memoryProperties) {
             super(embeddingStore, embeddingModel, memoryProperties, null);
-=======
-                                      MemoryProperties memoryProperties,
-                                      AgentLogService agentLogService) {
-            super(embeddingStore, embeddingModel, memoryProperties, agentLogService);
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
             this.embeddingModel = embeddingModel;
         }
 
@@ -1068,17 +889,10 @@ class MemoryServiceImplTest {
         }
 
         @Override
-<<<<<<< HEAD
         protected List<AiMemory> listUserMemoriesByUpdatedAt(Long userId) {
             userMemoryListQueryCount++;
             return store.stream()
                     .filter(memory -> userId != null && userId.equals(memory.getUserId()))
-=======
-        protected List<AiMemory> listMemoriesForMaintenance(Long userId) {
-            maintenanceListQueryCount++;
-            return store.stream()
-                    .filter(memory -> userId == null || userId.equals(memory.getUserId()))
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                     .toList();
         }
 
@@ -1110,45 +924,12 @@ class MemoryServiceImplTest {
             return store.size();
         }
 
-<<<<<<< HEAD
         private int userMemoryListQueryCount() {
             return userMemoryListQueryCount;
-=======
-        private int maintenanceListQueryCount() {
-            return maintenanceListQueryCount;
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         }
 
         private int conversationFallbackQueryCount() {
             return conversationFallbackQueryCount;
         }
     }
-<<<<<<< HEAD
-=======
-
-    private static final class CaptureAgentLogService implements AgentLogService {
-
-        private final List<AgentLogEvent> events = new ArrayList<>();
-
-        @Override
-        public void record(AgentLogEvent event) {
-            events.add(event);
-        }
-
-        private AgentLogEvent lastEvent() {
-            return events.get(events.size() - 1);
-        }
-
-        private AgentLogEvent event(int index) {
-            return events.get(index);
-        }
-
-        private List<String> eventNames() {
-            return events.stream()
-                    .map(event -> event.getPayload().get("eventName"))
-                    .map(String::valueOf)
-                    .toList();
-        }
-    }
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 }

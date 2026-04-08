@@ -7,10 +7,7 @@ import edu.zsc.ai.agent.annotation.AgentTool;
 import edu.zsc.ai.agent.subagent.SubAgentMemoryFactory;
 import edu.zsc.ai.agent.subagent.explorer.ExplorerAgentService;
 import edu.zsc.ai.agent.subagent.planner.PlannerAgentService;
-<<<<<<< HEAD
 import edu.zsc.ai.common.constant.AgentRuntimeLoggerNames;
-=======
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import edu.zsc.ai.common.enums.ai.AgentModeEnum;
 import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
 import edu.zsc.ai.common.enums.ai.PromptEnum;
@@ -49,17 +46,12 @@ public class SubAgentFactory {
      * Build an Explorer SubAgent using AiServices.builder().
      * Each invocation creates a fresh agent with isolated temporary memory.
      */
-<<<<<<< HEAD
     public ExplorerAgentService buildExplorerAgent(String modelName, Long conversationId) {
-=======
-    public ExplorerAgentService buildExplorerAgent(String modelName) {
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         StreamingChatModel model = resolveModel(modelName);
         List<Object> tools = agentToolConfig.resolveSubAgentTools(getAgentTools(), AgentTypeEnum.EXPLORER);
         AgentToolConfig.ToolBundle toolBundle = agentToolConfig.buildToolBundle(tools);
         ChatMemory memory = SubAgentMemoryFactory.createTemporary();
         String systemPrompt = renderSystemPrompt(PromptEnum.EXPLORER, AgentTypeEnum.EXPLORER, AgentModeEnum.AGENT, modelName);
-<<<<<<< HEAD
         runtimeLog.info("subagent_prompt conversationId={} agentType={} modelName={} promptCode={} contentLength={} content=\n{}",
                 conversationId,
                 AgentTypeEnum.EXPLORER.getCode(),
@@ -67,8 +59,6 @@ public class SubAgentFactory {
                 PromptEnum.EXPLORER.getCode(),
                 systemPrompt.length(),
                 systemPrompt);
-=======
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 
         log.info("[SubAgentFactory] Building {} SubAgent, model={}, toolCount={}", AgentTypeEnum.EXPLORER, modelName, tools.size());
         return AiServices.builder(ExplorerAgentService.class)
@@ -83,17 +73,12 @@ public class SubAgentFactory {
      * Build a Planner SubAgent using AiServices.builder().
      * Each invocation creates a fresh agent with isolated temporary memory.
      */
-<<<<<<< HEAD
     public PlannerAgentService buildPlannerAgent(String modelName, Long conversationId) {
-=======
-    public PlannerAgentService buildPlannerAgent(String modelName) {
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         StreamingChatModel model = resolveModel(modelName);
         List<Object> tools = agentToolConfig.resolveSubAgentTools(getAgentTools(), AgentTypeEnum.PLANNER);
         AgentToolConfig.ToolBundle toolBundle = agentToolConfig.buildToolBundle(tools);
         ChatMemory memory = SubAgentMemoryFactory.createTemporary();
         String systemPrompt = renderSystemPrompt(PromptEnum.PLANNER, AgentTypeEnum.PLANNER, AgentModeEnum.AGENT, modelName);
-<<<<<<< HEAD
         runtimeLog.info("subagent_prompt conversationId={} agentType={} modelName={} promptCode={} contentLength={} content=\n{}",
                 conversationId,
                 AgentTypeEnum.PLANNER.getCode(),
@@ -101,8 +86,6 @@ public class SubAgentFactory {
                 PromptEnum.PLANNER.getCode(),
                 systemPrompt.length(),
                 systemPrompt);
-=======
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 
         log.info("[SubAgentFactory] Building {} SubAgent, model={}, toolCount={}", AgentTypeEnum.PLANNER, modelName, tools.size());
         return AiServices.builder(PlannerAgentService.class)

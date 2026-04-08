@@ -35,12 +35,8 @@ public class GetObjectDetailTool {
 
     @Tool({
             "Value: fetches verified DDL, row counts, and indexes so SQL generation uses real structure instead of assumptions.",
-<<<<<<< HEAD
             "Task placement: call after the target objects are narrowed down and before generating or executing SQL against them.",
             "Scope defaults: if connection, database, or schema are omitted but already exist in the current context, this tool uses the current context by default.",
-=======
-            "Use When: call after the target objects are narrowed down and before generating or executing SQL against them. If connection, database, or schema are omitted but already exist in the current context, this tool uses the current context by default.",
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
             "Preconditions: provide at least one concrete object. Batch multiple objects in one call when comparing or planning joins.",
             "After Success: use the returned DDL, row counts, and indexes to validate joins, filters, limits, and write impact before moving forward.",
             "After Partial Success: continue only with objects whose detail lookup succeeded; askUserQuestion or retry if failed objects may still matter.",

@@ -47,13 +47,8 @@ public class ExecuteSqlTool {
         "Preconditions: sqls is required and every statement must be read-only. For large tables, include WHERE or LIMIT before executing.",
         "After Success: base the answer strictly on the returned results. If the user needs a visualization, pass the verified result set into renderChart.",
         "After Failure: inspect the statement-level errors, fix the SQL or scope, and retry only when the query is valid. Do not claim the query succeeded or fabricate results.",
-<<<<<<< HEAD
         "Boundary: the statement must stay read-only and the referenced objects must already be verified.",
         "Result shape: use the returned result set as the only source of truth for the final answer."
-=======
-        "Do Not Use When: the statement writes data or the referenced objects are still unverified.",
-        "Relation: typically after identifying the target connection from the runtime context, using getDatabases/getSchemas and searchObjects/getObjectDetail, or after callingPlannerSubAgent for a read plan. Results are returned in the results array."
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     })
     @DisallowInPlanMode(ToolNameEnum.EXECUTE_SELECT_SQL)
     public AgentSqlResult executeSelectSql(

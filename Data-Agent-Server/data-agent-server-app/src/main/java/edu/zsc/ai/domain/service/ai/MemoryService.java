@@ -8,7 +8,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryCreateRequest;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryMutationRequest;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryUpdateRequest;
-<<<<<<< HEAD
 import edu.zsc.ai.domain.model.dto.request.base.PageRequest;
 import edu.zsc.ai.domain.model.dto.response.base.PageResponse;
 import edu.zsc.ai.domain.model.entity.ai.AiConversationMemoryCursor;
@@ -16,13 +15,6 @@ import edu.zsc.ai.domain.model.entity.ai.AiMemory;
 import edu.zsc.ai.domain.service.ai.model.MemorySearchResult;
 import edu.zsc.ai.domain.service.ai.model.MemoryWriteContext.MemorySummary;
 import edu.zsc.ai.domain.service.ai.model.MemoryWriteItem;
-=======
-import edu.zsc.ai.domain.model.entity.ai.AiMemory;
-import edu.zsc.ai.domain.model.dto.request.base.PageRequest;
-import edu.zsc.ai.domain.model.dto.response.base.PageResponse;
-import edu.zsc.ai.domain.service.ai.model.MemoryMaintenanceReport;
-import edu.zsc.ai.domain.service.ai.model.MemorySearchResult;
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import edu.zsc.ai.domain.service.ai.model.MemoryWriteResult;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallQuery;
 
@@ -56,7 +48,6 @@ public interface MemoryService extends IService<AiMemory> {
 
     void deleteMemory(Long memoryId);
 
-<<<<<<< HEAD
     void recordMemoryAccess(List<Long> memoryIds);
 
     List<MemorySummary> getEnabledMemorySummaries(Long userId);
@@ -65,13 +56,4 @@ public interface MemoryService extends IService<AiMemory> {
 
     void applyAutoWriteItems(Long conversationId, Long userId, List<MemoryWriteItem> items,
                              AiConversationMemoryCursor cursor, Long lastMessageId);
-=======
-    MemoryMaintenanceReport inspectCurrentUserMaintenance();
-
-    MemoryMaintenanceReport runCurrentUserMaintenance();
-
-    MemoryMaintenanceReport runGlobalMaintenance();
-
-    void recordMemoryAccess(List<Long> memoryIds);
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 }

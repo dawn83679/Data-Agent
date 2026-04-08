@@ -8,12 +8,8 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
-<<<<<<< HEAD
 import edu.zsc.ai.config.ai.AiModelCatalog;
 import edu.zsc.ai.config.ai.AiModelProperties;
-=======
-import edu.zsc.ai.common.enums.ai.ModelEnum;
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import edu.zsc.ai.domain.service.ai.model.CompressionResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

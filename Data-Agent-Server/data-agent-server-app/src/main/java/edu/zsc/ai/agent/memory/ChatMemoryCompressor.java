@@ -3,18 +3,11 @@ package edu.zsc.ai.agent.memory;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ChatMessageDeserializer;
-<<<<<<< HEAD
 import dev.langchain4j.data.message.ChatMessageSerializer;
 import dev.langchain4j.data.message.ChatMessageType;
 import dev.langchain4j.data.message.UserMessage;
 import edu.zsc.ai.common.constant.CompressionLogConstant;
 import edu.zsc.ai.config.ai.AiModelCatalog;
-=======
-import dev.langchain4j.data.message.ChatMessageType;
-import dev.langchain4j.data.message.UserMessage;
-import edu.zsc.ai.common.constant.CompressionLogConstant;
-import edu.zsc.ai.common.enums.ai.ModelEnum;
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import edu.zsc.ai.domain.event.MemoryCompressionStartedEvent;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
 import edu.zsc.ai.domain.model.entity.ai.StoredChatMessage;
@@ -23,13 +16,6 @@ import edu.zsc.ai.domain.service.ai.AiMessageService;
 import edu.zsc.ai.domain.service.ai.CompressionService;
 import edu.zsc.ai.domain.service.ai.model.CompressionDoneMetadata;
 import edu.zsc.ai.domain.service.ai.model.CompressionResult;
-<<<<<<< HEAD
-=======
-import edu.zsc.ai.observability.AgentLogEvent;
-import edu.zsc.ai.observability.AgentLogFields;
-import edu.zsc.ai.observability.AgentLogService;
-import edu.zsc.ai.observability.AgentLogType;
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -60,11 +46,7 @@ public class ChatMemoryCompressor {
     private final AiMessageService aiMessageService;
     private final CompressionService compressionService;
     private final ApplicationEventPublisher eventPublisher;
-<<<<<<< HEAD
     private final AiModelCatalog aiModelCatalog;
-=======
-    private final AgentLogService agentLogService;
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 
     private final Set<Long> compressingConversations = ConcurrentHashMap.newKeySet();
     private final Map<Long, Map<String, Object>> completedCompressionMetadata = new ConcurrentHashMap<>();
@@ -86,11 +68,7 @@ public class ChatMemoryCompressor {
         }
 
         if (!compressingConversations.add(conversationId)) {
-<<<<<<< HEAD
             recordCompressionEvent(conversationId, CompressionLogConstant.EVENT_COMPRESSION_SKIPPED, fieldsOf(
-=======
-            recordCompressionEvent(conversationId, CompressionLogConstant.EVENT_COMPRESSION_SKIPPED, AgentLogFields.of(
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                     CompressionLogConstant.FIELD_DECISION, CompressionLogConstant.DECISION_SKIP_ALREADY_IN_PROGRESS,
                     CompressionLogConstant.FIELD_MODEL_NAME, modelName,
                     CompressionLogConstant.FIELD_TOKEN_COUNT_BEFORE, check.tokenCount(),
@@ -101,11 +79,7 @@ public class ChatMemoryCompressor {
         }
 
         try {
-<<<<<<< HEAD
             recordCompressionEvent(conversationId, CompressionLogConstant.EVENT_COMPRESSION_STARTED, fieldsOf(
-=======
-            recordCompressionEvent(conversationId, CompressionLogConstant.EVENT_COMPRESSION_STARTED, AgentLogFields.of(
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                     CompressionLogConstant.FIELD_DECISION, CompressionLogConstant.DECISION_COMPRESS,
                     CompressionLogConstant.FIELD_MODEL_NAME, modelName,
                     CompressionLogConstant.FIELD_TOKEN_COUNT_BEFORE, check.tokenCount(),
@@ -115,11 +89,7 @@ public class ChatMemoryCompressor {
             eventPublisher.publishEvent(new MemoryCompressionStartedEvent(this, conversationId));
             return doCompress(conversationId, modelName, check.tokenCount(), check.threshold(), messages, true, true).messages();
         } catch (Exception e) {
-<<<<<<< HEAD
             recordCompressionError(conversationId, CompressionLogConstant.EVENT_COMPRESSION_FAILED, e, fieldsOf(
-=======
-            recordCompressionError(conversationId, CompressionLogConstant.EVENT_COMPRESSION_FAILED, e, AgentLogFields.of(
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                     CompressionLogConstant.FIELD_MODEL_NAME, modelName,
                     CompressionLogConstant.FIELD_TOKEN_COUNT_BEFORE, check.tokenCount(),
                     CompressionLogConstant.FIELD_THRESHOLD, check.threshold(),
@@ -157,11 +127,7 @@ public class ChatMemoryCompressor {
                 .toList();
 
         if (messages.size() < MIN_MESSAGES_FOR_COMPRESSION) {
-<<<<<<< HEAD
             recordCompressionEvent(conversationId, CompressionLogConstant.EVENT_COMPRESSION_SKIPPED, fieldsOf(
-=======
-            recordCompressionEvent(conversationId, CompressionLogConstant.EVENT_COMPRESSION_SKIPPED, AgentLogFields.of(
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                     CompressionLogConstant.FIELD_DECISION, CompressionLogConstant.DECISION_SKIP_NOT_ENOUGH_MESSAGES,
                     CompressionLogConstant.FIELD_MODEL_NAME, modelName,
                     CompressionLogConstant.FIELD_TOKEN_COUNT_BEFORE, tokenCountBefore,
@@ -172,11 +138,7 @@ public class ChatMemoryCompressor {
         }
 
         if (!compressingConversations.add(conversationId)) {
-<<<<<<< HEAD
             recordCompressionEvent(conversationId, CompressionLogConstant.EVENT_COMPRESSION_SKIPPED, fieldsOf(
-=======
-            recordCompressionEvent(conversationId, CompressionLogConstant.EVENT_COMPRESSION_SKIPPED, AgentLogFields.of(
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                     CompressionLogConstant.FIELD_DECISION, CompressionLogConstant.DECISION_SKIP_ALREADY_IN_PROGRESS,
                     CompressionLogConstant.FIELD_MODEL_NAME, modelName,
                     CompressionLogConstant.FIELD_TOKEN_COUNT_BEFORE, tokenCountBefore,
@@ -187,11 +149,7 @@ public class ChatMemoryCompressor {
         }
 
         try {
-<<<<<<< HEAD
             recordCompressionEvent(conversationId, CompressionLogConstant.EVENT_COMPRESSION_STARTED, fieldsOf(
-=======
-            recordCompressionEvent(conversationId, CompressionLogConstant.EVENT_COMPRESSION_STARTED, AgentLogFields.of(
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                     CompressionLogConstant.FIELD_DECISION, CompressionLogConstant.DECISION_COMPRESS,
                     CompressionLogConstant.FIELD_MODEL_NAME, modelName,
                     CompressionLogConstant.FIELD_TOKEN_COUNT_BEFORE, tokenCountBefore,
@@ -219,11 +177,7 @@ public class ChatMemoryCompressor {
                     result.compressionTotalTokens()
             );
         } catch (Exception e) {
-<<<<<<< HEAD
             recordCompressionError(conversationId, CompressionLogConstant.EVENT_COMPRESSION_FAILED, e, fieldsOf(
-=======
-            recordCompressionError(conversationId, CompressionLogConstant.EVENT_COMPRESSION_FAILED, e, AgentLogFields.of(
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                     CompressionLogConstant.FIELD_MODEL_NAME, modelName,
                     CompressionLogConstant.FIELD_TOKEN_COUNT_BEFORE, tokenCountBefore,
                     CompressionLogConstant.FIELD_THRESHOLD, threshold,
@@ -284,11 +238,7 @@ public class ChatMemoryCompressor {
         if (shouldRememberDoneMetadata) {
             rememberDoneMetadata(conversationId, tokenCountBefore, tokenCountAfter, compressionResult, toCompress.size(), toKeep.size());
         }
-<<<<<<< HEAD
         recordCompressionEvent(conversationId, CompressionLogConstant.EVENT_COMPRESSION_COMPLETED, fieldsOf(
-=======
-        recordCompressionEvent(conversationId, CompressionLogConstant.EVENT_COMPRESSION_COMPLETED, AgentLogFields.of(
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
                 CompressionLogConstant.FIELD_DECISION, CompressionLogConstant.DECISION_COMPRESSED,
                 CompressionLogConstant.FIELD_MODEL_NAME, modelName,
                 CompressionLogConstant.FIELD_TOKEN_COUNT_BEFORE, tokenCountBefore,
@@ -301,15 +251,12 @@ public class ChatMemoryCompressor {
                 CompressionLogConstant.FIELD_OUTPUT_TOKENS, compressionResult.outputTokens(),
                 CompressionLogConstant.FIELD_TOTAL_TOKENS, compressionResult.totalTokens()
         ));
-<<<<<<< HEAD
         logRuntimeInfo("compression_summary", conversationId, fieldsOf(
                 "modelName", modelName,
                 "summary", summary,
                 "outputTokens", compressionResult.outputTokens(),
                 "totalTokens", compressionResult.totalTokens()
         ));
-=======
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
         log.info("Conversation {} compressed: tokenCount {} -> {}, threshold={}, compressedMessages={}, keptRecent={}, summaryChars={}, outputTokens={}, totalTokens={}",
                 conversationId,
                 tokenCountBefore,
@@ -408,65 +355,6 @@ public class ChatMemoryCompressor {
             fields.put(String.valueOf(keyValues[i]), keyValues[i + 1]);
         }
         return fields;
-    }
-
-    private record ManualCompressionResult(
-            List<ChatMessage> messages,
-            Integer tokenCountBefore,
-            Integer tokenCountAfter,
-            int compressedMessageCount,
-            int keptRecentCount,
-            String summary,
-            Integer compressionOutputTokens,
-            Integer compressionTotalTokens
-    ) {
-    }
-
-    private record CompressionCheck(Integer tokenCount, int threshold, boolean exceeded) {
-        private static CompressionCheck notExceeded(Integer tokenCount, int threshold) {
-            return new CompressionCheck(tokenCount, threshold, false);
-        }
-    }
-
-    private void rememberDoneMetadata(Long conversationId,
-                                      Integer tokenCountBefore,
-                                      Integer tokenCountAfter,
-                                      CompressionResult result,
-                                      int compressedMessageCount,
-                                      int keptRecentCount) {
-        CompressionDoneMetadata metadata = new CompressionDoneMetadata(
-                true,
-                tokenCountBefore,
-                tokenCountAfter,
-                compressedMessageCount,
-                keptRecentCount,
-                result.summary(),
-                result.outputTokens(),
-                result.totalTokens()
-        );
-        completedCompressionMetadata.put(conversationId, metadata.toMap());
-    }
-
-    private void recordCompressionEvent(Long conversationId, String eventName, Map<String, Object> payload) {
-        Map<String, Object> data = payload != null ? new LinkedHashMap<>(payload) : new LinkedHashMap<>();
-        data.put("eventName", eventName);
-        agentLogService.record(AgentLogEvent.builder()
-                .type(AgentLogType.DEBUG_EVENT)
-                .loggerName(CompressionLogConstant.LOGGER_NAME)
-                .conversationId(conversationId)
-                .message(eventName)
-                .payload(data)
-                .build());
-    }
-
-    private void recordCompressionError(Long conversationId, String eventName, Throwable throwable, Map<String, Object> payload) {
-        Map<String, Object> data = payload != null ? new LinkedHashMap<>(payload) : new LinkedHashMap<>();
-        data.put("eventName", eventName);
-        agentLogService.recordError(AgentLogType.DEBUG_EVENT, CompressionLogConstant.LOGGER_NAME, eventName, throwable, data);
-    }
-
-    private Integer normalizePositive(Integer value) {
-        return value != null && value > 0 ? value : null;
     }
 
     private record ManualCompressionResult(

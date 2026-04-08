@@ -8,10 +8,7 @@ const Settings = lazy(() => import("./pages/Settings").then((m) => ({ default: m
 const Profile = lazy(() => import("./pages/Profile").then((m) => ({ default: m.default })));
 const PasswordReset = lazy(() => import("./pages/PasswordReset").then((m) => ({ default: m.default })));
 const Sessions = lazy(() => import("./pages/Sessions").then((m) => ({ default: m.default })));
-<<<<<<< HEAD
 const Memories = lazy(() => import("./pages/Memories").then((m) => ({ default: m.default })));
-=======
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
 const Permissions = lazy(() => import("./pages/Permissions").then((m) => ({ default: m.default })));
 
 interface RouterConfig {

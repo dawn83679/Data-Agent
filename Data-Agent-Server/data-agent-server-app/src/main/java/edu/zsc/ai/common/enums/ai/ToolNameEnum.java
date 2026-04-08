@@ -29,10 +29,7 @@ public enum ToolNameEnum {
     ASK_USER_QUESTION("askUserQuestion"),
 
     // ── Discovery (database objects) ──
-<<<<<<< HEAD
     GET_AVAILABLE_CONNECTIONS("getAvailableConnections"),
-=======
->>>>>>> 55de6b9b235ffd91a8c266a1c07a27b7fb059793
     GET_DATABASES("getDatabases"),
     GET_SCHEMAS("getSchemas"),
     SEARCH_OBJECTS("searchObjects"),
