@@ -11,6 +11,7 @@ import {
     NOT_AUTHENTICATED,
     SESSION_EXPIRED_MESSAGE,
 } from '../constants/chat';
+import { buildChatStreamFetchHeaders } from '../lib/chatStreamHeaders';
 
 interface QueuedMessage {
     text: string;
@@ -181,10 +182,7 @@ async function fetchWithAuthRetry(
 
     const response = await fetch(url, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-        },
+        headers: buildChatStreamFetchHeaders(token),
         body: JSON.stringify(body),
         signal,
     });
@@ -470,11 +468,19 @@ export function useConversationRuntime(
             touchRuntime(runtime);
             updateRuntimeMessages(runtime, [...runtime.messages, userMessage]);
 
-            // Prepare request
+            // Workspace in body: ensures org context even if fetch custom headers are dropped by proxy/CDN.
+            const auth = useAuthStore.getState();
+            const clientWorkspace =
+                auth.workspaceType === 'ORGANIZATION' && auth.workspaceOrgId != null
+                    ? { clientWorkspaceType: 'ORGANIZATION' as const, clientOrgId: auth.workspaceOrgId }
+                    : { clientWorkspaceType: 'PERSONAL' as const };
+
+            // Prepare request (clientWorkspace last so stream always carries current org context)
             const request: ChatRequest = {
                 message: trimmed,
                 ...baseBody,
                 ...bodyOverrides,
+                ...clientWorkspace,
                 ...(isPersistedConversationId(runtime.conversationId) && { conversationId: runtime.conversationId }),
             };
 

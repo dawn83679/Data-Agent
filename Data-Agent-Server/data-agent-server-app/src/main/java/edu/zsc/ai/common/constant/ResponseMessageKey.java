@@ -24,4 +24,24 @@ public class ResponseMessageKey {
     public static final String CONNECTION_ACCESS_DENIED_MESSAGE = "error.connection.access.denied";
     public static final String CONNECTION_NOT_FOUND_MESSAGE = "error.db.connection.not.found";
     public static final String CONNECTION_NAME_EXISTS_MESSAGE = "error.db.connection.name.exists";
+
+    /** Workspace / organization context (headers X-Workspace-Type, X-Org-Id) */
+    public static final String WORKSPACE_TYPE_INVALID = "error.workspace.type.invalid";
+    public static final String WORKSPACE_ORG_ID_REQUIRED = "error.workspace.org.id.required";
+    public static final String WORKSPACE_ORG_INVALID = "error.workspace.org.invalid";
+    public static final String WORKSPACE_ORG_NOT_MEMBER = "error.workspace.org.not.member";
+    public static final String WORKSPACE_ORG_NO_ROLE = "error.workspace.org.no.role";
+    public static final String WORKSPACE_ORG_ROLE_INVALID = "error.workspace.org.role.invalid";
+    public static final String WORKSPACE_ORG_ID_INVALID = "error.workspace.org.id.invalid";
+
+    public static final String WORKSPACE_COMMON_WRITE_FORBIDDEN = "error.workspace.common.write.forbidden";
+    /** Organization COMMON: REST workbench (SQL, metadata, permissions, exports) and connection management */
+    public static final String WORKSPACE_COMMON_WORKBENCH_FORBIDDEN = "error.workspace.common.workbench.forbidden";
+
+    /** Organization management */
+    public static final String ORG_CODE_EXISTS = "error.org.code.exists";
+    public static final String ORG_ADMIN_REQUIRED = "error.org.admin.required";
+    public static final String ORG_MEMBER_NOT_FOUND = "error.org.member.not.found";
+    public static final String ORG_LAST_ADMIN_FORBIDDEN = "error.org.last.admin.forbidden";
+    public static final String ORG_REMOVE_ADMIN_FORBIDDEN = "error.org.remove.admin.forbidden";
 }

@@ -73,6 +73,15 @@ public final class AgentRequestContext {
         return context.getAllowedConnectionIds();
     }
 
+    /** Non-empty only during main-agent tool execution when the chat session embedded the allow-list. */
+    public static List<Long> getReadableConnectionIds() {
+        AgentRequestContextInfo context = peek();
+        if (context == null || CollectionUtils.isEmpty(context.getReadableConnectionIds())) {
+            return List.of();
+        }
+        return context.getReadableConnectionIds();
+    }
+
     public static String getModelName() {
         AgentRequestContextInfo context = peek();
         return context != null ? context.getModelName() : null;
@@ -100,6 +109,7 @@ public final class AgentRequestContext {
         putIfNotNull(map, InvocationContextConstant.AGENT_MODE, getAgentMode());
         putIfNotNull(map, InvocationContextConstant.AGENT_TYPE, getAgentType());
         putIfNotNull(map, InvocationContextConstant.ALLOWED_CONNECTION_IDS, ConnectionIdUtil.toCsv(getAllowedConnectionIds()));
+        putIfNotNull(map, InvocationContextConstant.READABLE_CONNECTION_IDS, ConnectionIdUtil.toCsv(getReadableConnectionIds()));
         putIfNotNull(map, InvocationContextConstant.MODEL_NAME, getModelName());
         putIfNotNull(map, InvocationContextConstant.LANGUAGE, getLanguage());
         return map;

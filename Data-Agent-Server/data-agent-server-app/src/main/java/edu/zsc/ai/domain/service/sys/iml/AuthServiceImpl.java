@@ -14,7 +14,14 @@ import edu.zsc.ai.domain.model.dto.request.sys.RegisterRequest;
 import edu.zsc.ai.domain.model.dto.request.sys.ResetPasswordRequest;
 import edu.zsc.ai.domain.model.dto.request.sys.RevokeRefreshTokenBySessionRequest;
 import edu.zsc.ai.domain.model.dto.response.sys.TokenPairResponse;
+import edu.zsc.ai.domain.model.dto.response.sys.UserOrganizationMembershipResponse;
 import edu.zsc.ai.domain.model.dto.response.sys.UserResponse;
+import edu.zsc.ai.domain.mapper.sys.SysOrganizationMapper;
+import edu.zsc.ai.domain.mapper.sys.SysOrganizationMemberMapper;
+import edu.zsc.ai.domain.mapper.sys.SysOrganizationMemberRoleMapper;
+import edu.zsc.ai.domain.model.entity.sys.SysOrganization;
+import edu.zsc.ai.domain.model.entity.sys.SysOrganizationMember;
+import edu.zsc.ai.domain.model.entity.sys.SysOrganizationMemberRole;
 import edu.zsc.ai.domain.model.entity.sys.SysRefreshTokens;
 import edu.zsc.ai.domain.model.entity.sys.SysSessions;
 import edu.zsc.ai.domain.model.entity.sys.SysUsers;
@@ -31,6 +38,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -43,6 +52,18 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private SysRefreshTokensService sysRefreshTokensService;
+
+    @Autowired
+    private SysOrganizationMapper sysOrganizationMapper;
+
+    @Autowired
+    private SysOrganizationMemberMapper sysOrganizationMemberMapper;
+
+    @Autowired
+    private SysOrganizationMemberRoleMapper sysOrganizationMemberRoleMapper;
+
+    private static final int ORG_ENABLED = 1;
+    private static final int MEMBER_ACTIVE = 1;
 
     @Override
     public UserResponse getCurrentUser() {
@@ -60,7 +81,39 @@ public class AuthServiceImpl implements AuthService {
                 .authProvider(user.getAuthProvider())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
+                .organizations(listOrganizationMemberships(user.getId()))
                 .build();
+    }
+
+    private List<UserOrganizationMembershipResponse> listOrganizationMemberships(long userId) {
+        List<SysOrganizationMember> members = sysOrganizationMemberMapper.selectList(
+                new LambdaQueryWrapper<SysOrganizationMember>()
+                        .eq(SysOrganizationMember::getUserId, userId)
+                        .eq(SysOrganizationMember::getStatus, MEMBER_ACTIVE));
+        if (members.isEmpty()) {
+            return List.of();
+        }
+        List<UserOrganizationMembershipResponse> result = new ArrayList<>();
+        for (SysOrganizationMember m : members) {
+            SysOrganization org = sysOrganizationMapper.selectById(m.getOrgId());
+            if (org == null || org.getStatus() == null || org.getStatus() != ORG_ENABLED) {
+                continue;
+            }
+            SysOrganizationMemberRole role = sysOrganizationMemberRoleMapper.selectOne(
+                    new LambdaQueryWrapper<SysOrganizationMemberRole>()
+                            .eq(SysOrganizationMemberRole::getOrganizationMemberId, m.getId())
+                            .eq(SysOrganizationMemberRole::getActive, true));
+            if (role == null || role.getRoleCode() == null || role.getRoleCode().isBlank()) {
+                continue;
+            }
+            result.add(UserOrganizationMembershipResponse.builder()
+                    .orgId(org.getId())
+                    .orgCode(org.getOrgCode())
+                    .orgName(org.getOrgName())
+                    .roleCode(role.getRoleCode().trim().toUpperCase())
+                    .build());
+        }
+        return result;
     }
 
     @Override

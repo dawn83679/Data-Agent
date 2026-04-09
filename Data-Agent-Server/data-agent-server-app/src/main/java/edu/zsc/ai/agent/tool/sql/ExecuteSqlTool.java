@@ -18,6 +18,7 @@ import edu.zsc.ai.common.enums.permission.PermissionScopeType;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.response.db.ExecuteSqlResponse;
+import edu.zsc.ai.domain.service.db.ConnectionAccessService;
 import edu.zsc.ai.domain.service.permission.PermissionRuleService;
 import edu.zsc.ai.domain.service.db.SqlExecutionService;
 import edu.zsc.ai.domain.service.db.impl.ActiveConnectionRegistry;
@@ -40,6 +41,7 @@ public class ExecuteSqlTool {
     private final SqlExecutionService sqlExecutionService;
     private final PermissionRuleService permissionRuleService;
     private final WriteExecutionApprovalStore writeExecutionApprovalStore;
+    private final ConnectionAccessService connectionAccessService;
 
     @Tool({
         "Value: runs read-only SQL and returns real database results. This is the reliable basis for any user-facing query answer.",
@@ -73,6 +75,7 @@ public class ExecuteSqlTool {
                     SqlToolMessageSupport.requireReadOnlyStatements(connectionId, databaseName, schemaName)
             );
         }
+        connectionAccessService.assertReadable(connectionId);
         DbContext db = new DbContext(connectionId, databaseName, schemaName);
         List<ExecuteSqlResponse> responses = sqlExecutionService.executeBatchSql(db, sqls);
         annotateSqlFailures(responses, connectionId, databaseName, schemaName, sqls, false);
@@ -107,6 +110,9 @@ public class ExecuteSqlTool {
                     SqlToolMessageSupport.requireWriteStatements(connectionId, databaseName, schemaName)
             );
         }
+
+        connectionAccessService.assertReadable(connectionId);
+        connectionAccessService.assertWritableForCurrentWorkspace(connectionId);
 
         DbContext db = new DbContext(connectionId, databaseName, schemaName);
         String joinedSql = String.join(";\n", sqls);

@@ -2,9 +2,12 @@ package edu.zsc.ai.domain.service.db.impl;
 
 import edu.zsc.ai.common.constant.ResponseCode;
 import edu.zsc.ai.common.constant.ResponseMessageKey;
+import edu.zsc.ai.common.enums.org.WorkspaceTypeEnum;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.exception.BusinessException;
+import edu.zsc.ai.domain.service.db.ConnectionAccessService;
+import edu.zsc.ai.domain.service.db.support.ConnectionAccessSupport;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.sql.DataSource;
@@ -13,6 +16,7 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -25,30 +29,36 @@ public class ActiveConnectionRegistry {
 
     /**
      * Active connection record.
-     * Stores the logical connection group and its metadata.
+     * {@code ownerUserId} is {@code db_connections.user_id}; {@code openedByUserId} is the logged-in user who opened the pool.
      */
     public record ActiveConnection(
             DataSource dataSource,
-            Long userId,
+            Long ownerUserId,
+            Long openedByUserId,
             Long dbConnectionId,
             String dbType,
             String pluginId,
             String databaseName,
             String schemaName,
             LocalDateTime createdAt,
-            LocalDateTime lastAccessedAt) {
+            LocalDateTime lastAccessedAt,
+            WorkspaceTypeEnum workspaceType,
+            Long orgId) {
 
         public ActiveConnection touch() {
             return new ActiveConnection(
                     dataSource,
-                    userId,
+                    ownerUserId,
+                    openedByUserId,
                     dbConnectionId,
                     dbType,
                     pluginId,
                     databaseName,
                     schemaName,
                     createdAt,
-                    LocalDateTime.now()
+                    LocalDateTime.now(),
+                    workspaceType,
+                    orgId
             );
         }
 
@@ -132,22 +142,31 @@ public class ActiveConnectionRegistry {
     }
 
     /**
-     * Get active connection for a DbContext,
-     * and verify ownership by the current user from RequestContext.
+     * Ensures the current request may use this connection, then returns the active JDBC pool for the {@link DbContext}.
      */
     public static ActiveConnection getOwnedConnection(DbContext db) {
+        assertCurrentUserMayUseConnection(db.connectionId());
+
+        ActiveConnection active = getConnection(db)
+                .orElseThrow(() -> BusinessException.notFound(ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE));
+        return active;
+    }
+
+    private static void assertCurrentUserMayUseConnection(Long connectionId) {
+        Optional<ConnectionAccessService> access = ConnectionAccessSupport.tryGet();
+        if (access.isPresent()) {
+            access.get().assertReadable(connectionId);
+            return;
+        }
         Long userId = RequestContext.getUserId();
         if (userId == null) {
             throw new IllegalStateException("No userId available in RequestContext");
         }
-
-        ActiveConnection active = getConnection(db)
+        ActiveConnection active = getAnyActiveConnection(connectionId)
                 .orElseThrow(() -> BusinessException.notFound(ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE));
-
-        if (!active.userId().equals(userId)) {
+        if (!Objects.equals(active.openedByUserId(), userId)) {
             throw new BusinessException(ResponseCode.PARAM_ERROR, ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE);
         }
-        return active;
     }
 
     /**
@@ -181,22 +200,12 @@ public class ActiveConnectionRegistry {
     }
 
     /**
-     * Get any active connection for a dbConnectionId and verify ownership
-     * by the current user from RequestContext.
+     * Get any active connection for a dbConnectionId and verify the current user may use this logical connection.
      */
     public static ActiveConnection getAnyOwnedActiveConnection(Long dbConnectionId) {
-        Long userId = RequestContext.getUserId();
-        if (userId == null) {
-            throw new IllegalStateException("No userId available in RequestContext");
-        }
-
-        ActiveConnection active = getAnyActiveConnection(dbConnectionId)
+        assertCurrentUserMayUseConnection(dbConnectionId);
+        return getAnyActiveConnection(dbConnectionId)
                 .orElseThrow(() -> BusinessException.notFound(ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE));
-
-        if (!active.userId().equals(userId)) {
-            throw new BusinessException(ResponseCode.PARAM_ERROR, ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE);
-        }
-        return active;
     }
 
     /**

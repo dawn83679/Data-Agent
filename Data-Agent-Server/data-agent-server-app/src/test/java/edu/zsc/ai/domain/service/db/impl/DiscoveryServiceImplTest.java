@@ -10,6 +10,7 @@ import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.response.db.ConnectionResponse;
+import edu.zsc.ai.domain.service.db.ConnectionAccessService;
 import edu.zsc.ai.domain.service.db.DatabaseObjectService;
 import edu.zsc.ai.domain.service.db.DatabaseService;
 import edu.zsc.ai.domain.service.db.DbConnectionService;
@@ -32,6 +33,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -45,18 +47,21 @@ class DiscoveryServiceImplTest {
     private final SchemaService schemaService = mock(SchemaService.class);
     private final DatabaseObjectService databaseObjectService = mock(DatabaseObjectService.class);
     private final IndexService indexService = mock(IndexService.class);
+    private final ConnectionAccessService connectionAccessService = mock(ConnectionAccessService.class);
 
     private DiscoveryServiceImpl discoveryService;
 
     @BeforeEach
     void setUp() {
+        doNothing().when(connectionAccessService).assertReadable(anyLong());
         discoveryService = new DiscoveryServiceImpl(
                 executor,
                 dbConnectionService,
                 databaseService,
                 schemaService,
                 databaseObjectService,
-                indexService
+                indexService,
+                connectionAccessService
         );
     }
 

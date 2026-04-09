@@ -10,18 +10,16 @@ import edu.zsc.ai.agent.subagent.contract.*;
 import edu.zsc.ai.agent.tool.error.AgentToolExecuteException;
 import edu.zsc.ai.agent.tool.message.ToolMessageSupport;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
-import edu.zsc.ai.common.constant.AgentRuntimeLoggerNames;
 import edu.zsc.ai.common.enums.ai.ToolNameEnum;
 import edu.zsc.ai.config.ai.ExplorerSubAgentExecutorConfig;
 import edu.zsc.ai.config.ai.SubAgentManager;
 import edu.zsc.ai.context.*;
+import edu.zsc.ai.domain.service.db.ConnectionAccessService;
 import edu.zsc.ai.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,16 +37,17 @@ import java.util.concurrent.TimeoutException;
 @Slf4j
 public class CallingExplorerTool extends SubAgentToolSupport {
 
-    private static final Logger runtimeLog = LoggerFactory.getLogger(AgentRuntimeLoggerNames.TOOL);
-
     private final SubAgentManager subAgentManager;
     private final Executor explorerExecutor;
+    private final ConnectionAccessService connectionAccessService;
 
     public CallingExplorerTool(
             SubAgentManager subAgentManager,
-            @Qualifier(ExplorerSubAgentExecutorConfig.EXPLORER_SUB_AGENT_EXECUTOR_BEAN) Executor explorerExecutor) {
+            @Qualifier(ExplorerSubAgentExecutorConfig.EXPLORER_SUB_AGENT_EXECUTOR_BEAN) Executor explorerExecutor,
+            ConnectionAccessService connectionAccessService) {
         this.subAgentManager = subAgentManager;
         this.explorerExecutor = explorerExecutor;
+        this.connectionAccessService = connectionAccessService;
     }
 
     @Tool({
@@ -82,14 +81,6 @@ public class CallingExplorerTool extends SubAgentToolSupport {
                 timeoutSeconds,
                 effectiveDefaultTimeoutSeconds,
                 summarizeTasks(tasks));
-        runtimeLog.info("calling_explorer_start conversationId={} parentToolCallId={} taskCount={} requestedTimeoutSeconds={} effectiveDefaultTimeoutSeconds={} minimumTimeoutSeconds={} tasks={}",
-                requestContextSnapshot != null ? requestContextSnapshot.getConversationId() : null,
-                AgentExecutionContext.getParentToolCallId(),
-                tasks.size(),
-                timeoutSeconds,
-                effectiveDefaultTimeoutSeconds,
-                SubAgentTimeoutPolicy.MIN_TIMEOUT_SECONDS,
-                summarizeTasks(tasks));
 
         if (tasks.size() == 1) {
             return invokeSingle(tasks.get(0), timeoutSeconds);
@@ -120,14 +111,6 @@ public class CallingExplorerTool extends SubAgentToolSupport {
                 StringUtils.length(result.getSummaryText()),
                 StringUtils.length(result.getRawResponse()),
                 System.currentTimeMillis() - startTime);
-        runtimeLog.info("calling_explorer_single_done taskId={} connectionId={} status={} objectCount={} summaryLength={} rawResponseLength={} elapsedMs={}",
-                result.getTaskId(),
-                task.getConnectionId(),
-                result.getStatus(),
-                objectCount,
-                StringUtils.length(result.getSummaryText()),
-                StringUtils.length(result.getRawResponse()),
-                System.currentTimeMillis() - startTime);
         ExplorerResultEnvelope envelope = ExplorerResultEnvelope.builder()
                 .taskResults(List.of(result))
                 .build();
@@ -142,11 +125,6 @@ public class CallingExplorerTool extends SubAgentToolSupport {
         long timeout = resolveConcurrentTimeoutSeconds(tasks, timeoutSeconds);
 
         log.info("[Tool] callingExplorerSubAgent concurrent dispatch, parentToolCallId={}, effectiveTimeoutSeconds={}, taskCount={}",
-                parentToolCallId,
-                timeout,
-                tasks.size());
-        runtimeLog.info("calling_explorer_concurrent_dispatch conversationId={} parentToolCallId={} effectiveTimeoutSeconds={} taskCount={}",
-                requestContextSnapshot != null ? requestContextSnapshot.getConversationId() : null,
                 parentToolCallId,
                 timeout,
                 tasks.size());
@@ -173,11 +151,6 @@ public class CallingExplorerTool extends SubAgentToolSupport {
                     errorCount,
                     System.currentTimeMillis() - startTime,
                     summarizeTaskResults(results));
-            runtimeLog.info("calling_explorer_concurrent_done successCount={} errorCount={} elapsedMs={} resultSummary={}",
-                    successCount,
-                    errorCount,
-                    System.currentTimeMillis() - startTime,
-                    summarizeTaskResults(results));
             ExplorerResultEnvelope envelope = ExplorerResultEnvelope.builder()
                     .taskResults(results)
                     .build();
@@ -185,11 +158,6 @@ public class CallingExplorerTool extends SubAgentToolSupport {
 
         } catch (TimeoutException e) {
             log.error("[Tool] callingExplorerSubAgent concurrent timeout, timeoutSeconds={}, elapsedMs={}, rootCauseClass={}, rootCauseMessage={}",
-                    timeout,
-                    System.currentTimeMillis() - startTime,
-                    rootCause(e).getClass().getSimpleName(),
-                    rootCauseMessage(e));
-            runtimeLog.warn("calling_explorer_concurrent_timeout timeoutSeconds={} elapsedMs={} rootCauseClass={} rootCauseMessage={}",
                     timeout,
                     System.currentTimeMillis() - startTime,
                     rootCause(e).getClass().getSimpleName(),
@@ -203,11 +171,6 @@ public class CallingExplorerTool extends SubAgentToolSupport {
             );
         } catch (Exception e) {
             log.error("[Tool] callingExplorerSubAgent concurrent failed, elapsedMs={}, rootCauseClass={}, rootCauseMessage={}",
-                    System.currentTimeMillis() - startTime,
-                    rootCause(e).getClass().getSimpleName(),
-                    rootCauseMessage(e),
-                    e);
-            runtimeLog.error("calling_explorer_concurrent_failed elapsedMs={} rootCauseClass={} rootCauseMessage={}",
                     System.currentTimeMillis() - startTime,
                     rootCause(e).getClass().getSimpleName(),
                     rootCauseMessage(e),
@@ -262,6 +225,7 @@ public class CallingExplorerTool extends SubAgentToolSupport {
                         "tasks[" + index + "].timeoutSeconds must be a positive number."
                 );
             }
+            connectionAccessService.assertReadable(task.getConnectionId());
         }
     }
 
@@ -279,15 +243,6 @@ public class CallingExplorerTool extends SubAgentToolSupport {
                 timeoutSeconds,
                 StringUtils.length(task.getInstruction()),
                 StringUtils.length(task.getContext()),
-                preview(task.getInstruction()),
-                preview(task.getContext()));
-        runtimeLog.info("calling_explorer_task_start taskId={} parentToolCallId={} conversationId={} connectionId={} requestedTaskTimeoutSeconds={} effectiveTimeoutSeconds={} instructionPreview={} contextPreview={}",
-                taskId,
-                parentToolCallId,
-                requestContextSnapshot != null ? requestContextSnapshot.getConversationId() : null,
-                task.getConnectionId(),
-                task.getTimeoutSeconds(),
-                timeoutSeconds,
                 preview(task.getInstruction()),
                 preview(task.getContext()));
         RequestContextInfo previousRequestContext = RequestContext.snapshot();
@@ -321,15 +276,6 @@ public class CallingExplorerTool extends SubAgentToolSupport {
                     summary != null ? StringUtils.length(summary.getRawResponse()) : 0,
                     summary != null ? preview(summary.getSummaryText()) : null,
                     System.currentTimeMillis() - startTime);
-            runtimeLog.info("calling_explorer_task_success taskId={} connectionId={} objectCount={} summaryLength={} rawResponseLength={} summaryPreview={} elapsedMs={} summary={}",
-                    taskId,
-                    task.getConnectionId(),
-                    summary != null ? CollectionUtils.size(summary.getObjects()) : 0,
-                    summary != null ? StringUtils.length(summary.getSummaryText()) : 0,
-                    summary != null ? StringUtils.length(summary.getRawResponse()) : 0,
-                    summary != null ? preview(summary.getSummaryText()) : null,
-                    System.currentTimeMillis() - startTime,
-                    summary != null ? JsonUtil.object2json(summary) : null);
             return ExplorerTaskResult.builder()
                     .taskId(taskId)
                     .status(ExplorerTaskStatus.SUCCESS)
@@ -346,14 +292,6 @@ public class CallingExplorerTool extends SubAgentToolSupport {
                     rootCause(e).getClass().getSimpleName(),
                     rootCauseMessage(e),
                     e);
-            runtimeLog.warn("calling_explorer_task_failed taskId={} connectionId={} elapsedMs={} rootCauseClass={} rootCauseMessage={} instructionPreview={} contextPreview={}",
-                    taskId,
-                    task.getConnectionId(),
-                    System.currentTimeMillis() - startTime,
-                    rootCause(e).getClass().getSimpleName(),
-                    rootCauseMessage(e),
-                    preview(task.getInstruction()),
-                    preview(task.getContext()));
             return ExplorerTaskResult.builder()
                     .taskId(taskId)
                     .status(ExplorerTaskStatus.ERROR)

@@ -47,6 +47,15 @@ public class ChatRequest extends BaseRequest {
      */
     private List<ChatUserMention> userMentions;
 
+    /**
+     * Optional client workspace fallback when custom HTTP headers are missing on the chat stream request
+     * (e.g. some fetch/EventSource paths). Values are validated with {@code loadActiveMembership}; if the
+     * interceptor already set {@code ORGANIZATION} with {@code orgId}, body hints are ignored.
+     */
+    private String clientWorkspaceType;
+
+    private Long clientOrgId;
+
     @Override
     public String getCatalog() {
         return catalogName;

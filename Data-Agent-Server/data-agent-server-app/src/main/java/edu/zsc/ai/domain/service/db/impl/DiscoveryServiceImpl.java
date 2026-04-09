@@ -13,6 +13,7 @@ import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.util.ConnectionIdUtil;
 import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.response.db.ConnectionResponse;
+import edu.zsc.ai.domain.service.db.ConnectionAccessService;
 import edu.zsc.ai.domain.service.db.DatabaseObjectService;
 import edu.zsc.ai.domain.service.db.DatabaseService;
 import edu.zsc.ai.domain.service.db.DbConnectionService;
@@ -63,6 +64,7 @@ public class DiscoveryServiceImpl implements DiscoveryService {
     private final SchemaService schemaService;
     private final DatabaseObjectService databaseObjectService;
     private final IndexService indexService;
+    private final ConnectionAccessService connectionAccessService;
 
     public DiscoveryServiceImpl(
             @Qualifier(SHARED_EXECUTOR_BEAN_NAME) Executor sharedExecutor,
@@ -70,13 +72,15 @@ public class DiscoveryServiceImpl implements DiscoveryService {
             DatabaseService databaseService,
             SchemaService schemaService,
             DatabaseObjectService databaseObjectService,
-            IndexService indexService) {
+            IndexService indexService,
+            ConnectionAccessService connectionAccessService) {
         this.sharedExecutor = sharedExecutor;
         this.dbConnectionService = dbConnectionService;
         this.databaseService = databaseService;
         this.schemaService = schemaService;
         this.databaseObjectService = databaseObjectService;
         this.indexService = indexService;
+        this.connectionAccessService = connectionAccessService;
     }
 
     // ==================== searchObjects ====================
@@ -296,8 +300,13 @@ public class DiscoveryServiceImpl implements DiscoveryService {
                 if (connId != null) {
                     ExplorerConnectionScopeGuard.validateConnectionAllowed(connId);
                 }
-                if (connId == null) connId = RequestContext.getConnectionId();
+                if (connId == null) {
+                    connId = RequestContext.getConnectionId();
+                }
                 ExplorerConnectionScopeGuard.validateConnectionAllowed(connId);
+                if (connId != null) {
+                    connectionAccessService.assertReadable(connId);
+                }
                 DbContext db = new DbContext(connId, item.getDatabaseName(), item.getSchemaName());
                 ObjectDetail detail = getObjectDetail(type, item.getObjectName(), db);
                 results.add(new NamedObjectDetail(

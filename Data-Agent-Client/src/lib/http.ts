@@ -3,6 +3,7 @@ import { useAuthStore } from '../store/authStore';
 import { HttpStatusCode, ErrorCode } from '../constants/errorCode';
 import type { TokenPairResponse } from '../types/auth';
 import { ensureValidAccessToken } from './authToken';
+import { X_ORG_ID, X_WORKSPACE_TYPE } from '../constants/workspaceHeaders';
 
 const http = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
@@ -11,6 +12,23 @@ const http = axios.create({
         'Content-Type': 'application/json',
     },
 });
+
+function readRequestHeader(
+    headers: typeof axios.defaults.headers.common | undefined,
+    name: string
+): string | undefined {
+    if (!headers) return undefined;
+    const maybeHeaders = headers as unknown as { get?: (k: string) => unknown };
+    if (typeof maybeHeaders.get === 'function') {
+        const v = maybeHeaders.get(name);
+        return v != null && String(v).length > 0 ? String(v) : undefined;
+    }
+    const rec = headers as Record<string, unknown>;
+    const direct = rec[name] ?? rec[name.toLowerCase()];
+    if (direct == null) return undefined;
+    const s = String(direct);
+    return s.length > 0 ? s : undefined;
+}
 
 const isAuthEndpoint = (url?: string) => {
     const path = url ?? '';
@@ -31,6 +49,20 @@ http.interceptors.request.use(
                 config.headers.Authorization = `Bearer ${accessToken}`;
             }
         }
+
+        const { workspaceType, workspaceOrgId } = useAuthStore.getState();
+        const explicitWorkspaceType = readRequestHeader(config.headers, X_WORKSPACE_TYPE);
+        const effectiveWorkspaceType = explicitWorkspaceType ?? workspaceType;
+        config.headers[X_WORKSPACE_TYPE] = effectiveWorkspaceType;
+        if (effectiveWorkspaceType === 'ORGANIZATION') {
+            const explicitOrgId = readRequestHeader(config.headers, X_ORG_ID);
+            if (explicitOrgId == null && workspaceOrgId != null) {
+                config.headers[X_ORG_ID] = String(workspaceOrgId);
+            }
+        } else {
+            delete (config.headers as Record<string, unknown>)[X_ORG_ID];
+        }
+
         return config;
     },
     (error) => {

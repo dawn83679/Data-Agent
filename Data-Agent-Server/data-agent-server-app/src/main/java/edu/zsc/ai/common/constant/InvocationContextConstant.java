@@ -16,6 +16,13 @@ public final class InvocationContextConstant {
     public static final String AGENT_MODE = "agentMode";
     public static final String AGENT_TYPE = "agentType";
     public static final String ALLOWED_CONNECTION_IDS = "allowedConnectionIds";
+    /** Main agent: connection ids returned by {@code getAllConnections} for this chat (tool-thread access check). */
+    public static final String READABLE_CONNECTION_IDS = "readableConnectionIds";
     public static final String MODEL_NAME = "modelName";
     public static final String LANGUAGE = "language";
+
+    public static final String WORKSPACE_TYPE = "workspaceType";
+    public static final String ORG_ID = "orgId";
+    public static final String ORG_USER_REL_ID = "orgUserRelId";
+    public static final String ORG_ROLE = "orgRole";
 }

@@ -9,6 +9,7 @@ import { useToast } from "../../hooks/useToast";
 import { useTranslation } from "react-i18next";
 import { I18N_KEYS } from "../../constants/i18nKeys";
 import { getPlatformShortcuts } from "../../lib/platformShortcuts";
+import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 
 interface HeaderProps {
     onLoginClick: () => void;
@@ -51,6 +52,7 @@ export function Header({ onLoginClick }: HeaderProps) {
                 </button>
 
                 <div className="flex flex-1 justify-end items-center gap-3 theme-text-secondary min-w-0">
+                    {accessToken ? <WorkspaceSwitcher /> : null}
                     {accessToken ? (
                         <div className="flex items-center gap-3 min-w-0">
                             <button

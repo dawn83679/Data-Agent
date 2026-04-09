@@ -27,6 +27,12 @@ export interface ChatRequest {
   catalogName?: string;
   schemaName?: string;
   userMentions?: ChatUserMention[];
+  /**
+   * Mirrors workspace headers for /api/chat/stream when fetch cannot rely on custom headers.
+   * Server validates org membership.
+   */
+  clientWorkspaceType?: 'PERSONAL' | 'ORGANIZATION';
+  clientOrgId?: number;
 }
 
 /** Aligned with backend MessageBlockEnum */

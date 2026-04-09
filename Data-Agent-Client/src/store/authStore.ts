@@ -1,9 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User } from '../types/auth';
+import type { OrgRoleCode, User, WorkspaceType } from '../types/auth';
 import { decodeJwt } from '../lib/jwtUtil';
 
-// 定义一个全局事件类型
 declare global {
     interface Window {
         __OPEN_LOGIN_MODAL__: (() => void) | null;
@@ -11,7 +10,6 @@ declare global {
 }
 
 interface AuthStore {
-    // State
     user: User | null;
     accessToken: string | null;
     refreshToken: string | null;
@@ -19,35 +17,65 @@ interface AuthStore {
     rememberMe: boolean;
     isLoginModalOpen: boolean;
 
-    // Actions
+    /** API request workspace (headers X-Workspace-Type / X-Org-Id). */
+    workspaceType: WorkspaceType;
+    workspaceOrgId: number | null;
+    workspaceOrgRole: OrgRoleCode | null;
+
     setAuth: (user: User | null, accessToken: string | null, refreshToken: string | null, rememberMe?: boolean) => void;
     clearAuth: () => void;
     openLoginModal: () => void;
     closeLoginModal: () => void;
+
+    setWorkspacePersonal: () => void;
+    setWorkspaceOrganization: (orgId: number) => void;
+    /** Reset org workspace if persisted org is no longer valid for the user. */
+    reconcileWorkspaceWithUser: () => void;
+    /** True when in organization context with COMMON role (AI-only layout). */
+    isOrgCommonWorkbench: () => boolean;
+}
+
+const defaultWorkspace = (): Pick<AuthStore, 'workspaceType' | 'workspaceOrgId' | 'workspaceOrgRole'> => ({
+    workspaceType: 'PERSONAL',
+    workspaceOrgId: null,
+    workspaceOrgRole: null,
+});
+
+function normalizeRole(code: string | undefined | null): OrgRoleCode | null {
+    if (!code) return null;
+    const u = String(code).toUpperCase();
+    if (u === 'ADMIN' || u === 'COMMON') return u;
+    return null;
 }
 
 export const useAuthStore = create<AuthStore>()(
     persist(
-        (set) => ({
-            // Initial state
+        (set, get) => ({
             user: null,
             accessToken: null,
             refreshToken: null,
             expiresAt: null,
             rememberMe: false,
             isLoginModalOpen: false,
+            ...defaultWorkspace(),
 
-            // Set auth with automatic JWT decoding
             setAuth: (user, accessToken, refreshToken, rememberMe = false) =>
                 set((state) => {
                     let finalUser = user;
                     let finalExpiresAt: number | null = null;
 
-                    // Decode JWT if we have an access token
                     if (accessToken) {
                         const decoded = decodeJwt(accessToken);
                         if (decoded) {
-                            if (!finalUser) finalUser = decoded.user;
+                            if (!finalUser) {
+                                finalUser = decoded.user;
+                            } else {
+                                finalUser = {
+                                    ...decoded.user,
+                                    ...finalUser,
+                                    organizations: finalUser.organizations ?? decoded.user.organizations,
+                                };
+                            }
                             finalExpiresAt = decoded.expiresAt;
                         }
                     }
@@ -61,7 +89,6 @@ export const useAuthStore = create<AuthStore>()(
                     };
                 }),
 
-            // Clear all auth state
             clearAuth: () =>
                 set({
                     user: null,
@@ -69,6 +96,7 @@ export const useAuthStore = create<AuthStore>()(
                     refreshToken: null,
                     expiresAt: null,
                     rememberMe: false,
+                    ...defaultWorkspace(),
                 }),
 
             openLoginModal: () =>
@@ -76,10 +104,52 @@ export const useAuthStore = create<AuthStore>()(
 
             closeLoginModal: () =>
                 set((state) => (state.isLoginModalOpen ? { ...state, isLoginModalOpen: false } : state)),
+
+            setWorkspacePersonal: () =>
+                set({
+                    workspaceType: 'PERSONAL',
+                    workspaceOrgId: null,
+                    workspaceOrgRole: null,
+                }),
+
+            setWorkspaceOrganization: (orgId: number) => {
+                const { user } = get();
+                const match = user?.organizations?.find((o) => o.orgId === orgId);
+                if (!match) return;
+                const role = normalizeRole(match.roleCode as string);
+                if (!role) return;
+                set({
+                    workspaceType: 'ORGANIZATION',
+                    workspaceOrgId: orgId,
+                    workspaceOrgRole: role,
+                });
+            },
+
+            reconcileWorkspaceWithUser: () => {
+                const { user, workspaceType, workspaceOrgId } = get();
+                if (workspaceType !== 'ORGANIZATION' || workspaceOrgId == null) {
+                    return;
+                }
+                const match = user?.organizations?.find((o) => o.orgId === workspaceOrgId);
+                if (!match) {
+                    set({ ...defaultWorkspace() });
+                    return;
+                }
+                const role = normalizeRole(match.roleCode as string);
+                if (!role) {
+                    set({ ...defaultWorkspace() });
+                    return;
+                }
+                set({ workspaceOrgRole: role });
+            },
+
+            isOrgCommonWorkbench: () => {
+                const s = get();
+                return s.workspaceType === 'ORGANIZATION' && s.workspaceOrgRole === 'COMMON';
+            },
         }),
         {
             name: 'auth-storage',
-            // Custom storage: localStorage for "remember me", sessionStorage otherwise
             storage: {
                 getItem: (name) => {
                     const str = localStorage.getItem(name) || sessionStorage.getItem(name);
@@ -100,13 +170,15 @@ export const useAuthStore = create<AuthStore>()(
                     sessionStorage.removeItem(name);
                 },
             },
-            // Persist these fields across page refreshes
             partialize: (state) => ({
                 user: state.user,
                 accessToken: state.accessToken,
                 refreshToken: state.refreshToken,
                 rememberMe: state.rememberMe,
                 expiresAt: state.expiresAt,
+                workspaceType: state.workspaceType,
+                workspaceOrgId: state.workspaceOrgId,
+                workspaceOrgRole: state.workspaceOrgRole,
             }),
         }
     )

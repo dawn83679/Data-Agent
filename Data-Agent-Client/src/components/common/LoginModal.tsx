@@ -32,6 +32,9 @@ export function LoginModal({ onSwitchToRegister, onClose }: LoginModalProps) {
             setLoading(true);
             const response = await authService.login({ email, password, rememberMe });
             setAuth(null, response.accessToken, response.refreshToken, rememberMe);
+            const fullUser = await authService.getCurrentUser();
+            setAuth(fullUser, response.accessToken, response.refreshToken, rememberMe);
+            useAuthStore.getState().reconcileWorkspaceWithUser();
             onClose(); // Close modal after successful login
         } catch (error) {
             console.error("Login failed", error);

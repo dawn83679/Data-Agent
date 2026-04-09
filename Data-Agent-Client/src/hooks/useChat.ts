@@ -10,6 +10,7 @@ import {
   NOT_AUTHENTICATED,
   SESSION_EXPIRED_MESSAGE,
 } from '../constants/chat';
+import { buildChatStreamFetchHeaders } from '../lib/chatStreamHeaders';
 
 async function refreshAccessToken(): Promise<TokenPairResponse | null> {
   const { refreshToken } = useAuthStore.getState();
@@ -101,10 +102,7 @@ async function fetchWithAuthRetry(
 
   const response = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
+    headers: buildChatStreamFetchHeaders(token),
     body: JSON.stringify(body),
     signal,
   });
@@ -231,10 +229,17 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
       };
       appendMessage(userMessage);
 
+      const auth = useAuthStore.getState();
+      const clientWorkspace =
+        auth.workspaceType === 'ORGANIZATION' && auth.workspaceOrgId != null
+          ? { clientWorkspaceType: 'ORGANIZATION' as const, clientOrgId: auth.workspaceOrgId }
+          : { clientWorkspaceType: 'PERSONAL' as const };
+
       const request: ChatRequest = {
         message: trimmed,
         ...(options.body as Partial<ChatRequest>),
         ...bodyOverrides,
+        ...clientWorkspace,
       };
       await processStream(request);
     },

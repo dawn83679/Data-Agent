@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import edu.zsc.ai.common.enums.org.WorkspaceTypeEnum;
 import edu.zsc.ai.common.enums.permission.CatalogMatchMode;
 import edu.zsc.ai.common.enums.permission.PermissionScopeType;
 import edu.zsc.ai.common.enums.permission.SchemaMatchMode;
@@ -23,6 +24,12 @@ public class AiPermissionRule {
 
     @TableField("user_id")
     private Long userId;
+
+    @TableField("workspace_type")
+    private WorkspaceTypeEnum workspaceType;
+
+    @TableField("org_id")
+    private Long orgId;
 
     @TableField("conversation_id")
     private Long conversationId;

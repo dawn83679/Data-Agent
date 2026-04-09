@@ -8,6 +8,8 @@ import { ThemeProvider } from "./hooks/useTheme";
 import { Header } from "./components/layouts/Header";
 import { ToastContainer } from "./components/ui/Toast";
 import { useAuthStore } from "./store/authStore";
+import { authService } from "./services/auth.service";
+import { AIAssistant } from "./components/ai/AIAssistant";
 import { useWorkspaceStore } from "./store/workspaceStore";
 import { routerConfig } from "./router.tsx";
 import { ROUTES } from "./constants/routes";
@@ -29,9 +31,20 @@ function AppRoutes({
 }) {
     const element = useRoutes(routerConfig);
     const location = useLocation();
+    const isOrgCommonLayout = useAuthStore(
+        (s) => s.workspaceType === "ORGANIZATION" && s.workspaceOrgRole === "COMMON"
+    );
     
     // Show IDE layout (sidebar + AI assistant) only at root path "/"
     const isWorkspace = location.pathname === ROUTES.HOME;
+
+    if (isWorkspace && isOrgCommonLayout) {
+        return (
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-background">
+                <AIAssistant historyAsLeftSidebar />
+            </div>
+        );
+    }
 
     if (!isWorkspace) {
         return (
@@ -72,6 +85,35 @@ function App() {
     useEffect(() => {
         useWorkspaceStore.getState().fetchSupportedDbTypes();
     }, []);
+
+    // Hydrate user profile (organizations, etc.) when session exists
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            const { accessToken, refreshToken, user, setAuth, rememberMe } = useAuthStore.getState();
+            if (!accessToken) return;
+            try {
+                const full = await authService.getCurrentUser();
+                if (cancelled) return;
+                setAuth({ ...(user ?? { id: 0, username: "", email: "" }), ...full }, accessToken, refreshToken, rememberMe);
+                useAuthStore.getState().reconcileWorkspaceWithUser();
+            } catch {
+                /* ignore */
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const workspaceOrgKey = useAuthStore((s) => `${s.workspaceType}-${s.workspaceOrgId ?? ""}-${s.workspaceOrgRole ?? ""}`);
+
+    useEffect(() => {
+        if (useAuthStore.getState().workspaceType === "ORGANIZATION" && useAuthStore.getState().workspaceOrgRole === "COMMON") {
+            setShowAI(true);
+            setShowExplorer(false);
+        }
+    }, [workspaceOrgKey]);
 
     // Disable browser context menu except where custom menus exist (e.g. Explorer ContextMenu)
     useEffect(() => {
@@ -121,20 +163,26 @@ function App() {
     // Global keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            const orgCommon =
+                useAuthStore.getState().workspaceType === "ORGANIZATION" &&
+                useAuthStore.getState().workspaceOrgRole === "COMMON";
+
             // Cmd+B or Ctrl+B: Toggle AI Sidebar
-            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
                 e.preventDefault();
-                toggleAISidebar();
+                if (!orgCommon) {
+                    toggleAISidebar();
+                }
             }
 
             // ESC: Toggle Database Explorer (if not in a text input)
-            if (e.key === 'Escape') {
+            if (e.key === "Escape") {
                 const activeEl = document.activeElement;
-                const isInput = activeEl?.tagName === 'INPUT' || 
-                               activeEl?.tagName === 'TEXTAREA' || 
+                const isInput = activeEl?.tagName === "INPUT" ||
+                               activeEl?.tagName === "TEXTAREA" ||
                                (activeEl as HTMLElement)?.isContentEditable;
-                
-                if (!isInput) {
+
+                if (!isInput && !orgCommon) {
                     e.preventDefault();
                     toggleExplorer();
                 }

@@ -6,7 +6,7 @@ import { Input } from '../ui/Input';
 import { useToast } from '../../hooks/useToast';
 import { conversationService } from '../../services/conversation.service';
 import type { Conversation } from '../../types/conversation';
-import { MessageCircle, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MessageCircle, Pencil, Trash2, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const PAGE_SIZE = 20;
@@ -57,7 +57,11 @@ function groupByDate(conversations: Conversation[], t: (k: string) => string): {
   return Array.from(map.entries()).map(([label, items]) => ({ label, items }));
 }
 
+export type ConversationHistoryPanelVariant = 'popover' | 'sidebar';
+
 export interface ConversationHistoryPanelProps {
+  /** Dropdown next to header vs. fixed left sidebar */
+  variant?: ConversationHistoryPanelVariant;
   open: boolean;
   onClose: () => void;
   onSelectConversation: (conversation: Conversation) => void;
@@ -66,6 +70,7 @@ export interface ConversationHistoryPanelProps {
 }
 
 export function ConversationHistoryPanel({
+  variant = 'popover',
   open,
   onClose,
   onSelectConversation,
@@ -126,25 +131,35 @@ export function ConversationHistoryPanel({
   }, [pendingHighlightIndex, conversations.length]);
 
   useEffect(() => {
-    if (open) {
-      fetchList(1);
-      // Focus search input when panel opens
-      setTimeout(() => {
+    if (!open) return;
+    fetchList(1);
+    setTimeout(() => {
+      if (variant === 'popover') {
         searchInputRef.current?.focus();
-        setHighlightedIndex(-1);
-      }, 0);
-    }
-  }, [open, fetchList]);
+      }
+      setHighlightedIndex(-1);
+    }, 0);
+  }, [open, fetchList, variant]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || variant !== 'popover') return;
     const onDocClick = () => onClose();
     const timer = setTimeout(() => document.addEventListener('click', onDocClick), 0);
     return () => {
       clearTimeout(timer);
       document.removeEventListener('click', onDocClick);
     };
-  }, [open, onClose]);
+  }, [open, onClose, variant]);
+
+  const closeOnSelect = variant === 'popover';
+
+  const handleSelect = useCallback(
+    (c: Conversation) => {
+      onSelectConversation(c);
+      if (closeOnSelect) onClose();
+    },
+    [closeOnSelect, onClose, onSelectConversation]
+  );
 
   // Compute grouped and flatList
   const filtered = searchQuery.trim()
@@ -174,6 +189,13 @@ export function ConversationHistoryPanel({
     if (!open || pendingHighlightIndex !== null) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        variant === 'sidebar' &&
+        panelRef.current &&
+        !panelRef.current.contains(document.activeElement)
+      ) {
+        return;
+      }
       const isSearchFocused = document.activeElement === searchInputRef.current;
       const currentFlatList = grouped.flatMap(g => g.items);
 
@@ -224,12 +246,7 @@ export function ConversationHistoryPanel({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, grouped, highlightedIndex, pendingHighlightIndex, current, pages, fetchList]);
-
-  const handleSelect = (c: Conversation) => {
-    onSelectConversation(c);
-    onClose();
-  };
+  }, [open, variant, grouped, highlightedIndex, pendingHighlightIndex, current, pages, fetchList, handleSelect]);
 
   const startRename = (c: Conversation) => {
     setEditingId(c.id);
@@ -280,18 +297,45 @@ export function ConversationHistoryPanel({
 
   if (!open) return null;
 
+  const isSidebar = variant === 'sidebar';
+
   return (
     <div
         ref={panelRef}
-        role="dialog"
+        role={isSidebar ? undefined : 'dialog'}
         aria-label={t(I18N_KEYS.AI.HISTORY_TITLE)}
         className={cn(
-          'absolute right-0 top-full mt-1 w-80 max-h-[70vh] flex flex-col',
-          'theme-bg-panel theme-border border rounded-lg shadow-xl z-50',
-          'animate-in fade-in slide-in-from-top-2 duration-200'
+          'flex flex-col min-h-0',
+          isSidebar
+            ? 'h-full w-full theme-bg-panel'
+            : cn(
+                'absolute right-0 top-full mt-1 w-80 max-h-[70vh]',
+                'theme-bg-panel theme-border border rounded-lg shadow-xl z-50',
+                'animate-in fade-in slide-in-from-top-2 duration-200'
+              )
         )}
-        onClick={(e) => e.stopPropagation()}
+        onClick={!isSidebar ? (e) => e.stopPropagation() : undefined}
       >
+        {isSidebar ? (
+          <div className="px-2 py-2 border-b theme-border shrink-0">
+            <span className="text-sm font-medium theme-text-primary truncate block">
+              {t(I18N_KEYS.AI.HISTORY_TITLE)}
+            </span>
+          </div>
+        ) : null}
+        {isSidebar ? (
+          <div className="px-2 pt-2 pb-1.5 border-b theme-border shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-center gap-2 h-9 rounded-xl text-sm"
+              onClick={onNewChat}
+            >
+              <Plus className="w-4 h-4" />
+              {t(I18N_KEYS.AI.SLASH_COMMAND.NEW)}
+            </Button>
+          </div>
+        ) : null}
         <div className="p-2 border-b theme-border shrink-0">
           <Input
             ref={searchInputRef}
