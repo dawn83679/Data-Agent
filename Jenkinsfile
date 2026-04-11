@@ -95,6 +95,15 @@ pipeline {
                     sudo /usr/local/bin/deploy-data-agent.sh \
                       "$WORKSPACE/${FRONTEND_DIR}/dist" \
                       "$WORKSPACE/${BACKEND_ROOT}/${BACKEND_MODULE}/target/${BACKEND_JAR}"
+
+                    # 临时健康检查：允许 HTTP 401 不算失败
+                    HTTP_CODE=$(curl -o /dev/null -s -w "%{http_code}" http://127.0.0.1:8081/actuator/health)
+                    if [[ "$HTTP_CODE" == "200" || "$HTTP_CODE" == "401" ]]; then
+                        echo "Backend health check passed (HTTP $HTTP_CODE)"
+                    else
+                        echo "Backend health check failed (HTTP $HTTP_CODE)"
+                        exit 1
+                    fi
                 '''
             }
         }
