@@ -11,6 +11,7 @@
     "login": "登录",
     "logout": "退出登录",
     "profile": "个人资料",
+    "organization": "组织",
     "settings": "设置",
     "ai_assistant": "AI 助手",
     "refresh": "刷新",

@@ -34,6 +34,7 @@ export const I18N_KEYS = {
     DATA_SOURCES: 'common.data_sources',
     DEFAULT: 'common.default',
     PROFILE: 'common.profile',
+    ORGANIZATION: 'common.organization',
     LOGOUT: 'common.logout',
     LOGOUT_FAILED: 'common.logout_failed',
     LOGIN: 'common.login',

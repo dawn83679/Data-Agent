@@ -48,6 +48,15 @@ const routes: RouterConfig[] = [
         element: <Navigate to="/settings/profile" replace />,
     },
     {
+        path: ROUTES.ORGANIZATION,
+        element: (
+            <Suspense fallback={null}>
+                <OrganizationSettings />
+            </Suspense>
+        ),
+        requiresAuth: true,
+    },
+    {
         path: "/settings",
         element: (
             <Suspense fallback={null}>
@@ -60,15 +69,7 @@ const routes: RouterConfig[] = [
             { path: "profile", element: <Suspense fallback={null}><Profile /></Suspense>, requiresAuth: true },
             { path: "password", element: <Suspense fallback={null}><PasswordReset /></Suspense>, requiresAuth: true },
             { path: "sessions", element: <Suspense fallback={null}><Sessions /></Suspense>, requiresAuth: true },
-            {
-                path: "organization",
-                element: (
-                    <Suspense fallback={null}>
-                        <OrganizationSettings />
-                    </Suspense>
-                ),
-                requiresAuth: true,
-            },
+            { path: "organization", element: <Navigate to={ROUTES.ORGANIZATION} replace /> },
         ],
     },
     {

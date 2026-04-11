@@ -11,6 +11,7 @@
     "login": "Login",
     "logout": "Logout",
     "profile": "Profile",
+    "organization": "Organization",
     "settings": "Settings",
     "ai_assistant": "AI Assistant",
     "refresh": "Refresh",

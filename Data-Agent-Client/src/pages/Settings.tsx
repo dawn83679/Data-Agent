@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { User, Shield, Lock, ChevronRight, ArrowLeft, Building2 } from 'lucide-react';
+import { User, Shield, Lock, ChevronRight, ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/utils';
 import { I18N_KEYS } from '../constants/i18nKeys';
@@ -10,7 +10,6 @@ const navItems = [
     { path: '/settings/profile', labelKey: I18N_KEYS.SETTINGS_PAGE.NAV_PROFILE, icon: User },
     { path: '/settings/password', labelKey: I18N_KEYS.SETTINGS_PAGE.NAV_SECURITY, icon: Lock },
     { path: '/settings/sessions', labelKey: I18N_KEYS.SETTINGS_PAGE.NAV_SESSIONS, icon: Shield },
-    { path: '/settings/organization', labelKey: I18N_KEYS.SETTINGS_PAGE.NAV_ORGANIZATION, icon: Building2 },
 ] as const;
 
 export default function Settings() {
