@@ -203,7 +203,7 @@ export function AIAssistant({ onClosePanel, historyAsLeftSidebar = false }: AIAs
   }, [messages]);
 
   useEffect(() => {
-    aiService.getModels().then((list) => {
+    aiService.getModels(true).then((list) => {
       if (list.length > 0) {
         setModelOptions(list);
         setModelState((current) => {

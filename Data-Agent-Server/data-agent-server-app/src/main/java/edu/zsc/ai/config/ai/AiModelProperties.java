@@ -36,6 +36,7 @@ public class AiModelProperties {
     private static List<ModelDefinition> defaultSupportedModels() {
         List<ModelDefinition> models = new ArrayList<>();
         models.add(model("qwen3.5-plus", "qwen3.5-plus", false, 1_048_576, 900_000));
+        models.add(model("qwen3.6-plus", "qwen3.6-plus", false, 1_000_000, 900_000));
         models.add(model("qwen3-max-2026-01-23", "qwen3-max-2026-01-23", false, 256_000, 230_000));
         models.add(model("qwen3-max-thinking", "qwen3-max-2026-01-23", true, 256_000, 230_000));
         return models;

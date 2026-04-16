@@ -22,7 +22,7 @@ import edu.zsc.ai.common.constant.ChatErrorConstants;
 import edu.zsc.ai.common.constant.InvocationContextConstant;
 import edu.zsc.ai.common.enums.ai.AgentModeEnum;
 import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
-import edu.zsc.ai.common.enums.ai.ModelEnum;
+import edu.zsc.ai.config.ai.AiModelCatalog;
 import edu.zsc.ai.context.AgentRequestContext;
 import edu.zsc.ai.context.AgentRequestContextInfo;
 import edu.zsc.ai.context.RequestContext;
@@ -54,6 +54,7 @@ public class ChatSessionFactory {
     private final MemoryContextService memoryContextService;
     private final RuntimeContextManager runtimeContextManager;
     private final DbConnectionService dbConnectionService;
+    private final AiModelCatalog aiModelCatalog;
 
     /**
      * Build a ChatSession from an incoming ChatRequest.
@@ -164,7 +165,7 @@ public class ChatSessionFactory {
 
     private String resolveModel(String model) {
         try {
-            return ModelEnum.resolve(model).getModelName();
+            return aiModelCatalog.resolve(model).getModelName();
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     ChatErrorConstants.UNKNOWN_MODEL_PREFIX + model, e);
