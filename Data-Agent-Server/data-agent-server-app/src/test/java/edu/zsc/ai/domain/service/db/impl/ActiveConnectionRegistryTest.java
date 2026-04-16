@@ -1,5 +1,6 @@
 package edu.zsc.ai.domain.service.db.impl;
 
+import edu.zsc.ai.common.enums.org.WorkspaceTypeEnum;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.model.context.DbContext;
@@ -98,13 +99,16 @@ class ActiveConnectionRegistryTest {
                 new ActiveConnectionRegistry.ActiveConnection(
                         dataSource,
                         userId,
+                        userId,
                         connectionId,
                         "mysql",
                         "mysql-8",
                         catalog,
                         schema,
                         LocalDateTime.now(),
-                        LocalDateTime.now()
+                        LocalDateTime.now(),
+                        WorkspaceTypeEnum.PERSONAL,
+                        null
                 )
         );
     }

@@ -9,10 +9,10 @@ import edu.zsc.ai.common.enums.sys.SessionStatusEnum;
 import edu.zsc.ai.context.AgentExecutionContext;
 import edu.zsc.ai.context.AgentRequestContext;
 import edu.zsc.ai.context.RequestContext;
-import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.exception.BusinessException;
 import edu.zsc.ai.domain.model.dto.request.sys.FindSessionByTokenRequest;
 import edu.zsc.ai.domain.model.entity.sys.SysSessions;
+import edu.zsc.ai.domain.service.org.WorkspaceRequestContextService;
 import edu.zsc.ai.domain.service.sys.SysSessionsService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,6 +29,8 @@ import jakarta.servlet.DispatcherType;
 public class SaTokenConfigure implements WebMvcConfigurer {
     @Resource
     private SysSessionsService sessionService;
+    @Resource
+    private WorkspaceRequestContextService workspaceRequestContextService;
 
     // Register interceptor
     @Override
@@ -60,8 +62,8 @@ public class SaTokenConfigure implements WebMvcConfigurer {
                     throw BusinessException.of(ResponseCode.UNAUTHORIZED, ResponseMessageKey.NOT_LOGIN_MESSAGE);
                 }
 
-                // 3) Set RequestContext with userId for downstream service methods
-                RequestContext.set(RequestContextInfo.builder().userId(userId).build());
+                // 3) Request context: user + workspace headers (X-Workspace-Type, X-Org-Id)
+                RequestContext.set(workspaceRequestContextService.buildBaseContext(userId, request));
 
                 return true;
             }
@@ -83,7 +85,9 @@ public class SaTokenConfigure implements WebMvcConfigurer {
                         "/api/oauth/google",
                         "/api/oauth/callback/google",
                         "/api/oauth/github",
-                        "/api/oauth/callback/github");
+                        "/api/oauth/callback/github",
+                        "/actuator/info",
+                        "/actuator/health");
     }
 
     @Bean

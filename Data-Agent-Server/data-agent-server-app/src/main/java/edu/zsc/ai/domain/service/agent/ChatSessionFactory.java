@@ -18,8 +18,8 @@ import edu.zsc.ai.agent.ReActAgent;
 import edu.zsc.ai.agent.ReActAgentProvider;
 import edu.zsc.ai.agent.memory.MemoryIdUtil;
 import edu.zsc.ai.api.model.request.ChatRequest;
-import edu.zsc.ai.common.constant.AgentRuntimeLoggerNames;
 import edu.zsc.ai.common.constant.ChatErrorConstants;
+import edu.zsc.ai.common.constant.InvocationContextConstant;
 import edu.zsc.ai.common.enums.ai.AgentModeEnum;
 import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
 import edu.zsc.ai.config.ai.AiModelCatalog;
@@ -30,13 +30,14 @@ import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.model.entity.ai.AiConversation;
 import edu.zsc.ai.domain.service.agent.runtimecontext.RuntimeContextAssemblyContext;
 import edu.zsc.ai.domain.service.agent.runtimecontext.RuntimeContextManager;
+import edu.zsc.ai.domain.service.agent.runtimecontext.strategy.ConnectionSummary;
 import edu.zsc.ai.domain.service.ai.AiConversationService;
+import edu.zsc.ai.domain.service.db.DbConnectionService;
 import edu.zsc.ai.domain.service.ai.MemoryContextService;
 import edu.zsc.ai.domain.service.ai.model.MemoryPromptContext;
+import edu.zsc.ai.util.ConnectionIdUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Prepares all state needed before an agent invocation:
@@ -48,13 +49,11 @@ import org.slf4j.LoggerFactory;
 @RequiredArgsConstructor
 public class ChatSessionFactory {
 
-    private static final Logger conversationRuntimeLog = LoggerFactory.getLogger(AgentRuntimeLoggerNames.CONVERSATION);
-    private static final Logger promptRuntimeLog = LoggerFactory.getLogger(AgentRuntimeLoggerNames.PROMPT);
-
     private final ReActAgentProvider reActAgentProvider;
     private final AiConversationService aiConversationService;
     private final MemoryContextService memoryContextService;
     private final RuntimeContextManager runtimeContextManager;
+    private final DbConnectionService dbConnectionService;
     private final AiModelCatalog aiModelCatalog;
 
     /**
@@ -73,16 +72,16 @@ public class ChatSessionFactory {
                     .language(request.getLanguage())
                     .build());
 
+            PreparedReActAgent prepared = reActAgentProvider.getAgent(modelName, request.getLanguage(), agentMode.getCode());
+            ReActAgent agent = prepared.agent();
+
             Long conversationId = ensureConversation(request);
 
             String memoryId = MemoryIdUtil.build(RequestContext.getUserId(), conversationId, modelName);
 
-            PreparedReActAgent preparedAgent = reActAgentProvider.getAgent(
-                    modelName,
-                    request.getLanguage(),
-                    agentMode.getCode()
-            );
-            ReActAgent agent = preparedAgent.agent();
+            List<ConnectionSummary> connections = dbConnectionService.getAllConnections().stream()
+                    .map(conn -> new ConnectionSummary(conn.getId(), conn.getName(), conn.getDbType()))
+                    .toList();
 
             MemoryPromptContext memoryPromptContext = memoryContextService.loadPromptContext(
                     RequestContext.getUserId(), conversationId, request.getMessage());
@@ -94,52 +93,15 @@ public class ChatSessionFactory {
                     .userMentions(request.getUserMentions() == null ? List.of() : request.getUserMentions())
                     .build();
             String runtimeContext = runtimeContextManager.render(runtimeCtx).renderedPrompt();
-            // The runtime suffix carries time, memory projections, and explicit references.
-            // Connection inventory is now discovered via getAvailableConnections on demand.
-            String systemPrompt = StringUtils.defaultString(preparedAgent.systemPrompt());
-            String safeRuntimeContext = StringUtils.defaultString(runtimeContext);
-            String combinedPrompt = composeCombinedPrompt(systemPrompt, safeRuntimeContext);
-
-            conversationRuntimeLog.info(
-                    "conversation_start conversationId={} userId={} agentMode={} modelName={} language={} messageLength={} message=\n{}",
-                    conversationId,
-                    RequestContext.getUserId(),
-                    agentMode.getCode(),
-                    modelName,
-                    request.getLanguage(),
-                    StringUtils.length(request.getMessage()),
-                    StringUtils.defaultString(request.getMessage()));
-            promptRuntimeLog.info(
-                    "main_prompt_system conversationId={} userId={} agentMode={} modelName={} promptCode={} contentLength={} content=\n{}",
-                    conversationId,
-                    RequestContext.getUserId(),
-                    agentMode.getCode(),
-                    modelName,
-                    preparedAgent.promptEnum().getCode(),
-                    systemPrompt.length(),
-                    systemPrompt);
-            promptRuntimeLog.info(
-                    "main_prompt_runtime_context conversationId={} userId={} agentMode={} modelName={} promptCode={} contentLength={} content=\n{}",
-                    conversationId,
-                    RequestContext.getUserId(),
-                    agentMode.getCode(),
-                    modelName,
-                    preparedAgent.promptEnum().getCode(),
-                    safeRuntimeContext.length(),
-                    safeRuntimeContext);
-            promptRuntimeLog.info(
-                    "main_prompt_combined conversationId={} userId={} agentMode={} modelName={} promptCode={} contentLength={} content=\n{}",
-                    conversationId,
-                    RequestContext.getUserId(),
-                    agentMode.getCode(),
-                    modelName,
-                    preparedAgent.promptEnum().getCode(),
-                    combinedPrompt.length(),
-                    combinedPrompt);
 
             Map<String, Object> invocationContext = buildInvocationContext();
             if (StringUtils.isNotBlank(runtimeContext)) {
                 invocationContext.put("runtimeSystemPromptSuffix", runtimeContext);
+            }
+            String readableConnCsv = ConnectionIdUtil.toCsv(
+                    connections.stream().map(ConnectionSummary::id).filter(Objects::nonNull).toList());
+            if (readableConnCsv != null) {
+                invocationContext.put(InvocationContextConstant.READABLE_CONNECTION_IDS, readableConnCsv);
             }
             InvocationParameters parameters = InvocationParameters.from(invocationContext);
             RequestContextInfo requestContextSnapshot = RequestContext.snapshot();
@@ -147,6 +109,55 @@ public class ChatSessionFactory {
 
             return new ChatSession(modelName, agentMode, agent, memoryId,
                     request.getMessage(), parameters, conversationId, requestContextSnapshot, agentRequestContextSnapshot);
+        } finally {
+            restoreContexts(previousRequestContext, previousAgentRequestContext);
+        }
+    }
+
+    /**
+     * Build a follow-up ChatSession for Plan-mode continuation,
+     * reusing the conversation and model from the original session.
+     */
+    public ChatSession createPlanContinuation(ChatSession original, ChatRequest request) {
+        RequestContextInfo previousRequestContext = RequestContext.snapshot();
+        AgentRequestContextInfo previousAgentRequestContext = AgentRequestContext.snapshot();
+        try {
+            if (original.requestContextSnapshot() != null) {
+                RequestContext.set(original.requestContextSnapshot());
+            } else {
+                RequestContext.clear();
+            }
+
+            AgentRequestContextInfo planAgentContext = original.agentRequestContextSnapshot() != null
+                    ? original.agentRequestContextSnapshot().toBuilder()
+                    .agentMode(AgentModeEnum.PLAN.getCode())
+                    .build()
+                    : AgentRequestContextInfo.builder()
+                    .agentMode(AgentModeEnum.PLAN.getCode())
+                    .agentType(AgentTypeEnum.MAIN.getCode())
+                    .modelName(original.modelName())
+                    .language(request.getLanguage())
+                    .build();
+            AgentRequestContext.set(planAgentContext);
+
+            PreparedReActAgent planPrepared = reActAgentProvider.getAgent(
+                    original.modelName(), request.getLanguage(), AgentModeEnum.PLAN.getCode());
+            ReActAgent planAgent = planPrepared.agent();
+            List<ConnectionSummary> planConnections = dbConnectionService.getAllConnections().stream()
+                    .map(conn -> new ConnectionSummary(conn.getId(), conn.getName(), conn.getDbType()))
+                    .toList();
+            Map<String, Object> planInvocation = buildInvocationContext();
+            String planReadableCsv = ConnectionIdUtil.toCsv(
+                    planConnections.stream().map(ConnectionSummary::id).filter(Objects::nonNull).toList());
+            if (planReadableCsv != null) {
+                planInvocation.put(InvocationContextConstant.READABLE_CONNECTION_IDS, planReadableCsv);
+            }
+            InvocationParameters planParams = InvocationParameters.from(planInvocation);
+            String continuation = "Continue analyzing the user's request and create a structured execution plan.";
+
+            return new ChatSession(original.modelName(), AgentModeEnum.PLAN, planAgent,
+                    original.memoryId(), continuation, planParams,
+                    original.conversationId(), RequestContext.snapshot(), AgentRequestContext.snapshot());
         } finally {
             restoreContexts(previousRequestContext, previousAgentRequestContext);
         }
@@ -177,13 +188,6 @@ public class ChatSessionFactory {
         Map<String, Object> invocationContext = new HashMap<>(RequestContext.toMap());
         invocationContext.putAll(AgentRequestContext.toMap());
         return invocationContext;
-    }
-
-    private String composeCombinedPrompt(String systemPrompt, String runtimeContext) {
-        if (StringUtils.isBlank(runtimeContext)) {
-            return systemPrompt;
-        }
-        return systemPrompt + "\n" + runtimeContext;
     }
 
     private void restoreContexts(RequestContextInfo previousRequestContext,

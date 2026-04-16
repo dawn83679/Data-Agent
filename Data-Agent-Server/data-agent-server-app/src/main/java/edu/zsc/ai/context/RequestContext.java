@@ -1,6 +1,8 @@
 package edu.zsc.ai.context;
 
 import edu.zsc.ai.common.constant.InvocationContextConstant;
+import edu.zsc.ai.common.enums.org.OrganizationRoleEnum;
+import edu.zsc.ai.common.enums.org.WorkspaceTypeEnum;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
@@ -84,6 +86,53 @@ public class RequestContext {
         return context != null ? context.getSchema() : null;
     }
 
+    public static WorkspaceTypeEnum getWorkspaceType() {
+        RequestContextInfo context = get();
+        return context != null ? context.getWorkspaceType() : null;
+    }
+
+    /**
+     * Defaults to {@link WorkspaceTypeEnum#PERSONAL} when unset (e.g. legacy tests).
+     */
+    public static WorkspaceTypeEnum getWorkspaceTypeOrPersonal() {
+        WorkspaceTypeEnum t = getWorkspaceType();
+        return t != null ? t : WorkspaceTypeEnum.PERSONAL;
+    }
+
+    /** Personal workspace effective. */
+    public static boolean isPersonalWorkspaceEffective() {
+        WorkspaceTypeEnum ws = getWorkspaceType();
+        if (ws == WorkspaceTypeEnum.PERSONAL) {
+            return true;
+        }
+        return ws == null && getOrgId() == null;
+    }
+
+    /** Organization workspace effective. */
+    public static boolean isOrganizationWorkspaceEffective() {
+        WorkspaceTypeEnum ws = getWorkspaceType();
+        Long orgId = getOrgId();
+        if (ws == WorkspaceTypeEnum.ORGANIZATION) {
+            return true;
+        }
+        return ws == null && orgId != null;
+    }
+
+    public static Long getOrgId() {
+        RequestContextInfo context = get();
+        return context != null ? context.getOrgId() : null;
+    }
+
+    public static Long getOrgUserRelId() {
+        RequestContextInfo context = get();
+        return context != null ? context.getOrgUserRelId() : null;
+    }
+
+    public static OrganizationRoleEnum getOrgRole() {
+        RequestContextInfo context = get();
+        return context != null ? context.getOrgRole() : null;
+    }
+
     /**
      * Clear context from current thread
      */
@@ -120,6 +169,19 @@ public class RequestContext {
         Map<String, Object> map = new HashMap<>();
         putIfNotNull(map, InvocationContextConstant.USER_ID, getUserId());
         putIfNotNull(map, InvocationContextConstant.CONVERSATION_ID, getConversationId());
+        putIfNotNull(map, InvocationContextConstant.CONNECTION_ID, getConnectionId());
+        putIfNotNull(map, InvocationContextConstant.DATABASE_NAME, getCatalog());
+        putIfNotNull(map, InvocationContextConstant.SCHEMA_NAME, getSchema());
+        WorkspaceTypeEnum ws = getWorkspaceType();
+        if (ws != null) {
+            map.put(InvocationContextConstant.WORKSPACE_TYPE, ws.name());
+        }
+        putIfNotNull(map, InvocationContextConstant.ORG_ID, getOrgId());
+        putIfNotNull(map, InvocationContextConstant.ORG_USER_REL_ID, getOrgUserRelId());
+        OrganizationRoleEnum role = getOrgRole();
+        if (role != null) {
+            map.put(InvocationContextConstant.ORG_ROLE, role.name());
+        }
         return map;
     }
 

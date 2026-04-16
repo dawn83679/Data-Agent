@@ -1,5 +1,6 @@
 package edu.zsc.ai.domain.service.db.impl;
 
+import edu.zsc.ai.common.enums.org.WorkspaceTypeEnum;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.service.db.ConnectionService;
@@ -60,13 +61,16 @@ class SchemaServiceImplTest {
                 new ActiveConnectionRegistry.ActiveConnection(
                         dataSource,
                         userId,
+                        userId,
                         connectionId,
                         "mysql",
                         pluginId,
                         "app",
                         null,
                         LocalDateTime.now(),
-                        LocalDateTime.now()
+                        LocalDateTime.now(),
+                        WorkspaceTypeEnum.PERSONAL,
+                        null
                 )
         );
         registeredConnection = connection;

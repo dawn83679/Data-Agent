@@ -2,7 +2,7 @@ package edu.zsc.ai.agent;
 
 /**
  * Provides the appropriate ReActAgent for a given model name
- * (e.g. qwen3-max-2026-01-23, qwen3-max-thinking).
+ * (e.g. qwen3.6-plus, qwen3-max-2026-01-23, qwen3-max-thinking).
  */
 public interface ReActAgentProvider {
 

@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -20,4 +21,9 @@ public class UserResponse {
     private String authProvider;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    /**
+     * Organizations the user is an active member of (enabled org, active membership, active role).
+     */
+    private List<UserOrganizationMembershipResponse> organizations;
 }

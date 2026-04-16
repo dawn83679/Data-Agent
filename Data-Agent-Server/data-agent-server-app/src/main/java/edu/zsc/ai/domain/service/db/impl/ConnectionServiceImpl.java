@@ -8,6 +8,8 @@ import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.request.db.ConnectRequest;
 import edu.zsc.ai.domain.model.dto.response.db.ConnectionTestResponse;
 import edu.zsc.ai.domain.model.entity.db.DbConnection;
+import edu.zsc.ai.context.RequestContext;
+import edu.zsc.ai.domain.service.db.ConnectionAccessService;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.DbConnectionService;
 import edu.zsc.ai.domain.service.db.ManagedDataSourceFactory;
@@ -31,6 +33,7 @@ import java.util.List;
 public class ConnectionServiceImpl implements ConnectionService {
 
     private final DbConnectionService dbConnectionService;
+    private final ConnectionAccessService connectionAccessService;
     private final ManagedDataSourceFactory managedDataSourceFactory;
 
     @Override
@@ -81,7 +84,9 @@ public class ConnectionServiceImpl implements ConnectionService {
 
     @Override
     public Boolean openConnection(DbContext db) {
-        DbConnection dbConnection = dbConnectionService.getOwnedById(db.connectionId());
+        connectionAccessService.assertReadable(db.connectionId());
+        DbConnection dbConnection = dbConnectionService.getById(db.connectionId());
+        BusinessException.assertNotNull(dbConnection, ResponseCode.PARAM_ERROR, ResponseMessageKey.CONNECTION_NOT_FOUND_MESSAGE);
         ConnectionConfig config = ConnectionConverter.convertToConfig(dbConnection);
         if (db.catalog() != null) {
             config.setDatabase(db.catalog());
@@ -122,16 +127,23 @@ public class ConnectionServiceImpl implements ConnectionService {
 
         BusinessException.assertNotNull(res, ResponseCode.PARAM_ERROR, ResponseMessageKey.CONNECTION_ACCESS_DENIED_MESSAGE);
 
+        Long loginUserId = RequestContext.getUserId();
+        if (loginUserId == null) {
+            throw new IllegalStateException("No userId available in RequestContext");
+        }
         return new ActiveConnectionRegistry.ActiveConnection(
                 res.result(),
                 dbConnection.getUserId(),
+                loginUserId,
                 db.connectionId(),
                 dbConnection.getDbType(),
                 ((Plugin) res.manager()).getPluginId(),
                 db.catalog(),
                 db.schema(),
                 LocalDateTime.now(),
-                LocalDateTime.now()
+                LocalDateTime.now(),
+                RequestContext.getWorkspaceTypeOrPersonal(),
+                RequestContext.getOrgId()
         );
     }
 

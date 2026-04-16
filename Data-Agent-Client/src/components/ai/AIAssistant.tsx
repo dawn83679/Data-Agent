@@ -7,6 +7,8 @@ import { ChatInput } from './ChatInput';
 import { AIAssistantHeader } from './AIAssistantHeader';
 import { AIAssistantContent } from './AIAssistantContent';
 import { PlanListPanel } from './PlanListPanel';
+import { ConversationHistoryPanel } from './ConversationHistoryPanel';
+import { cn } from '../../lib/utils';
 import { useConversationRuntime } from '../../hooks/useConversationRuntime';
 import { useAuthStore } from '../../store/authStore';
 import { conversationService } from '../../services/conversation.service';
@@ -24,8 +26,10 @@ import { findMentionTokens } from './mentionTypes';
 import { chatMessagesToMessages } from './MessageList';
 import { extractPlansFromMessages } from './blocks/exitPlanModeTypes';
 import { planTabId } from './blocks/ToolRunBlock';
+import type { Conversation } from '../../types/conversation';
 
 const DEFAULT_AGENT: AgentType = 'Agent';
+const HISTORY_SIDEBAR_LS_KEY = 'aiAssistant.historySidebar';
 
 function filterMentionsByTokens(mentions: ChatUserMention[], tokens: string[]): ChatUserMention[] {
   if (mentions.length === 0 || tokens.length === 0) {
@@ -56,7 +60,13 @@ function stripLocalCompactMessages(list: ChatMessage[]): ChatMessage[] {
   return list.filter((message) => !message.localKind?.startsWith('compact-'));
 }
 
-export function AIAssistant({ onClosePanel }: { onClosePanel?: () => void }) {
+export interface AIAssistantProps {
+  onClosePanel?: () => void;
+  /** Organization COMMON full-page AI home only; personal / org admin keep header history popover. */
+  historyAsLeftSidebar?: boolean;
+}
+
+export function AIAssistant({ onClosePanel, historyAsLeftSidebar = false }: AIAssistantProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -67,7 +77,16 @@ export function AIAssistant({ onClosePanel }: { onClosePanel?: () => void }) {
   const [chatContext, setChatContext] = useState<ChatContext>({});
   const [userMentions, setUserMentionsState] = useState<ChatUserMention[]>([]);
   const userMentionsRef = useRef<ChatUserMention[]>([]);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [historySidebarOpen, setHistorySidebarOpen] = useState(() => {
+    if (!historyAsLeftSidebar) return false;
+    if (typeof localStorage === 'undefined') return true;
+    try {
+      return localStorage.getItem(HISTORY_SIDEBAR_LS_KEY) !== '0';
+    } catch {
+      return true;
+    }
+  });
+  const [isHistoryPopoverOpen, setIsHistoryPopoverOpen] = useState(false);
   const [isPlanListOpen, setIsPlanListOpen] = useState(false);
   const [isCompacting, setIsCompacting] = useState(false);
   const [input, setInput] = useState('');
@@ -119,6 +138,15 @@ export function AIAssistant({ onClosePanel }: { onClosePanel?: () => void }) {
     const activeTokens = findMentionTokens(input, userMentionsRef.current.map((mention) => mention.token));
     setUserMentions((prev) => filterMentionsByTokens(prev, activeTokens));
   }, [input, setUserMentions]);
+
+  useEffect(() => {
+    if (!historyAsLeftSidebar) return;
+    try {
+      localStorage.setItem(HISTORY_SIDEBAR_LS_KEY, historySidebarOpen ? '1' : '0');
+    } catch {
+      /* ignore */
+    }
+  }, [historyAsLeftSidebar, historySidebarOpen]);
 
   // Restore mode/model when active conversation changes
   const prevActiveConversationIdRef = useRef<number | null | undefined>(undefined);
@@ -175,7 +203,7 @@ export function AIAssistant({ onClosePanel }: { onClosePanel?: () => void }) {
   }, [messages]);
 
   useEffect(() => {
-    aiService.getModels().then((list) => {
+    aiService.getModels(true).then((list) => {
       if (list.length > 0) {
         setModelOptions(list);
         setModelState((current) => {
@@ -210,6 +238,28 @@ export function AIAssistant({ onClosePanel }: { onClosePanel?: () => void }) {
     setAgentState(DEFAULT_AGENT);
     setModelState(DEFAULT_MODEL);
   }, []);
+
+  const handleNewChat = useCallback(() => {
+    resetToDefaults();
+    setActiveConversation(null);
+    loadMessages(null, []);
+    setConversationTokenCount(null, null);
+  }, [loadMessages, resetToDefaults, setActiveConversation, setConversationTokenCount]);
+
+  const handleSelectConversationFromHistory = useCallback(
+    async (c: Conversation) => {
+      setActiveConversation(c.id);
+      setConversationTabTitle(c.id, c.title);
+      setConversationTokenCount(c.id, c.tokenCount ?? null);
+      try {
+        const list = await conversationService.getMessages(c.id);
+        loadMessages(c.id, list);
+      } catch {
+        loadMessages(c.id, []);
+      }
+    },
+    [loadMessages, setActiveConversation, setConversationTabTitle, setConversationTokenCount]
+  );
 
   const buildLocalAssistantMessage = useCallback((content: string): ChatMessage => ({
     id: crypto.randomUUID(),
@@ -280,9 +330,14 @@ export function AIAssistant({ onClosePanel }: { onClosePanel?: () => void }) {
         loadMessages(null, []);
         setConversationTokenCount(null, null);
       } else if (id === SLASH_COMMAND_IDS.HISTORY) {
-        setIsHistoryOpen(true);
+        if (historyAsLeftSidebar) {
+          setHistorySidebarOpen(true);
+        } else {
+          setIsHistoryPopoverOpen(true);
+        }
       } else if (id === SLASH_COMMAND_IDS.MEMORY) {
-        setIsHistoryOpen(false);
+        if (historyAsLeftSidebar) setHistorySidebarOpen(false);
+        setIsHistoryPopoverOpen(false);
         navigate('/memories');
       } else if (id === SLASH_COMMAND_IDS.COMPACT) {
         void (async () => {
@@ -357,85 +412,114 @@ export function AIAssistant({ onClosePanel }: { onClosePanel?: () => void }) {
     },
   };
 
+  const headerShared = {
+    title: t(I18N_KEYS.AI.TITLE),
+    historyAriaLabel: t(I18N_KEYS.AI.HISTORY),
+    accessToken: !!accessToken,
+    currentConversationId: activeConversationId,
+    conversationTabs,
+    onSelectTab: async (id: number | null) => {
+      if (id == null) {
+        setActiveConversation(null);
+        loadMessages(null, []);
+        return;
+      }
+      setActiveConversation(id);
+      if (id <= 0) return;
+
+      const tab = conversationTabs.find((t) => t.id === id);
+      if (tab && tab.messageCount > 0) return;
+
+      try {
+        const list = await conversationService.getMessages(id);
+        loadMessages(id, list);
+        const conversation = await conversationService.getById(id);
+        setConversationTokenCount(id, conversation.tokenCount ?? null);
+      } catch {
+        loadMessages(id, []);
+        setConversationTokenCount(id, null);
+      }
+    },
+    onCloseTab: (id: number | null) => {
+      closeConversationTab(id);
+    },
+    onNewChat: handleNewChat,
+    onClosePanel: () => {
+      setIsHistoryPopoverOpen(false);
+      if (historyAsLeftSidebar) setHistorySidebarOpen(false);
+      onClosePanel?.();
+    },
+  };
+
+  const mainColumn = (
+    <>
+      {historyAsLeftSidebar ? (
+        <AIAssistantHeader
+          {...headerShared}
+          historyMode="sidebar"
+          onToggleHistorySidebar={() => setHistorySidebarOpen((v) => !v)}
+        />
+      ) : (
+        <AIAssistantHeader
+          {...headerShared}
+          historyMode="popover"
+          isHistoryPopoverOpen={isHistoryPopoverOpen}
+          setIsHistoryPopoverOpen={setIsHistoryPopoverOpen}
+          onSelectConversation={handleSelectConversationFromHistory}
+        />
+      )}
+
+      <AIAssistantContent
+        error={undefined}
+        messages={chatMessages}
+        messagesEndRef={messagesEndRef}
+        isLoading={isLoading}
+        isWaiting={isWaiting}
+        queue={queue}
+        onRemoveFromQueue={removeFromQueue}
+      />
+
+      <div ref={chatInputAnchorRef}>
+        <ChatInput />
+      </div>
+      <PlanListPanel
+        open={isPlanListOpen}
+        onClose={() => setIsPlanListOpen(false)}
+        plans={conversationPlans}
+        anchorRef={chatInputAnchorRef}
+      />
+    </>
+  );
+
   return (
     <AIAssistantProvider value={contextValue}>
-      <div className="flex h-full flex-col overflow-hidden bg-transparent">
-        <AIAssistantHeader
-          title={t(I18N_KEYS.AI.TITLE)}
-          historyAriaLabel={t(I18N_KEYS.AI.HISTORY)}
-          accessToken={!!accessToken}
-          isHistoryOpen={isHistoryOpen}
-          setIsHistoryOpen={setIsHistoryOpen}
-          currentConversationId={activeConversationId}
-          conversationTabs={conversationTabs}
-          onSelectTab={async (id) => {
-            if (id == null) {
-              setActiveConversation(null);
-              loadMessages(null, []);
-              return;
-            }
-            setActiveConversation(id);
-            if (id <= 0) return;
+      {historyAsLeftSidebar ? (
+        <div className="flex h-full min-h-0 flex-row overflow-hidden bg-transparent">
+          {accessToken ? (
+            <aside
+              className={cn(
+                'flex shrink-0 flex-col overflow-hidden border-r theme-border transition-[width] duration-200 ease-out',
+                historySidebarOpen ? 'w-[280px]' : 'w-0 border-transparent'
+              )}
+            >
+              {historySidebarOpen ? (
+                <ConversationHistoryPanel
+                  variant="sidebar"
+                  open
+                  onClose={() => setHistorySidebarOpen(false)}
+                  onSelectConversation={handleSelectConversationFromHistory}
+                  onNewChat={handleNewChat}
+                  currentConversationId={activeConversationId}
+                />
+              ) : null}
+            </aside>
+          ) : null}
 
-            const tab = conversationTabs.find((t) => t.id === id);
-            if (tab && tab.messageCount > 0) return;
-
-            try {
-              const list = await conversationService.getMessages(id);
-              loadMessages(id, list);
-              const conversation = await conversationService.getById(id);
-              setConversationTokenCount(id, conversation.tokenCount ?? null);
-            } catch {
-              loadMessages(id, []);
-              setConversationTokenCount(id, null);
-            }
-          }}
-          onCloseTab={(id) => {
-            closeConversationTab(id);
-          }}
-          onSelectConversation={async (c) => {
-            setActiveConversation(c.id);
-            setConversationTabTitle(c.id, c.title);
-            setConversationTokenCount(c.id, c.tokenCount ?? null);
-            try {
-              const list = await conversationService.getMessages(c.id);
-              loadMessages(c.id, list);
-            } catch {
-              loadMessages(c.id, []);
-            }
-          }}
-          onNewChat={() => {
-            resetToDefaults();
-            setActiveConversation(null);
-            loadMessages(null, []);
-            setConversationTokenCount(null, null);
-          }}
-          onClosePanel={() => {
-            setIsHistoryOpen(false);
-            onClosePanel?.();
-          }}
-        />
-
-        <AIAssistantContent
-          error={undefined}
-          messages={chatMessages}
-          messagesEndRef={messagesEndRef}
-          isLoading={isLoading}
-          isWaiting={isWaiting}
-          queue={queue}
-          onRemoveFromQueue={removeFromQueue}
-        />
-
-        <div ref={chatInputAnchorRef}>
-          <ChatInput />
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{mainColumn}</div>
         </div>
-        <PlanListPanel
-          open={isPlanListOpen}
-          onClose={() => setIsPlanListOpen(false)}
-          plans={conversationPlans}
-          anchorRef={chatInputAnchorRef}
-        />
-      </div>
+      ) : (
+        <div className="flex h-full flex-col overflow-hidden bg-transparent">{mainColumn}</div>
+      )}
     </AIAssistantProvider>
   );
 }

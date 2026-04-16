@@ -19,6 +19,9 @@ public class AgentRequestContextInfo {
 
     private List<Long> allowedConnectionIds;
 
+    /** Main-agent snapshot: connections visible to the user for this chat session. */
+    private List<Long> readableConnectionIds;
+
     private String modelName;
 
     private String language;

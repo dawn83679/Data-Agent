@@ -26,13 +26,25 @@ export interface TokenPairResponse {
     refreshToken: string;
 }
 
+export type OrgRoleCode = 'ADMIN' | 'COMMON';
+
+export interface UserOrganizationMembership {
+    orgId: number;
+    orgCode: string;
+    orgName: string;
+    roleCode: OrgRoleCode | string;
+}
+
 export interface User {
     id: number;
     username: string;
     email: string;
     avatarUrl?: string;
     authProvider?: string;
+    organizations?: UserOrganizationMembership[];
 }
+
+export type WorkspaceType = 'PERSONAL' | 'ORGANIZATION';
 
 export interface SessionInfo {
     id: number;

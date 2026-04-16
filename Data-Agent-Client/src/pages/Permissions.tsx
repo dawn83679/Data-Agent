@@ -1,6 +1,7 @@
 import { Plus, RefreshCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/ui/Button';
 import { I18N_KEYS } from '../constants/i18nKeys';
 import { ROUTES } from '../constants/routes';
@@ -17,6 +18,12 @@ export default function Permissions() {
   const [searchParams] = useSearchParams();
   const requestedConversationId = parseConversationId(searchParams.get('conversationId'));
   const workbench = usePermissionWorkbench(requestedConversationId);
+  const isOrgCommon =
+    useAuthStore((s) => s.workspaceType === 'ORGANIZATION' && s.workspaceOrgRole === 'COMMON');
+
+  if (isOrgCommon) {
+    return <Navigate to={ROUTES.HOME} replace />;
+  }
 
   return (
     <div className="space-y-6 pb-8 theme-text-primary">

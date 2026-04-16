@@ -1,14 +1,16 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../ui/Button";
 import { useAuthStore } from "../../store/authStore";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 import { authService } from "../../services/auth.service";
-import { LogOut, Settings } from "lucide-react";
+import { Building2, LogOut, Settings } from "lucide-react";
 import { resolveErrorMessage } from "../../lib/errorMessage";
 import { useToast } from "../../hooks/useToast";
 import { useTranslation } from "react-i18next";
 import { I18N_KEYS } from "../../constants/i18nKeys";
+import { ROUTES } from "../../constants/routes";
 import { getPlatformShortcuts } from "../../lib/platformShortcuts";
+import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 
 interface HeaderProps {
     onLoginClick: () => void;
@@ -17,6 +19,7 @@ interface HeaderProps {
 export function Header({ onLoginClick }: HeaderProps) {
     const { t } = useTranslation();
     const shortcuts = getPlatformShortcuts();
+    const location = useLocation();
     const navigate = useNavigate();
     const { user, accessToken, clearAuth } = useAuthStore();
     const { setSettingsModalOpen } = useWorkspaceStore();
@@ -51,10 +54,25 @@ export function Header({ onLoginClick }: HeaderProps) {
                 </button>
 
                 <div className="flex flex-1 justify-end items-center gap-3 theme-text-secondary min-w-0">
+                    {accessToken ? <WorkspaceSwitcher /> : null}
                     {accessToken ? (
                         <div className="flex items-center gap-3 min-w-0">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate(ROUTES.ORGANIZATION)}
+                                className={`h-7 gap-1.5 px-2.5 text-xs ${
+                                    location.pathname === ROUTES.ORGANIZATION ? "bg-white/5 theme-text-primary" : ""
+                                }`}
+                                title={t(I18N_KEYS.COMMON.ORGANIZATION)}
+                                type="button"
+                            >
+                                <Building2 className="h-3.5 w-3.5" />
+                                <span className="hidden sm:inline">{t(I18N_KEYS.COMMON.ORGANIZATION)}</span>
+                            </Button>
+
                             <button
-                                onClick={() => navigate("/profile")}
+                                onClick={() => navigate(ROUTES.PROFILE)}
                                 className="flex items-center justify-center rounded-full hover:theme-text-primary transition-colors"
                                 title={t(I18N_KEYS.COMMON.PROFILE)}
                                 type="button"

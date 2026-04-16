@@ -29,12 +29,12 @@ export const aiService = {
    * Get available chat models (e.g. for model selector).
    * Falls back to empty array on error; caller may use a default list.
    */
-  getModels: async (): Promise<ModelOption[]> => {
-    if (modelsCache) {
+  getModels: async (forceRefresh = false): Promise<ModelOption[]> => {
+    if (!forceRefresh && modelsCache) {
       return modelsCache;
     }
 
-    if (modelsInFlight) {
+    if (!forceRefresh && modelsInFlight) {
       return modelsInFlight;
     }
 

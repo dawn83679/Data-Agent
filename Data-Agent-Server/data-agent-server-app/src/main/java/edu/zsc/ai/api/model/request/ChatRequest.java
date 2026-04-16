@@ -19,7 +19,7 @@ public class ChatRequest extends BaseRequest {
     private String message;
 
     /**
-     * Model name for chat (e.g. qwen3.5-plus, qwen3-max-2026-01-23, qwen3-max-thinking).
+     * Model name for chat (e.g. qwen3.5-plus, qwen3.6-plus, qwen3-max-2026-01-23, qwen3-max-thinking).
      * Optional; server defaults to ai.models.default-model when blank.
      */
     private String model;
@@ -46,6 +46,15 @@ public class ChatRequest extends BaseRequest {
      * These are used to populate the runtime prompt's explicit references block.
      */
     private List<ChatUserMention> userMentions;
+
+    /**
+     * Optional client workspace fallback when custom HTTP headers are missing on the chat stream request
+     * (e.g. some fetch/EventSource paths). Values are validated with {@code loadActiveMembership}; if the
+     * interceptor already set {@code ORGANIZATION} with {@code orgId}, body hints are ignored.
+     */
+    private String clientWorkspaceType;
+
+    private Long clientOrgId;
 
     @Override
     public String getCatalog() {

@@ -4,6 +4,7 @@ import edu.zsc.ai.common.converter.db.SqlExecutionConverter;
 import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.request.db.AgentExecuteSqlRequest;
 import edu.zsc.ai.domain.model.dto.response.db.ExecuteSqlResponse;
+import edu.zsc.ai.domain.service.db.ConnectionAccessService;
 import edu.zsc.ai.domain.service.db.ConnectionService;
 import edu.zsc.ai.domain.service.db.SqlExecutionService;
 import edu.zsc.ai.plugin.capability.CommandExecutor;
@@ -23,9 +24,11 @@ import java.util.List;
 public class SqlExecutionServiceImpl implements SqlExecutionService {
 
     private final ConnectionService connectionService;
+    private final ConnectionAccessService connectionAccessService;
 
     @Override
     public ExecuteSqlResponse executeSql(AgentExecuteSqlRequest request) {
+        connectionAccessService.assertWorkbenchApiAllowed();
         DbContext db = DbContext.from(request);
         String sql = request.getSql();
 

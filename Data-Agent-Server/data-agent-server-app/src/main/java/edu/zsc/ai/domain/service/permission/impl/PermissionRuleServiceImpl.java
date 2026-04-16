@@ -6,6 +6,7 @@ import edu.zsc.ai.common.enums.permission.CatalogMatchMode;
 import edu.zsc.ai.common.enums.permission.PermissionGrantPreset;
 import edu.zsc.ai.common.enums.permission.PermissionScopeType;
 import edu.zsc.ai.common.enums.permission.SchemaMatchMode;
+import edu.zsc.ai.common.enums.org.WorkspaceTypeEnum;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.domain.exception.BusinessException;
 import edu.zsc.ai.domain.mapper.ai.AiPermissionRuleMapper;
@@ -99,6 +100,7 @@ public class PermissionRuleServiceImpl extends ServiceImpl<AiPermissionRuleMappe
         LocalDateTime now = LocalDateTime.now();
         if (existing == null) {
             AiPermissionRule entity = new AiPermissionRule();
+            fillWorkspaceFields(entity);
             entity.setScopeType(scopeType);
             entity.setUserId(userId);
             entity.setConversationId(scopeType == PermissionScopeType.CONVERSATION ? conversationId : null);
@@ -187,13 +189,46 @@ public class PermissionRuleServiceImpl extends ServiceImpl<AiPermissionRuleMappe
         AiPermissionRule entity = getById(id);
         BusinessException.assertNotNull(entity, MESSAGE_PERMISSION_NOT_FOUND);
         BusinessException.assertTrue(Objects.equals(entity.getUserId(), userId), MESSAGE_PERMISSION_ACCESS_DENIED);
+        BusinessException.assertTrue(matchesRequestWorkspace(entity), MESSAGE_PERMISSION_ACCESS_DENIED);
         return entity;
     }
 
     private List<AiPermissionRule> currentUserRules(Long userId) {
         return list().stream()
                 .filter(entity -> Objects.equals(entity.getUserId(), userId))
+                .filter(this::matchesRequestWorkspace)
                 .toList();
+    }
+
+    private boolean matchesRequestWorkspace(AiPermissionRule entity) {
+        WorkspaceTypeEnum ctx = RequestContext.getWorkspaceTypeOrPersonal();
+        Long ctxOrgId = RequestContext.getOrgId();
+        WorkspaceTypeEnum ew = entity.getWorkspaceType();
+        if (ew == null) {
+            return ctx == WorkspaceTypeEnum.PERSONAL;
+        }
+        if (ctx == WorkspaceTypeEnum.PERSONAL) {
+            return ew == WorkspaceTypeEnum.PERSONAL && entity.getOrgId() == null;
+        }
+        return ew == WorkspaceTypeEnum.ORGANIZATION && Objects.equals(entity.getOrgId(), ctxOrgId);
+    }
+
+    private WorkspaceTypeEnum resolvedWorkspaceType(AiPermissionRule entity) {
+        return entity.getWorkspaceType() != null ? entity.getWorkspaceType() : WorkspaceTypeEnum.PERSONAL;
+    }
+
+    private void fillWorkspaceFields(AiPermissionRule entity) {
+        WorkspaceTypeEnum ws = RequestContext.getWorkspaceTypeOrPersonal();
+        entity.setWorkspaceType(ws);
+        if (ws == WorkspaceTypeEnum.PERSONAL) {
+            entity.setOrgId(null);
+            return;
+        }
+        Long orgId = RequestContext.getOrgId();
+        if (orgId == null) {
+            throw new IllegalStateException("ORGANIZATION workspace requires orgId in RequestContext");
+        }
+        entity.setOrgId(orgId);
     }
 
     private boolean matchesListScope(AiPermissionRule entity, PermissionScopeType scopeType, Long conversationId) {
@@ -263,6 +298,8 @@ public class PermissionRuleServiceImpl extends ServiceImpl<AiPermissionRuleMappe
         return PermissionRuleResponse.builder()
                 .id(entity.getId())
                 .scopeType(entity.getScopeType())
+                .workspaceType(resolvedWorkspaceType(entity))
+                .orgId(entity.getOrgId())
                 .conversationId(entity.getConversationId())
                 .connectionId(entity.getConnectionId())
                 .connectionName(connectionName)

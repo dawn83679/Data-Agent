@@ -1,5 +1,6 @@
 package edu.zsc.ai.domain.model.dto.response.permission;
 
+import edu.zsc.ai.common.enums.org.WorkspaceTypeEnum;
 import edu.zsc.ai.common.enums.permission.PermissionGrantPreset;
 import edu.zsc.ai.common.enums.permission.PermissionScopeType;
 import lombok.Builder;
@@ -13,6 +14,8 @@ public class PermissionRuleResponse {
 
     private Long id;
     private PermissionScopeType scopeType;
+    private WorkspaceTypeEnum workspaceType;
+    private Long orgId;
     private Long conversationId;
     private Long connectionId;
     private String connectionName;

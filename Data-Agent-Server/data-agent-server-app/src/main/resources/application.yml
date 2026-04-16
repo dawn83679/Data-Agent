@@ -77,6 +77,11 @@ ai:
         support-thinking: false
         max-context-tokens: 1048576
         memory-threshold: 900000
+      - model-name: qwen3.6-plus
+        api-model-name: qwen3.6-plus
+        support-thinking: false
+        max-context-tokens: 1000000
+        memory-threshold: 900000
       - model-name: qwen3-max-2026-01-23
         api-model-name: qwen3-max-2026-01-23
         support-thinking: false

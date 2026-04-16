@@ -8,6 +8,8 @@ import edu.zsc.ai.agent.tool.error.AgentToolExecuteException;
 import edu.zsc.ai.config.ai.SubAgentManager;
 import edu.zsc.ai.config.ai.SubAgentProperties;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
+import edu.zsc.ai.domain.service.db.ConnectionAccessService;
+import edu.zsc.ai.observability.AgentLogService;
 import edu.zsc.ai.util.JsonUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
@@ -20,6 +22,7 @@ import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 class CallingExplorerToolTest {
@@ -28,6 +31,8 @@ class CallingExplorerToolTest {
     private CallingExplorerTool tool;
     private ExecutorService executorService;
     private Executor explorerExecutor;
+    private AgentLogService agentLogService;
+    private ConnectionAccessService connectionAccessService;
 
     @BeforeEach
     void setUp() {
@@ -37,7 +42,10 @@ class CallingExplorerToolTest {
         SubAgentManager subAgentManager = new SubAgentManager(mockExplorer, mockPlanner, properties);
         executorService = Executors.newFixedThreadPool(3);
         explorerExecutor = executorService;
-        tool = new CallingExplorerTool(subAgentManager, explorerExecutor);
+        agentLogService = mock(AgentLogService.class);
+        connectionAccessService = mock(ConnectionAccessService.class);
+        doNothing().when(connectionAccessService).assertReadable(anyLong());
+        tool = new CallingExplorerTool(subAgentManager, explorerExecutor, agentLogService, connectionAccessService);
     }
 
     @AfterEach

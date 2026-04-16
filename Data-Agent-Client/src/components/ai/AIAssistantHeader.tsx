@@ -1,24 +1,32 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { History, Plus, X } from 'lucide-react';
+import { History, PanelLeft, Plus, X } from 'lucide-react';
 import { ConversationHistoryPanel } from './ConversationHistoryPanel';
 import { cn } from '../../lib/utils';
 import type { ConversationTabSummary } from '../../hooks/useConversationRuntime';
 import type { Conversation } from '../../types/conversation';
 
-export interface AIAssistantHeaderProps {
+interface AIAssistantHeaderBaseProps {
   title: string;
   historyAriaLabel: string;
   accessToken: boolean;
-  isHistoryOpen: boolean;
-  setIsHistoryOpen: React.Dispatch<React.SetStateAction<boolean>>;
   currentConversationId: number | null;
   conversationTabs: ConversationTabSummary[];
   onSelectTab: (id: number | null) => void;
   onCloseTab: (id: number | null) => void;
-  onSelectConversation: (conversation: Conversation) => void;
   onNewChat: () => void;
   onClosePanel?: () => void;
 }
+
+export type AIAssistantHeaderProps = AIAssistantHeaderBaseProps &
+  (
+    | { historyMode: 'sidebar'; onToggleHistorySidebar: () => void }
+    | {
+        historyMode: 'popover';
+        isHistoryPopoverOpen: boolean;
+        setIsHistoryPopoverOpen: React.Dispatch<React.SetStateAction<boolean>>;
+        onSelectConversation: (conversation: Conversation) => void;
+      }
+  );
 
 function normalizeTabTitle(raw: string): string {
   return raw.replace(/\s+/g, ' ').trim();
@@ -37,20 +45,20 @@ function formatTabTitle(tab: ConversationTabSummary): { display: string; full: s
   return { display, full };
 }
 
-export function AIAssistantHeader({
-  title: _title,
-  historyAriaLabel,
-  accessToken,
-  isHistoryOpen,
-  setIsHistoryOpen,
-  currentConversationId,
-  conversationTabs,
-  onSelectTab,
-  onCloseTab,
-  onSelectConversation,
-  onNewChat,
-  onClosePanel,
-}: AIAssistantHeaderProps) {
+export function AIAssistantHeader(props: AIAssistantHeaderProps) {
+  const {
+    title: _title,
+    historyAriaLabel,
+    accessToken,
+    historyMode,
+    currentConversationId,
+    conversationTabs,
+    onSelectTab,
+    onCloseTab,
+    onNewChat,
+    onClosePanel,
+  } = props;
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -58,7 +66,6 @@ export function AIAssistantHeader({
   const scrollEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const tabs = useMemo(() => {
-    // Ensure at least one tab exists (the new-chat runtime)
     if (conversationTabs.length === 0) {
       return [
         {
@@ -87,7 +94,6 @@ export function AIAssistantHeader({
     const el = scrollRef.current;
     if (!el) return;
     if (el.scrollWidth <= el.clientWidth) return;
-    // Convert vertical wheel to horizontal scroll (Cursor-like)
     if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
       e.preventDefault();
       el.scrollBy({ left: e.deltaY, behavior: 'auto' });
@@ -123,14 +129,24 @@ export function AIAssistantHeader({
     if (!el) return;
     const active = el.querySelector<HTMLElement>('[data-ai-tab-active="true"]');
     active?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-    // Recompute masks after potential scrollIntoView
     setTimeout(() => updateScrollState(), 0);
   }, [currentConversationId, updateScrollState]);
 
   return (
     <div className="workbench-header flex items-center justify-between gap-2 px-3 py-2 shrink-0">
-      <div className="flex-1 min-w-0">
-        <div className="relative min-w-0 overflow-hidden">
+      <div className="flex flex-1 min-w-0 items-center gap-2">
+        {accessToken && historyMode === 'sidebar' ? (
+          <button
+            type="button"
+            className="workbench-icon-button shrink-0"
+            onClick={props.onToggleHistorySidebar}
+            aria-label={historyAriaLabel}
+            title={historyAriaLabel}
+          >
+            <PanelLeft className="w-4 h-4" />
+          </button>
+        ) : null}
+        <div className="relative min-w-0 flex-1 overflow-hidden">
           {canScrollLeft && (
             <div className="pointer-events-none absolute left-0 top-0 bottom-0 z-10 w-6 bg-gradient-to-r from-[color:var(--bg-panel)] via-[color:var(--bg-panel)]/88 to-transparent" />
           )}
@@ -202,40 +218,43 @@ export function AIAssistantHeader({
         >
           <Plus className="w-4 h-4" />
         </button>
-        {accessToken && (
+        {accessToken && historyMode === 'popover' ? (
           <div className="relative">
             <button
               type="button"
               className="workbench-icon-button"
               onClick={(e) => {
                 e.stopPropagation();
-                setIsHistoryOpen((prev) => !prev);
+                props.setIsHistoryPopoverOpen((prev) => !prev);
               }}
               aria-label={historyAriaLabel}
               title={historyAriaLabel}
             >
               <History className="w-4 h-4" />
             </button>
-            {isHistoryOpen && (
+            {props.isHistoryPopoverOpen ? (
               <ConversationHistoryPanel
-                open={isHistoryOpen}
-                onClose={() => setIsHistoryOpen(false)}
-                onSelectConversation={onSelectConversation}
+                variant="popover"
+                open={props.isHistoryPopoverOpen}
+                onClose={() => props.setIsHistoryPopoverOpen(false)}
+                onSelectConversation={props.onSelectConversation}
                 onNewChat={onNewChat}
                 currentConversationId={currentConversationId}
               />
-            )}
+            ) : null}
           </div>
-        )}
-        <button
-          type="button"
-          className="workbench-icon-button"
-          aria-label="Close panel"
-          title="Close panel"
-          onClick={onClosePanel}
-        >
-          <X className="w-4 h-4" />
-        </button>
+        ) : null}
+        {onClosePanel ? (
+          <button
+            type="button"
+            className="workbench-icon-button"
+            aria-label="Close panel"
+            title="Close panel"
+            onClick={onClosePanel}
+          >
+            <X className="w-4 h-4" />
+          </button>
+        ) : null}
       </div>
     </div>
   );

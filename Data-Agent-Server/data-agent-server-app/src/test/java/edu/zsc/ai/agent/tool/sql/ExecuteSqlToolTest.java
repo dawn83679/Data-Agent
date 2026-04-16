@@ -12,6 +12,7 @@ import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.context.RequestContextInfo;
 import edu.zsc.ai.domain.model.context.DbContext;
 import edu.zsc.ai.domain.model.dto.response.db.ExecuteSqlResponse;
+import edu.zsc.ai.domain.service.db.ConnectionAccessService;
 import edu.zsc.ai.domain.service.db.SqlExecutionService;
 import edu.zsc.ai.domain.service.permission.PermissionRuleService;
 import org.junit.jupiter.api.AfterEach;
@@ -36,7 +37,9 @@ class ExecuteSqlToolTest {
     private final SqlExecutionService sqlExecutionService = mock(SqlExecutionService.class);
     private final PermissionRuleService permissionRuleService = mock(PermissionRuleService.class);
     private final WriteExecutionApprovalStore writeExecutionApprovalStore = new WriteExecutionApprovalStore();
-    private final ExecuteSqlTool tool = new ExecuteSqlTool(sqlExecutionService, permissionRuleService, writeExecutionApprovalStore);
+    private final ConnectionAccessService connectionAccessService = mock(ConnectionAccessService.class);
+    private final ExecuteSqlTool tool = new ExecuteSqlTool(
+            sqlExecutionService, permissionRuleService, writeExecutionApprovalStore, connectionAccessService);
 
     @AfterEach
     void tearDown() {

@@ -16,7 +16,7 @@ export interface ChatUserMention {
 
 export interface ChatRequest {
   message: string;
-  /** Model name for chat (e.g. qwen3.5-plus, qwen3-max-2026-01-23, qwen3-max-thinking). */
+  /** Model name for chat (e.g. qwen3.5-plus, qwen3.6-plus, qwen3-max-2026-01-23, qwen3-max-thinking). */
   model?: string;
   /** Prompt language for backend system prompt routing (e.g. en, zh). */
   language?: string;
@@ -27,6 +27,12 @@ export interface ChatRequest {
   catalogName?: string;
   schemaName?: string;
   userMentions?: ChatUserMention[];
+  /**
+   * Mirrors workspace headers for /api/chat/stream when fetch cannot rely on custom headers.
+   * Server validates org membership.
+   */
+  clientWorkspaceType?: 'PERSONAL' | 'ORGANIZATION';
+  clientOrgId?: number;
 }
 
 /** Aligned with backend MessageBlockEnum */
