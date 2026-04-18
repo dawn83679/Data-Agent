@@ -61,7 +61,7 @@ ai:
     api-key: ${ALIYUN_AI_API_KEY:}
     gateway:
       enabled: true
-      base-url: https://coding.dashscope.aliyuncs.com/v1
+      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
     parameters:
       thinking-budget: 1000
   embedding:
