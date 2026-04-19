@@ -29,6 +29,7 @@ import edu.zsc.ai.context.AgentRequestContext;
 import edu.zsc.ai.context.AgentRequestContextInfo;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.context.RequestContextInfo;
+import edu.zsc.ai.domain.model.entity.ai.AiMemory;
 import edu.zsc.ai.domain.service.ai.MemoryService;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallItem;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallManager;
@@ -127,7 +128,40 @@ class ReadMemoryToolTest {
         AgentToolResult result = tool.readMemory("find workflow constraints", null, null, null, InvocationParameters.from(Map.of()));
 
         assertFalse(result.isSuccess());
-        assertTrue(result.getMessage().contains("only available to the main agent"));
+        assertTrue(result.getMessage().contains("only available"));
+    }
+
+    @Test
+    void memoryWriterCanReadConversationWorkingMemoryDirectly() {
+        AgentRequestContext.set(AgentRequestContextInfo.builder()
+                .agentType("memory-writer")
+                .agentMode("agent")
+                .build());
+        RequestContext.set(RequestContextInfo.builder()
+                .userId(42L)
+                .conversationId(7L)
+                .build());
+        when(memoryService.getConversationWorkingMemory(42L, 7L)).thenReturn(AiMemory.builder()
+                .id(15L)
+                .scope(MemoryScopeEnum.CONVERSATION.getCode())
+                .memoryType(MemoryTypeEnum.WORKFLOW_CONSTRAINT.getCode())
+                .subType(MemorySubTypeEnum.CONVERSATION_WORKING_MEMORY.getCode())
+                .title("Conversation working memory")
+                .content("# Current Task\nImplement memory writer")
+                .reason("auto")
+                .sourceType("AGENT")
+                .build());
+
+        AgentToolResult result = tool.readMemory(
+                "load the current conversation working memory markdown",
+                MemoryScopeEnum.CONVERSATION,
+                MemoryTypeEnum.WORKFLOW_CONSTRAINT,
+                MemorySubTypeEnum.CONVERSATION_WORKING_MEMORY,
+                InvocationParameters.from(Map.of()));
+
+        assertTrue(result.isSuccess());
+        verify(memoryService).recordMemoryAccess(List.of(15L));
+        verify(memoryRecallManager, never()).recall(any());
     }
 
     @Test

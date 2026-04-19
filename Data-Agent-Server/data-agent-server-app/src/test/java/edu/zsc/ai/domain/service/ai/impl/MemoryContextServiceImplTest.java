@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import edu.zsc.ai.common.enums.ai.MemoryScopeEnum;
 import edu.zsc.ai.config.ai.MemoryProperties;
+import edu.zsc.ai.domain.model.entity.ai.AiMemory;
 import edu.zsc.ai.domain.service.ai.MemoryService;
 import edu.zsc.ai.domain.service.ai.model.MemoryPromptContext;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallContext;
@@ -52,10 +53,28 @@ class MemoryContextServiceImplTest {
     }
 
     @Test
+    void loadPromptContext_stillLoadsCurrentConversationMemoryWhenRecallDisabled() {
+        when(memoryProperties.isEnabled()).thenReturn(false);
+        when(memoryService.getConversationWorkingMemory(42L, 7L)).thenReturn(AiMemory.builder()
+                .id(8L)
+                .content("# Current Task\nImplement memory writer")
+                .build());
+
+        MemoryPromptContext context = memoryContextService.loadPromptContext(42L, 7L, "continue");
+
+        assertEquals("# Current Task\nImplement memory writer", context.getCurrentConversationMemory());
+        verify(memoryRecallManager, never()).recall(org.mockito.ArgumentMatchers.any(MemoryRecallContext.class));
+    }
+
+    @Test
     void loadPromptContext_returnsRetrievedMemoriesOnly() {
         when(memoryProperties.isEnabled()).thenReturn(true);
         when(memoryProperties.getRetrieval()).thenReturn(retrieval);
         when(retrieval.getMinScore()).thenReturn(0.72);
+        when(memoryService.getConversationWorkingMemory(42L, 7L)).thenReturn(AiMemory.builder()
+                .id(9L)
+                .content("# Current Task\nDesign memory refactor")
+                .build());
         when(memoryRecallManager.recall(org.mockito.ArgumentMatchers.any(MemoryRecallContext.class)))
                 .thenReturn(MemoryRecallResult.builder()
                         .items(List.of(
@@ -72,6 +91,7 @@ class MemoryContextServiceImplTest {
 
         assertEquals(1, context.getMemories().size());
         assertEquals("User prefers concise output.", context.getMemories().get(0).getContent());
+        assertEquals("# Current Task\nDesign memory refactor", context.getCurrentConversationMemory());
         verify(memoryService).recordMemoryAccess(List.of(1L));
     }
 }

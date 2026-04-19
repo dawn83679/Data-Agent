@@ -15,6 +15,7 @@ import edu.zsc.ai.config.ai.PromptConfig;
 import edu.zsc.ai.domain.service.agent.prompt.PromptRenderResult;
 import edu.zsc.ai.domain.service.agent.runtimecontext.strategy.DurableFactsStrategy;
 import edu.zsc.ai.domain.service.agent.runtimecontext.strategy.ExplicitReferencesStrategy;
+import edu.zsc.ai.domain.service.agent.runtimecontext.strategy.CurrentConversationMemoryStrategy;
 import edu.zsc.ai.domain.service.agent.runtimecontext.strategy.ResponsePreferencesStrategy;
 import edu.zsc.ai.domain.service.agent.runtimecontext.strategy.ScopeHintsStrategy;
 import edu.zsc.ai.domain.service.agent.runtimecontext.strategy.SystemContextStrategy;
@@ -33,6 +34,7 @@ class RuntimeContextManagerTest {
                 .currentDate(LocalDate.of(2026, 3, 31))
                 .timezone("Asia/Shanghai")
                 .memoryPromptContext(MemoryPromptContext.builder()
+                        .currentConversationMemory("# Current Task\nImplement the background memory writer\n\n## Confirmed Scope\n- Only the conversation working memory is mandatory.")
                         .recallResult(MemoryRecallResult.builder()
                                 .items(List.of(
                                         MemoryRecallItem.builder()
@@ -81,6 +83,8 @@ class RuntimeContextManagerTest {
         assertTrue(rendered.contains("<system_context purpose=\"runtime_environment\""));
         assertTrue(rendered.contains("today: 2026-03-31"));
         assertTrue(rendered.contains("timezone: Asia/Shanghai"));
+        assertTrue(rendered.contains("<current_conversation_memory purpose=\"current_task_working_memory\""));
+        assertTrue(rendered.contains("Implement the background memory writer"));
 
         // scope_hints
         assertTrue(rendered.contains("<scope_hints purpose=\"query_scope_guidance\""));
@@ -117,6 +121,7 @@ class RuntimeContextManagerTest {
         assertTrue(rendered.contains("请默认遵循以下偏好：\n- none"));
         assertTrue(rendered.contains("已知事实：\n- none"));
         assertTrue(rendered.contains("本轮用户显式引用：\n- none"));
+        assertTrue(rendered.contains("当前会话工作记忆：\n- none"));
         assertTrue(rendered.contains("Helpful scope hints for this task:"));
         assertTrue(rendered.contains("- none"));
     }
@@ -289,12 +294,14 @@ class RuntimeContextManagerTest {
         String rendered = manager.render(context).renderedPrompt();
 
         int systemCtxPos = rendered.indexOf("<system_context");
+        int conversationMemoryPos = rendered.indexOf("<current_conversation_memory");
         int scopePos = rendered.indexOf("<scope_hints");
         int prefPos = rendered.indexOf("<response_preferences");
         int factsPos = rendered.indexOf("<durable_facts");
         int refsPos = rendered.indexOf("<explicit_references");
 
-        assertTrue(systemCtxPos < scopePos);
+        assertTrue(systemCtxPos < conversationMemoryPos);
+        assertTrue(conversationMemoryPos < scopePos);
         assertTrue(scopePos < prefPos);
         assertTrue(prefPos < factsPos);
         assertTrue(factsPos < refsPos);
@@ -303,6 +310,7 @@ class RuntimeContextManagerTest {
     private RuntimeContextManager createManager() {
         RuntimeContextHandlerChain chain = new RuntimeContextHandlerChain(List.of(
                 new SystemContextStrategy(),
+                new CurrentConversationMemoryStrategy(),
                 new ScopeHintsStrategy(),
                 new ResponsePreferencesStrategy(),
                 new DurableFactsStrategy(),

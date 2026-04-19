@@ -8,8 +8,7 @@ import edu.zsc.ai.domain.service.ai.AiConversationService;
 import edu.zsc.ai.domain.service.ai.AiMessageService;
 import edu.zsc.ai.domain.service.ai.MemoryService;
 import edu.zsc.ai.domain.service.ai.model.MemoryWriteContext;
-import edu.zsc.ai.domain.service.ai.model.MemoryWriteContext.MemorySummary;
-import edu.zsc.ai.domain.service.ai.model.MemoryWriteItem;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -33,6 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -48,7 +51,7 @@ class ConversationMemoryAutoWriteCoordinatorTest {
     private MemoryService memoryService;
 
     @Mock
-    private ConversationMemoryAiWriter aiWriter;
+    private ConversationMemoryWriter memoryWriter;
 
     @Mock
     private AiConversationMemoryCursorService cursorService;
@@ -56,8 +59,20 @@ class ConversationMemoryAutoWriteCoordinatorTest {
     @Mock
     private AiConversationService aiConversationService;
 
+    @Mock
+    private ConversationMemoryAdvisoryLockService advisoryLockService;
+
     @InjectMocks
     private ConversationMemoryAutoWriteCoordinator coordinator;
+
+    @BeforeEach
+    void stubAdvisoryLock() {
+        lenient().when(advisoryLockService.tryRunWithConversationLock(anyLong(), any()))
+                .thenAnswer(invocation -> {
+                    invocation.getArgument(1, Runnable.class).run();
+                    return true;
+                });
+    }
 
     @Test
     void submit_advancesCursorWhenManualMemoryWriteExists() {
@@ -73,7 +88,7 @@ class ConversationMemoryAutoWriteCoordinatorTest {
         // First call passes (counter initialized at EXTRACTION_INTERVAL)
         coordinator.submit(88L);
 
-        verify(aiWriter, never()).extractMemoryWrites(any(MemoryWriteContext.class));
+        verify(memoryWriter, never()).writeMemory(any(MemoryWriteContext.class), anyLong(), anyLong());
         ArgumentCaptor<AiConversationMemoryCursor> cursorCaptor = ArgumentCaptor.forClass(AiConversationMemoryCursor.class);
         verify(cursorService).updateById((AiConversationMemoryCursor) cursorCaptor.capture());
         assertEquals(11L, cursorCaptor.getValue().getLastProcessedMessageId());
@@ -87,7 +102,7 @@ class ConversationMemoryAutoWriteCoordinatorTest {
 
         coordinator.submit(88L);
 
-        verify(aiWriter, never()).extractMemoryWrites(any(MemoryWriteContext.class));
+        verify(memoryWriter, never()).writeMemory(any(MemoryWriteContext.class), anyLong(), anyLong());
         verify(cursorService, never()).updateById((AiConversationMemoryCursor) any());
     }
 
@@ -102,47 +117,33 @@ class ConversationMemoryAutoWriteCoordinatorTest {
 
         coordinator.submit(88L);
 
-        verify(aiWriter, never()).extractMemoryWrites(any(MemoryWriteContext.class));
+        verify(memoryWriter, never()).writeMemory(any(MemoryWriteContext.class), anyLong(), anyLong());
         ArgumentCaptor<AiConversationMemoryCursor> cursorCaptor = ArgumentCaptor.forClass(AiConversationMemoryCursor.class);
         verify(cursorService).updateById((AiConversationMemoryCursor) cursorCaptor.capture());
         assertEquals(22L, cursorCaptor.getValue().getLastProcessedMessageId());
     }
 
     @Test
-    void submit_buildsTruncatedContextAndAppliesReturnedItems() {
+    void submit_buildsSliceContextAndInvokesMemoryWriter() {
         AiConversationMemoryCursor cursor = cursor(88L, 7L, null);
-        List<MemorySummary> summaries = new ArrayList<>();
-        for (long i = 1; i <= 60; i++) {
-            summaries.add(summary(i));
-        }
         List<StoredChatMessage> newMessages = List.of(
                 message(101L, "USER", "以后默认用中文回答"),
                 message(102L, "AI", "收到")
-        );
-        List<MemoryWriteItem> writeItems = List.of(
-                new MemoryWriteItem("CREATE", null, "USER", "PREFERENCE",
-                        "LANGUAGE_PREFERENCE", "语言偏好", "默认使用中文回答", "用户明确提出偏好")
         );
 
         givenConversationAndCursor(88L, 7L, cursor);
         when(memoryService.hasManualWritesSince(eq(7L), eq(88L), any())).thenReturn(false);
         when(aiMessageService.getActiveMessagesForAutoWrite(88L)).thenReturn(newMessages);
-        when(memoryService.getEnabledMemorySummaries(7L)).thenReturn(summaries);
-        when(aiWriter.extractMemoryWrites(any(MemoryWriteContext.class))).thenReturn(writeItems);
+        doNothing().when(memoryWriter).writeMemory(any(MemoryWriteContext.class), eq(88L), eq(7L));
 
         coordinator.submit(88L);
 
         ArgumentCaptor<MemoryWriteContext> contextCaptor = ArgumentCaptor.forClass(MemoryWriteContext.class);
-        verify(aiWriter).extractMemoryWrites(contextCaptor.capture());
+        verify(memoryWriter).writeMemory(contextCaptor.capture(), eq(88L), eq(7L));
         MemoryWriteContext context = contextCaptor.getValue();
         assertEquals(2, context.newMessages().size());
-        assertEquals(50, context.existingMemories().size());
-        assertTrue(context.memoriesTruncated());
-        assertEquals(60, context.totalEnabledCount());
-        assertEquals(1L, context.existingMemories().get(0).memoryId());
-        assertEquals(50L, context.existingMemories().get(49).memoryId());
-
-        verify(memoryService).applyAutoWriteItems(eq(88L), eq(7L), eq(writeItems), eq(cursor), eq(102L));
+        assertTrue(context.existingMemories().isEmpty());
+        verify(cursorService).updateById(any(AiConversationMemoryCursor.class));
     }
 
     @Test
@@ -157,38 +158,36 @@ class ConversationMemoryAutoWriteCoordinatorTest {
         when(aiMessageService.getMessagesForAutoWriteAfter(eq(88L), any())).thenReturn(List.of(
                 message(2L, "USER", "world")
         ));
-        when(memoryService.getEnabledMemorySummaries(7L)).thenReturn(List.of());
-        when(aiWriter.extractMemoryWrites(any(MemoryWriteContext.class))).thenReturn(List.of());
+        doNothing().when(memoryWriter).writeMemory(any(MemoryWriteContext.class), eq(88L), eq(7L));
 
         // First call passes (counter starts at EXTRACTION_INTERVAL)
         coordinator.submit(88L);
-        verify(aiWriter, times(1)).extractMemoryWrites(any(MemoryWriteContext.class));
+        verify(memoryWriter, times(1)).writeMemory(any(MemoryWriteContext.class), eq(88L), eq(7L));
 
         // Second call is throttled (counter reset to 0, 0 < 1 = true)
         coordinator.submit(88L);
-        verify(aiWriter, times(1)).extractMemoryWrites(any(MemoryWriteContext.class));
+        verify(memoryWriter, times(1)).writeMemory(any(MemoryWriteContext.class), eq(88L), eq(7L));
 
         // Third call passes again
         coordinator.submit(88L);
-        verify(aiWriter, times(2)).extractMemoryWrites(any(MemoryWriteContext.class));
+        verify(memoryWriter, times(2)).writeMemory(any(MemoryWriteContext.class), eq(88L), eq(7L));
     }
 
     @Test
-    void submit_doesNotAdvanceCursorWhenAiExtractionFails() {
+    void submit_doesNotAdvanceCursorWhenMemoryWriterFails() {
         AiConversationMemoryCursor cursor = cursor(88L, 7L, null);
         givenConversationAndCursor(88L, 7L, cursor);
         when(memoryService.hasManualWritesSince(eq(7L), eq(88L), any())).thenReturn(false);
         when(aiMessageService.getActiveMessagesForAutoWrite(88L)).thenReturn(List.of(
                 message(1L, "USER", "remember this")
         ));
-        when(memoryService.getEnabledMemorySummaries(7L)).thenReturn(List.of());
-        // null signals AI failure
-        when(aiWriter.extractMemoryWrites(any(MemoryWriteContext.class))).thenReturn(null);
+        doThrow(new RuntimeException("write failed"))
+                .when(memoryWriter).writeMemory(any(MemoryWriteContext.class), eq(88L), eq(7L));
 
         coordinator.submit(88L);
 
+        verify(memoryWriter, times(3)).writeMemory(any(MemoryWriteContext.class), eq(88L), eq(7L));
         verify(cursorService, never()).updateById((AiConversationMemoryCursor) any());
-        verify(memoryService, never()).applyAutoWriteItems(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -200,20 +199,19 @@ class ConversationMemoryAutoWriteCoordinatorTest {
 
         givenConversationAndCursor(88L, 7L, cursor);
         when(memoryService.hasManualWritesSince(eq(7L), eq(88L), any())).thenReturn(false);
-        when(memoryService.getEnabledMemorySummaries(7L)).thenReturn(List.of());
         when(aiMessageService.getActiveMessagesForAutoWrite(88L)).thenReturn(List.of(
                 message(1L, "USER", "first")
         ));
         when(aiMessageService.getMessagesForAutoWriteAfter(88L, 1L)).thenReturn(List.of(
                 message(2L, "USER", "second")
         ));
-        when(aiWriter.extractMemoryWrites(any(MemoryWriteContext.class))).thenAnswer(invocation -> {
+        doAnswer(invocation -> {
             if (writerCalls.incrementAndGet() == 1) {
                 firstCallEntered.countDown();
                 assertTrue(releaseFirstCall.await(2, TimeUnit.SECONDS));
             }
-            return List.of();
-        });
+            return null;
+        }).when(memoryWriter).writeMemory(any(MemoryWriteContext.class), eq(88L), eq(7L));
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
@@ -231,8 +229,26 @@ class ConversationMemoryAutoWriteCoordinatorTest {
             executor.shutdownNow();
         }
 
-        verify(aiWriter, times(2)).extractMemoryWrites(any(MemoryWriteContext.class));
+        verify(memoryWriter, times(2)).writeMemory(any(MemoryWriteContext.class), eq(88L), eq(7L));
         assertFalse(Thread.currentThread().isInterrupted());
+    }
+
+    @Test
+    void submit_retriesMemoryWriterUntilSuccess() {
+        AiConversationMemoryCursor cursor = cursor(88L, 7L, null);
+        givenConversationAndCursor(88L, 7L, cursor);
+        when(memoryService.hasManualWritesSince(eq(7L), eq(88L), any())).thenReturn(false);
+        when(aiMessageService.getActiveMessagesForAutoWrite(88L)).thenReturn(List.of(
+                message(1L, "USER", "remember")
+        ));
+        doThrow(new RuntimeException("first failure"))
+                .doNothing()
+                .when(memoryWriter).writeMemory(any(MemoryWriteContext.class), eq(88L), eq(7L));
+
+        coordinator.submit(88L);
+
+        verify(memoryWriter, times(2)).writeMemory(any(MemoryWriteContext.class), eq(88L), eq(7L));
+        verify(cursorService).updateById(any());
     }
 
     private void givenConversationAndCursor(Long conversationId, Long userId, AiConversationMemoryCursor cursor) {
@@ -259,17 +275,5 @@ class ConversationMemoryAutoWriteCoordinatorTest {
                 .role(role)
                 .data(data)
                 .build();
-    }
-
-    private MemorySummary summary(Long memoryId) {
-        return new MemorySummary(
-                memoryId,
-                "USER",
-                "PREFERENCE",
-                "LANGUAGE_PREFERENCE",
-                "title-" + memoryId,
-                "content-" + memoryId,
-                LocalDateTime.of(2026, 3, 1, 0, 0)
-        );
     }
 }

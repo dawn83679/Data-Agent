@@ -42,7 +42,7 @@ class SystemPromptManagerTest {
         assertFalse(prompt.contains("<name>test2</name>"));
         assertFalse(prompt.contains("<name>test3</name>"));
         assertTrue(prompt.contains("可用连接"));
-        assertTrue(prompt.contains("getAvailableConnections"));
+        assertTrue(prompt.contains("getConnections"));
         assertFalse(prompt.contains(SkillPromptTagConstant.open("memory")));
         assertFalse(prompt.contains(SkillPromptTagConstant.close("memory")));
         assertTrue(prompt.contains(SkillPromptTagConstant.open(SkillEnum.CHART.getSkillName())));
@@ -67,5 +67,21 @@ class SystemPromptManagerTest {
         assertFalse(prompt.contains(SkillPromptTagConstant.open(SkillEnum.CHART.getSkillName())));
         assertFalse(prompt.contains(SkillPromptTagConstant.open("memory")));
         assertFalse(prompt.contains(SkillPromptTagConstant.close("memory")));
+    }
+
+    @Test
+    void memoryWriterPrompt_declaresBackgroundMemoryWriterMode() {
+        String prompt = manager.render(SystemPromptAssemblyContext.builder()
+                .promptEnum(PromptEnum.MEMORY_WRITER)
+                .agentType(AgentTypeEnum.MEMORY_WRITER)
+                .agentMode(AgentModeEnum.AGENT)
+                .language("en")
+                .modelName("qwen3-max-2026-01-23")
+                .availableSkills(List.of())
+                .build()).renderedPrompt();
+
+        assertTrue(prompt.contains("background memory writer"));
+        assertTrue(prompt.contains("current conversation working memory"));
+        assertFalse(prompt.contains(SkillPromptTagConstant.open(SkillEnum.CHART.getSkillName())));
     }
 }

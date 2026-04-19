@@ -21,6 +21,7 @@ import edu.zsc.ai.common.enums.ai.MemorySubTypeEnum;
 import edu.zsc.ai.common.enums.ai.MemoryTypeEnum;
 import edu.zsc.ai.context.AgentRequestContext;
 import edu.zsc.ai.context.RequestContext;
+import edu.zsc.ai.domain.model.entity.ai.AiMemory;
 import edu.zsc.ai.domain.service.ai.MemoryService;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallContext;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallItem;
@@ -56,9 +57,9 @@ public class ReadMemoryTool {
 
         AgentTypeEnum agentType = AgentTypeEnum.fromCode(AgentRequestContext.getAgentType());
         AgentModeEnum agentMode = AgentModeEnum.fromRequest(AgentRequestContext.getAgentMode());
-        if (agentType != AgentTypeEnum.MAIN || agentMode != AgentModeEnum.AGENT) {
+        if (!isAllowedAgent(agentType, agentMode)) {
             return AgentToolResult.fail(ToolMessageSupport.sentence(
-                    "readMemory is only available to the main agent in normal execution mode.",
+                    "readMemory is only available to the main agent or memory writer in normal execution mode.",
                     "Do not attempt to recall memory from this agent context."
             ));
         }
@@ -70,6 +71,10 @@ public class ReadMemoryTool {
             String normalizedScope = normalizeScope(scope);
             String normalizedMemoryType = normalizeMemoryType(memoryType);
             String normalizedSubType = normalizeSubType(normalizedMemoryType, subType);
+
+            if (isConversationWorkingMemoryLookup(normalizedScope, normalizedMemoryType, normalizedSubType)) {
+                return directConversationWorkingMemoryResult();
+            }
 
             MemoryRecallResult recallResult = memoryRecallManager.recall(MemoryRecallContext.builder()
                     .conversationId(RequestContext.getConversationId())
@@ -109,6 +114,51 @@ public class ReadMemoryTool {
             log.error("readMemory failed", e);
             return AgentToolResult.fail("Failed to recall memory. Refine the recall intent or filters before retrying.");
         }
+    }
+
+    private boolean isAllowedAgent(AgentTypeEnum agentType, AgentModeEnum agentMode) {
+        return agentMode == AgentModeEnum.AGENT
+                && (agentType == AgentTypeEnum.MAIN || agentType == AgentTypeEnum.MEMORY_WRITER);
+    }
+
+    private boolean isConversationWorkingMemoryLookup(String scope, String memoryType, String subType) {
+        return MemoryScopeEnum.CONVERSATION.matches(scope)
+                && MemoryTypeEnum.WORKFLOW_CONSTRAINT.matches(memoryType)
+                && MemorySubTypeEnum.CONVERSATION_WORKING_MEMORY.getCode().equals(subType);
+    }
+
+    private AgentToolResult directConversationWorkingMemoryResult() {
+        Long userId = RequestContext.getUserId();
+        Long conversationId = RequestContext.getConversationId();
+        AiMemory memory = memoryService.getConversationWorkingMemory(userId, conversationId);
+        List<Long> memoryIds = memory == null ? List.of() : List.of(memory.getId());
+        memoryService.recordMemoryAccess(memoryIds);
+        log.info("[Tool done] readMemory, conversationId={}, scope={}, memoryType={}, subType={}, recalledCount={}, memoryIds={}, summary={}",
+                conversationId,
+                MemoryScopeEnum.CONVERSATION.getCode(),
+                MemoryTypeEnum.WORKFLOW_CONSTRAINT.getCode(),
+                MemorySubTypeEnum.CONVERSATION_WORKING_MEMORY.getCode(),
+                memoryIds.size(),
+                memoryIds,
+                memory == null ? "No current conversation working memory found."
+                        : "Loaded the current conversation working memory.");
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put(MemoryRecallConstant.RESULT_SUMMARY,
+                memory == null ? "No current conversation working memory found."
+                        : "Loaded the current conversation working memory.");
+        result.put(MemoryRecallConstant.RESULT_APPLIED_FILTERS, Map.of(
+                MemoryRecallConstant.ITEM_SCOPE, MemoryScopeEnum.CONVERSATION.getCode(),
+                MemoryRecallConstant.ITEM_MEMORY_TYPE, MemoryTypeEnum.WORKFLOW_CONSTRAINT.getCode(),
+                MemoryRecallConstant.ITEM_SUB_TYPE, MemorySubTypeEnum.CONVERSATION_WORKING_MEMORY.getCode()
+        ));
+        result.put(MemoryRecallConstant.RESULT_ITEMS,
+                memory == null ? List.of() : List.of(toPayload(memory)));
+        return AgentToolResult.success(result, ToolMessageSupport.sentence(
+                memory == null ? "No current conversation working memory found."
+                        : "Loaded the current conversation working memory.",
+                "Use only the recalled durable memory that materially helps the current task."
+        ));
     }
 
     private String normalizeScope(MemoryScopeEnum scope) {
@@ -159,6 +209,20 @@ public class ReadMemoryTool {
         payload.put(MemoryRecallConstant.ITEM_REASON, item.getReason());
         payload.put(MemoryRecallConstant.ITEM_SOURCE_TYPE, item.getSourceType());
         payload.put(MemoryRecallConstant.ITEM_SCORE, item.getScore());
+        return payload;
+    }
+
+    private Map<String, Object> toPayload(AiMemory memory) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put(MemoryRecallConstant.ITEM_MEMORY_ID, memory.getId());
+        payload.put(MemoryRecallConstant.ITEM_SCOPE, memory.getScope());
+        payload.put(MemoryRecallConstant.ITEM_MEMORY_TYPE, memory.getMemoryType());
+        payload.put(MemoryRecallConstant.ITEM_SUB_TYPE, memory.getSubType());
+        payload.put(MemoryRecallConstant.ITEM_TITLE, memory.getTitle());
+        payload.put(MemoryRecallConstant.ITEM_CONTENT, memory.getContent());
+        payload.put(MemoryRecallConstant.ITEM_REASON, memory.getReason());
+        payload.put(MemoryRecallConstant.ITEM_SOURCE_TYPE, memory.getSourceType());
+        payload.put(MemoryRecallConstant.ITEM_SCORE, 1.0D);
         return payload;
     }
 }

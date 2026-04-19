@@ -20,6 +20,8 @@ class MemoryEnumTest {
         assertTrue(MemorySubTypeEnum.IMPLEMENTATION_CONSTRAINT.belongsTo(MemoryTypeEnum.WORKFLOW_CONSTRAINT));
         assertFalse(MemorySubTypeEnum.IMPLEMENTATION_CONSTRAINT.belongsTo(MemoryTypeEnum.PREFERENCE));
         assertEquals(MemoryTypeEnum.PREFERENCE, MemorySubTypeEnum.LANGUAGE_PREFERENCE.getMemoryType());
+        assertEquals(MemoryTypeEnum.WORKFLOW_CONSTRAINT, MemorySubTypeEnum.CONVERSATION_WORKING_MEMORY.getMemoryType());
+        assertTrue(MemorySubTypeEnum.CONVERSATION_WORKING_MEMORY.isInternalOnly());
     }
 
     @Test

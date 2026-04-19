@@ -63,6 +63,12 @@
         <appender-ref ref="MEMORY_AUTO_WRITE_FILE"/>
         <appender-ref ref="AGENT_RUNTIME_FILE"/>
     </logger>
+    <logger name="edu.zsc.ai.agent.tool.memory"
+            level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="MEMORY_AUTO_WRITE_FILE"/>
+        <appender-ref ref="AGENT_RUNTIME_FILE"/>
+    </logger>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>

@@ -10,11 +10,13 @@ import edu.zsc.ai.agent.annotation.AgentTool;
 import edu.zsc.ai.agent.tool.ask.AskUserQuestionTool;
 import edu.zsc.ai.agent.tool.chart.ChartTool;
 import edu.zsc.ai.agent.tool.export.ExportFileTool;
+import edu.zsc.ai.agent.tool.memory.ReadMemoryTool;
+import edu.zsc.ai.agent.tool.memory.UpdateMemoryTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingExplorerTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingPlannerTool;
 import edu.zsc.ai.agent.tool.plan.ExitPlanModeTool;
 import edu.zsc.ai.agent.tool.skill.ActivateSkillTool;
-import edu.zsc.ai.agent.tool.sql.GetAvailableConnectionsTool;
+import edu.zsc.ai.agent.tool.sql.GetConnectionsTool;
 import edu.zsc.ai.agent.tool.sql.GetObjectDetailTool;
 import edu.zsc.ai.agent.tool.sql.GetDatabasesTool;
 import edu.zsc.ai.agent.tool.sql.GetSchemasTool;
@@ -48,7 +50,7 @@ public class AgentToolConfig {
                     SearchObjectsTool.class,
                     GetObjectDetailTool.class,
                     ExecuteSqlTool.class,
-                    GetAvailableConnectionsTool.class,
+                    GetConnectionsTool.class,
                     CallingExplorerTool.class,
                     CallingPlannerTool.class,
                     ChartTool.class,
@@ -60,7 +62,7 @@ public class AgentToolConfig {
             ToolScope.MAIN_PLAN, Set.of(
                     GetDatabasesTool.class,
                     GetSchemasTool.class,
-                    GetAvailableConnectionsTool.class,
+                    GetConnectionsTool.class,
                     CallingExplorerTool.class,
                     CallingPlannerTool.class,
                     AskUserQuestionTool.class,
@@ -77,6 +79,10 @@ public class AgentToolConfig {
                     TodoTool.class,
                     GetObjectDetailTool.class,
                     ExecuteSqlTool.class
+            ),
+            ToolScope.MEMORY_WRITER, Set.of(
+                    ReadMemoryTool.class,
+                    UpdateMemoryTool.class
             )
     );
 
@@ -132,6 +138,7 @@ public class AgentToolConfig {
         ToolScope scope = switch (agentType) {
             case EXPLORER -> ToolScope.EXPLORER;
             case PLANNER -> ToolScope.PLANNER;
+            case MEMORY_WRITER -> ToolScope.MEMORY_WRITER;
             case MAIN -> throw new IllegalArgumentException("MAIN is not a sub-agent");
         };
         return resolveTools(agentTools, scope);
@@ -205,6 +212,7 @@ public class AgentToolConfig {
         MAIN_AGENT,
         MAIN_PLAN,
         EXPLORER,
-        PLANNER
+        PLANNER,
+        MEMORY_WRITER
     }
 }

@@ -5,6 +5,7 @@ import java.util.List;
 public enum RuntimeContextSection {
 
     SYSTEM_CONTEXT("{{SYSTEM_CONTEXT}}"),
+    CURRENT_CONVERSATION_MEMORY("{{CURRENT_CONVERSATION_MEMORY}}"),
     SCOPE_HINTS("{{SCOPE_HINTS}}"),
     RESPONSE_PREFERENCES("{{RESPONSE_PREFERENCES}}"),
     DURABLE_FACTS("{{DURABLE_FACTS}}"),
@@ -21,6 +22,6 @@ public enum RuntimeContextSection {
     }
 
     public static List<RuntimeContextSection> renderOrder() {
-        return List.of(SYSTEM_CONTEXT, SCOPE_HINTS, RESPONSE_PREFERENCES, DURABLE_FACTS, EXPLICIT_REFERENCES);
+        return List.of(SYSTEM_CONTEXT, CURRENT_CONVERSATION_MEMORY, SCOPE_HINTS, RESPONSE_PREFERENCES, DURABLE_FACTS, EXPLICIT_REFERENCES);
     }
 }

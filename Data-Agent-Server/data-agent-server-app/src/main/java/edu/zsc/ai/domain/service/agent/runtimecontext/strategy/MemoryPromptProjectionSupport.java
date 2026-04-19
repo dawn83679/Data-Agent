@@ -43,8 +43,12 @@ final class MemoryPromptProjectionSupport {
                 || subType == MemorySubTypeEnum.LANGUAGE_PREFERENCE;
     }
 
+    static boolean isInternalConversationWorkingMemory(MemoryRecallItem memory) {
+        return MemorySubTypeEnum.CONVERSATION_WORKING_MEMORY == MemorySubTypeEnum.fromCode(memory.getSubType());
+    }
+
     static boolean isScopeHintMemory(MemoryRecallItem memory) {
-        if (memory == null || isPreferenceMemory(memory)) {
+        if (memory == null || isPreferenceMemory(memory) || isInternalConversationWorkingMemory(memory)) {
             return false;
         }
         String normalized = StringUtils.defaultString(memory.getContent()).toLowerCase(Locale.ROOT);
@@ -54,7 +58,7 @@ final class MemoryPromptProjectionSupport {
     }
 
     static boolean isPromptInjectableNonPreferenceMemory(MemoryRecallItem memory) {
-        if (memory == null || isPreferenceMemory(memory)) {
+        if (memory == null || isPreferenceMemory(memory) || isInternalConversationWorkingMemory(memory)) {
             return false;
         }
         if (memory.isUsedFallback()) {

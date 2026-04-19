@@ -1,11 +1,15 @@
 package edu.zsc.ai.domain.service.ai.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -41,8 +45,11 @@ import edu.zsc.ai.domain.exception.BusinessException;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryCreateRequest;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryUpdateRequest;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryMutationRequest;
+import edu.zsc.ai.domain.model.entity.ai.AiConversationMemoryCursor;
 import edu.zsc.ai.domain.model.entity.ai.AiMemory;
+import edu.zsc.ai.domain.service.ai.AiConversationMemoryCursorService;
 import edu.zsc.ai.domain.service.ai.model.MemorySearchResult;
+import edu.zsc.ai.domain.service.ai.model.MemoryWriteItem;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallMode;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallQuery;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallQueryStrategy;
@@ -62,8 +69,10 @@ class MemoryServiceImplTest {
         when(embeddingModel.embed(any(String.class))).thenReturn(Response.from(Embedding.from(new float[]{1.0f, 2.0f})));
 
         MemoryProperties memoryProperties = new MemoryProperties();
+        AiConversationMemoryCursorService cursorService = mock(AiConversationMemoryCursorService.class);
+        lenient().when(cursorService.updateById(any(AiConversationMemoryCursor.class))).thenReturn(true);
 
-        service = new InMemoryMemoryService(store, embeddingModel, memoryProperties);
+        service = new InMemoryMemoryService(store, embeddingModel, memoryProperties, cursorService);
         RequestContext.set(RequestContextInfo.builder().userId(42L).conversationId(7L).build());
     }
 
@@ -118,6 +127,28 @@ class MemoryServiceImplTest {
     }
 
     @Test
+    void applyAutoWriteDelete_softDisablesMemory() {
+        MemoryCreateRequest createRequest = buildCreateRequest();
+        AiMemory created = service.createManualMemory(createRequest);
+        Long memoryId = created.getId();
+
+        AiConversationMemoryCursor cursor = AiConversationMemoryCursor.builder()
+                .id(1L)
+                .conversationId(7L)
+                .userId(42L)
+                .lastProcessedMessageId(null)
+                .build();
+        MemoryWriteItem delete = new MemoryWriteItem("DELETE", memoryId, null, null, null, null, null, null);
+
+        service.applyAutoWriteItems(7L, 42L, List.of(delete), cursor, 99L);
+
+        AiMemory after = service.getById(memoryId);
+        assertEquals(MemoryEnableEnum.DISABLE.getCode(), after.getEnable());
+        assertTrue(after.getReason() != null && after.getReason().contains("[auto_delete]"));
+        verify(embeddingStore, atLeastOnce()).remove(any(String.class));
+    }
+
+    @Test
     void mutateAgentMemory_createAlwaysCreatesNewMemory() {
         RequestContext.set(RequestContextInfo.builder()
                 .userId(42L)
@@ -155,6 +186,196 @@ class MemoryServiceImplTest {
         assertEquals("Always use catalogName instead of databaseName!", updated.getMemory().getContent());
         assertEquals(MemoryToolActionEnum.CREATED.getCode(), created.getAction().getCode());
         assertEquals(MemoryToolActionEnum.CREATED.getCode(), updated.getAction().getCode());
+    }
+
+    @Test
+    void mutateAgentMemory_conversationWorkingMemoryCreateUpsertsSingleRecord() {
+        RequestContext.set(RequestContextInfo.builder()
+                .userId(42L)
+                .conversationId(7L)
+                .build());
+
+        MemoryWriteResult created = service.mutateAgentMemory(MemoryMutationRequest.builder()
+                .operation(MemoryOperationEnum.CREATE.getCode())
+                .scope("conversation")
+                .memoryType("workflow_constraint")
+                .subType("conversation_working_memory")
+                .title("Conversation working memory")
+                .content(validConversationWorkingMemoryDraft("ACTIVE", "20"))
+                .reason("auto")
+                .build());
+
+        MemoryWriteResult upserted = service.mutateAgentMemory(MemoryMutationRequest.builder()
+                .operation(MemoryOperationEnum.CREATE.getCode())
+                .scope("conversation")
+                .memoryType("workflow_constraint")
+                .subType("conversation_working_memory")
+                .title("Conversation working memory")
+                .content(validConversationWorkingMemoryDraft("DONE", "21"))
+                .reason("auto")
+                .build());
+
+        assertEquals(1, service.memoryStoreSize());
+        assertEquals(created.getMemory().getId(), upserted.getMemory().getId());
+        assertEquals(MemoryToolActionEnum.CREATED.getCode(), created.getAction().getCode());
+        assertEquals(MemoryToolActionEnum.UPDATED.getCode(), upserted.getAction().getCode());
+        assertTrue(upserted.getMemory().getContent().contains("# 当前任务"));
+        assertTrue(upserted.getMemory().getContent().contains("## 当前作用域"));
+        assertTrue(upserted.getMemory().getContent().contains("## 已解决里程碑"));
+        assertTrue(upserted.getMemory().getContent().contains("## 高优先级候选"));
+        assertTrue(upserted.getMemory().getContent().contains("## 用户已确认事实"));
+        assertTrue(upserted.getMemory().getContent().contains("## 已验证结论"));
+        assertTrue(upserted.getMemory().getContent().contains("## 决策优先级"));
+        assertTrue(upserted.getMemory().getContent().contains("## 未决问题 / 待确认范围"));
+        assertTrue(upserted.getMemory().getContent().contains("精确值：21"));
+        assertEquals(created.getMemory().getId(), service.getConversationWorkingMemory(42L, 7L).getId());
+    }
+
+    @Test
+    void mutateAgentMemory_conversationWorkingMemoryRejectsInvalidPriority() {
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.mutateAgentMemory(
+                MemoryMutationRequest.builder()
+                        .operation(MemoryOperationEnum.CREATE.getCode())
+                        .scope("conversation")
+                        .memoryType("workflow_constraint")
+                        .subType("conversation_working_memory")
+                        .title("Conversation working memory")
+                        .content(validConversationWorkingMemoryDraft("ACTIVE", "20")
+                                .replace("\"P0\"", "\"P9\""))
+                        .reason("auto")
+                        .build()));
+
+        assertEquals("priority must be one of: P0, P1, P2", exception.getMessage());
+    }
+
+    @Test
+    void mutateAgentMemory_conversationWorkingMemoryRejectsApproximateExactValue() {
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.mutateAgentMemory(
+                MemoryMutationRequest.builder()
+                        .operation(MemoryOperationEnum.CREATE.getCode())
+                        .scope("conversation")
+                        .memoryType("workflow_constraint")
+                        .subType("conversation_working_memory")
+                        .title("Conversation working memory")
+                        .content(validConversationWorkingMemoryDraft("ACTIVE", "~30%"))
+                        .reason("auto")
+                        .build()));
+
+        assertEquals("verifiedFindings.exactValue must use precise values", exception.getMessage());
+    }
+
+    @Test
+    void mutateAgentMemory_conversationWorkingMemoryRejectsMissingConfirmedByUser() {
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.mutateAgentMemory(
+                MemoryMutationRequest.builder()
+                        .operation(MemoryOperationEnum.CREATE.getCode())
+                        .scope("conversation")
+                        .memoryType("workflow_constraint")
+                        .subType("conversation_working_memory")
+                        .title("Conversation working memory")
+                        .content("""
+                                {
+                                  "currentTask": {
+                                    "goal": "继续分析用户注册数据",
+                                    "status": "ACTIVE",
+                                    "summary": "已完成概览分析"
+                                  },
+                                  "activeScope": {
+                                    "connection": "test3",
+                                    "database": "enterprise_gateway_dev",
+                                    "schema": null,
+                                    "primaryObjects": ["chat2db_user"],
+                                    "scopeConfidence": "CONFIRMED"
+                                  },
+                                  "resolvedMilestones": [],
+                                  "highPriorityCandidates": [],
+                                  "userConfirmedFacts": [
+                                    {
+                                      "priority": "P0",
+                                      "fact": "用户确认当前数据库正确",
+                                      "scopeRef": "test3.enterprise_gateway_dev"
+                                    }
+                                  ],
+                                  "verifiedFindings": [
+                                    {
+                                      "priority": "P0",
+                                      "finding": "总用户数",
+                                      "exactValue": "20",
+                                      "scopeRef": "test3.enterprise_gateway_dev.chat2db_user",
+                                      "verifiedFrom": "SQL_RESULT"
+                                    }
+                                  ],
+                                  "decisionPriorities": [
+                                    {
+                                      "priority": "P0",
+                                      "rule": "除非用户更改，否则保持当前作用域",
+                                      "appliesWhen": "继续分析"
+                                    }
+                                  ],
+                                  "openQuestions": []
+                                }
+                                """)
+                        .reason("auto")
+                        .build()));
+
+        assertEquals("userConfirmedFacts.confirmedByUser is required", exception.getMessage());
+    }
+
+    @Test
+    void mutateAgentMemory_conversationWorkingMemoryCropsLowPriorityCandidates() {
+        MemoryWriteResult result = service.mutateAgentMemory(MemoryMutationRequest.builder()
+                .operation(MemoryOperationEnum.CREATE.getCode())
+                .scope("conversation")
+                .memoryType("workflow_constraint")
+                .subType("conversation_working_memory")
+                .title("Conversation working memory")
+                .content("""
+                        {
+                          "currentTask": {
+                            "goal": "继续分析用户注册数据",
+                            "status": "ACTIVE",
+                            "summary": "已完成概览分析"
+                          },
+                          "activeScope": {
+                            "connection": "test3",
+                            "database": "enterprise_gateway_dev",
+                            "schema": null,
+                            "primaryObjects": ["chat2db_user"],
+                            "scopeConfidence": "CONFIRMED"
+                          },
+                          "resolvedMilestones": [
+                            {"priority": "P0", "resolvedItem": "纠正数据库范围", "resolution": "改到正确数据库", "whyItStillMatters": "后续都要在正确库里跑"},
+                            {"priority": "P1", "resolvedItem": "确认目标对象", "resolution": "定位到 chat2db_user", "whyItStillMatters": "后续统计都基于该表"},
+                            {"priority": "P2", "resolvedItem": "排除手机号表", "resolution": "无相关数据", "whyItStillMatters": "避免误查"},
+                            {"priority": "P2", "resolvedItem": "额外噪音项", "resolution": "应被裁掉", "whyItStillMatters": "不该保留"}
+                          ],
+                          "highPriorityCandidates": [
+                            {"priority": "P0", "candidate": "test3.enterprise_gateway_dev.chat2db_user", "candidateType": "OBJECT", "scopeRef": "test3.enterprise_gateway_dev.chat2db_user", "whyRelevant": "主表", "whyNotConfirmed": "仍需和别名对齐"},
+                            {"priority": "P1", "candidate": "test3.enterprise_gateway_dev.chat2db_user_phone", "candidateType": "OBJECT", "scopeRef": "test3.enterprise_gateway_dev.chat2db_user_phone", "whyRelevant": "可能补充注册方式", "whyNotConfirmed": "当前未使用"},
+                            {"priority": "P2", "candidate": "test3.enterprise_gateway_dev.chat2db_user_wechat", "candidateType": "OBJECT", "scopeRef": "test3.enterprise_gateway_dev.chat2db_user_wechat", "whyRelevant": "可能补充微信注册", "whyNotConfirmed": "当前未使用"},
+                            {"priority": "P2", "candidate": "test3.enterprise_gateway_dev.noise_object", "candidateType": "OBJECT", "scopeRef": "test3.enterprise_gateway_dev.noise_object", "whyRelevant": "噪音", "whyNotConfirmed": "应被裁掉"}
+                          ],
+                          "userConfirmedFacts": [
+                            {"priority": "P0", "fact": "用户确认当前数据库正确", "scopeRef": "test3.enterprise_gateway_dev", "confirmedByUser": "就是这个数据库"}
+                          ],
+                          "verifiedFindings": [
+                            {"priority": "P0", "finding": "总用户数", "exactValue": "20", "scopeRef": "test3.enterprise_gateway_dev.chat2db_user", "verifiedFrom": "SQL_RESULT"}
+                          ],
+                          "decisionPriorities": [
+                            {"priority": "P0", "rule": "除非用户更改，否则保持当前作用域", "appliesWhen": "继续分析"}
+                          ],
+                          "openQuestions": []
+                        }
+                        """)
+                .reason("auto")
+                .build());
+
+        String content = result.getMemory().getContent();
+        assertTrue(content.contains("test3.enterprise_gateway_dev.chat2db_user"));
+        assertTrue(content.contains("test3.enterprise_gateway_dev.chat2db_user_phone"));
+        assertTrue(content.contains("test3.enterprise_gateway_dev.chat2db_user_wechat"));
+        assertFalse(content.contains("noise_object"));
+        assertFalse(content.contains("额外噪音项"));
     }
 
     @Test
@@ -812,6 +1033,59 @@ class MemoryServiceImplTest {
         return request;
     }
 
+    private String validConversationWorkingMemoryDraft(String status, String exactValue) {
+        return """
+                {
+                  "currentTask": {
+                    "goal": "继续分析用户注册数据",
+                    "status": "%s",
+                    "summary": "已完成概览分析"
+                  },
+                  "activeScope": {
+                    "connection": "test3",
+                    "database": "enterprise_gateway_dev",
+                    "schema": null,
+                    "primaryObjects": ["chat2db_user"],
+                    "scopeConfidence": "CONFIRMED"
+                  },
+                  "resolvedMilestones": [
+                    {
+                      "priority": "P0",
+                      "resolvedItem": "纠正数据库范围",
+                      "resolution": "改为 enterprise_gateway_dev",
+                      "whyItStillMatters": "后续查询必须停留在当前范围"
+                    }
+                  ],
+                  "highPriorityCandidates": [],
+                  "userConfirmedFacts": [
+                    {
+                      "priority": "P0",
+                      "fact": "用户确认当前数据库正确",
+                      "scopeRef": "test3.enterprise_gateway_dev",
+                      "confirmedByUser": "就是这个数据库"
+                    }
+                  ],
+                  "verifiedFindings": [
+                    {
+                      "priority": "P0",
+                      "finding": "总用户数",
+                      "exactValue": "%s",
+                      "scopeRef": "test3.enterprise_gateway_dev.chat2db_user",
+                      "verifiedFrom": "SQL_RESULT"
+                    }
+                  ],
+                  "decisionPriorities": [
+                    {
+                      "priority": "P0",
+                      "rule": "除非用户更改，否则保持当前作用域",
+                      "appliesWhen": "继续分析"
+                    }
+                  ],
+                  "openQuestions": []
+                }
+                """.formatted(status, exactValue);
+    }
+
     private static final class InMemoryMemoryService extends MemoryServiceImpl {
 
         private final List<AiMemory> store = new ArrayList<>();
@@ -822,8 +1096,9 @@ class MemoryServiceImplTest {
 
         private InMemoryMemoryService(EmbeddingStore<TextSegment> embeddingStore,
                                       EmbeddingModel embeddingModel,
-                                      MemoryProperties memoryProperties) {
-            super(embeddingStore, embeddingModel, memoryProperties, null);
+                                      MemoryProperties memoryProperties,
+                                      AiConversationMemoryCursorService cursorService) {
+            super(embeddingStore, embeddingModel, memoryProperties, cursorService);
             this.embeddingModel = embeddingModel;
         }
 

@@ -42,4 +42,19 @@ class PromptConfigTest {
         assertTrue(content.contains("50-79"));
         assertTrue(content.contains("0-49"));
     }
+
+    @Test
+    void memoryWriterPrompt_mentionsStructuredDraftConstraints() {
+        String content = PromptConfig.getPrompt(PromptEnum.MEMORY_WRITER);
+        assertTrue(content.contains("strict JSON"));
+        assertTrue(content.contains("currentTask"));
+        assertTrue(content.contains("activeScope"));
+        assertTrue(content.contains("resolvedMilestones"));
+        assertTrue(content.contains("highPriorityCandidates"));
+        assertTrue(content.contains("userConfirmedFacts"));
+        assertTrue(content.contains("verifiedFindings"));
+        assertTrue(content.contains("decisionPriorities"));
+        assertTrue(content.contains("openQuestions"));
+        assertTrue(content.contains("exactValue"));
+    }
 }

@@ -18,6 +18,8 @@ public class MemoryPromptContext {
     @Builder.Default
     private MemoryRecallResult recallResult = MemoryRecallResult.empty();
 
+    private String currentConversationMemory;
+
     public List<MemoryRecallItem> getMemories() {
         return recallResult == null ? List.of() : recallResult.getItems();
     }

@@ -1,6 +1,7 @@
 package edu.zsc.ai.api.controller.ai;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -44,6 +45,9 @@ class MemoryControllerTest {
             assertNotNull(typeMetadata);
             assertEquals(MemorySubTypeEnum.validCodesFor(type), typeMetadata.getSubTypes());
         }
+        assertFalse(metadataByType.get(MemoryTypeEnum.WORKFLOW_CONSTRAINT.getCode()).getSubTypes()
+                        .contains(MemorySubTypeEnum.CONVERSATION_WORKING_MEMORY.getCode()),
+                "Internal conversation working memory subtype should stay out of external metadata");
     }
 
     @Test

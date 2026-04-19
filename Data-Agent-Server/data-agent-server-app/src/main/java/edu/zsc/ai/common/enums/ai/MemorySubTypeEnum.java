@@ -12,31 +12,33 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum MemorySubTypeEnum {
 
-    RESPONSE_FORMAT("RESPONSE_FORMAT", MemoryTypeEnum.PREFERENCE),
-    LANGUAGE_PREFERENCE("LANGUAGE_PREFERENCE", MemoryTypeEnum.PREFERENCE),
+    RESPONSE_FORMAT("RESPONSE_FORMAT", MemoryTypeEnum.PREFERENCE, false),
+    LANGUAGE_PREFERENCE("LANGUAGE_PREFERENCE", MemoryTypeEnum.PREFERENCE, false),
 
-    PRODUCT_RULE("PRODUCT_RULE", MemoryTypeEnum.BUSINESS_RULE),
-    DOMAIN_RULE("DOMAIN_RULE", MemoryTypeEnum.BUSINESS_RULE),
-    GOVERNANCE_RULE("GOVERNANCE_RULE", MemoryTypeEnum.BUSINESS_RULE),
-    SAFETY_RULE("SAFETY_RULE", MemoryTypeEnum.BUSINESS_RULE),
+    PRODUCT_RULE("PRODUCT_RULE", MemoryTypeEnum.BUSINESS_RULE, false),
+    DOMAIN_RULE("DOMAIN_RULE", MemoryTypeEnum.BUSINESS_RULE, false),
+    GOVERNANCE_RULE("GOVERNANCE_RULE", MemoryTypeEnum.BUSINESS_RULE, false),
+    SAFETY_RULE("SAFETY_RULE", MemoryTypeEnum.BUSINESS_RULE, false),
 
-    ARCHITECTURE_KNOWLEDGE("ARCHITECTURE_KNOWLEDGE", MemoryTypeEnum.KNOWLEDGE_POINT),
-    DOMAIN_KNOWLEDGE("DOMAIN_KNOWLEDGE", MemoryTypeEnum.KNOWLEDGE_POINT),
-    GLOSSARY("GLOSSARY", MemoryTypeEnum.KNOWLEDGE_POINT),
-    OBJECT_KNOWLEDGE("OBJECT_KNOWLEDGE", MemoryTypeEnum.KNOWLEDGE_POINT),
+    ARCHITECTURE_KNOWLEDGE("ARCHITECTURE_KNOWLEDGE", MemoryTypeEnum.KNOWLEDGE_POINT, false),
+    DOMAIN_KNOWLEDGE("DOMAIN_KNOWLEDGE", MemoryTypeEnum.KNOWLEDGE_POINT, false),
+    GLOSSARY("GLOSSARY", MemoryTypeEnum.KNOWLEDGE_POINT, false),
+    OBJECT_KNOWLEDGE("OBJECT_KNOWLEDGE", MemoryTypeEnum.KNOWLEDGE_POINT, false),
 
-    PROCESS_RULE("PROCESS_RULE", MemoryTypeEnum.WORKFLOW_CONSTRAINT),
-    APPROVAL_RULE("APPROVAL_RULE", MemoryTypeEnum.WORKFLOW_CONSTRAINT),
-    IMPLEMENTATION_CONSTRAINT("IMPLEMENTATION_CONSTRAINT", MemoryTypeEnum.WORKFLOW_CONSTRAINT),
-    REVIEW_CONSTRAINT("REVIEW_CONSTRAINT", MemoryTypeEnum.WORKFLOW_CONSTRAINT),
+    PROCESS_RULE("PROCESS_RULE", MemoryTypeEnum.WORKFLOW_CONSTRAINT, false),
+    APPROVAL_RULE("APPROVAL_RULE", MemoryTypeEnum.WORKFLOW_CONSTRAINT, false),
+    IMPLEMENTATION_CONSTRAINT("IMPLEMENTATION_CONSTRAINT", MemoryTypeEnum.WORKFLOW_CONSTRAINT, false),
+    REVIEW_CONSTRAINT("REVIEW_CONSTRAINT", MemoryTypeEnum.WORKFLOW_CONSTRAINT, false),
+    CONVERSATION_WORKING_MEMORY("CONVERSATION_WORKING_MEMORY", MemoryTypeEnum.WORKFLOW_CONSTRAINT, true),
 
-    QUERY_PATTERN("QUERY_PATTERN", MemoryTypeEnum.GOLDEN_SQL_CASE),
-    JOIN_STRATEGY("JOIN_STRATEGY", MemoryTypeEnum.GOLDEN_SQL_CASE),
-    VALIDATED_SQL("VALIDATED_SQL", MemoryTypeEnum.GOLDEN_SQL_CASE),
-    METRIC_CALCULATION("METRIC_CALCULATION", MemoryTypeEnum.GOLDEN_SQL_CASE);
+    QUERY_PATTERN("QUERY_PATTERN", MemoryTypeEnum.GOLDEN_SQL_CASE, false),
+    JOIN_STRATEGY("JOIN_STRATEGY", MemoryTypeEnum.GOLDEN_SQL_CASE, false),
+    VALIDATED_SQL("VALIDATED_SQL", MemoryTypeEnum.GOLDEN_SQL_CASE, false),
+    METRIC_CALCULATION("METRIC_CALCULATION", MemoryTypeEnum.GOLDEN_SQL_CASE, false);
 
     private final String code;
     private final MemoryTypeEnum memoryType;
+    private final boolean internalOnly;
 
     public static MemorySubTypeEnum fromCode(String code) {
         if (code == null || code.isBlank()) {
@@ -55,6 +57,7 @@ public enum MemorySubTypeEnum {
         }
         return Arrays.stream(values())
                 .filter(value -> value.memoryType == memoryType)
+                .filter(value -> !value.internalOnly)
                 .map(MemorySubTypeEnum::getCode)
                 .toList();
     }
@@ -65,6 +68,7 @@ public enum MemorySubTypeEnum {
 
     public static String validCodes() {
         return Arrays.stream(values())
+                .filter(value -> !value.internalOnly)
                 .map(MemorySubTypeEnum::getCode)
                 .collect(Collectors.joining(", "));
     }

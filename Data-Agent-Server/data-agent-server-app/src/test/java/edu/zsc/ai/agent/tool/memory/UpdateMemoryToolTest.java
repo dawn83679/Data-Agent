@@ -132,7 +132,63 @@ class UpdateMemoryToolTest {
                 InvocationParameters.from(Map.of()));
 
         assertFalse(result.isSuccess());
-        assertTrue(result.getMessage().contains("only available to the main agent"));
+        assertTrue(result.getMessage().contains("only available"));
+    }
+
+    @Test
+    void memoryWriterCanCreateConversationWorkingMemory() {
+        AgentRequestContext.set(AgentRequestContextInfo.builder()
+                .agentType("memory-writer")
+                .agentMode("agent")
+                .build());
+        when(memoryService.mutateAgentMemory(any())).thenReturn(MemoryWriteResult.builder()
+                .memory(AiMemory.builder()
+                        .id(10L)
+                        .scope("CONVERSATION")
+                        .memoryType("WORKFLOW_CONSTRAINT")
+                        .subType("CONVERSATION_WORKING_MEMORY")
+                        .title("Conversation working memory")
+                        .content("# 当前任务\n- 目标：继续分析用户注册数据")
+                        .createdAt(LocalDateTime.of(2026, 4, 19, 10, 0))
+                        .updatedAt(LocalDateTime.of(2026, 4, 19, 10, 0))
+                        .build())
+                .action(MemoryToolActionEnum.CREATED)
+                .build());
+
+        AgentToolResult result = tool.updateMemory(
+                MemoryOperationEnum.CREATE,
+                null,
+                MemoryScopeEnum.CONVERSATION,
+                MemoryTypeEnum.WORKFLOW_CONSTRAINT,
+                MemorySubTypeEnum.CONVERSATION_WORKING_MEMORY,
+                "Conversation working memory",
+                """
+                {
+                  "currentTask": {
+                    "goal": "继续分析用户注册数据",
+                    "status": "ACTIVE",
+                    "summary": "已完成概览分析"
+                  },
+                  "activeScope": {
+                    "connection": "test3",
+                    "database": "enterprise_gateway_dev",
+                    "schema": null,
+                    "primaryObjects": ["chat2db_user"],
+                    "scopeConfidence": "CONFIRMED"
+                  },
+                  "resolvedMilestones": [],
+                  "highPriorityCandidates": [],
+                  "userConfirmedFacts": [],
+                  "verifiedFindings": [],
+                  "decisionPriorities": [],
+                  "openQuestions": []
+                }
+                """,
+                "Background auto-write update",
+                InvocationParameters.from(Map.of()));
+
+        assertTrue(result.isSuccess());
+        assertEquals("CREATED", ((java.util.Map<?, ?>) result.getResult()).get("action"));
     }
 
     @Test

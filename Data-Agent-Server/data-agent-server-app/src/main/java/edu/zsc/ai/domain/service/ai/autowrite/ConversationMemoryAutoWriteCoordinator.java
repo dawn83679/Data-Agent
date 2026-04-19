@@ -9,8 +9,6 @@ import edu.zsc.ai.domain.service.ai.AiConversationService;
 import edu.zsc.ai.domain.service.ai.AiMessageService;
 import edu.zsc.ai.domain.service.ai.MemoryService;
 import edu.zsc.ai.domain.service.ai.model.MemoryWriteContext;
-import edu.zsc.ai.domain.service.ai.model.MemoryWriteContext.MemorySummary;
-import edu.zsc.ai.domain.service.ai.model.MemoryWriteItem;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -31,16 +29,23 @@ import java.util.concurrent.atomic.AtomicInteger;
 @RequiredArgsConstructor
 public class ConversationMemoryAutoWriteCoordinator {
 
-    private static final int MAX_MEMORY_SUMMARIES = 50;
     private static final int MAX_MESSAGES_PER_EXTRACTION = 30;
+    /**
+     * Number of completed chat turns to skip between two extractions. Counter is initialized to this value
+     * so the first {@link #submit} after a cold start runs immediately; each subsequent run resets the
+     * counter to 0, meaning one throttled submit per extraction (interval=1 → every other completion).
+     */
     private static final int EXTRACTION_INTERVAL = 1;
-    private static final int MAX_CONSECUTIVE_FAILURES = 3;
+    /** After this many consecutive failures, cursor is advanced to avoid blocking the pipeline. */
+    private static final int MAX_CONSECUTIVE_FAILURES = 5;
+    private static final int MAX_MEMORY_WRITER_ATTEMPTS = 3;
 
     private final AiMessageService aiMessageService;
     private final MemoryService memoryService;
-    private final ConversationMemoryAiWriter aiWriter;
+    private final ConversationMemoryWriter memoryWriter;
     private final AiConversationMemoryCursorService cursorService;
     private final AiConversationService aiConversationService;
+    private final ConversationMemoryAdvisoryLockService advisoryLockService;
 
     private final ConcurrentHashMap<Long, AtomicBoolean> inFlight = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Long, AtomicBoolean> pending = new ConcurrentHashMap<>();
@@ -71,7 +76,11 @@ public class ConversationMemoryAutoWriteCoordinator {
         }
 
         try {
-            doWrite(conversationId);
+            boolean ran = advisoryLockService.tryRunWithConversationLock(conversationId, () -> doWrite(conversationId));
+            if (!ran) {
+                log.info("[MemAutoWrite] Extraction skipped (advisory lock not acquired): conversationId={}",
+                        conversationId);
+            }
         } finally {
             running.set(false);
         }
@@ -129,38 +138,46 @@ public class ConversationMemoryAutoWriteCoordinator {
             }
 
             // Build context and call AI
-            MemoryWriteContext context = buildWriteContext(userId, newMessages);
+            MemoryWriteContext context = buildWriteContext(newMessages);
             Long processedUpTo = context.lastMessageId();
             log.info("[MemAutoWrite] Context built: conversationId={}, messagesForAI={}, existingMemories={}, truncated={}, processedUpTo={}",
                     conversationId, context.newMessages().size(), context.existingMemories().size(),
                     context.memoriesTruncated(), processedUpTo);
 
-            log.info("[MemAutoWrite] Calling AI for memory extraction: conversationId={}", conversationId);
-            long aiStartTime = System.currentTimeMillis();
-            List<MemoryWriteItem> items = aiWriter.extractMemoryWrites(context);
-            long aiElapsed = System.currentTimeMillis() - aiStartTime;
-
-            if (items == null) {
-                log.error("[MemAutoWrite] AI extraction returned null (parse failure or provider error): conversationId={}, aiElapsedMs={}",
-                        conversationId, aiElapsed);
-                throw new RuntimeException("AI extraction returned null (provider error or parse failure)");
-            }
-
-            if (!items.isEmpty()) {
-                log.info("[MemAutoWrite] Extracted {} memory items in {}ms: conversationId={}", items.size(), aiElapsed, conversationId);
-                for (int i = 0; i < items.size(); i++) {
-                    MemoryWriteItem item = items.get(i);
-                    log.info("[MemAutoWrite]   item[{}]: op={}, memoryId={}, type={}/{}, title={}",
-                            i, item.operation(), item.memoryId(), item.memoryType(), item.subType(),
-                            item.title() != null ? item.title() : "(null)");
+            log.info("[MemAutoWrite] Calling memory writer agent: conversationId={}", conversationId);
+            long writerStartTime = System.currentTimeMillis();
+            Exception lastFailure = null;
+            boolean writerSucceeded = false;
+            for (int attempt = 1; attempt <= MAX_MEMORY_WRITER_ATTEMPTS; attempt++) {
+                try {
+                    memoryWriter.writeMemory(context, conversationId, userId);
+                    writerSucceeded = true;
+                    break;
+                } catch (Exception e) {
+                    lastFailure = e;
+                    log.warn("[MemAutoWrite] Memory writer failed (attempt {}/{}): conversationId={}, error={}",
+                            attempt, MAX_MEMORY_WRITER_ATTEMPTS, conversationId, e.getMessage());
                 }
-                memoryService.applyAutoWriteItems(conversationId, userId, items, cursor, processedUpTo);
-                log.info("[MemAutoWrite] Applied {} items and advanced cursor: conversationId={}, cursorTo={}",
-                        items.size(), conversationId, processedUpTo);
-            } else {
-                log.info("[MemAutoWrite] AI returned empty items (nothing to remember) in {}ms: conversationId={}", aiElapsed, conversationId);
-                advanceCursor(cursor, processedUpTo);
+                if (attempt < MAX_MEMORY_WRITER_ATTEMPTS) {
+                    try {
+                        Thread.sleep(50L * attempt);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException(ie);
+                    }
+                }
             }
+            long writerElapsed = System.currentTimeMillis() - writerStartTime;
+
+            if (!writerSucceeded) {
+                log.error("[MemAutoWrite] Memory writer failed after {} attempts: conversationId={}, elapsedMs={}",
+                        MAX_MEMORY_WRITER_ATTEMPTS, conversationId, writerElapsed, lastFailure);
+                throw new RuntimeException("Memory writer failed", lastFailure);
+            }
+
+            advanceCursor(cursor, processedUpTo);
+            log.info("[MemAutoWrite] Memory writer completed in {}ms and advanced cursor: conversationId={}, cursorTo={}",
+                    writerElapsed, conversationId, processedUpTo);
 
             resetFailureCount(conversationId);
             long totalElapsed = System.currentTimeMillis() - startTime;
@@ -180,20 +197,13 @@ public class ConversationMemoryAutoWriteCoordinator {
         return aiMessageService.getActiveMessagesForAutoWrite(conversationId);
     }
 
-    private MemoryWriteContext buildWriteContext(Long userId, List<StoredChatMessage> newMessages) {
+    private MemoryWriteContext buildWriteContext(List<StoredChatMessage> newMessages) {
         // Cap messages to avoid oversized prompts on first-time or catch-up extractions
         if (newMessages.size() > MAX_MESSAGES_PER_EXTRACTION) {
             newMessages = newMessages.subList(
                     newMessages.size() - MAX_MESSAGES_PER_EXTRACTION, newMessages.size());
         }
-
-        List<MemorySummary> summaries = memoryService.getEnabledMemorySummaries(userId);
-        boolean truncated = summaries.size() > MAX_MEMORY_SUMMARIES;
-        int total = summaries.size();
-        if (truncated) {
-            summaries = summaries.subList(0, MAX_MEMORY_SUMMARIES);
-        }
-        return new MemoryWriteContext(newMessages, summaries, truncated, total);
+        return new MemoryWriteContext(newMessages, List.of(), false, 0);
     }
 
     private AiConversationMemoryCursor getOrCreateCursor(Long conversationId, Long userId) {
@@ -230,8 +240,9 @@ public class ConversationMemoryAutoWriteCoordinator {
     private void handleFailure(Long conversationId) {
         AtomicInteger count = failureCounts.computeIfAbsent(conversationId, k -> new AtomicInteger(0));
         int failures = count.incrementAndGet();
-        log.warn("[MemAutoWrite] Failure #{} for conversationId={} (forceAdvanceAt={})",
-                failures, conversationId, MAX_CONSECUTIVE_FAILURES);
+        log.warn(
+                "[MemAutoWrite] extraction_failure conversationId={} consecutiveFailures={} forceAdvanceThreshold={} failureStage=doWrite",
+                conversationId, failures, MAX_CONSECUTIVE_FAILURES);
         if (failures >= MAX_CONSECUTIVE_FAILURES) {
             log.warn("[MemAutoWrite] Force-advancing cursor after {} consecutive failures: conversationId={}",
                     failures, conversationId);

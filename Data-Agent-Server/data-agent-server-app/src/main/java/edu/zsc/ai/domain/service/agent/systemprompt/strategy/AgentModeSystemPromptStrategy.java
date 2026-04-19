@@ -29,6 +29,9 @@ public class AgentModeSystemPromptStrategy extends AbstractSystemPromptHandler {
         if (agentType == AgentTypeEnum.PLANNER) {
             return "mode: planner\n- focus on SQL planning, validation, and optimization\n- do not behave like the user-facing orchestrator";
         }
+        if (agentType == AgentTypeEnum.MEMORY_WRITER) {
+            return "mode: background memory writer\n- you are an internal background memory writer, not a user-facing agent\n- always keep the current conversation working memory up to date before finishing\n- only use tools that are exposed to this agent in the current session";
+        }
         return "mode: explorer\n- focus on schema discovery and verified object understanding\n- do not speculate beyond inspected database metadata";
     }
 }

@@ -34,6 +34,12 @@ class AgentSkillConfigTest {
     }
 
     @Test
+    void memoryWriter_hasNoSkills() {
+        assertEquals(List.of(),
+                config.resolveAvailableSkills(AgentTypeEnum.MEMORY_WRITER, AgentModeEnum.AGENT));
+    }
+
+    @Test
     void supports_respectsAgentSkillVisibility() {
         assertFalse(config.supports(AgentTypeEnum.MAIN, AgentModeEnum.AGENT, "memory"));
         assertFalse(config.supports(AgentTypeEnum.MAIN, AgentModeEnum.AGENT, "file-export"));

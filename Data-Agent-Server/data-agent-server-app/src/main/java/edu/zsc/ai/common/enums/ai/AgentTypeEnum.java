@@ -11,6 +11,7 @@ import java.util.Locale;
  *   <li>MAIN — the orchestrator agent that talks to the user, executes SQL, and delegates to sub-agents</li>
  *   <li>EXPLORER — schema discovery sub-agent (TodoTool, SearchObjectsTool, GetObjectDetailTool)</li>
  *   <li>PLANNER — SQL plan generation sub-agent (TodoTool, GetObjectDetailTool, ExecuteSqlTool)</li>
+ *   <li>MEMORY_WRITER — internal background memory agent (ReadMemoryTool, UpdateMemoryTool)</li>
  * </ul>
  */
 @Getter
@@ -19,7 +20,8 @@ public enum AgentTypeEnum {
 
     MAIN("main"),
     EXPLORER("explorer"),
-    PLANNER("planner");
+    PLANNER("planner"),
+    MEMORY_WRITER("memory-writer");
 
     private final String code;
 

@@ -2,6 +2,10 @@
 {{SYSTEM_CONTEXT}}
 </system_context>
 
+<current_conversation_memory purpose="current_task_working_memory" apply_to="scope_tracking,continuation" strength="highest">
+{{CURRENT_CONVERSATION_MEMORY}}
+</current_conversation_memory>
+
 <scope_hints purpose="query_scope_guidance" apply_to="tool_selection,object_search,sql_scope" strength="strong">
 {{SCOPE_HINTS}}
 </scope_hints>

@@ -19,6 +19,7 @@ public class AgentSkillConfig {
         defaultSkillsByAgent.put(AgentTypeEnum.MAIN, List.of(SkillEnum.CHART));
         defaultSkillsByAgent.put(AgentTypeEnum.PLANNER, List.of());
         defaultSkillsByAgent.put(AgentTypeEnum.EXPLORER, List.of());
+        defaultSkillsByAgent.put(AgentTypeEnum.MEMORY_WRITER, List.of());
     }
 
     public List<SkillEnum> resolveAvailableSkills(AgentTypeEnum agentType, AgentModeEnum mode) {

@@ -9,7 +9,8 @@ public enum ToolPromptTarget {
     MAIN_AGENT,
     MAIN_PLAN,
     EXPLORER,
-    PLANNER;
+    PLANNER,
+    MEMORY_WRITER;
 
     public static Optional<ToolPromptTarget> fromPrompt(PromptEnum promptEnum) {
         if (promptEnum == null) {
@@ -20,6 +21,7 @@ public enum ToolPromptTarget {
             case EN_PLAN, ZH_PLAN -> Optional.of(MAIN_PLAN);
             case EXPLORER -> Optional.of(EXPLORER);
             case PLANNER -> Optional.of(PLANNER);
+            case MEMORY_WRITER -> Optional.of(MEMORY_WRITER);
             case COMPRESSION, MEMORY_AUTO_WRITE -> Optional.empty();
         };
     }

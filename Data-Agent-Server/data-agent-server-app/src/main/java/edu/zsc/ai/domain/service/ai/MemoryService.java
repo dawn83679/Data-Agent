@@ -52,6 +52,8 @@ public interface MemoryService extends IService<AiMemory> {
 
     List<MemorySummary> getEnabledMemorySummaries(Long userId);
 
+    AiMemory getConversationWorkingMemory(Long userId, Long conversationId);
+
     boolean hasManualWritesSince(Long userId, Long conversationId, LocalDateTime since);
 
     void applyAutoWriteItems(Long conversationId, Long userId, List<MemoryWriteItem> items,

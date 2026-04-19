@@ -56,9 +56,10 @@ public class UpdateMemoryTool {
 
         AgentTypeEnum agentType = AgentTypeEnum.fromCode(AgentRequestContext.getAgentType());
         AgentModeEnum agentMode = AgentModeEnum.fromRequest(AgentRequestContext.getAgentMode());
-        if (agentType != AgentTypeEnum.MAIN || agentMode != AgentModeEnum.AGENT) {
+        if (agentMode != AgentModeEnum.AGENT
+                || (agentType != AgentTypeEnum.MAIN && agentType != AgentTypeEnum.MEMORY_WRITER)) {
             return AgentToolResult.fail(ToolMessageSupport.sentence(
-                    "updateMemory is only available to the main agent in normal execution mode.",
+                    "updateMemory is only available to the main agent or memory writer in normal execution mode.",
                     "Do not attempt to mutate memory from this agent context."
             ));
         }

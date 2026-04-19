@@ -29,12 +29,27 @@ public class MemoryContextServiceImpl implements MemoryContextService {
 
     @Override
     public MemoryPromptContext loadPromptContext(Long userId, Long conversationId, String userMessage) {
-        if (!memoryProperties.isEnabled() || Objects.isNull(userId) || Objects.isNull(conversationId)) {
+        if (Objects.isNull(userId) || Objects.isNull(conversationId)) {
             return MemoryPromptContext.builder().build();
+        }
+
+        String currentConversationMemory = null;
+        try {
+            var workingMemory = memoryService.getConversationWorkingMemory(userId, conversationId);
+            currentConversationMemory = workingMemory == null ? null : workingMemory.getContent();
+        } catch (Exception e) {
+            log.warn("Failed to fetch current conversation working memory for user {}", userId, e);
+        }
+
+        if (!memoryProperties.isEnabled()) {
+            return MemoryPromptContext.builder()
+                    .currentConversationMemory(currentConversationMemory)
+                    .build();
         }
 
         try {
             MemoryPromptContext promptContext = MemoryPromptContext.builder()
+                    .currentConversationMemory(currentConversationMemory)
                     .recallResult(memoryRecallManager.recall(MemoryRecallContext.builder()
                             .conversationId(conversationId)
                             .queryText(userMessage)
@@ -54,7 +69,9 @@ public class MemoryContextServiceImpl implements MemoryContextService {
             return promptContext;
         } catch (Exception e) {
             log.warn("Failed to fetch memory context for user {}", userId, e);
-            return MemoryPromptContext.builder().build();
+            return MemoryPromptContext.builder()
+                    .currentConversationMemory(currentConversationMemory)
+                    .build();
         }
     }
 }

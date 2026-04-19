@@ -14,7 +14,6 @@ import edu.zsc.ai.agent.tool.memory.ReadMemoryTool;
 import edu.zsc.ai.agent.tool.memory.UpdateMemoryTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingExplorerTool;
 import edu.zsc.ai.agent.tool.orchestrator.CallingPlannerTool;
-import edu.zsc.ai.agent.tool.plan.EnterPlanModeTool;
 import edu.zsc.ai.agent.tool.plan.ExitPlanModeTool;
 import edu.zsc.ai.agent.tool.skill.ActivateSkillTool;
 import edu.zsc.ai.agent.tool.sql.ExecuteSqlTool;
@@ -55,7 +54,6 @@ class AgentToolConfigTest {
     private CallingExplorerTool callingExplorerTool;
     private CallingPlannerTool callingPlannerTool;
     private TodoTool todoTool;
-    private EnterPlanModeTool enterPlanModeTool;
     private ExitPlanModeTool exitPlanModeTool;
     private ActivateSkillTool activateSkillTool;
     private ChartTool chartTool;
@@ -73,10 +71,9 @@ class AgentToolConfigTest {
         getObjectDetailTool = new GetObjectDetailTool(null);
         executeSqlTool = new ExecuteSqlTool(null, null, null, null);
         askUserQuestionTool = new AskUserQuestionTool();
-        callingExplorerTool = new CallingExplorerTool(null, null, null, null);
-        callingPlannerTool = new CallingPlannerTool(null, null, null);
+        callingExplorerTool = new CallingExplorerTool(null, null, null);
+        callingPlannerTool = new CallingPlannerTool(null, null);
         todoTool = new TodoTool();
-        enterPlanModeTool = new EnterPlanModeTool();
         exitPlanModeTool = new ExitPlanModeTool();
         activateSkillTool = new ActivateSkillTool(new AgentSkillConfig());
         chartTool = new ChartTool();
@@ -94,7 +91,6 @@ class AgentToolConfigTest {
                 callingExplorerTool,
                 callingPlannerTool,
                 todoTool,
-                enterPlanModeTool,
                 exitPlanModeTool,
                 activateSkillTool,
                 chartTool,
@@ -126,7 +122,6 @@ class AgentToolConfigTest {
             assertFalse(tools.contains(readMemoryTool));
             assertFalse(tools.contains(updateMemoryTool));
 
-            assertFalse(tools.contains(enterPlanModeTool));
             assertFalse(tools.contains(exitPlanModeTool));
         }
 
@@ -149,8 +144,6 @@ class AgentToolConfigTest {
             assertFalse(tools.contains(exportFileTool));
             assertFalse(tools.contains(searchObjectsTool));
             assertFalse(tools.contains(getObjectDetailTool));
-            assertFalse(tools.contains(enterPlanModeTool));
-            assertFalse(tools.contains(exitPlanModeTool));
         }
     }
 
@@ -194,8 +187,28 @@ class AgentToolConfigTest {
             assertFalse(tools.contains(chartTool), "Planner should NOT have ChartTool");
             assertFalse(tools.contains(readMemoryTool), "Planner should NOT have ReadMemoryTool");
             assertFalse(tools.contains(updateMemoryTool), "Planner should NOT have UpdateMemoryTool");
-            assertFalse(tools.contains(enterPlanModeTool), "Planner should NOT have EnterPlanModeTool");
             assertFalse(tools.contains(exitPlanModeTool), "Planner should NOT have ExitPlanModeTool");
+        }
+
+        @Test
+        void memoryWriter_hasOnlyReadAndUpdateMemoryTools() {
+            List<Object> tools = config.resolveSubAgentTools(allTools, AgentTypeEnum.MEMORY_WRITER);
+
+            assertEquals(2, tools.size(), "Memory writer should have exactly 2 scoped tools");
+            assertTrue(tools.contains(readMemoryTool), "Memory writer should have ReadMemoryTool");
+            assertTrue(tools.contains(updateMemoryTool), "Memory writer should have UpdateMemoryTool");
+            assertFalse(tools.contains(getDatabasesTool), "Memory writer should NOT have GetDatabasesTool");
+            assertFalse(tools.contains(getSchemasTool), "Memory writer should NOT have GetSchemasTool");
+            assertFalse(tools.contains(searchObjectsTool), "Memory writer should NOT have SearchObjectsTool");
+            assertFalse(tools.contains(getObjectDetailTool), "Memory writer should NOT have GetObjectDetailTool");
+            assertFalse(tools.contains(executeSqlTool), "Memory writer should NOT have ExecuteSqlTool");
+            assertFalse(tools.contains(askUserQuestionTool), "Memory writer should NOT have AskUserQuestionTool");
+            assertFalse(tools.contains(callingExplorerTool), "Memory writer should NOT have CallingExplorerTool");
+            assertFalse(tools.contains(callingPlannerTool), "Memory writer should NOT have CallingPlannerTool");
+            assertFalse(tools.contains(todoTool), "Memory writer should NOT have TodoTool");
+            assertFalse(tools.contains(activateSkillTool), "Memory writer should NOT have ActivateSkillTool");
+            assertFalse(tools.contains(chartTool), "Memory writer should NOT have ChartTool");
+            assertFalse(tools.contains(exportFileTool), "Memory writer should NOT have ExportFileTool");
         }
 
         @Test

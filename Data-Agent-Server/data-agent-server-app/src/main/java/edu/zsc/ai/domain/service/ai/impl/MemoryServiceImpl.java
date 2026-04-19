@@ -1,25 +1,9 @@
 package edu.zsc.ai.domain.service.ai.impl;
 
-import java.io.Serializable;
-import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Service;
-
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-
 import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
@@ -28,26 +12,16 @@ import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 import dev.langchain4j.store.embedding.EmbeddingSearchResult;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.filter.MetadataFilterBuilder;
-import edu.zsc.ai.common.constant.MemoryConstant;
+import edu.zsc.ai.common.constant.*;
 import edu.zsc.ai.common.converter.ai.MemoryMutationConverter;
-import edu.zsc.ai.common.constant.MemoryLogConstant;
-import edu.zsc.ai.common.constant.MemoryMetadataConstant;
-import edu.zsc.ai.common.constant.MemoryRecallLogConstant;
-import edu.zsc.ai.common.constant.MemoryRecallPlanningConstant;
-import edu.zsc.ai.common.enums.ai.MemoryScopeEnum;
-import edu.zsc.ai.common.enums.ai.MemorySourceTypeEnum;
-import edu.zsc.ai.common.enums.ai.MemorySubTypeEnum;
-import edu.zsc.ai.common.enums.ai.MemoryOperationEnum;
-import edu.zsc.ai.common.enums.ai.MemoryToolActionEnum;
-import edu.zsc.ai.common.enums.ai.MemoryTypeEnum;
-import edu.zsc.ai.common.enums.ai.MemoryEnableEnum;
+import edu.zsc.ai.common.enums.ai.*;
 import edu.zsc.ai.config.ai.MemoryProperties;
 import edu.zsc.ai.context.RequestContext;
 import edu.zsc.ai.domain.exception.BusinessException;
 import edu.zsc.ai.domain.mapper.ai.AiMemoryMapper;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryCreateRequest;
-import edu.zsc.ai.domain.model.dto.request.ai.MemoryUpdateRequest;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryMutationRequest;
+import edu.zsc.ai.domain.model.dto.request.ai.MemoryUpdateRequest;
 import edu.zsc.ai.domain.model.dto.request.base.PageRequest;
 import edu.zsc.ai.domain.model.dto.response.base.PageResponse;
 import edu.zsc.ai.domain.model.entity.ai.AiConversationMemoryCursor;
@@ -61,10 +35,21 @@ import edu.zsc.ai.domain.service.ai.model.MemoryWriteResult;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallMode;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallQuery;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallQueryStrategy;
+import edu.zsc.ai.domain.service.ai.workingmemory.ConversationWorkingMemoryDraft;
+import edu.zsc.ai.domain.service.ai.workingmemory.ConversationWorkingMemoryRenderer;
+import edu.zsc.ai.domain.service.ai.workingmemory.ConversationWorkingMemoryValidator;
+import edu.zsc.ai.util.JsonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -84,6 +69,8 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
     private final EmbeddingModel embeddingModel;
     private final MemoryProperties memoryProperties;
     private final AiConversationMemoryCursorService cursorService;
+    private final ConversationWorkingMemoryValidator conversationWorkingMemoryValidator = new ConversationWorkingMemoryValidator();
+    private final ConversationWorkingMemoryRenderer conversationWorkingMemoryRenderer = new ConversationWorkingMemoryRenderer();
 
     @Override
     public List<MemorySearchResult> searchEnabledMemories(String queryText, int limit, double minScore, String memoryType, String scope) {
@@ -636,21 +623,38 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
     }
 
     private MutationExecution createAgentMemory(MemoryMutationRequest request, Long userId) {
-        String content = requireMutationContent(request.getContent());
         String scope = resolveScopeOrDefault(request.getScope(), DEFAULT_SCOPE);
         String memoryType = resolveMemoryType(request.getMemoryType());
         String subType = resolveMemorySubType(request.getMemoryType(), request.getSubType());
         validatePreferenceScope(scope, memoryType);
+        String content = requireMutationContent(request.getContent());
         LocalDateTime now = LocalDateTime.now();
+        String renderedContent = content;
+        String title = resolveTitle(request.getTitle(), content);
+        String reason = StringUtils.trimToNull(request.getReason());
+        if (isConversationWorkingMemory(scope, memoryType, subType)) {
+            renderedContent = normalizeConversationWorkingMemoryContent(content);
+            title = defaultConversationWorkingMemoryTitle(request.getTitle());
+            return upsertConversationWorkingMemory(
+                    userId,
+                    requireConversationIdForConversationWorkingMemory(),
+                    scope,
+                    memoryType,
+                    subType,
+                    title,
+                    renderedContent,
+                    reason,
+                    now);
+        }
         MemoryMutationConverter.Mutation mutation = new MemoryMutationConverter.Mutation(
                 RequestContext.getConversationId(),
                 scope,
                 memoryType,
                 subType,
                 AGENT_SOURCE_TYPE,
-                resolveTitle(request.getTitle(), content),
-                content,
-                StringUtils.trimToNull(request.getReason()),
+                title,
+                renderedContent,
+                reason,
                 ENABLED_MEMORY_VALUE,
                 0,
                 now
@@ -665,7 +669,6 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
     private MutationExecution updateAgentMemory(MemoryMutationRequest request) {
         Long memoryId = requireMutationMemoryId(request.getMemoryId(), MemoryOperationEnum.UPDATE);
         AiMemory memory = getByIdForCurrentUser(memoryId);
-        String content = requireMutationContent(request.getContent());
         String targetScope = resolveScopeOrDefault(request.getScope(),
                 StringUtils.defaultIfBlank(memory.getScope(), DEFAULT_SCOPE));
         String targetMemoryTypeInput = StringUtils.defaultIfBlank(request.getMemoryType(), memory.getMemoryType());
@@ -673,9 +676,19 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         String memoryType = resolveMemoryType(targetMemoryTypeInput);
         String subType = resolveMemorySubType(targetMemoryTypeInput, targetSubTypeInput);
         validatePreferenceScope(targetScope, memoryType);
+        String content = requireMutationContent(request.getContent());
+        String renderedContent = content;
+        if (isConversationWorkingMemory(targetScope, memoryType, subType)) {
+            renderedContent = normalizeConversationWorkingMemoryContent(content);
+        }
         String title = StringUtils.isBlank(request.getTitle())
-                ? StringUtils.defaultIfBlank(memory.getTitle(), resolveTitle(null, content))
-                : resolveTitle(request.getTitle(), content);
+                ? StringUtils.defaultIfBlank(memory.getTitle(),
+                isConversationWorkingMemory(targetScope, memoryType, subType)
+                        ? defaultConversationWorkingMemoryTitle(null)
+                        : resolveTitle(null, renderedContent))
+                : (isConversationWorkingMemory(targetScope, memoryType, subType)
+                ? defaultConversationWorkingMemoryTitle(request.getTitle())
+                : resolveTitle(request.getTitle(), renderedContent));
         String reason = StringUtils.isBlank(request.getReason())
                 ? StringUtils.trimToNull(memory.getReason())
                 : StringUtils.trimToNull(request.getReason());
@@ -686,7 +699,7 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
                 subType,
                 AGENT_SOURCE_TYPE,
                 title,
-                content,
+                renderedContent,
                 reason,
                 memory.getEnable(),
                 memory.getAccessCount(),
@@ -709,6 +722,51 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         return new MutationExecution(memory, MemoryToolActionEnum.DELETED);
     }
 
+    private MutationExecution upsertConversationWorkingMemory(Long userId,
+                                                              Long conversationId,
+                                                              String scope,
+                                                              String memoryType,
+                                                              String subType,
+                                                              String title,
+                                                              String content,
+                                                              String reason,
+                                                              LocalDateTime now) {
+        AiMemory existing = findAndNormalizeConversationWorkingMemory(userId, conversationId);
+        if (existing != null) {
+            existing.setConversationId(conversationId);
+            existing.setScope(scope);
+            existing.setMemoryType(memoryType);
+            existing.setSubType(subType);
+            existing.setSourceType(AGENT_SOURCE_TYPE);
+            existing.setTitle(title);
+            existing.setContent(content);
+            existing.setReason(reason);
+            existing.setEnable(ENABLED_MEMORY_VALUE);
+            existing.setUpdatedAt(now);
+            updateById(existing);
+            rebuildEmbedding(existing);
+            return new MutationExecution(existing, MemoryToolActionEnum.UPDATED);
+        }
+
+        MemoryMutationConverter.Mutation mutation = new MemoryMutationConverter.Mutation(
+                conversationId,
+                scope,
+                memoryType,
+                subType,
+                AGENT_SOURCE_TYPE,
+                title,
+                content,
+                reason,
+                ENABLED_MEMORY_VALUE,
+                0,
+                now
+        );
+        AiMemory memory = MemoryMutationConverter.create(userId, mutation);
+        save(memory);
+        rebuildEmbedding(memory);
+        return new MutationExecution(memory, MemoryToolActionEnum.CREATED);
+    }
+
     private Long requireMutationMemoryId(Long memoryId, MemoryOperationEnum operation) {
         if (memoryId == null || memoryId <= 0L) {
             throw BusinessException.badRequest("memoryId is required for operation '%s'.", operation.getCode());
@@ -722,6 +780,34 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
             throw BusinessException.badRequest("memory content is required");
         }
         return content;
+    }
+
+    private boolean isConversationWorkingMemory(String scope, String memoryType, String subType) {
+        return MemoryScopeEnum.CONVERSATION.matches(scope)
+                && MemoryTypeEnum.WORKFLOW_CONSTRAINT.matches(memoryType)
+                && StringUtils.equals(subType, MemorySubTypeEnum.CONVERSATION_WORKING_MEMORY.getCode());
+    }
+
+    private Long requireConversationIdForConversationWorkingMemory() {
+        Long conversationId = RequestContext.getConversationId();
+        BusinessException.assertNotNull(conversationId, "conversationId is required for CONVERSATION_WORKING_MEMORY.");
+        return conversationId;
+    }
+
+    private String normalizeConversationWorkingMemoryContent(String content) {
+        try {
+            ConversationWorkingMemoryDraft draft = JsonUtil.json2Object(content, ConversationWorkingMemoryDraft.class);
+            ConversationWorkingMemoryDraft normalized = conversationWorkingMemoryValidator.validateAndNormalize(draft);
+            return conversationWorkingMemoryRenderer.render(normalized);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw BusinessException.badRequest("conversation working memory content must be valid JSON");
+        }
+    }
+
+    private String defaultConversationWorkingMemoryTitle(String requestedTitle) {
+        return StringUtils.defaultIfBlank(StringUtils.trimToNull(requestedTitle), "会话工作记忆");
     }
 
     private void validatePreferenceScope(String scope, String memoryType) {
@@ -1003,6 +1089,34 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
         return list(wrapper);
     }
 
+    private AiMemory findAndNormalizeConversationWorkingMemory(Long userId, Long conversationId) {
+        if (userId == null || conversationId == null) {
+            return null;
+        }
+        List<AiMemory> matches = listUserMemoriesByUpdatedAt(userId).stream()
+                .filter(memory -> userId.equals(memory.getUserId()))
+                .filter(memory -> conversationId.equals(memory.getConversationId()))
+                .filter(memory -> MemoryScopeEnum.CONVERSATION.matches(memory.getScope()))
+                .filter(memory -> MemoryTypeEnum.WORKFLOW_CONSTRAINT.matches(memory.getMemoryType()))
+                .filter(memory -> StringUtils.equals(memory.getSubType(), MemorySubTypeEnum.CONVERSATION_WORKING_MEMORY.getCode()))
+                .sorted(conversationWorkingMemoryComparator())
+                .toList();
+        if (matches.isEmpty()) {
+            return null;
+        }
+        AiMemory keep = matches.get(0);
+        if (matches.size() > 1) {
+            for (int i = 1; i < matches.size(); i++) {
+                AiMemory duplicate = matches.get(i);
+                removeById(duplicate.getId());
+                removeEmbeddingQuietly(duplicate.getId());
+            }
+            log.warn("Normalized duplicate conversation working memories: userId={}, conversationId={}, removedCount={}",
+                    userId, conversationId, matches.size() - 1);
+        }
+        return keep;
+    }
+
     private AiMemory findLatestEnabledPreferenceMemory(Long userId,
                                                        String memoryType,
                                                        String subType,
@@ -1043,6 +1157,13 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
     }
 
     private Comparator<AiMemory> preferenceMemoryComparator() {
+        return Comparator.comparing((AiMemory memory) -> defaultInt(memory.getAccessCount(), 0), Comparator.reverseOrder())
+                .thenComparing(AiMemory::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(AiMemory::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(AiMemory::getId, Comparator.nullsLast(Comparator.reverseOrder()));
+    }
+
+    private Comparator<AiMemory> conversationWorkingMemoryComparator() {
         return Comparator.comparing(AiMemory::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(AiMemory::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(AiMemory::getId, Comparator.nullsLast(Comparator.reverseOrder()));
@@ -1100,6 +1221,12 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
                         StringUtils.abbreviate(StringUtils.defaultString(m.getContent()), 200),
                         m.getUpdatedAt()))
                 .toList();
+    }
+
+    @Override
+    public AiMemory getConversationWorkingMemory(Long userId, Long conversationId) {
+        AiMemory memory = findAndNormalizeConversationWorkingMemory(userId, conversationId);
+        return memory != null && isEnabledMemory(memory) ? memory : null;
     }
 
     @Override
@@ -1164,21 +1291,40 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
             }
         }
 
-        AiMemory memory = AiMemory.builder()
-                .userId(userId)
-                .conversationId(conversationId)
-                .scope(scope)
-                .memoryType(memoryType)
-                .subType(subType)
-                .sourceType(AGENT_SOURCE_TYPE)
-                .title(title)
-                .content(content)
-                .reason(StringUtils.trimToNull(item.reason()))
-                .enable(ENABLED_MEMORY_VALUE)
-                .accessCount(0)
-                .createdAt(now)
-                .updatedAt(now)
-                .build();
+        String normalizedContent = StringUtils.normalizeSpace(content);
+        AiMemory exactDup = findEnabledDuplicateByNormalizedContent(userId, scope, memoryType, subType, normalizedContent);
+        if (exactDup != null) {
+            log.info("[MemAutoWrite:Apply] Converting CREATE -> UPDATE (exact normalized content): existingMemoryId={}",
+                    exactDup.getId());
+            updateAutoMemory(conversationId, userId, new MemoryWriteItem(
+                    "UPDATE", exactDup.getId(), item.scope(), item.memoryType(),
+                    item.subType(), item.title(), item.content(), item.reason()));
+            return;
+        }
+
+        if (!MemoryTypeEnum.PREFERENCE.matches(memoryType)) {
+            AiMemory semanticDup = findSemanticNearDuplicateForAutoCreate(userId, scope, memoryType, subType, content);
+            if (semanticDup != null) {
+                log.info("[MemAutoWrite:Apply] Converting CREATE -> UPDATE (semantic near-duplicate): existingMemoryId={}",
+                        semanticDup.getId());
+                updateAutoMemory(conversationId, userId, new MemoryWriteItem(
+                        "UPDATE", semanticDup.getId(), item.scope(), item.memoryType(),
+                        item.subType(), item.title(), item.content(), item.reason()));
+                return;
+            }
+        }
+
+        AiMemory memory = MemoryMutationConverter.buildAutoWriteCreate(
+                userId,
+                conversationId,
+                scope,
+                memoryType,
+                subType,
+                AGENT_SOURCE_TYPE,
+                title,
+                content,
+                StringUtils.trimToNull(item.reason()),
+                now);
         save(memory);
         disableConflictingEnabledPreferenceMemories(userId, subType, memory.getId(), now);
         rebuildEmbedding(memory);
@@ -1224,10 +1370,84 @@ public class MemoryServiceImpl extends ServiceImpl<AiMemoryMapper, AiMemory> imp
             log.warn("[MemAutoWrite:Apply] DELETE skipped: memoryId={} not found or not owned by userId={}", item.memoryId(), userId);
             return;
         }
-        log.info("[MemAutoWrite:Apply] Deleting memory: id={}, type={}/{}, title={}",
+        log.info("[MemAutoWrite:Apply] Soft-disabling memory (auto DELETE): id={}, type={}/{}, title={}",
                 memory.getId(), memory.getMemoryType(), memory.getSubType(), memory.getTitle());
-        removeById(memory.getId());
+        memory.setEnable(MemoryEnableEnum.DISABLE.getCode());
+        memory.setReason(appendAutoDeleteReason(memory.getReason()));
+        memory.setUpdatedAt(LocalDateTime.now());
+        updateById(memory);
         removeEmbeddingQuietly(memory.getId());
+    }
+
+    private static String appendAutoDeleteReason(String existing) {
+        final String tag = "[auto_delete]";
+        if (StringUtils.contains(existing, tag)) {
+            return existing;
+        }
+        if (StringUtils.isBlank(existing)) {
+            return tag;
+        }
+        return existing + " " + tag;
+    }
+
+    private AiMemory findEnabledDuplicateByNormalizedContent(Long userId,
+                                                               String scope,
+                                                               String memoryType,
+                                                               String subType,
+                                                               String normalizedContent) {
+        if (StringUtils.isBlank(normalizedContent)) {
+            return null;
+        }
+        LambdaQueryWrapper<AiMemory> w = new LambdaQueryWrapper<>();
+        w.eq(AiMemory::getUserId, userId)
+                .eq(AiMemory::getEnable, ENABLED_MEMORY_VALUE)
+                .eq(AiMemory::getScope, scope)
+                .eq(AiMemory::getMemoryType, memoryType)
+                .eq(AiMemory::getSubType, subType);
+        return list(w).stream()
+                .filter(m -> normalizedContent.equals(
+                        StringUtils.normalizeSpace(StringUtils.defaultString(m.getContent()).trim())))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private AiMemory findSemanticNearDuplicateForAutoCreate(Long userId,
+                                                            String scope,
+                                                            String memoryType,
+                                                            String subType,
+                                                            String content) {
+        if (!memoryProperties.getAutowrite().isVectorMergeEnabled() || StringUtils.isBlank(content)) {
+            return null;
+        }
+        try {
+            Embedding queryEmbedding = embeddingModel.embed(content).content();
+            var filter = MetadataFilterBuilder.metadataKey(MemoryMetadataConstant.USER_ID).isEqualTo(userId)
+                    .and(MetadataFilterBuilder.metadataKey(MemoryMetadataConstant.ENABLE).isEqualTo(ENABLED_MEMORY_VALUE))
+                    .and(MetadataFilterBuilder.metadataKey(MemoryMetadataConstant.SCOPE).isEqualTo(scope))
+                    .and(MetadataFilterBuilder.metadataKey(MemoryMetadataConstant.MEMORY_TYPE).isEqualTo(memoryType))
+                    .and(MetadataFilterBuilder.metadataKey(MemoryMetadataConstant.SUB_TYPE)
+                            .isEqualTo(StringUtils.defaultString(subType)));
+            EmbeddingSearchRequest request = EmbeddingSearchRequest.builder()
+                    .queryEmbedding(queryEmbedding)
+                    .maxResults(5)
+                    .minScore(memoryProperties.getAutowrite().getVectorMergeMinScore())
+                    .filter(filter)
+                    .build();
+            EmbeddingSearchResult<TextSegment> searchResult = memoryEmbeddingStore.search(request);
+            for (var match : searchResult.matches()) {
+                MemorySearchResult r = toMemorySearchResult(match);
+                if (r.getId() == null) {
+                    continue;
+                }
+                AiMemory row = getById(r.getId());
+                if (row != null && isEnabledMemory(row) && userId.equals(row.getUserId())) {
+                    return row;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Semantic duplicate lookup failed for user {}", userId, e);
+        }
+        return null;
     }
 
     private Integer longToInt(Long value) {
