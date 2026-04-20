@@ -1,5 +1,6 @@
 package edu.zsc.ai.domain.event;
 
+import edu.zsc.ai.config.ExecutorConfig;
 import edu.zsc.ai.domain.service.ai.autowrite.ConversationMemoryAutoWriteCoordinator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +15,7 @@ public class ConversationMemoryAutoWriteEventListener {
 
     private final ConversationMemoryAutoWriteCoordinator autoWriteCoordinator;
 
-    @Async
+    @Async(ExecutorConfig.MEMORY_AUTOWRITE_EXECUTOR_BEAN_NAME)
     @EventListener
     public void onMemoryAutoWriteRequested(ConversationMemoryAutoWriteRequestedEvent event) {
         Long conversationId = event.getConversationId();

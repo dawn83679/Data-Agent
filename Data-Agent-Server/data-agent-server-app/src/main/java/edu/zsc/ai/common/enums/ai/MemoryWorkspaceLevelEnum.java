@@ -5,6 +5,11 @@ import java.util.Locale;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Reserved for a future feature: scoping memories to a workspace hierarchy (global connection,
+ * catalog, schema). Not persisted or referenced by the current memory pipeline; kept for
+ * forward-compatible planning.
+ */
 @Getter
 @RequiredArgsConstructor
 public enum MemoryWorkspaceLevelEnum {

@@ -58,14 +58,14 @@ auth:
 
 ai:
   qwen:
-    api-key: ${ALIYUN_AI_API_KEY:}
+    api-key: ${ALIYUN_AI_API_KEY}
     gateway:
       enabled: true
       base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
     parameters:
       thinking-budget: 1000
   embedding:
-    api-key: ${ALIYUN_AI_EMBEDDING_API_KEY:}
+    api-key: ${ALIYUN_AI_EMBEDDING_API_KEY}
     model-name: text-embedding-v4
     dimension: 1024
   models:
@@ -112,3 +112,11 @@ memory:
   enabled: true
   retrieval:
     min-score: 0.72
+  autowrite:
+    advisory-lock-enabled: true
+    vector-merge-enabled: true
+    vector-merge-min-score: 0.92
+    executor:
+      core-pool-size: 4
+      max-pool-size: 4
+      queue-capacity: 200

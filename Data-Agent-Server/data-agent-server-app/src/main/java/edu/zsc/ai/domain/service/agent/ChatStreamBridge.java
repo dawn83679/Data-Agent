@@ -178,7 +178,7 @@ public class ChatStreamBridge {
                     thinkingText.length(),
                     responseText,
                     thinkingText);
-            publishTokenUsageIfPresent(response, conversationId);
+            publishChatCompleted(response, conversationId);
             sink.tryEmitNext(ChatResponseBlock.doneBlock(buildDoneMetadata(conversationId, toolTracker)));
             sink.tryEmitComplete();
         });
@@ -208,23 +208,31 @@ public class ChatStreamBridge {
         }
     }
 
-    private void publishTokenUsageIfPresent(
+    /**
+     * Always publishes {@link ChatCompletedEvent} when the stream completes successfully so downstream
+     * listeners (token persistence, memory autowrite) run even if the provider omits token usage metadata.
+     */
+    private void publishChatCompleted(
             dev.langchain4j.model.chat.response.ChatResponse response,
             Long conversationId) {
-        if (Objects.isNull(response.tokenUsage())) {
-            return;
+        Integer outputTokens = null;
+        Integer totalTokens = null;
+        if (response.tokenUsage() != null) {
+            outputTokens = response.tokenUsage().outputTokenCount();
+            totalTokens = response.tokenUsage().totalTokenCount();
         }
-        Integer outputTokens = response.tokenUsage().outputTokenCount();
-        Integer totalTokens = response.tokenUsage().totalTokenCount();
 
         if (Objects.nonNull(totalTokens) && totalTokens > 0) {
             log.info("Chat completed for conversation {}: {} total tokens (output: {})",
                     conversationId, totalTokens, outputTokens);
-            eventPublisher.publishEvent(
-                    new ChatCompletedEvent(this, conversationId, outputTokens, totalTokens));
         } else {
-            log.debug("No token usage available for conversation {}", conversationId);
+            log.debug(
+                    "Chat completed for conversation {} without usable token usage (memory autowrite still notified)",
+                    conversationId);
         }
+
+        eventPublisher.publishEvent(
+                new ChatCompletedEvent(this, conversationId, outputTokens, totalTokens));
     }
 
     private Map<String, Object> buildDoneMetadata(Long conversationId, AgentToolTracker toolTracker) {

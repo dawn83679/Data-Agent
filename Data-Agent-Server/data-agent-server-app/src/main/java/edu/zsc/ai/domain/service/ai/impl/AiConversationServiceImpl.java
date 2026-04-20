@@ -143,7 +143,7 @@ public class AiConversationServiceImpl extends ServiceImpl<AiConversationMapper,
 
     @Override
     public void updateTokenCount(Long conversationId, Integer tokenCount) {
-        if (conversationId == null || tokenCount == null || tokenCount <= 0) {
+        if (conversationId == null || tokenCount == null || tokenCount < 0) {
             return;
         }
 

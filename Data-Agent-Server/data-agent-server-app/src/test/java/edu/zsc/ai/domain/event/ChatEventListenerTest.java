@@ -1,6 +1,10 @@
 package edu.zsc.ai.domain.event;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import org.junit.jupiter.api.Test;
@@ -41,6 +45,21 @@ class ChatEventListenerTest {
 
         verify(aiMessageService).updateLastAiMessageTokenCount(88L, 32);
         verify(aiConversationService).updateTokenCount(88L, 120);
+
+        ArgumentCaptor<ConversationMemoryAutoWriteRequestedEvent> captor =
+                ArgumentCaptor.forClass(ConversationMemoryAutoWriteRequestedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertEquals(88L, captor.getValue().getConversationId());
+    }
+
+    @Test
+    void onChatCompleted_withoutTokenUsage_stillPublishesAutoWriteRequest() {
+        ChatCompletedEvent event = new ChatCompletedEvent(this, 88L, null, null);
+
+        listener.onChatCompleted(event);
+
+        verify(aiMessageService, never()).updateLastAiMessageTokenCount(anyLong(), anyInt());
+        verify(aiConversationService).updateTokenCount(88L, null);
 
         ArgumentCaptor<ConversationMemoryAutoWriteRequestedEvent> captor =
                 ArgumentCaptor.forClass(ConversationMemoryAutoWriteRequestedEvent.class);

@@ -1,5 +1,6 @@
 package edu.zsc.ai.domain.event;
 
+import edu.zsc.ai.config.ExecutorConfig;
 import edu.zsc.ai.domain.model.dto.response.agent.ChatResponseBlock;
 import edu.zsc.ai.domain.service.agent.SseEmitterRegistry;
 import edu.zsc.ai.domain.service.ai.AiConversationService;
@@ -35,7 +36,7 @@ public class ChatEventListener {
         });
     }
 
-    @Async
+    @Async(ExecutorConfig.MEMORY_AUTOWRITE_EXECUTOR_BEAN_NAME)
     @EventListener
     public void onChatCompleted(ChatCompletedEvent event) {
         Long conversationId = event.getConversationId();
