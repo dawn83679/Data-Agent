@@ -13,8 +13,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class AgentManagerTest {
 
     @Test
-    void agentTypeEnum_coversAllThreeTypes() {
-        assertEquals(3, AgentTypeEnum.values().length);
+    void agentTypeEnum_coversAllFourTypes() {
+        assertEquals(4, AgentTypeEnum.values().length);
     }
 
     @Test
