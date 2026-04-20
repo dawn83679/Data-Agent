@@ -1,7 +1,6 @@
 package edu.zsc.ai.context;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
@@ -19,7 +18,7 @@ class RequestContextTest {
     }
 
     @Test
-    void toMap_excludesConnectionCatalogAndSchemaFromAgentInvocationContext() {
+    void toMap_includesConnectionCatalogAndSchemaForInvocationContext() {
         RequestContext.set(RequestContextInfo.builder()
                 .userId(7L)
                 .conversationId(42L)
@@ -32,9 +31,9 @@ class RequestContextTest {
 
         assertEquals(7L, map.get(InvocationContextConstant.USER_ID));
         assertEquals(42L, map.get(InvocationContextConstant.CONVERSATION_ID));
-        assertFalse(map.containsKey(InvocationContextConstant.CONNECTION_ID));
-        assertFalse(map.containsKey(InvocationContextConstant.DATABASE_NAME));
-        assertFalse(map.containsKey(InvocationContextConstant.SCHEMA_NAME));
+        assertEquals(5L, map.get(InvocationContextConstant.CONNECTION_ID));
+        assertEquals("sales", map.get(InvocationContextConstant.DATABASE_NAME));
+        assertEquals("public", map.get(InvocationContextConstant.SCHEMA_NAME));
     }
 
     @Test
