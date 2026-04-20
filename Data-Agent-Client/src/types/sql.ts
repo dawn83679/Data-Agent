@@ -1,6 +1,6 @@
 /**
- * SQL Execution Request
- * Sent from frontend to /api/db/sql/execute
+ * SQL execution params provided by frontend callers.
+ * sqlExecutionService maps databaseName/schemaName to the backend's catalog/schema fields.
  */
 export interface ExecuteSqlParams {
   connectionId: number;
