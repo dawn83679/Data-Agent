@@ -9,6 +9,7 @@ import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.agent.annotation.AgentTool;
+import edu.zsc.ai.agent.tool.message.ToolMessageSupport;
 import edu.zsc.ai.agent.tool.model.AgentToolResult;
 import edu.zsc.ai.domain.service.db.DatabaseService;
 import lombok.RequiredArgsConstructor;
@@ -36,16 +37,34 @@ public class GetDatabasesTool {
             List<String> databases = databaseService.getDatabases(connectionId);
             if (CollectionUtils.isEmpty(databases)) {
                 log.info("[Tool done] getDatabases -> empty");
-                return AgentToolResult.empty(
-                        "No databases found on connection " + connectionId + ".");
+                return AgentToolResult.empty(buildEmptyMessage(connectionId));
             }
             log.info("[Tool done] getDatabases connectionId={}, count={}", connectionId, databases.size());
-            return AgentToolResult.success(databases,
-                    "Found " + databases.size() + " database(s) on connection " + connectionId + ".");
+            return AgentToolResult.success(databases, buildSuccessMessage(connectionId, databases.size()));
         } catch (Exception e) {
             log.warn("[Tool] getDatabases failed for connectionId={}: {}", connectionId, e.getMessage());
-            return AgentToolResult.fail(
-                    "Failed to get databases on connection " + connectionId + ": " + e.getMessage());
+            return AgentToolResult.fail(buildFailureMessage(connectionId, e.getMessage()));
         }
+    }
+
+    private String buildSuccessMessage(Long connectionId, int databaseCount) {
+        return ToolMessageSupport.sentence(
+                "Found " + databaseCount + " database(s) on connection " + connectionId + ".",
+                "Use askUserQuestion to ask the user which database should be used before continuing."
+        );
+    }
+
+    private String buildEmptyMessage(Long connectionId) {
+        return ToolMessageSupport.sentence(
+                "No databases found on connection " + connectionId + ".",
+                "Use askUserQuestion to ask the user whether another connection should be used before continuing."
+        );
+    }
+
+    private String buildFailureMessage(Long connectionId, String errorMessage) {
+        return ToolMessageSupport.sentence(
+                "Failed to get databases on connection " + connectionId + ": " + errorMessage + ".",
+                "Use askUserQuestion to ask the user whether to verify the connection or try another connection before continuing."
+        );
     }
 }

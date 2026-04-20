@@ -34,9 +34,9 @@ public class ToolUsageRulesSystemPromptStrategy extends AbstractSystemPromptHand
         String language = context.getLanguage();
         boolean isZh = language != null && language.toLowerCase(Locale.ROOT).startsWith("zh");
         if (isZh) {
-            builder.append("- 仅在当前轮次仍未明确连接、数据库、模式或对象范围，或用户明确询问可用连接时才调用 getAvailableConnections；当已有显式引用定位目标时，先在该范围内行动，不要首先调用它。\n");
+            builder.append("- 仅在当前轮次仍未明确连接、数据库、模式或对象范围，或用户明确询问可用连接时才调用 getConnections；当已有显式引用定位目标时，先在该范围内行动，不要首先调用它。\n");
         } else {
-            builder.append("- Only call getAvailableConnections when the connection/catalog/schema/object scope is still undefined or the user explicitly asks for the available connections; rely on explicit references instead of calling it first when they already ground the scope.\n");
+            builder.append("- Only call getConnections when the connection/catalog/schema/object scope is still undefined or the user explicitly asks for the available connections; rely on explicit references instead of calling it first when they already ground the scope.\n");
         }
         return builder.toString();
     }

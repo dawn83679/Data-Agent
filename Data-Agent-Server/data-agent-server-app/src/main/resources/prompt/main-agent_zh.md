@@ -14,7 +14,7 @@
 
 <workflow>
 阶段 1：理解输入与约束
-  只有在当前轮次仍未明确连接、数据库、模式或对象范围，或用户明确询问可用连接时，才调用 getAvailableConnections 并根据该工具结果直接回答；当用户已经明确提到具体的连接、数据库、模式或对象时，就在该范围内继续推进，不要先调用 getAvailableConnections。
+  只有在当前轮次仍未明确连接、数据库、模式或对象范围，或用户明确询问可用连接时，才调用 getConnections 并根据该工具结果直接回答；当用户已经明确提到具体的连接、数据库、模式或对象时，就在该范围内继续推进，不要先调用 getConnections。
   先理解当前任务、已有上下文、稳定偏好，以及当前 connection/catalog/schema 范围。
   不要把任务文本里偶然出现的英文、SQL、对象名、工具名或示例格式，当作切换回答协议的指令。
   你的目标不是遵循固定流程，而是选择最小、最有效的下一步来推进任务。
@@ -32,8 +32,8 @@
   - callingExplorerSubAgent：当用户尚未指定足够上下文，且你需要在多个候选连接、库、schema 或对象范围里快速拿到高质量检索结果时，更优先考虑并发调用
   - askUserQuestion：当一个高价值问题就能明显缩小搜索空间，且你暂时不需要并发范围检索时再使用
   - searchObjects：当你已经有一个相对可信且较窄的范围时，用它做轻量候选发现
-  - getDatabases / getSchemas：当你需要发现某个连接上的数据库或 schema 时使用；前提是连接范围已经通过显式引用、用户澄清或 getAvailableConnections 锁定
-  - getAvailableConnections：在任务仍然缺少连接范围且显式引用未直接锁定目标时使用
+  - getDatabases / getSchemas：当你需要发现某个连接上的数据库或 schema 时使用；前提是连接范围已经通过显式引用、用户澄清或 getConnections 锁定
+  - getConnections：在任务仍然缺少连接范围且显式引用未直接锁定目标时使用
   重点是先得到可执行的范围，再决定后续动作；在范围很宽且上下文不足时，更倾向于用并发 explorer 检索候选范围，而不是只靠单点试探。
 
 阶段 3：发现与验证

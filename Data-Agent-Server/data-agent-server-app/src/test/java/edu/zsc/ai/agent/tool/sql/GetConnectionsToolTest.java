@@ -18,10 +18,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class GetAvailableConnectionsToolTest {
+class GetConnectionsToolTest {
 
     private final DbConnectionService connectionService = mock(DbConnectionService.class);
-    private final GetAvailableConnectionsTool tool = new GetAvailableConnectionsTool(connectionService);
+    private final GetConnectionsTool tool = new GetConnectionsTool(connectionService);
 
     @BeforeEach
     void setUp() {
@@ -35,7 +35,7 @@ class GetAvailableConnectionsToolTest {
                 ConnectionResponse.builder().id(2L).name("analytics").dbType("postgres").build()
         ));
 
-        AgentToolResult result = tool.getAvailableConnections(InvocationParameters.from(Map.of()));
+        AgentToolResult result = tool.getConnections(InvocationParameters.from(Map.of()));
 
         assertTrue(result.isSuccess());
         @SuppressWarnings("unchecked")
@@ -54,7 +54,7 @@ class GetAvailableConnectionsToolTest {
     void returnsEmptyWhenNoConnections() {
         when(connectionService.getAllConnections()).thenReturn(List.of());
 
-        AgentToolResult result = tool.getAvailableConnections(InvocationParameters.from(Map.of()));
+        AgentToolResult result = tool.getConnections(InvocationParameters.from(Map.of()));
 
         assertTrue(result.isSuccess());
         assertThat(result.getResult()).isNull();
@@ -65,7 +65,7 @@ class GetAvailableConnectionsToolTest {
     void failsWhenServiceThrows() {
         when(connectionService.getAllConnections()).thenThrow(new IllegalStateException("no user"));
 
-        AgentToolResult result = tool.getAvailableConnections(InvocationParameters.from(Map.of()));
+        AgentToolResult result = tool.getConnections(InvocationParameters.from(Map.of()));
 
         assertFalse(result.isSuccess());
         assertThat(result.getMessage()).contains("Failed to list available connections");

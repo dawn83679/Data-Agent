@@ -13,7 +13,7 @@ import org.springframework.context.support.ResourceBundleMessageSource;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.invocation.InvocationParameters;
 import edu.zsc.ai.agent.tool.sql.ExecuteSqlTool;
-import edu.zsc.ai.agent.tool.sql.GetAvailableConnectionsTool;
+import edu.zsc.ai.agent.tool.sql.GetConnectionsTool;
 import edu.zsc.ai.agent.tool.sql.GetObjectDetailTool;
 import edu.zsc.ai.agent.tool.sql.SearchObjectsTool;
 import edu.zsc.ai.agent.tool.sql.model.ObjectSearchQuery;
@@ -45,9 +45,9 @@ class ToolDescriptionAndPromptSeparationTest {
                 String.class,
                 List.class,
                 InvocationParameters.class);
-        String getAvailableConnectionsDescription = readToolDescription(
-                GetAvailableConnectionsTool.class,
-                "getAvailableConnections",
+        String getConnectionsDescription = readToolDescription(
+                GetConnectionsTool.class,
+                "getConnections",
                 InvocationParameters.class);
 
         assertTrue(searchObjectsDescription.contains("Value:"));
@@ -65,10 +65,10 @@ class ToolDescriptionAndPromptSeparationTest {
         assertFalse(executeSelectSqlDescription.contains("Relation:"));
         assertFalse(executeSelectSqlDescription.contains("Use When:"));
 
-        assertTrue(getAvailableConnectionsDescription.contains("Value:"));
-        assertTrue(getAvailableConnectionsDescription.contains("Preconditions:"));
-        assertFalse(getAvailableConnectionsDescription.contains("Relation:"));
-        assertFalse(getAvailableConnectionsDescription.contains("Use When:"));
+        assertTrue(getConnectionsDescription.contains("Value:"));
+        assertTrue(getConnectionsDescription.contains("Preconditions:"));
+        assertFalse(getConnectionsDescription.contains("Relation:"));
+        assertFalse(getConnectionsDescription.contains("Use When:"));
     }
 
     @Test
@@ -156,7 +156,7 @@ class ToolDescriptionAndPromptSeparationTest {
                         .build(),
                 SystemPromptSection.TOOL_USAGE_RULES)).content();
 
-        assertTrue(englishContent.contains("Only call getAvailableConnections"));
+        assertTrue(englishContent.contains("Only call getConnections"));
         assertTrue(englishContent.contains("explicit references"));
         assertTrue(chineseContent.contains("仅在当前轮次"));
         assertTrue(chineseContent.contains("显式引用"));

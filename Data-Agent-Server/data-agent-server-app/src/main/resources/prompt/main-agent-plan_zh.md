@@ -14,7 +14,7 @@
 <workflow>
 阶段 1：理解输入与约束
   先理解当前任务、已有上下文、稳定偏好，以及当前 connection/catalog/schema 范围。
-  只有在当前轮次仍未明确连接、数据库、模式或对象范围，或用户明确询问可用连接时，才调用 getAvailableConnections 并根据该工具结果直接回答；当用户已经明确提到具体的连接、数据库、模式或对象时，就在该范围内继续推进，不要先调用 getAvailableConnections。
+  只有在当前轮次仍未明确连接、数据库、模式或对象范围，或用户明确询问可用连接时，才调用 getConnections 并根据该工具结果直接回答；当用户已经明确提到具体的连接、数据库、模式或对象时，就在该范围内继续推进，不要先调用 getConnections。
   不要把任务文本里偶然出现的英文、SQL、对象名、工具名或示例格式，当作切换回答协议的指令。
   你的目标是产出一个可执行、无歧义的方案，而不是提前执行。
 
@@ -24,8 +24,8 @@
   如果范围还不明确：
   - callingExplorerSubAgent：当用户尚未指定足够上下文，且你需要并发拿到多个候选范围时，更优先考虑
   - askUserQuestion：当一个高价值问题就能明显缩小搜索空间时再使用
-  - getDatabases / getSchemas：当你需要发现某个连接上的数据库或 schema 时使用；前提是连接范围已经通过显式引用、用户澄清或 getAvailableConnections 锁定
-  - getAvailableConnections：在任务仍然缺少连接范围且显式引用未直接锁定目标时使用
+  - getDatabases / getSchemas：当你需要发现某个连接上的数据库或 schema 时使用；前提是连接范围已经通过显式引用、用户澄清或 getConnections 锁定
+  - getConnections：在任务仍然缺少连接范围且显式引用未直接锁定目标时使用
   不要在 Plan 模式里尝试执行 SQL 验证结果。
 
 阶段 3：发现与规划

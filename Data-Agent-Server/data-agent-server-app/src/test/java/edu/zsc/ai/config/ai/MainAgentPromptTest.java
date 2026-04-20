@@ -14,6 +14,8 @@ class MainAgentPromptTest {
 
     private static String promptContent;
     private static String promptContentEn;
+    private static String promptContentPlanZh;
+    private static String promptContentPlanEn;
 
     @BeforeAll
     static void loadPrompt() {
@@ -21,6 +23,10 @@ class MainAgentPromptTest {
         assertNotNull(promptContent, "MainAgent prompt should load");
         promptContentEn = PromptConfig.getPrompt(PromptEnum.EN);
         assertNotNull(promptContentEn, "MainAgent EN prompt should load");
+        promptContentPlanZh = PromptConfig.getPrompt(PromptEnum.ZH_PLAN);
+        assertNotNull(promptContentPlanZh, "MainAgent plan ZH prompt should load");
+        promptContentPlanEn = PromptConfig.getPrompt(PromptEnum.EN_PLAN);
+        assertNotNull(promptContentPlanEn, "MainAgent plan EN prompt should load");
     }
 
     // ==================== 3.3.1: No <tool-mastery> ====================
@@ -114,6 +120,8 @@ class MainAgentPromptTest {
                 "Prompt should keep a direct execution path for simple reads");
         assertTrue(promptContent.contains("getDatabases / getSchemas：当你需要发现某个连接上的数据库或 schema 时使用"),
                 "Prompt should describe getDatabases/getSchemas as connection-scoped discovery tools");
+        assertTrue(promptContent.contains("getConnections"),
+                "ZH prompt should mention getConnections as the connection inventory tool");
         assertTrue(promptContent.contains("使用 renderChart 交付更直观的结果"),
                 "Prompt should include visualization in the runtime workflow");
         assertTrue(promptContent.contains("固定字段口径、默认对象范围或稳定偏好"),
@@ -148,6 +156,8 @@ class MainAgentPromptTest {
                 "EN prompt should allow direct continuation after a single strong explorer candidate");
         assertTrue(promptContentEn.contains("If multiple plausible targets remain"),
                 "EN prompt should ask the user to confirm scope when multiple explorer candidates remain");
+        assertTrue(promptContentEn.contains("getConnections"),
+                "EN prompt should mention getConnections as the connection inventory tool");
         assertFalse(promptContentEn.contains("readMemory"),
                 "EN prompt should no longer mention readMemory");
         assertFalse(promptContentEn.contains("updateMemory"),
@@ -160,6 +170,18 @@ class MainAgentPromptTest {
                 "EN prompt should not discuss writing memory");
         assertFalse(promptContentEn.contains("writeMemory"),
                 "EN prompt should no longer suggest writeMemory as the active mutation tool");
+    }
+
+    @Test
+    void prompts_doNotMentionLegacyGetAvailableConnectionsToolName() {
+        assertFalse(promptContent.contains("getAvailableConnections"),
+                "ZH main prompt should not mention legacy getAvailableConnections");
+        assertFalse(promptContentEn.contains("getAvailableConnections"),
+                "EN main prompt should not mention legacy getAvailableConnections");
+        assertFalse(promptContentPlanZh.contains("getAvailableConnections"),
+                "ZH plan prompt should not mention legacy getAvailableConnections");
+        assertFalse(promptContentPlanEn.contains("getAvailableConnections"),
+                "EN plan prompt should not mention legacy getAvailableConnections");
     }
 
     @Test
