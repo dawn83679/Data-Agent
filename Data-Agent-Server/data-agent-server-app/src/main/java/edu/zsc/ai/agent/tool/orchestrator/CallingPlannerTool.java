@@ -42,14 +42,15 @@ public class CallingPlannerTool extends SubAgentToolSupport {
     @Tool({
             "Value: turns verified schema context into a structured SQL plan with steps and SQL blocks you can review or execute.",
             "Use When: call after callingExplorerSubAgent or equivalent direct inspection has produced usable schema context and you need SQL generation or optimization.",
-            "Preconditions: schemaSummaryJson is required. It may be a SchemaSummary JSON or a callingExplorerSubAgent taskResults envelope JSON. Include optimization context in instruction when relevant.",
+            "Task Scoping (CRITICAL): instruction must describe ONE concrete SQL outcome — a single query to write, a single statement to optimize, a single migration to draft. Do NOT pass umbrella goals like 'analyze the sales data', 'build a reporting layer', or 'write all the SQL we need'. If the user's request implies multiple SQL artefacts, call this tool once per artefact with a focused instruction each time, rather than asking one planner sub-agent to deliver several.",
+            "Preconditions: schemaSummaryJson is required. It may be a SchemaSummary JSON or a callingExplorerSubAgent taskResults envelope JSON. The schemaSummary MUST already contain the objects relevant to the requested SQL — do not delegate broad 'figure out which tables apply' work to the planner; explore first.",
             "After Success: review the returned planSteps and sqlBlocks against the user goal. For write SQL, call executeNonSelectSql and respect its returned status. For read SQL, verify scope and then call executeSelectSql.",
             "After Failure: gather missing schema context or improve the planner instruction and retry. Do not execute guessed SQL.",
             "Result Consumption: use summaryText for explanation, planSteps for the execution outline, and sqlBlocks as candidate SQL to verify before running.",
             "Relation: usually after callingExplorerSubAgent or focused direct inspection and before executeSelectSql or executeNonSelectSql. When the current scope is already explicit and the read task is simple, direct execution may be better than planner delegation. Planner timeout defaults to 180 seconds, and lower values are raised to 180."
     })
     public AgentToolResult callingPlannerSubAgent(
-            @P("Task instruction - describe what SQL to generate, include optimization context if needed") String instruction,
+            @P("Single, concrete SQL goal for this invocation. Examples: 'aggregate daily revenue from orders for the last 30 days, grouped by region', 'rewrite the slow query <SQL> using the orders_idx_created_at index', 'draft a migration that adds non-null status column to public.invoice with backfill default'. Do NOT pass multi-task umbrella instructions ('analyze sales', 'build reports') — split into multiple invocations of this tool. Include optimization context (current SQL, observed plan, latency) only when it pertains to this single goal.") String instruction,
             @P("SchemaSummary JSON from a previous callingExplorerSubAgent result") String schemaSummaryJson,
             @P(value = "Optional timeout in seconds for this planner sub-agent invocation. Default is 180 seconds. Values below 180 are automatically raised to 180.", required = false) Long timeoutSeconds,
             InvocationParameters parameters) {

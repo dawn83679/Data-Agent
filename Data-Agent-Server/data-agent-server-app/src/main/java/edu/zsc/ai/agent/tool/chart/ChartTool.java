@@ -26,10 +26,12 @@ public class ChartTool {
     @Tool({
             "Value: turns verified query results into a visual answer that users can understand faster than raw rows.",
             "Use When: call when the data is already available and the user wants a chart, trend, comparison, or distribution.",
-            "Preconditions: chartType must be supported and optionJson must be valid ECharts JSON. If the chart dimension is unclear, askUserQuestion first.",
-            "After Success: treat the rendered chart as the final visual answer and keep any narrative consistent with it.",
+            "One Chart Per Turn (CRITICAL): render at most ONE chart per user turn. Pick the single most informative view of the data and commit to it. Do NOT call renderChart multiple times in the same turn to show the same data as line + bar + pie, do NOT produce a 'dashboard' of several charts at once, and do NOT split one logical chart into several smaller charts. If the user genuinely needs another angle, ask them which one — or wait for them to ask.",
+            "No Trailing Explanation (CRITICAL): the rendered chart IS the answer. After renderChart returns, end the turn immediately — do NOT emit any additional assistant text describing what the chart shows, restating the data, summarizing trends, or 'as you can see in the chart...' commentary. If you have a key insight or reading guide for the user, put it INSIDE the renderChart description parameter, not in a follow-up message. The only acceptable post-chart text is none.",
+            "Preconditions: chartType must be supported and optionJson must be valid ECharts JSON. If the chart dimension is unclear, askUserQuestion first. If multiple chart shapes are plausible, pick the one that best answers the question instead of rendering several.",
+            "After Success: the chart is the final answer for this turn — stop. Do not chain another renderChart call, and do not produce explanatory text after it. Any narrative belongs in the description parameter passed to renderChart.",
             "After Failure: fix chartType, optionJson, or the missing chart dimension and retry. Do not invent chart conclusions without a rendered chart.",
-            "Do Not Use When: query results are not ready or the user only asked for raw tabular output.",
+            "Do Not Use When: query results are not ready, the user only asked for raw tabular output, or a chart has already been rendered in this turn.",
             "Relation: usually after executeSelectSql. Call activateSkill('chart') before first use in the session."
     })
     @DisallowInPlanMode(ToolNameEnum.RENDER_CHART)
@@ -65,7 +67,7 @@ public class ChartTool {
                 normalizedType, optionNode.size());
         return AgentToolResult.success(result, ToolMessageSupport.sentence(
                 "Chart rendering payload is ready.",
-                "Use this chart as the final visual answer and keep any additional narrative consistent with the rendered chart."
+                "The chart is the final answer for this turn. End the turn immediately — do not emit any assistant text describing, summarizing, or commenting on the chart afterwards. Any insight or reading guide should already live inside the description parameter, not in a follow-up message."
         ));
     }
 }

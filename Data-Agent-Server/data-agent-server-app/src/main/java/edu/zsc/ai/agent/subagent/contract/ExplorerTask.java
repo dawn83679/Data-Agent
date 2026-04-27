@@ -17,7 +17,12 @@ public class ExplorerTask {
     /** Target database connection ID (from the available connections in the runtime context). */
     private Long connectionId;
 
-    /** Task instruction — what schema info to explore for this connection. */
+    /**
+     * Task instruction — a single narrow exploration question with named targets where possible
+     * (e.g. "list columns of public.orders and verify whether status column exists").
+     * Avoid open-ended phrasing like "explore the schema"; split wide goals into multiple
+     * ExplorerTask entries so they can run in parallel.
+     */
     private String instruction;
 
     /** Optional context: conversation summary, previous errors, etc. */
