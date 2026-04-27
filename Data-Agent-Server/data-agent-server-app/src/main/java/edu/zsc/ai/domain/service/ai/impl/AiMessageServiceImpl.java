@@ -93,9 +93,9 @@ public class AiMessageServiceImpl extends ServiceImpl<AiMessageMapper, StoredCha
         List<StoredChatMessage> activeStored = storedAll.stream()
                 .filter(message -> !isCompressed(message) && !isDeleted(message))
                 .toList();
-        List<ChatMessage> normalizedIncoming = messages.stream()
+        List<ChatMessage> normalizedIncoming = moveSummaryToEnd(messages.stream()
                 .map(MemoryUtil::normalizeUserMessage)
-                .toList();
+                .toList());
 
         if (activeStored.isEmpty()) {
             appendMessages(conversationId, normalizedIncoming, nextBaseTime(storedAll));
@@ -238,6 +238,30 @@ public class AiMessageServiceImpl extends ServiceImpl<AiMessageMapper, StoredCha
     private boolean isCompressionSync(List<ChatMessage> normalizedIncoming) {
         return !normalizedIncoming.isEmpty()
                 && ChatMemoryCompressor.isSummaryMessage(normalizedIncoming.get(normalizedIncoming.size() - 1));
+    }
+
+    static List<ChatMessage> moveSummaryToEnd(List<ChatMessage> messages) {
+        if (messages.isEmpty()) {
+            return messages;
+        }
+        int summaryIdx = -1;
+        for (int i = 0; i < messages.size(); i++) {
+            if (ChatMemoryCompressor.isSummaryMessage(messages.get(i))) {
+                summaryIdx = i;
+                break;
+            }
+        }
+        if (summaryIdx < 0 || summaryIdx == messages.size() - 1) {
+            return messages;
+        }
+        List<ChatMessage> reordered = new ArrayList<>(messages.size());
+        for (int i = 0; i < messages.size(); i++) {
+            if (i != summaryIdx) {
+                reordered.add(messages.get(i));
+            }
+        }
+        reordered.add(messages.get(summaryIdx));
+        return reordered;
     }
 
     private int resolveStatus(ChatMessage message) {

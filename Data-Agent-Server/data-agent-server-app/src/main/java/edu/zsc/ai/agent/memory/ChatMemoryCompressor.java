@@ -269,8 +269,8 @@ public class ChatMemoryCompressor {
                 compressionResult.totalTokens());
 
         List<ChatMessage> compressedMessages = new ArrayList<>(toKeep.size() + 1);
-        compressedMessages.addAll(toKeep);
         compressedMessages.add(UserMessage.from(SUMMARY_PREFIX + summary));
+        compressedMessages.addAll(toKeep);
         return new ManualCompressionResult(
                 compressedMessages,
                 tokenCountBefore,

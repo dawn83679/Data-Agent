@@ -75,8 +75,8 @@ class ChatMemoryCompressorTest {
 
         verify(aiConversationService).updateTokenCount(conversationId, 1350);
         assertEquals(2, result.size());
-        assertEquals("u4", ((UserMessage) result.get(0)).singleText());
-        assertTrue(ChatMemoryCompressor.isSummaryMessage(result.get(1)));
+        assertTrue(ChatMemoryCompressor.isSummaryMessage(result.get(0)));
+        assertEquals("u4", ((UserMessage) result.get(1)).singleText());
     }
 
     @Test
@@ -144,7 +144,7 @@ class ChatMemoryCompressorTest {
         verify(aiMessageService).replaceConversationMessages(eq(conversationId), captor.capture());
         verify(aiConversationService).updateTokenCount(conversationId, 700);
         assertEquals(2, captor.getValue().size());
-        assertTrue(ChatMemoryCompressor.isSummaryMessage(captor.getValue().get(1)));
+        assertTrue(ChatMemoryCompressor.isSummaryMessage(captor.getValue().get(0)));
         assertTrue(compressor.consumeDoneMetadata(conversationId).isEmpty());
     }
 

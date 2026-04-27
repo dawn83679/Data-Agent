@@ -13,6 +13,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -41,8 +42,33 @@ public class CustomChatMemoryStore implements ChatMemoryStore {
         List<ChatMessage> messages = stored.stream()
                 .map(item -> ChatMessageDeserializer.messageFromJson(item.getData()))
                 .toList();
+        List<ChatMessage> ordered = moveSummaryToFront(messages);
 
-        return compressor.compressIfNeeded(idInfo.conversationId(), idInfo.modelName(), messages);
+        return compressor.compressIfNeeded(idInfo.conversationId(), idInfo.modelName(), ordered);
+    }
+
+    static List<ChatMessage> moveSummaryToFront(List<ChatMessage> messages) {
+        if (messages.isEmpty()) {
+            return messages;
+        }
+        int summaryIdx = -1;
+        for (int i = 0; i < messages.size(); i++) {
+            if (ChatMemoryCompressor.isSummaryMessage(messages.get(i))) {
+                summaryIdx = i;
+                break;
+            }
+        }
+        if (summaryIdx <= 0) {
+            return messages;
+        }
+        List<ChatMessage> reordered = new ArrayList<>(messages.size());
+        reordered.add(messages.get(summaryIdx));
+        for (int i = 0; i < messages.size(); i++) {
+            if (i != summaryIdx) {
+                reordered.add(messages.get(i));
+            }
+        }
+        return reordered;
     }
 
     @Override
