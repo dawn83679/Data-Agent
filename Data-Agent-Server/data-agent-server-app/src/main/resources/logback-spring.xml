@@ -51,12 +51,6 @@
         <appender-ref ref="MEMORY_AUTO_WRITE_FILE"/>
         <appender-ref ref="AGENT_RUNTIME_FILE"/>
     </logger>
-    <logger name="edu.zsc.ai.domain.service.ai.impl.ConversationMemoryAiWriterImpl"
-            level="DEBUG" additivity="false">
-        <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="MEMORY_AUTO_WRITE_FILE"/>
-        <appender-ref ref="AGENT_RUNTIME_FILE"/>
-    </logger>
     <logger name="edu.zsc.ai.domain.service.ai.impl.MemoryServiceImpl"
             level="DEBUG" additivity="false">
         <appender-ref ref="CONSOLE"/>

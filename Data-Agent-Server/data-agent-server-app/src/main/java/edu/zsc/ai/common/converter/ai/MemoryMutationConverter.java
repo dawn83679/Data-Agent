@@ -10,38 +10,6 @@ public final class MemoryMutationConverter {
     private MemoryMutationConverter() {
     }
 
-    /**
-     * Builds a new {@link AiMemory} row for agent-driven auto-write (same fields as the inline builder in
-     * {@code MemoryServiceImpl#createAutoMemory}).
-     */
-    public static AiMemory buildAutoWriteCreate(
-            Long userId,
-            Long conversationId,
-            String scope,
-            String memoryType,
-            String subType,
-            String sourceType,
-            String title,
-            String content,
-            String reason,
-            LocalDateTime now) {
-        return AiMemory.builder()
-                .userId(userId)
-                .conversationId(conversationId)
-                .scope(scope)
-                .memoryType(memoryType)
-                .subType(subType)
-                .sourceType(sourceType)
-                .title(title)
-                .content(content)
-                .reason(reason)
-                .enable(MemoryEnableEnum.ENABLE.getCode())
-                .accessCount(0)
-                .createdAt(now)
-                .updatedAt(now)
-                .build();
-    }
-
     public static AiMemory create(Long userId, Mutation mutation) {
         return AiMemory.builder()
                 .userId(userId)

@@ -22,7 +22,7 @@ public enum ToolPromptTarget {
             case EXPLORER -> Optional.of(EXPLORER);
             case PLANNER -> Optional.of(PLANNER);
             case MEMORY_WRITER -> Optional.of(MEMORY_WRITER);
-            case COMPRESSION, MEMORY_AUTO_WRITE -> Optional.empty();
+            case COMPRESSION -> Optional.empty();
         };
     }
 }

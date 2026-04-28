@@ -49,7 +49,6 @@ import edu.zsc.ai.domain.model.entity.ai.AiConversationMemoryCursor;
 import edu.zsc.ai.domain.model.entity.ai.AiMemory;
 import edu.zsc.ai.domain.service.ai.AiConversationMemoryCursorService;
 import edu.zsc.ai.domain.service.ai.model.MemorySearchResult;
-import edu.zsc.ai.domain.service.ai.model.MemoryWriteItem;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallMode;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallQuery;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallQueryStrategy;
@@ -124,28 +123,6 @@ class MemoryServiceImplTest {
 
         service.deleteMemory(created.getId());
         assertThrows(BusinessException.class, () -> service.getByIdForCurrentUser(created.getId()));
-    }
-
-    @Test
-    void applyAutoWriteDelete_softDisablesMemory() {
-        MemoryCreateRequest createRequest = buildCreateRequest();
-        AiMemory created = service.createManualMemory(createRequest);
-        Long memoryId = created.getId();
-
-        AiConversationMemoryCursor cursor = AiConversationMemoryCursor.builder()
-                .id(1L)
-                .conversationId(7L)
-                .userId(42L)
-                .lastProcessedMessageId(null)
-                .build();
-        MemoryWriteItem delete = new MemoryWriteItem("DELETE", memoryId, null, null, null, null, null, null);
-
-        service.applyAutoWriteItems(7L, 42L, List.of(delete), cursor, 99L);
-
-        AiMemory after = service.getById(memoryId);
-        assertEquals(MemoryEnableEnum.DISABLE.getCode(), after.getEnable());
-        assertTrue(after.getReason() != null && after.getReason().contains("[auto_delete]"));
-        verify(embeddingStore, atLeastOnce()).remove(any(String.class));
     }
 
     @Test

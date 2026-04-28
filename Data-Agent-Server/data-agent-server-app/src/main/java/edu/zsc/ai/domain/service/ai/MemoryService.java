@@ -10,11 +10,9 @@ import edu.zsc.ai.domain.model.dto.request.ai.MemoryMutationRequest;
 import edu.zsc.ai.domain.model.dto.request.ai.MemoryUpdateRequest;
 import edu.zsc.ai.domain.model.dto.request.base.PageRequest;
 import edu.zsc.ai.domain.model.dto.response.base.PageResponse;
-import edu.zsc.ai.domain.model.entity.ai.AiConversationMemoryCursor;
 import edu.zsc.ai.domain.model.entity.ai.AiMemory;
 import edu.zsc.ai.domain.service.ai.model.MemorySearchResult;
 import edu.zsc.ai.domain.service.ai.model.MemoryWriteContext.MemorySummary;
-import edu.zsc.ai.domain.service.ai.model.MemoryWriteItem;
 import edu.zsc.ai.domain.service.ai.model.MemoryWriteResult;
 import edu.zsc.ai.domain.service.ai.recall.MemoryRecallQuery;
 
@@ -55,7 +53,4 @@ public interface MemoryService extends IService<AiMemory> {
     AiMemory getConversationWorkingMemory(Long userId, Long conversationId);
 
     boolean hasManualWritesSince(Long userId, Long conversationId, LocalDateTime since);
-
-    void applyAutoWriteItems(Long conversationId, Long userId, List<MemoryWriteItem> items,
-                             AiConversationMemoryCursor cursor, Long lastMessageId);
 }

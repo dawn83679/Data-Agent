@@ -15,7 +15,6 @@ public enum PromptEnum {
     EN_PLAN("en-plan", "prompt/main-agent-plan_en.md"),
     ZH_PLAN("zh-plan", "prompt/main-agent-plan_zh.md"),
     COMPRESSION("compression", "prompt/compression.md"),
-    MEMORY_AUTO_WRITE("memory-auto-write", "prompt/memory-auto-write.md"),
     MEMORY_WRITER("memory-writer", "prompt/memory-writer.md"),
     EXPLORER("explorer", "prompt/explorer.md"),
     PLANNER("planner", "prompt/planner.md");
