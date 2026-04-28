@@ -17,7 +17,7 @@ export function ThoughtBlock({ data, defaultExpanded = false }: ThoughtBlockProp
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   useEffect(() => {
-    if (!defaultExpanded) setExpanded(false);
+    setExpanded(defaultExpanded);
   }, [defaultExpanded]);
 
   if (!data) return null;

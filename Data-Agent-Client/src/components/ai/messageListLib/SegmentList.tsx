@@ -24,6 +24,14 @@ export interface SegmentListProps {
   showElapsedTextForSubAgent?: boolean;
 }
 
+export function shouldExpandThoughtSegment(
+  segment: Segment,
+  _segments: Segment[],
+  isLastAssistantStreaming: boolean
+): boolean {
+  return isLastAssistantStreaming && segment.kind === SegmentKind.THOUGHT;
+}
+
 /**
  * Generic component: render a list of segments (TEXT, THOUGHT, TOOL_RUN) in order.
  * Used for both streaming and history; only the segments and options differ.
@@ -73,10 +81,7 @@ export function SegmentList({
           }
           return renderSegment(seg, i, false, isLastAssistantStreaming, showElapsedTextForSubAgent, !isLastAssistantStreaming);
         }
-        const isStreamingThought =
-          isLastAssistantStreaming &&
-          seg.kind === SegmentKind.THOUGHT &&
-          seg === lastSeg;
+        const isStreamingThought = shouldExpandThoughtSegment(seg, segments, isLastAssistantStreaming);
         return renderSegment(seg, i, isStreamingThought, isLastAssistantStreaming, showElapsedTextForSubAgent, !isLastAssistantStreaming);
       })}
       {/* Phase C: has content but gap in stream — show Planning at end.
