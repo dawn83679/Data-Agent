@@ -20,10 +20,10 @@ public class TodoTool {
 
     @Tool({
         "Value: keeps multi-step progress visible so the user can see what is happening and what remains.",
-        "Use When: call for tasks with 3 or more meaningful steps, or whenever progress updates improve transparency.",
-        "After Success: continue the main task and keep the same todoId synchronized at each milestone.",
-        "After Failure: continue the main task flow without pretending the todo state is the business result. Retry only if progress tracking still matters.",
-        "Relation: CREATE at the start, UPDATE after meaningful progress, and DELETE when the task is done. This tracks workflow only and does not replace the real result."
+        "Use When: a task has several meaningful steps or progress visibility matters.",
+        "Preconditions: action is CREATE, UPDATE, or DELETE.",
+        "Result: frontend todo state.",
+        "Boundary: todo state is progress tracking, not the business result."
     })
     public AgentToolResult todoWrite(
             @P("Action type: CREATE, UPDATE, DELETE.")

@@ -26,9 +26,10 @@ public class GetDatabasesTool {
 
     @Tool({
             "Value: returns the databases (catalogs) available on a specific connection.",
-            "Use When: you already know the target connection (from the runtime context) and need to discover its databases before narrowing scope.",
-            "After Success: pick the relevant database and proceed with searchObjects or getSchemas.",
-            "After Failure: the connection may be unreachable; ask the user to verify the connection."
+            "Use When: connection is known and database/catalog scope is still missing.",
+            "Preconditions: connectionId is required.",
+            "Result: database names for that connection.",
+            "Boundary: do not call this to rediscover scope that is already explicit."
     })
     public AgentToolResult getDatabases(
             @P("The connection ID to get databases for") Long connectionId,

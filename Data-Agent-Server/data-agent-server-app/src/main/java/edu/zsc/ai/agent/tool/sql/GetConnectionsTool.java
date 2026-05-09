@@ -26,10 +26,10 @@ public class GetConnectionsTool {
 
     @Tool({
             "Value: returns the verified list of data-source connections currently available to the requesting user.",
+            "Use When: the connection scope is missing, or the user asks which connections are available.",
             "Preconditions: none.",
-            "Result shape: each returned item includes only id, name, and dbType.",
-            "After Success: use the returned id, name, and dbType to answer connection-inventory questions or choose the next scope-discovery step.",
-            "After Failure: tell the user that the connection inventory could not be loaded. Do not invent hosts, ports, or hidden metadata."
+            "Result: each item contains id, name, and dbType only.",
+            "Boundary: do not invent hosts, ports, credentials, or hidden metadata."
     })
     public AgentToolResult getConnections(
             @P(value = ToolDescriptionParam.UI_STEP_DESCRIPTION, required = false) String description,

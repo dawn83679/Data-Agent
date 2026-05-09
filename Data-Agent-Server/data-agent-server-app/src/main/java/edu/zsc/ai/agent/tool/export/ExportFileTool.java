@@ -28,18 +28,16 @@ public class ExportFileTool {
 
     @Tool({
             "Value: turns prepared tabular data into a downloadable file for the user.",
-            "Use When: call when the data is already available and the user explicitly wants a file output instead of raw rows.",
+            "Use When: verified tabular data is ready and the user wants a file.",
             "Preconditions: format must be supported, headers must be present, and every row must match the header column count.",
-            "After Success: treat the returned file card as the delivery artifact. Keep any narrative aligned with the preview and file metadata.",
-            "After Failure: fix the export input or ask the user to narrow the output format before retrying.",
-            "Do Not Use When: you do not yet have verified data or the user only needs a short textual answer.",
-            "Version: this environment currently supports CSV, XLSX, DOCX, and PDF."
+            "Result: downloadable file card.",
+            "Boundary: supported formats are CSV, XLSX, DOCX, and PDF; do not export unverified data."
     })
     @DisallowInPlanMode(ToolNameEnum.EXPORT_FILE)
     public AgentToolResult exportFile(
             @P("Export format. Supported values: CSV, XLSX, DOCX, PDF.") String format,
             @P("Column headers for the exported table.") List<String> headers,
-            @P("Table rows. Provide a list of row objects, each shaped as { cells: [...] }. Every row must have the same number of cells as headers.")
+            @P("Table rows shaped as { cells: [...] }; each row must match the header count.")
             List<ExportRowInput> rows,
             @P(value = ToolDescriptionParam.UI_STEP_DESCRIPTION, required = false) String description,
             InvocationParameters parameters) {

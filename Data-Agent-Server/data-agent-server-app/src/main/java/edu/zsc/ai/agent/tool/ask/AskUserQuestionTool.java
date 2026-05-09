@@ -24,16 +24,15 @@ public class AskUserQuestionTool {
     @Tool(
             value = {
                     "Value: resolves ambiguity by letting the user choose among concrete options instead of letting the model guess.",
-                    "Use When: useful when a short clarification can unlock progress, reduce the search space, or let the user choose among meaningful alternatives.",
-                    "After Success: the user's reply becomes new scope or preference information for the next step.",
-                    "After Failure: if you still cannot phrase a helpful question, you may gather more context first and try again later.",
-                    "Wait For User: this tool creates an explicit pause point for decisions that depend on the user's choice.",
-                    "Relation: often helpful after getDatabases, getSchemas, searchObjects, or other discovery steps. Maximum 3 options per question."
+                    "Use When: one short clarification can unlock progress, reduce scope, or choose among meaningful alternatives.",
+                    "Preconditions: each question should have 2-3 options.",
+                    "Result: pauses the turn until the user replies.",
+                    "Boundary: ask high-value questions only; do not use this to avoid available verification."
             },
             returnBehavior = ReturnBehavior.IMMEDIATE
     )
     public String askUserQuestion(
-            @P("List of questions to ask the user. Each question should have 2-3 options (maximum 3).")
+            @P("Questions to ask; each should have 2-3 options.")
             List<UserQuestion> questions,
             InvocationParameters parameters) {
 

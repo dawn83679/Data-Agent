@@ -50,19 +50,15 @@ public class CallingExplorerTool extends SubAgentToolSupport {
     }
 
     @Tool({
-            "Value: delegates schema exploration to one or more Explorer sub-agents and returns structured findings you can plan against.",
-            "Use When: call when you need verified schema context before generating SQL, especially when the user has not specified enough context and you want fast, parallel candidate-range discovery across multiple possible scopes.",
-            "Task Scoping (CRITICAL): each task.instruction must be ONE narrow, verifiable question with named targets where possible — for example 'list columns of public.orders and confirm whether status column exists', or 'find tables in catalog sales matching name pattern *_invoice'. Do NOT pass umbrella instructions like 'explore the database', 'find everything about orders', or 'investigate the schema'. If the goal is broad, split it into several focused ExplorerTask entries (one candidate scope each) and let them run in parallel rather than asking one sub-agent to do it all.",
-            "Preconditions: each task needs connectionId and a narrow instruction. When the current scope is already grounded by the user's context, mentions, or verified direct inspection, prefer lightweight direct tools first. Each task may include context and timeoutSeconds. Top-level timeoutSeconds applies only to tasks that do not set their own timeout.",
-            "After Success: review taskResults and keep the objects and summaries that match the user goal. If one high-confidence target already looks sufficient, you can continue with direct inspection or querying. If multiple plausible targets remain, report them and ask the user to confirm the intended data scope before moving on.",
-            "After Partial Success: continue only with successful taskResults. Do not assume failed tasks found nothing; retry or ask the user before dropping those scopes.",
-            "After Failure: narrow the task scope, correct the connectionId or instruction, or retry later. Do not proceed to SQL planning without usable explorer output.",
-            "Result Consumption: each taskResult includes taskId, summaryText, objects, and rawResponse. Consume them task by task instead of blindly merging all tasks.",
-            "Relation: use searchObjects or getObjectDetail first when the current scope is already narrow enough. Prefer callingExplorerSubAgent when the scope is still broad and parallel exploration can clarify candidate ranges faster. Multiple tasks run concurrently. Explorer timeout defaults to 180 seconds, and lower values are raised to 180."
+            "Value: runs one or more Explorer sub-agents for schema/object discovery.",
+            "Use When: schema context is missing and the search space is broad enough to benefit from focused or parallel exploration.",
+            "Preconditions: each task needs connectionId and one narrow, verifiable instruction with named targets when possible.",
+            "Result: taskResults with taskId, summaryText, objects, and rawResponse.",
+            "Boundary: split broad goals into focused tasks before calling this tool."
     })
     public AgentToolResult callingExplorerSubAgent(
-            @P("Explorer task list. Each item: {connectionId: number, instruction: string, context?: string, timeoutSeconds?: number}. instruction MUST be a single narrow exploration question with named targets where possible (e.g. 'list columns of public.users and verify email_verified exists'); do not pass open-ended phrasing like 'explore the schema' or 'find anything relevant' — split wide goals into multiple focused tasks. timeoutSeconds uses seconds and values below 180 are automatically raised to 180.") List<ExplorerTask> tasks,
-            @P(value = "Optional default timeout in seconds for explorer tasks that do not provide their own timeoutSeconds. Default is 180 seconds. Values below 180 are automatically raised to 180.", required = false) Long timeoutSeconds,
+            @P("Explorer tasks. Each item needs connectionId and a narrow instruction; context and timeoutSeconds are optional.") List<ExplorerTask> tasks,
+            @P(value = "Optional default timeout seconds; values below 180 are raised to 180.", required = false) Long timeoutSeconds,
             InvocationParameters parameters) {
         RequestContextInfo requestContextSnapshot = RequestContext.snapshot();
         if (CollectionUtils.isEmpty(tasks)) {

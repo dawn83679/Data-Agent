@@ -26,9 +26,10 @@ public class GetSchemasTool {
 
     @Tool({
             "Value: returns the schemas within a specific database on a connection.",
-            "Use When: you know the target connection and database, and need to discover available schemas (e.g., PostgreSQL).",
-            "Note: MySQL does not use schemas — this tool may return empty for MySQL connections.",
-            "After Success: use the schema to narrow searchObjects or getObjectDetail scope."
+            "Use When: connection and database are known and schema scope is still missing.",
+            "Preconditions: connectionId and databaseName are required.",
+            "Result: schema names for that database; MySQL may return empty.",
+            "Boundary: skip schema scope when the database type does not use schemas."
     })
     public AgentToolResult getSchemas(
             @P("The connection ID") Long connectionId,

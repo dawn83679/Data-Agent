@@ -24,21 +24,17 @@ import java.util.Map;
 public class ChartTool {
 
     @Tool({
-            "Value: turns verified query results into a visual answer that users can understand faster than raw rows.",
-            "Use When: call when the data is already available and the user wants a chart, trend, comparison, or distribution.",
-            "One Chart Per Turn (CRITICAL): render at most ONE chart per user turn. Pick the single most informative view of the data and commit to it. Do NOT call renderChart multiple times in the same turn to show the same data as line + bar + pie, do NOT produce a 'dashboard' of several charts at once, and do NOT split one logical chart into several smaller charts. If the user genuinely needs another angle, ask them which one — or wait for them to ask.",
-            "No Trailing Explanation (CRITICAL): the rendered chart IS the answer. After renderChart returns, end the turn immediately — do NOT emit any additional assistant text describing what the chart shows, restating the data, summarizing trends, or 'as you can see in the chart...' commentary. If you have a key insight or reading guide for the user, put it INSIDE the renderChart description parameter, not in a follow-up message. The only acceptable post-chart text is none.",
-            "Preconditions: chartType must be supported and optionJson must be valid ECharts JSON. If the chart dimension is unclear, askUserQuestion first. If multiple chart shapes are plausible, pick the one that best answers the question instead of rendering several.",
-            "After Success: the chart is the final answer for this turn — stop. Do not chain another renderChart call, and do not produce explanatory text after it. Any narrative belongs in the description parameter passed to renderChart.",
-            "After Failure: fix chartType, optionJson, or the missing chart dimension and retry. Do not invent chart conclusions without a rendered chart.",
-            "Do Not Use When: query results are not ready, the user only asked for raw tabular output, or a chart has already been rendered in this turn.",
-            "Relation: usually after executeSelectSql. Call activateSkill('chart') before first use in the session."
+            "Value: renders verified data as one ECharts chart.",
+            "Use When: data is ready and the user needs a chart, trend, comparison, or distribution.",
+            "Preconditions: activate chart skill first; chartType must be supported; optionJson must be valid ECharts JSON.",
+            "Result: the chart is the final answer for this turn.",
+            "Boundary: render at most one chart per turn and emit no assistant text after this tool call."
     })
     @DisallowInPlanMode(ToolNameEnum.RENDER_CHART)
     public AgentToolResult renderChart(
             @P("Chart type: LINE/BAR/PIE/SCATTER/AREA") String chartType,
             @P("ECharts option JSON string. Must be a valid JSON object.") String optionJson,
-            @P(value = "Optional explanation for users: chart meaning, key insight(s), and reading guide", required = false)
+            @P(value = "Optional user-facing chart explanation.", required = false)
             String description) {
         log.info("[Tool] renderChart, chartType={}", chartType);
 

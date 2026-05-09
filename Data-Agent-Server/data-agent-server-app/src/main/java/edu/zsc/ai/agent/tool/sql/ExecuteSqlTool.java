@@ -45,13 +45,11 @@ public class ExecuteSqlTool {
     private final ConnectionAccessService connectionAccessService;
 
     @Tool({
-        "Value: runs read-only SQL and returns real database results. This is the reliable basis for any user-facing query answer.",
-        "Scope requirement: call only after the target connection, database, schema, and referenced objects have been verified.",
-        "Preconditions: sqls is required and every statement must be read-only. For large tables, include WHERE or LIMIT before executing.",
-        "After Success: base the answer strictly on the returned results. If the user needs a visualization, pass the verified result set into renderChart.",
-        "After Failure: inspect the statement-level errors, fix the SQL or scope, and retry only when the query is valid. Do not claim the query succeeded or fabricate results.",
-        "Boundary: the statement must stay read-only and the referenced objects must already be verified.",
-        "Result shape: use the returned result set as the only source of truth for the final answer."
+        "Value: executes read-only SQL and returns real database results.",
+        "Use When: scope, objects, and SQL are verified and the user needs actual query evidence.",
+        "Preconditions: sqls is required and every statement must be read-only; use WHERE or LIMIT for large tables.",
+        "Result: database result sets; use them as the only source of truth for the answer.",
+        "Boundary: never use for writes or unverified object structure."
     })
     @DisallowInPlanMode(ToolNameEnum.EXECUTE_SELECT_SQL)
     public AgentSqlResult executeSelectSql(
@@ -96,13 +94,10 @@ public class ExecuteSqlTool {
 
     @Tool({
         "Value: executes write SQL when permission already allows it, otherwise returns a structured confirmation payload for the frontend.",
-        "Use When: call after the SQL is finalized and you are ready either to execute it or to wait for the user's confirmation response.",
+        "Use When: write SQL is finalized and ready for execution or explicit confirmation.",
         "Preconditions: sqls is required and must contain write statements only.",
-        "After Success: if status is EXECUTED, report only the actual write outcome from execution. If status is REQUIRES_CONFIRMATION, wait for the user to confirm and then retry the exact same SQL.",
-        "After Failure: inspect the statement-level errors, explain that the write did not complete as intended, and do not assume database state beyond the returned results.",
-        "Do Not Use When: the statements are read-only queries.",
-        "Result Consumption: status=EXECUTED means the write already ran. status=REQUIRES_CONFIRMATION means nothing has executed yet and the frontend must ask the user."
-
+        "Result: EXECUTED means the write ran; REQUIRES_CONFIRMATION means nothing ran yet and the frontend must ask the user.",
+        "Boundary: never use for read-only queries or guessed write SQL."
     })
     @DisallowInPlanMode(ToolNameEnum.EXECUTE_NON_SELECT_SQL)
     public ExecuteNonSelectToolResult executeNonSelectSql(

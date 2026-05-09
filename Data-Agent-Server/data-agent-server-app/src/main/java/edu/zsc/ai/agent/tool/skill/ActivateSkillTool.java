@@ -22,14 +22,13 @@ public class ActivateSkillTool {
 
     @Tool({
             "Value: loads capability-specific guidance and templates that improve later tool use.",
-            "Use When: call only when a skill listed in <skill_available> of the current system prompt is clearly needed.",
-            "After Success: immediately apply the loaded rules in later tool calls. Do not present skill activation itself as the user-facing result.",
-            "After Failure: choose a supported skill from <skill_available> or continue without the skill only if the quality tradeoff is acceptable.",
-            "Relation: use activateSkill before specialized charting work when the current agent exposes the chart skill.",
-            "skillName must match one of the skills listed in <skill_available> for the current agent. Skip if the skill is already loaded in this session."
+            "Use When: a skill listed in <skill_available> is clearly needed for the current task.",
+            "Preconditions: skillName must match a listed skill and should not already be loaded.",
+            "Result: loaded skill instructions.",
+            "Boundary: do not present skill activation itself as the user-facing result."
     })
     public String activateSkill(
-            @P("Skill to load. MUST be one of the skills exposed in <skill_available> for the current agent.") String skillName) {
+            @P("Skill name from <skill_available>.") String skillName) {
         SkillEnum skill = SkillEnum.fromName(skillName);
         if (skill == null) {
             return ToolMessageSupport.sentence(
