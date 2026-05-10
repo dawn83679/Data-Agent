@@ -12,6 +12,7 @@ import type { Message, Segment, TodoBoxSpec } from './types';
 import { isTodoCompleted } from '../blocks/todoTypes';
 import { ExecuteNonSelectToolStatus, parseExecuteNonSelectToolResult } from '../blocks/executeNonSelectTypes';
 import { SegmentKind } from './types';
+import { isHiddenAskUserAnswerMessage } from './hiddenAskUserAnswer';
 
 export type { Message } from './types';
 
@@ -58,7 +59,7 @@ export function MessageList({
         </div>
       )}
       {visibleMessages.map((msg, msgIndex) => {
-        if (msg.localKind === 'hidden-user-boundary') {
+        if (isHiddenAskUserAnswerMessage(msg)) {
           return null;
         }
 

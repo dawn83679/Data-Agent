@@ -16,6 +16,7 @@ import {
     SESSION_EXPIRED_MESSAGE,
 } from '../constants/chat';
 import { buildChatStreamFetchHeaders } from '../lib/chatStreamHeaders';
+import { isHiddenAskUserAnswerMessage } from '../components/ai/messageListLib/hiddenAskUserAnswer';
 
 interface QueuedMessage {
     text: string;
@@ -273,6 +274,7 @@ export function useConversationRuntime(
 
     const getFirstValidUserMessage = useCallback((messages: ChatMessage[]): string | null => {
         for (const msg of messages) {
+            if (isHiddenAskUserAnswerMessage(msg)) continue;
             if (msg.role !== MessageRole.USER) continue;
             const content = (msg.content ?? '').trim();
             if (content !== '') return content;

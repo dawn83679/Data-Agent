@@ -2,6 +2,7 @@ import http from '../lib/http';
 import type { ChatMessage } from '../types/chat';
 import { MessageRole } from '../types/chat';
 import type { CompactConversationResponse, Conversation, PageResponse } from '../types/conversation';
+import { markHiddenAskUserAnswer } from '../components/ai/messageListLib/hiddenAskUserAnswer';
 
 export const conversationService = {
   /**
@@ -53,7 +54,7 @@ export const conversationService = {
   getMessages: async (id: number): Promise<ChatMessage[]> => {
     const response = await http.get<{ id: string; role: string; content: string; blocks?: ChatMessage['blocks']; messageStatus?: ChatMessage['messageStatus']; createdAt?: string }[]>(`/conversations/${id}/messages`);
     const list = Array.isArray(response.data) ? response.data : [];
-    const mapped = list.map((m) => ({
+    const mapped = list.map((m) => markHiddenAskUserAnswer({
       id: m.id,
       role: m.role === 'user' ? MessageRole.USER : MessageRole.ASSISTANT,
       content: m.content ?? '',
