@@ -1,8 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bot } from 'lucide-react';
 import { MessageRole } from '../../../types/chat';
-import { I18N_KEYS } from '../../../constants/i18nKeys';
 import { mergeAssistantToolPairs } from './mergeMessages';
 import { MessageAccumulator } from './MessageAccumulator';
 import { MessageListItem } from './MessageListItem';
@@ -136,12 +134,6 @@ export function MessageList({
       })}
       {showPlanningRow && (
         <div className="flex flex-col w-full">
-          <div className="flex items-center space-x-2 mb-1.5 opacity-60">
-            <Bot className="w-3 h-3 shrink-0" />
-            <span className="text-[10px] font-medium theme-text-secondary">
-              {t(I18N_KEYS.AI.BOT_NAME)}
-            </span>
-          </div>
           <div className="text-xs theme-text-primary">
             <PlanningIndicator />
           </div>

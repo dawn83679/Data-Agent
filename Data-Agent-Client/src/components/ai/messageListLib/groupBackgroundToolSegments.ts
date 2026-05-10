@@ -25,9 +25,7 @@ function isBackgroundToolCandidate(segment: Segment): segment is ToolRunSegment 
     && toolType !== ToolType.CHART
     && toolType !== ToolType.THINKING
     && toolType !== ToolType.EXIT_PLAN
-    && toolType !== ToolType.SKILL
     && toolType !== ToolType.FILE_EXPORT
-    && toolType !== ToolType.EXECUTE_SELECT
     && toolType !== ToolType.CALLING_SUB_AGENT;
 }
 

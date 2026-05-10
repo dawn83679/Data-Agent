@@ -520,6 +520,7 @@ export function ChartToolBlock({
   const showFallbackJson = hasFatalError;
   const chartTypeLabel = getLocalizedChartTypeLabel(parsedParams.chartType ?? chartPayload.chartType, t);
   const chartDescription = (chartPayload.description ?? parsedParams.description ?? '').trim();
+  const chartHeaderLabel = chartDescription || chartTypeLabel;
 
   const isPieChart = useMemo(() => {
     const s = chartPayload.option?.series;
@@ -538,7 +539,7 @@ export function ChartToolBlock({
         ) : (
           <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />
         )}
-        <span>{chartTypeLabel}</span>
+        <span className="min-w-0 truncate" title={chartHeaderLabel}>{chartHeaderLabel}</span>
         <span className="ml-auto opacity-70">
           {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </span>
@@ -588,11 +589,6 @@ export function ChartToolBlock({
                   </div>
                 </div>
               </div>
-              {chartDescription !== '' && (
-                <div className="rounded border theme-border px-2 py-1.5 text-[11px] theme-text-secondary whitespace-pre-wrap">
-                  {chartDescription}
-                </div>
-              )}
             </>
           )}
 

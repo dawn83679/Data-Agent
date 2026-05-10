@@ -111,7 +111,6 @@ export function BackgroundToolGroupBlock({
   const failedCount = toolRuns.filter((segment) => segment.responseError).length;
   const running = pending || toolRuns.some(isRunning);
   const duration = formatDuration(startedAt, finishedAt);
-  const statusLabel = failedCount > 0 ? 'Failed' : running ? 'Running' : 'Done';
   const summaryText = running
     ? `Completed ${completedCount}/${toolRuns.length} steps${duration ? ` in ${duration}` : ''}`
     : duration
@@ -119,32 +118,27 @@ export function BackgroundToolGroupBlock({
       : `Completed ${completedCount} steps`;
 
   return (
-    <div className="mb-2 overflow-hidden rounded-lg border theme-border bg-[color:var(--bg-panel)]">
+    <div className="mb-1.5 last:mb-0 text-[11px] theme-text-secondary">
       <button
         type="button"
         onClick={() => setCollapsed((current) => !current)}
-        className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-black/5 dark:hover:bg-white/[0.04]"
+        className="flex w-full items-center gap-1.5 py-0.5 text-left transition-opacity hover:opacity-80"
+        aria-expanded={!collapsed}
       >
         {failedCount > 0 ? (
-          <XCircle className="h-3.5 w-3.5 shrink-0 text-red-500" aria-label="Failed" />
+          <XCircle className="h-3 w-3 shrink-0 text-red-500" aria-label="Failed" />
         ) : running ? (
-          <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-blue-500" aria-hidden />
+          <Loader2 className="h-3 w-3 shrink-0 animate-spin text-blue-500" aria-hidden />
         ) : (
-          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-500" aria-hidden />
+          <CheckCircle2 className="h-3 w-3 shrink-0 text-green-500" aria-hidden />
         )}
-        <span className="min-w-0 flex-1 truncate text-[12px] font-medium theme-text-primary">
+        <span className="min-w-0 flex-1 truncate font-normal">
           {summaryText}
-        </span>
-        <span className="shrink-0 rounded-full border theme-border px-2 py-0.5 text-[10px] font-medium theme-text-secondary">
-          {statusLabel}
-        </span>
-        <span className="shrink-0 theme-text-secondary">
-          {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
         </span>
       </button>
 
       {!collapsed && (
-        <div className="border-t theme-border px-3 py-2">
+        <div className="max-h-[280px] overflow-y-auto border-l border-current/20 py-1 pl-4 pr-0">
           <div className="space-y-1.5">
             {toolRuns.map((segment, index) => (
               <BackgroundToolStep

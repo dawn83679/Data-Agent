@@ -51,10 +51,11 @@ describe('groupBackgroundToolSegments', () => {
     expect(grouped[0]?.kind === SegmentKind.TOOL_GROUP ? grouped[0].nestedToolRuns : []).toHaveLength(3);
   });
 
-  it('does not group visible result and interactive tools', () => {
+  it('groups executeSelectSql and activateSkill with background tools but keeps final artifacts interactive', () => {
     const grouped = groupBackgroundToolSegments([
       toolRun('getDatabases'),
       toolRun('executeSelectSql'),
+      toolRun('activateSkill'),
       toolRun('renderChart'),
       toolRun('exportFile'),
       toolRun('askUserQuestion'),
@@ -85,8 +86,8 @@ describe('groupBackgroundToolSegments', () => {
       SegmentKind.TOOL_RUN,
       SegmentKind.TOOL_RUN,
       SegmentKind.TOOL_RUN,
-      SegmentKind.TOOL_RUN,
     ]);
+    expect(grouped[0]?.kind === SegmentKind.TOOL_GROUP ? grouped[0].nestedToolRuns : []).toHaveLength(3);
   });
 
   it('does not group nested tool runs under a sub-agent parent', () => {

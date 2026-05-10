@@ -1,8 +1,12 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { HttpStatusCode, ErrorCode } from '../constants/errorCode';
-import type { TokenPairResponse } from '../types/auth';
-import { ensureValidAccessToken } from './authToken';
+import {
+    applyRefreshedTokens,
+    clearAuthAndOpenLogin,
+    ensureValidAccessToken,
+    resolveRefreshAccessTokenResult,
+} from './authToken';
 import { X_ORG_ID, X_WORKSPACE_TYPE } from '../constants/workspaceHeaders';
 
 const http = axios.create({
@@ -106,24 +110,36 @@ http.interceptors.response.use(
         if (isNotLogin && originalRequest && !originalRequest._retry) {
             originalRequest._retry = true;
 
+            const { refreshToken } = useAuthStore.getState();
+            if (!refreshToken) {
+                clearAuthAndOpenLogin();
+                return Promise.reject(error);
+            }
+
             try {
-                const { refreshToken, user, setAuth } = useAuthStore.getState();
-                if (!refreshToken) {
-                    throw new Error('No refresh token');
+                const refreshResponse = await axios.post(
+                    '/api/auth/refresh',
+                    { refreshToken },
+                    {
+                        headers: { 'Content-Type': 'application/json' },
+                        validateStatus: () => true,
+                    }
+                );
+                const refreshResult = resolveRefreshAccessTokenResult(refreshResponse.status, refreshResponse.data);
+                if (refreshResult.status === 'auth-failed') {
+                    clearAuthAndOpenLogin();
+                    return Promise.reject(error);
+                }
+                if (refreshResult.status !== 'success') {
+                    return Promise.reject(error);
                 }
 
-                const refreshResponse = await http.post<TokenPairResponse>('/auth/refresh', { refreshToken });
-                const { accessToken, refreshToken: newRefreshToken } = refreshResponse.data;
-
-                setAuth(user, accessToken, newRefreshToken);
+                applyRefreshedTokens(refreshResult.tokens);
 
                 originalRequest.headers = originalRequest.headers || {};
-                originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+                originalRequest.headers.Authorization = `Bearer ${refreshResult.tokens.accessToken}`;
                 return http(originalRequest);
             } catch (refreshError) {
-                const { clearAuth, openLoginModal } = useAuthStore.getState();
-                clearAuth();
-                openLoginModal();
                 return Promise.reject(refreshError);
             }
         }

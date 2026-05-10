@@ -1,40 +1,20 @@
 import { useState, useCallback, useRef } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { parseSSEResponse } from '../lib/sse';
-import { ensureValidAccessToken } from '../lib/authToken';
+import {
+  applyRefreshedTokens,
+  clearAuthAndOpenLogin,
+  ensureValidAccessToken,
+  refreshAccessToken,
+} from '../lib/authToken';
 import type { ChatRequest, ChatMessage, UseChatOptions, UseChatReturn, ChatResponseBlock } from '../types/chat';
 import { isContentBlockType, MessageRole } from '../types/chat';
-import type { TokenPairResponse } from '../types/auth';
 import {
   CHAT_STREAM_API,
   NOT_AUTHENTICATED,
   SESSION_EXPIRED_MESSAGE,
 } from '../constants/chat';
 import { buildChatStreamFetchHeaders } from '../lib/chatStreamHeaders';
-
-async function refreshAccessToken(): Promise<TokenPairResponse | null> {
-  const { refreshToken } = useAuthStore.getState();
-  if (!refreshToken) {
-    return null;
-  }
-
-  try {
-    const response = await fetch('/api/auth/refresh', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = await response.json();
-    return data.data || data;
-  } catch {
-    return null;
-  }
-}
 
 interface ConsumeStreamOptions {
   onConversationId?: (id: number) => void;
@@ -108,15 +88,15 @@ async function fetchWithAuthRetry(
   });
 
   if (response.status === 401 && retryCount === 0) {
-    const tokens = await refreshAccessToken();
-    if (tokens) {
-      const { user, setAuth } = useAuthStore.getState();
-      setAuth(user, tokens.accessToken, tokens.refreshToken);
+    const refreshResult = await refreshAccessToken();
+    if (refreshResult.status === 'success') {
+      applyRefreshedTokens(refreshResult.tokens);
       return fetchWithAuthRetry(url, body, signal, 1);
     }
-    const { setAuth, openLoginModal } = useAuthStore.getState();
-    setAuth(null, null, null);
-    openLoginModal();
+    if (refreshResult.status === 'retry-later') {
+      return response;
+    }
+    clearAuthAndOpenLogin();
     throw new Error(SESSION_EXPIRED_MESSAGE);
   }
 
