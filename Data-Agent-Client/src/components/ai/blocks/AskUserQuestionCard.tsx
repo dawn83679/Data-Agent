@@ -4,26 +4,26 @@ import { I18N_KEYS } from '../../../constants/i18nKeys';
 import { AskUserQuestionPayload, normalizeToQuestions, SingleQuestion } from './askUserQuestionTypes';
 import { HelpCircle, Check } from 'lucide-react';
 import { useAIAssistantContext } from '../AIAssistantContext';
+import {
+    buildAskUserQuestionAnswerMessage,
+    buildAskUserQuestionDeclinedMessage,
+    type AskUserAnswerValue,
+} from './askUserQuestionAnswerFormatter';
 
 export interface AskUserQuestionCardProps {
     askUserPayload: AskUserQuestionPayload;
+    toolCallId?: string;
 }
 
-export function AskUserQuestionCard({ askUserPayload }: AskUserQuestionCardProps) {
+export function AskUserQuestionCard({ askUserPayload, toolCallId }: AskUserQuestionCardProps) {
     const { t } = useTranslation();
     const { submitMessage, isLoading } = useAIAssistantContext();
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
     const questions = useMemo(() => normalizeToQuestions(askUserPayload), [askUserPayload]);
 
-    // Form state tracker similar to AskUserUnanswered
-    interface AnswerValue {
-        selectedOptions: string[];
-        customText: string;
-    }
-
-    const [answers, setAnswers] = useState<Map<number, AnswerValue>>(() => {
-        const initial = new Map<number, AnswerValue>();
+    const [answers, setAnswers] = useState<Map<number, AskUserAnswerValue>>(() => {
+        const initial = new Map<number, AskUserAnswerValue>();
         questions.forEach((_, idx) => {
             initial.set(idx, { selectedOptions: [], customText: '' });
         });
@@ -66,39 +66,15 @@ export function AskUserQuestionCard({ askUserPayload }: AskUserQuestionCardProps
     const handleSubmit = () => {
         if (isSubmitDisabled) return;
 
-        let formattedAnswer = t(I18N_KEYS.AI.ASK_USER_QUESTION.ANSWER_PREFIX) + '\n\n';
+        const formattedAnswer = buildAskUserQuestionAnswerMessage(questions, answers, toolCallId);
 
-        questions.forEach((q, idx) => {
-            const answer = answers.get(idx);
-            if (!answer) return;
-
-            const selectedParts = answer.selectedOptions;
-            const customPart = answer.customText.trim();
-
-            let answerStr = '';
-            if (selectedParts.length > 0 && customPart) {
-                answerStr = `${selectedParts.join(', ')} | ${t(I18N_KEYS.AI.ASK_USER_QUESTION.CUSTOM_LABEL)}: ${customPart}`;
-            } else if (selectedParts.length > 0) {
-                answerStr = selectedParts.join(', ');
-            } else if (customPart) {
-                answerStr = `${t(I18N_KEYS.AI.ASK_USER_QUESTION.CUSTOM_LABEL)}: ${customPart}`;
-            }
-
-            if (answerStr) {
-                formattedAnswer += `**${t(I18N_KEYS.AI.ASK_USER_QUESTION.QUESTION_LABEL)} ${idx + 1}:** ${q.question}\n\n`;
-                formattedAnswer += `**${t(I18N_KEYS.AI.ASK_USER_QUESTION.ANSWER_LABEL)} ${idx + 1}:** ${answerStr}\n\n`;
-            }
-        });
-
-        formattedAnswer += t(I18N_KEYS.AI.ASK_USER_QUESTION.CONTINUE_SUFFIX);
-
-        submitMessage(formattedAnswer);
+        submitMessage(formattedAnswer, undefined, { hideUserMessage: true });
         setIsSubmitted(true);
     };
 
     const handleReject = () => {
-        const msg = t(I18N_KEYS.AI.ASK_USER_QUESTION.REJECT_MESSAGE);
-        submitMessage(msg);
+        const msg = buildAskUserQuestionDeclinedMessage(questions, toolCallId);
+        submitMessage(msg, undefined, { hideUserMessage: true });
         setIsSubmitted(true);
     };
 

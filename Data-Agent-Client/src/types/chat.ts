@@ -35,6 +35,11 @@ export interface ChatRequest {
   clientOrgId?: number;
 }
 
+export interface SubmitMessageOptions {
+  /** Send the message to the backend without inserting a visible user bubble locally. */
+  hideUserMessage?: boolean;
+}
+
 /** Aligned with backend MessageBlockEnum */
 export const MessageBlockType = {
   TEXT: 'TEXT',
@@ -106,7 +111,7 @@ export interface ChatMessage {
   doneMetadata?: DoneMetadata;
   messageStatus?: 'NORMAL' | 'DELETED' | 'COMPRESSED' | 'COMPRESSION_SUMMARY';
   /** Frontend-only marker for ephemeral UI messages that should not be persisted. */
-  localKind?: 'compact-command' | 'compact-status' | 'compact-result';
+  localKind?: 'compact-command' | 'compact-status' | 'compact-result' | 'hidden-user-boundary';
   createdAt?: Date;
 }
 
@@ -156,7 +161,11 @@ export interface UseChatReturn {
   handleSubmit: (e: React.FormEvent) => Promise<void>;
   /** Send a specific message (e.g. from queue) without using input state.
    *  Optional bodyOverrides lets callers override body fields (e.g. agentType) for this request only. */
-  submitMessage: (message: string, bodyOverrides?: Partial<ChatRequest>) => Promise<void>;
+  submitMessage: (
+    message: string,
+    bodyOverrides?: Partial<ChatRequest>,
+    submitOptions?: SubmitMessageOptions,
+  ) => Promise<void>;
   isLoading: boolean;
   /** True when loading and no block received recently — used to show Planning indicator. */
   isWaiting: boolean;

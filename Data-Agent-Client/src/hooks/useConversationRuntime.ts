@@ -8,7 +8,7 @@ import {
     ensureValidAccessToken,
     refreshAccessToken,
 } from '../lib/authToken';
-import type { ChatRequest, ChatMessage, ChatResponseBlock, DoneMetadata } from '../types/chat';
+import type { ChatRequest, ChatMessage, ChatResponseBlock, DoneMetadata, SubmitMessageOptions } from '../types/chat';
 import { isContentBlockType, MessageRole } from '../types/chat';
 import {
     CHAT_STREAM_API,
@@ -20,6 +20,7 @@ import { buildChatStreamFetchHeaders } from '../lib/chatStreamHeaders';
 interface QueuedMessage {
     text: string;
     bodyOverrides?: Partial<ChatRequest>;
+    submitOptions?: SubmitMessageOptions;
 }
 
 export interface ConversationPrefs {
@@ -101,7 +102,11 @@ interface UseConversationRuntimeReturn {
     queue: string[];
 
     // Actions
-    submitMessage: (text: string, bodyOverrides?: Partial<ChatRequest>) => Promise<void>;
+    submitMessage: (
+        text: string,
+        bodyOverrides?: Partial<ChatRequest>,
+        submitOptions?: SubmitMessageOptions,
+    ) => Promise<void>;
     stop: () => void;
     removeFromQueue: (index: number) => void;
     setActiveConversation: (id: number | null) => void;
@@ -418,7 +423,12 @@ export function useConversationRuntime(
     );
 
     const submitMessageToRuntime = useCallback(
-        async (runtime: ConversationRuntime, text: string, bodyOverrides?: Partial<ChatRequest>) => {
+        async (
+            runtime: ConversationRuntime,
+            text: string,
+            bodyOverrides?: Partial<ChatRequest>,
+            submitOptions?: SubmitMessageOptions,
+        ) => {
             const trimmed = text.trim();
             if (!trimmed || runtime.submitting) return;
 
@@ -442,16 +452,27 @@ export function useConversationRuntime(
             runtime.isLoading = true;
             runtime.isWaiting = true;
 
-            // Add user message
-            const userMessage: ChatMessage = {
-                id: safeMessageId(),
-                role: MessageRole.USER,
-                content: trimmed,
-                userMentions: bodyOverrides?.userMentions,
-                createdAt: new Date(),
-            };
             touchRuntime(runtime);
-            updateRuntimeMessages(runtime, [...runtime.messages, userMessage]);
+            if (!submitOptions?.hideUserMessage) {
+                // Add user message
+                const userMessage: ChatMessage = {
+                    id: safeMessageId(),
+                    role: MessageRole.USER,
+                    content: trimmed,
+                    userMentions: bodyOverrides?.userMentions,
+                    createdAt: new Date(),
+                };
+                updateRuntimeMessages(runtime, [...runtime.messages, userMessage]);
+            } else {
+                const hiddenBoundaryMessage: ChatMessage = {
+                    id: safeMessageId(),
+                    role: MessageRole.USER,
+                    content: '',
+                    localKind: 'hidden-user-boundary',
+                    createdAt: new Date(),
+                };
+                updateRuntimeMessages(runtime, [...runtime.messages, hiddenBoundaryMessage]);
+            }
 
             // Workspace in body: ensures org context even if fetch custom headers are dropped by proxy/CDN.
             const auth = useAuthStore.getState();
@@ -570,7 +591,7 @@ export function useConversationRuntime(
 
                     // Small delay to ensure UI updates
                     setTimeout(() => {
-                        submitMessageToRuntime(runtime, first.text, first.bodyOverrides);
+                        submitMessageToRuntime(runtime, first.text, first.bodyOverrides, first.submitOptions);
                     }, 0);
                 }
             }
@@ -580,17 +601,17 @@ export function useConversationRuntime(
     );
 
     const submitMessage = useCallback(
-        async (text: string, bodyOverrides?: Partial<ChatRequest>) => {
+        async (text: string, bodyOverrides?: Partial<ChatRequest>, submitOptions?: SubmitMessageOptions) => {
             const runtime = getOrCreateRuntime(activeConversationId);
 
             // If already submitting, add to queue
             if (runtime.submitting) {
-                runtime.queue = [...runtime.queue, { text: text.trim(), bodyOverrides }];
+                runtime.queue = [...runtime.queue, { text: text.trim(), bodyOverrides, submitOptions }];
                 forceUpdate();
                 return;
             }
 
-            await submitMessageToRuntime(runtime, text, bodyOverrides);
+            await submitMessageToRuntime(runtime, text, bodyOverrides, submitOptions);
         },
         [activeConversationId, getOrCreateRuntime, submitMessageToRuntime, forceUpdate]
     );

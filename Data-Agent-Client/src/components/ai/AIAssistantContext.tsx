@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode } from 'react';
-import type { ChatContext, ChatRequest, ChatUserMention } from '../../types/chat';
+import type { ChatContext, ChatRequest, ChatUserMention, SubmitMessageOptions } from '../../types/chat';
 import type { ModelOption } from '../../types/ai';
 import type { AgentType } from './agentTypes';
 
@@ -31,7 +31,11 @@ export interface AIAssistantContextValue {
   onStop?: () => void;
   /** Send a message as the user (e.g. answer to askUserQuestion); uses current conversationId.
    *  Optional bodyOverrides lets callers override body fields (e.g. agentType) for this request only. */
-  submitMessage: (message: string, bodyOverrides?: Partial<ChatRequest>) => Promise<void>;
+  submitMessage: (
+    message: string,
+    bodyOverrides?: Partial<ChatRequest>,
+    submitOptions?: SubmitMessageOptions,
+  ) => Promise<void>;
   /** Queue a message to be sent right after current streaming ends. */
   enqueueMessage?: (message: string) => void;
   isLoading: boolean;

@@ -180,6 +180,7 @@ export function ToolRunBlock({
       return (
         <AskUserQuestionCard
           askUserPayload={askUserPayload}
+          toolCallId={toolCallId}
         />
       );
     }

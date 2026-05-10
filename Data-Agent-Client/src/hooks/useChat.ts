@@ -7,7 +7,14 @@ import {
   ensureValidAccessToken,
   refreshAccessToken,
 } from '../lib/authToken';
-import type { ChatRequest, ChatMessage, UseChatOptions, UseChatReturn, ChatResponseBlock } from '../types/chat';
+import type {
+  ChatRequest,
+  ChatMessage,
+  UseChatOptions,
+  UseChatReturn,
+  ChatResponseBlock,
+  SubmitMessageOptions,
+} from '../types/chat';
 import { isContentBlockType, MessageRole } from '../types/chat';
 import {
   CHAT_STREAM_API,
@@ -195,19 +202,29 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
 
   /** Shared core: append user message and start stream. Does not touch input state. */
   const submitCore = useCallback(
-    async (text: string, bodyOverrides?: Partial<ChatRequest>) => {
+    async (text: string, bodyOverrides?: Partial<ChatRequest>, submitOptions?: SubmitMessageOptions) => {
       const trimmed = (text ?? '').trim();
       if (submittingRef.current || !trimmed) return;
       submittingRef.current = true;
       setIsLoading(true);
 
-      const userMessage: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: MessageRole.USER,
-        content: trimmed,
-        createdAt: new Date(),
-      };
-      appendMessage(userMessage);
+      if (!submitOptions?.hideUserMessage) {
+        const userMessage: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: MessageRole.USER,
+          content: trimmed,
+          createdAt: new Date(),
+        };
+        appendMessage(userMessage);
+      } else {
+        appendMessage({
+          id: crypto.randomUUID(),
+          role: MessageRole.USER,
+          content: '',
+          localKind: 'hidden-user-boundary',
+          createdAt: new Date(),
+        });
+      }
 
       const auth = useAuthStore.getState();
       const clientWorkspace =
@@ -240,8 +257,8 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   /** Send a specific message (e.g. next from queue) without using input.
    *  Optional bodyOverrides lets callers override body fields (e.g. agentType) for this request only. */
   const submitMessage = useCallback(
-    async (message: string, bodyOverrides?: Partial<ChatRequest>) => {
-      await submitCore(message ?? '', bodyOverrides);
+    async (message: string, bodyOverrides?: Partial<ChatRequest>, submitOptions?: SubmitMessageOptions) => {
+      await submitCore(message ?? '', bodyOverrides, submitOptions);
     },
     [submitCore]
   );

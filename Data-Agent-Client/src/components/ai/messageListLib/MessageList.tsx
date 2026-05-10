@@ -58,6 +58,10 @@ export function MessageList({
         </div>
       )}
       {visibleMessages.map((msg, msgIndex) => {
+        if (msg.localKind === 'hidden-user-boundary') {
+          return null;
+        }
+
         const actualIndex = hiddenCount + msgIndex;
         const isLastMessage = actualIndex === displayMessages.length - 1;
         const isLastAssistantStreaming =

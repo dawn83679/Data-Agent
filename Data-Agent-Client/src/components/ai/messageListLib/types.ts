@@ -26,7 +26,7 @@ export interface Message {
   blocks?: ChatResponseBlock[];
   doneMetadata?: DoneMetadata;
   messageStatus?: 'NORMAL' | 'DELETED' | 'COMPRESSED' | 'COMPRESSION_SUMMARY';
-  localKind?: 'compact-command' | 'compact-status' | 'compact-result';
+  localKind?: 'compact-command' | 'compact-status' | 'compact-result' | 'hidden-user-boundary';
 }
 
 export type Segment =
