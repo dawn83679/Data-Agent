@@ -57,7 +57,9 @@ public class AgentToolConfig {
                     AskUserQuestionTool.class,
                     TodoTool.class,
                     ActivateSkillTool.class,
-                    ExportFileTool.class
+                    ExportFileTool.class,
+                    ReadMemoryTool.class,
+                    UpdateMemoryTool.class
             ),
             ToolScope.MAIN_PLAN, Set.of(
                     GetDatabasesTool.class,

@@ -124,8 +124,8 @@ class AgentToolConfigTest {
             assertTrue(tools.contains(activateSkillTool));
             assertTrue(tools.contains(chartTool));
             assertTrue(tools.contains(exportFileTool));
-            assertFalse(tools.contains(readMemoryTool));
-            assertFalse(tools.contains(updateMemoryTool));
+            assertTrue(tools.contains(readMemoryTool));
+            assertTrue(tools.contains(updateMemoryTool));
 
             assertFalse(tools.contains(exitPlanModeTool));
         }
