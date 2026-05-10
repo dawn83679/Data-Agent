@@ -28,13 +28,13 @@ public class ResponsePreferencesStrategy extends AbstractRuntimeContextHandler {
             return PromptFormatSupport.renderBlock(
                     context.getLanguage(),
                     "请默认遵循以下偏好：",
-                    "Apply the following preferences by default:",
+                    "请默认遵循以下偏好：",
                     List.of(PromptConstant.NONE));
         }
         return PromptFormatSupport.renderBlock(
                 context.getLanguage(),
                 "请默认遵循以下偏好：",
-                "Apply the following preferences by default:",
+                "请默认遵循以下偏好：",
                 lines);
     }
 }

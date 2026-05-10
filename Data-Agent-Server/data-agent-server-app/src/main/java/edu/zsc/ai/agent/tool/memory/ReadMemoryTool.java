@@ -41,32 +41,30 @@ public class ReadMemoryTool {
     private final MemoryRecallManager memoryRecallManager;
     private final MemoryService memoryService;
     @Tool({
-            "Use this tool only to fetch durable memory that may change the current decision.",
-            "Call it when a stable preference, business rule, field definition, object fact, or reusable SQL pattern is missing or still ambiguous.",
-            "Do not call it for temporary task instructions, current-turn emotions, or facts already clear in the prompt.",
-            "intent must say exactly what you want to confirm or retrieve.",
-            "Add scope, memoryType, or subType only when you already know them; otherwise leave them empty instead of guessing.",
-            "If you plan to UPDATE or DELETE memory, usually call readMemory first to find the target memoryId.",
-            "After reading, use only the returned memory that materially helps the task. Ignore irrelevant recalls."
+            "价值：读取可能改变当前决策的持久记忆。",
+            "使用时机：缺少或仍不明确稳定偏好、业务规则、字段定义、对象事实或可复用 SQL 模式。",
+            "前置条件：intent 必须明确说明要确认或检索什么。",
+            "结果：返回召回的记忆、命中过滤条件和摘要。",
+            "边界：不要为了临时任务指令、本轮情绪或提示词里已经明确的事实调用它；只使用对当前任务有实质帮助的记忆。"
     })
     public AgentToolResult readMemory(
-            @P("What durable context you want to recall") String intent,
-            @P(value = "Optional scope filter: USER or CONVERSATION", required = false) MemoryScopeEnum scope,
-            @P(value = "Optional memory type filter. Valid values: PREFERENCE, BUSINESS_RULE, KNOWLEDGE_POINT, WORKFLOW_CONSTRAINT, GOLDEN_SQL_CASE", required = false) MemoryTypeEnum memoryType,
-            @P(value = "Optional memory subType filter. Must exactly match one of: RESPONSE_FORMAT, LANGUAGE_PREFERENCE, PRODUCT_RULE, DOMAIN_RULE, GOVERNANCE_RULE, SAFETY_RULE, ARCHITECTURE_KNOWLEDGE, DOMAIN_KNOWLEDGE, GLOSSARY, OBJECT_KNOWLEDGE, PROCESS_RULE, APPROVAL_RULE, IMPLEMENTATION_CONSTRAINT, REVIEW_CONSTRAINT, QUERY_PATTERN, JOIN_STRATEGY, VALIDATED_SQL, METRIC_CALCULATION", required = false) MemorySubTypeEnum subType,
-            @P(value = ToolDescriptionParam.UI_STEP_DESCRIPTION, required = false) String description,
+            @P("你要召回的持久上下文") String intent,
+            @P(value = "可选记忆范围过滤：USER 或 CONVERSATION。", required = false) MemoryScopeEnum scope,
+            @P(value = "可选记忆类型过滤。有效值：PREFERENCE、BUSINESS_RULE、KNOWLEDGE_POINT、WORKFLOW_CONSTRAINT、GOLDEN_SQL_CASE。", required = false) MemoryTypeEnum memoryType,
+            @P(value = "可选记忆子类型过滤。必须精确匹配枚举值，例如 RESPONSE_FORMAT、LANGUAGE_PREFERENCE、PRODUCT_RULE、DOMAIN_RULE、GOVERNANCE_RULE、SAFETY_RULE、ARCHITECTURE_KNOWLEDGE、DOMAIN_KNOWLEDGE、GLOSSARY、OBJECT_KNOWLEDGE、PROCESS_RULE、APPROVAL_RULE、IMPLEMENTATION_CONSTRAINT、REVIEW_CONSTRAINT、QUERY_PATTERN、JOIN_STRATEGY、VALIDATED_SQL、METRIC_CALCULATION。", required = false) MemorySubTypeEnum subType,
+            @P(ToolDescriptionParam.UI_STEP_DESCRIPTION) String description,
             InvocationParameters parameters) {
 
         AgentTypeEnum agentType = AgentTypeEnum.fromCode(AgentRequestContext.getAgentType());
         AgentModeEnum agentMode = AgentModeEnum.fromRequest(AgentRequestContext.getAgentMode());
         if (!isAllowedAgent(agentType, agentMode)) {
             return AgentToolResult.fail(ToolMessageSupport.sentence(
-                    "readMemory is only available to the main agent or memory writer in normal execution mode.",
-                    "Do not attempt to recall memory from this agent context."
+                    "readMemory 只允许主 Agent 或记忆写入 Agent 在普通执行模式下使用。",
+                    "不要在当前 Agent 上下文中尝试召回记忆。"
             ));
         }
         if (StringUtils.isBlank(intent)) {
-            return AgentToolResult.fail("intent is required for readMemory.");
+            return AgentToolResult.fail("readMemory 必须提供 intent。");
         }
 
         try {
@@ -108,13 +106,13 @@ public class ReadMemoryTool {
 
             return AgentToolResult.success(result, ToolMessageSupport.sentence(
                     recallResult.getSummary(),
-                    "Use only the recalled durable memory that materially helps the current task."
+                    "只使用对当前任务有实质帮助的持久记忆。"
             ));
         } catch (IllegalArgumentException e) {
             return AgentToolResult.fail(e.getMessage());
         } catch (Exception e) {
             log.error("readMemory failed", e);
-            return AgentToolResult.fail("Failed to recall memory. Refine the recall intent or filters before retrying.");
+            return AgentToolResult.fail("召回记忆失败。重试前请缩小或修正召回 intent 和过滤条件。");
         }
     }
 
@@ -151,13 +149,13 @@ public class ReadMemoryTool {
                 MemorySubTypeEnum.CONVERSATION_WORKING_MEMORY.getCode(),
                 memoryIds.size(),
                 memoryIds,
-                memory == null ? "No current conversation working memory found."
-                        : "Loaded the current conversation working memory.");
+                memory == null ? "没有找到当前会话工作记忆。"
+                        : "已加载当前会话工作记忆。");
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put(MemoryRecallConstant.RESULT_SUMMARY,
-                memory == null ? "No current conversation working memory found."
-                        : "Loaded the current conversation working memory.");
+                memory == null ? "没有找到当前会话工作记忆。"
+                        : "已加载当前会话工作记忆。");
         result.put(MemoryRecallConstant.RESULT_APPLIED_FILTERS, Map.of(
                 MemoryRecallConstant.ITEM_SCOPE, MemoryScopeEnum.CONVERSATION.getCode(),
                 MemoryRecallConstant.ITEM_MEMORY_TYPE, MemoryTypeEnum.WORKFLOW_CONSTRAINT.getCode(),
@@ -166,9 +164,9 @@ public class ReadMemoryTool {
         result.put(MemoryRecallConstant.RESULT_ITEMS,
                 memory == null ? List.of() : List.of(toPayload(memory)));
         return AgentToolResult.success(result, ToolMessageSupport.sentence(
-                memory == null ? "No current conversation working memory found."
-                        : "Loaded the current conversation working memory.",
-                "Use only the recalled durable memory that materially helps the current task."
+                memory == null ? "没有找到当前会话工作记忆。"
+                        : "已加载当前会话工作记忆。",
+                "只使用对当前任务有实质帮助的持久记忆。"
         ));
     }
 
@@ -192,8 +190,8 @@ public class ReadMemoryTool {
         }
         if (StringUtils.isNotBlank(memoryType) && !subType.belongsTo(MemoryTypeEnum.fromCode(memoryType))) {
             throw new IllegalArgumentException(
-                    "subType '" + subType.getCode() + "' does not belong to memoryType '" + memoryType
-                            + "'. Valid subTypes: " + MemorySubTypeEnum.validCodesForText(MemoryTypeEnum.fromCode(memoryType)));
+                    "记忆子类型 `" + subType.getCode() + "` 不属于记忆类型 `" + memoryType
+                            + "`。有效记忆子类型：" + MemorySubTypeEnum.validCodesForText(MemoryTypeEnum.fromCode(memoryType)));
         }
         return subType.getCode();
     }

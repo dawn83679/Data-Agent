@@ -7,9 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/**
- * Final result for one explorer task.
- */
 @Data
 @Builder
 @NoArgsConstructor

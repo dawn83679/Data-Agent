@@ -27,7 +27,7 @@ public class DurableFactsStrategy extends AbstractRuntimeContextHandler {
         return PromptFormatSupport.title(
                 context.getLanguage(),
                 "已知事实：",
-                "Known durable facts:")
+                "已知事实：")
                 + "\n"
                 + MemoryPromptProjectionSupport.renderMemoryList(durableFactMemories);
     }

@@ -79,28 +79,23 @@ class RuntimeContextManagerTest {
         PromptRenderResult<RuntimeContextSection> result = manager.render(context);
         String rendered = result.renderedPrompt();
 
-        // system_context
-        assertTrue(rendered.contains("<system_context purpose=\"runtime_environment\""));
-        assertTrue(rendered.contains("today: 2026-03-31"));
-        assertTrue(rendered.contains("timezone: Asia/Shanghai"));
-        assertTrue(rendered.contains("<current_conversation_memory purpose=\"current_task_working_memory\""));
+        assertTrue(rendered.contains("<系统上下文 purpose=\"运行时环境\""));
+        assertTrue(rendered.contains("今天：2026-03-31"));
+        assertTrue(rendered.contains("时区：Asia/Shanghai"));
+        assertTrue(rendered.contains("<当前会话记忆 purpose=\"当前任务工作记忆\""));
         assertTrue(rendered.contains("Implement the background memory writer"));
 
-        // scope_hints
-        assertTrue(rendered.contains("<scope_hints purpose=\"query_scope_guidance\""));
+        assertTrue(rendered.contains("<范围提示 purpose=\"查询范围提示\""));
         assertTrue(rendered.contains("Use analytics catalog orders table rather than staging_orders."));
 
-        // response_preferences
-        assertTrue(rendered.contains("<response_preferences purpose=\"final_response_preferences\""));
+        assertTrue(rendered.contains("<回答偏好 purpose=\"最终回答偏好\""));
         assertTrue(rendered.contains("Use concise explanations with SQL examples."));
 
-        // durable_facts
-        assertTrue(rendered.contains("<durable_facts purpose=\"verified_background_facts\""));
+        assertTrue(rendered.contains("<持久事实 purpose=\"已验证背景事实\""));
         assertTrue(rendered.contains("Always confirm write SQL against production-like databases."));
 
-        // explicit_references
-        assertTrue(rendered.contains("<explicit_references purpose=\"user_explicit_object_selection\""));
-        assertTrue(rendered.contains("token: @orders; object_type: TABLE; connection: main (id=12)"));
+        assertTrue(rendered.contains("<显式引用 purpose=\"用户显式引用对象\""));
+        assertTrue(rendered.contains("token: @orders; 对象类型: TABLE; 连接: main (id=12)"));
 
         assertTrue(result.estimatedTokens() > 0);
     }
@@ -122,7 +117,7 @@ class RuntimeContextManagerTest {
         assertTrue(rendered.contains("已知事实：\n- none"));
         assertTrue(rendered.contains("本轮用户显式引用：\n- none"));
         assertTrue(rendered.contains("当前会话工作记忆：\n- none"));
-        assertTrue(rendered.contains("Helpful scope hints for this task:"));
+        assertTrue(rendered.contains("当前任务的范围提示："));
         assertTrue(rendered.contains("- none"));
     }
 
@@ -293,12 +288,12 @@ class RuntimeContextManagerTest {
 
         String rendered = manager.render(context).renderedPrompt();
 
-        int systemCtxPos = rendered.indexOf("<system_context");
-        int conversationMemoryPos = rendered.indexOf("<current_conversation_memory");
-        int scopePos = rendered.indexOf("<scope_hints");
-        int prefPos = rendered.indexOf("<response_preferences");
-        int factsPos = rendered.indexOf("<durable_facts");
-        int refsPos = rendered.indexOf("<explicit_references");
+        int systemCtxPos = rendered.indexOf("<系统上下文");
+        int conversationMemoryPos = rendered.indexOf("<当前会话记忆");
+        int scopePos = rendered.indexOf("<范围提示");
+        int prefPos = rendered.indexOf("<回答偏好");
+        int factsPos = rendered.indexOf("<持久事实");
+        int refsPos = rendered.indexOf("<显式引用");
 
         assertTrue(systemCtxPos < conversationMemoryPos);
         assertTrue(conversationMemoryPos < scopePos);

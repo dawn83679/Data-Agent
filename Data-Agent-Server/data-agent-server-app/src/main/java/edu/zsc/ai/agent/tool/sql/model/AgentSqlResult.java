@@ -54,7 +54,7 @@ public class AgentSqlResult {
 
     public static AgentSqlResult fromBatch(List<ExecuteSqlResponse> responses) {
         List<AgentSqlResult> subResults = responses.stream()
-                .map(r -> r == null ? fail("null response") : from(r))
+                .map(r -> r == null ? fail("空响应") : from(r))
                 .toList();
         return AgentSqlResult.builder().success(true).results(subResults).build();
     }

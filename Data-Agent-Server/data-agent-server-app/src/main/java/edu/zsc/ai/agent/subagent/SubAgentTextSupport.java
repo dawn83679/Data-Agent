@@ -8,9 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-/**
- * Shared formatting and error helpers for sub-agent implementations and orchestrator tools.
- */
 public final class SubAgentTextSupport {
 
     private static final int PREVIEW_LENGTH = 160;
@@ -71,7 +68,7 @@ public final class SubAgentTextSupport {
     }
 
     public static String errorSummary(Throwable throwable, String fallbackMessage, Long timeoutSeconds) {
-        String fallback = StringUtils.defaultIfBlank(fallbackMessage, "SubAgent execution failed");
+        String fallback = StringUtils.defaultIfBlank(fallbackMessage, "子 Agent 执行失败");
         Throwable cause = rootCause(throwable);
         if (cause == null) {
             return fallback;
@@ -80,8 +77,8 @@ public final class SubAgentTextSupport {
             return StringUtils.defaultIfBlank(
                     cause.getMessage(),
                     timeoutSeconds != null && timeoutSeconds > 0
-                            ? "Timed out after " + timeoutSeconds + "s"
-                            : "Timed out"
+                            ? timeoutSeconds + " 秒后超时"
+                            : "已超时"
             );
         }
         return StringUtils.defaultIfBlank(

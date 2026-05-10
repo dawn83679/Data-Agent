@@ -19,18 +19,18 @@ import java.util.Map;
 public class TodoTool {
 
     @Tool({
-        "Value: keeps multi-step progress visible so the user can see what is happening and what remains.",
-        "Use When: a task has several meaningful steps or progress visibility matters.",
-        "Preconditions: action is CREATE, UPDATE, or DELETE.",
-        "Result: frontend todo state.",
-        "Boundary: todo state is progress tracking, not the business result."
+        "价值：让多步骤任务的进度可见，用户能看到正在做什么和还剩什么。",
+        "使用时机：任务包含多个有意义步骤，或进度可见性本身重要。",
+        "前置条件：action 必须是 CREATE、UPDATE 或 DELETE。",
+        "结果：前端 todo 状态。",
+        "边界：todo 状态只是进度追踪，不是业务结果。"
     })
     public AgentToolResult todoWrite(
-            @P("Action type: CREATE, UPDATE, DELETE.")
+            @P("操作类型：CREATE、UPDATE、DELETE。")
             TodoActionEnum action,
-            @P("Unique id for this todo list (e.g. 'task-1').")
+            @P("这组 todo 的唯一 ID，例如 task-1。")
             String todoId,
-            @P(value = "The complete task list for CREATE/UPDATE. Omit when action=DELETE.", required = false)
+            @P(value = "CREATE 或 UPDATE 时传入完整任务列表；action=DELETE 时省略。", required = false)
             List<Todo> items) {
         int itemSize = CollectionUtils.size(items);
         log.info("[Tool] todo_write, action={}, todoId={}, itemsSize={}", action, todoId, itemSize);
@@ -64,17 +64,17 @@ public class TodoTool {
     private static String buildTodoMessage(TodoActionEnum action, String todoId, int itemCount) {
         return switch (action) {
             case CREATE -> ToolMessageSupport.sentence(
-                    "Todo list " + (todoId != null ? todoId : "") + " was created with " + itemCount + " item(s).",
-                    "Keep this todo list updated as the task progresses.",
-                    "Do not treat the todo state as the business result."
+                    "todo 列表 " + (todoId != null ? todoId : "") + " 已创建，包含 " + itemCount + " 项。",
+                    "任务推进时持续更新这组 todo。",
+                    "不要把 todo 状态当成业务结果。"
             );
             case UPDATE -> ToolMessageSupport.sentence(
-                    "Todo list " + (todoId != null ? todoId : "") + " was updated with " + itemCount + " item(s).",
-                    "Continue the main task and sync this todo list again after the next milestone."
+                    "todo 列表 " + (todoId != null ? todoId : "") + " 已更新，包含 " + itemCount + " 项。",
+                    "继续主任务，并在下一个里程碑后同步更新这组 todo。"
             );
             case DELETE -> ToolMessageSupport.sentence(
-                    "Todo list " + (todoId != null ? todoId : "") + " was cleared.",
-                    "Continue with the actual task flow and do not treat this todo operation as the final user-facing result."
+                    "todo 列表 " + (todoId != null ? todoId : "") + " 已清空。",
+                    "继续实际任务流程，不要把这次 todo 操作当成面向用户的最终结果。"
             );
         };
     }

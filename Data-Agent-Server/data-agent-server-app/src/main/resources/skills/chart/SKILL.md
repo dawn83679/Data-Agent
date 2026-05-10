@@ -1,88 +1,88 @@
 ---
 name: chart
-description: Use when the model needs to turn verified tabular data into a final chart answer with renderChart; includes chart selection rules, ECharts payload templates, and failure-avoidance guidance.
+description: 当模型需要把已验证表格数据通过 renderChart 作为最终图表答案交付时使用；包含图表选择规则、ECharts payload 模板和失败规避指导。
 metadata:
-  short-description: Render final chart output
+  short-description: 渲染最终图表输出
 ---
 
-# Chart Visualization Rules
+# 图表可视化规则
 
-## Principles
-- Data first: get query results before deciding chart type
-- One chart, one answer: render ONE chart that directly answers the question
-- Frontend auto-handles theme colors — do NOT set backgroundColor or textStyle.color
-- After rendering chart, STOP — do not repeat data or explain chart in text
+## 原则
+- 数据优先：先取得查询结果，再决定图表类型。
+- 一个图表，一个答案：只渲染一个能直接回答问题的图表。
+- 前端会自动处理主题颜色，不要设置 backgroundColor 或 textStyle.color。
+- 图表渲染后立即停止，不要再用文本复述数据或解释图表。
 
-## Chart Type Selection
-| Data Shape | Chart Type | When to Use |
+## 图表类型选择
+| 数据形态 | 图表类型 | 使用场景 |
 |---|---|---|
-| Time series / trends | LINE | Data changes over time |
-| Category comparison | BAR | Compare values across categories |
-| Part-to-whole | PIE | Show proportions/percentages |
-| Correlation | SCATTER | Show relationship between two variables |
-| Trend + volume | AREA | Like LINE but emphasizing magnitude |
+| 时间序列 / 趋势 | LINE | 数据随时间变化 |
+| 类别对比 | BAR | 跨类别比较数值 |
+| 部分占整体 | PIE | 展示占比或百分比 |
+| 相关性 | SCATTER | 展示两个变量之间的关系 |
+| 趋势 + 规模 | AREA | 类似 LINE，但强调量级 |
 
-## ECharts Option Templates
+## ECharts Option 模板
 
-### LINE (chartType = "LINE")
+### LINE（chartType = "LINE"）
 ```json
 {
-  "title": { "text": "Title" },
+  "title": { "text": "标题" },
   "tooltip": { "trigger": "axis" },
-  "legend": { "data": ["Series A"] },
-  "xAxis": { "type": "category", "data": ["Jan", "Feb", "Mar"] },
+  "legend": { "data": ["系列 A"] },
+  "xAxis": { "type": "category", "data": ["一月", "二月", "三月"] },
   "yAxis": { "type": "value" },
   "series": [
-    { "name": "Series A", "type": "line", "data": [120, 200, 150] }
+    { "name": "系列 A", "type": "line", "data": [120, 200, 150] }
   ]
 }
 ```
 
-### BAR (chartType = "BAR")
+### BAR（chartType = "BAR"）
 ```json
 {
-  "title": { "text": "Title" },
+  "title": { "text": "标题" },
   "tooltip": { "trigger": "axis" },
-  "legend": { "data": ["Series A"] },
-  "xAxis": { "type": "category", "data": ["Q1", "Q2", "Q3"] },
+  "legend": { "data": ["系列 A"] },
+  "xAxis": { "type": "category", "data": ["第一季度", "第二季度", "第三季度"] },
   "yAxis": { "type": "value" },
   "series": [
-    { "name": "Series A", "type": "bar", "data": [300, 500, 400] }
+    { "name": "系列 A", "type": "bar", "data": [300, 500, 400] }
   ]
 }
 ```
 
-### PIE (chartType = "PIE")
+### PIE（chartType = "PIE"）
 ```json
 {
-  "title": { "text": "Title" },
+  "title": { "text": "标题" },
   "tooltip": { "trigger": "item" },
-  "legend": { "data": ["Cat A", "Cat B", "Cat C"] },
+  "legend": { "data": ["类别 A", "类别 B", "类别 C"] },
   "series": [
     {
-      "name": "Distribution",
+      "name": "分布",
       "type": "pie",
       "radius": "55%",
       "data": [
-        { "name": "Cat A", "value": 335 },
-        { "name": "Cat B", "value": 310 },
-        { "name": "Cat C", "value": 234 }
+        { "name": "类别 A", "value": 335 },
+        { "name": "类别 B", "value": 310 },
+        { "name": "类别 C", "value": 234 }
       ]
     }
   ]
 }
 ```
 
-### SCATTER (chartType = "SCATTER")
+### SCATTER（chartType = "SCATTER"）
 ```json
 {
-  "title": { "text": "Title" },
+  "title": { "text": "标题" },
   "tooltip": { "trigger": "item" },
   "xAxis": { "type": "value" },
   "yAxis": { "type": "value" },
   "series": [
     {
-      "name": "Correlation",
+      "name": "相关性",
       "type": "scatter",
       "data": [[10, 8.04], [8, 6.95], [13, 7.58], [9, 8.81]]
     }
@@ -90,17 +90,17 @@ metadata:
 }
 ```
 
-### AREA (chartType = "AREA")
+### AREA（chartType = "AREA"）
 ```json
 {
-  "title": { "text": "Title" },
+  "title": { "text": "标题" },
   "tooltip": { "trigger": "axis" },
-  "legend": { "data": ["Series A"] },
-  "xAxis": { "type": "category", "data": ["Jan", "Feb", "Mar"] },
+  "legend": { "data": ["系列 A"] },
+  "xAxis": { "type": "category", "data": ["一月", "二月", "三月"] },
   "yAxis": { "type": "value" },
   "series": [
     {
-      "name": "Series A",
+      "name": "系列 A",
       "type": "line",
       "areaStyle": {},
       "data": [120, 200, 150]
@@ -109,11 +109,11 @@ metadata:
 }
 ```
 
-## Common Pitfalls
-- PIE with xAxis/yAxis
-- series.type mismatch with chartType
-- Invalid JSON
-- Empty data arrays
-- Wrong data format by chart type
-- legend.data not matching series[].name
-- Setting backgroundColor or textStyle.color
+## 常见错误
+- PIE 同时设置 xAxis 或 yAxis。
+- series.type 与 chartType 不匹配。
+- JSON 无效。
+- data 数组为空。
+- 数据格式不符合图表类型要求。
+- legend.data 与 series[].name 不匹配。
+- 设置 backgroundColor 或 textStyle.color。

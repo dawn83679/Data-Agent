@@ -18,6 +18,7 @@ import edu.zsc.ai.agent.tool.orchestrator.CallingPlannerTool;
 import edu.zsc.ai.agent.tool.plan.ExitPlanModeTool;
 import edu.zsc.ai.agent.tool.skill.ActivateSkillTool;
 import edu.zsc.ai.agent.tool.sql.ExecuteSqlTool;
+import edu.zsc.ai.agent.tool.sql.GetConnectionsTool;
 import edu.zsc.ai.agent.tool.sql.GetDatabasesTool;
 import edu.zsc.ai.agent.tool.sql.GetObjectDetailTool;
 import edu.zsc.ai.agent.tool.sql.GetSchemasTool;
@@ -46,6 +47,7 @@ class AgentToolConfigTest {
     private AgentToolConfig config;
     private List<Object> allTools;
 
+    private GetConnectionsTool getConnectionsTool;
     private GetDatabasesTool getDatabasesTool;
     private GetSchemasTool getSchemasTool;
     private SearchObjectsTool searchObjectsTool;
@@ -66,6 +68,7 @@ class AgentToolConfigTest {
     void setUp() {
         config = new AgentToolConfig();
 
+        getConnectionsTool = new GetConnectionsTool(null);
         getDatabasesTool = new GetDatabasesTool(null);
         getSchemasTool = new GetSchemasTool(null);
         searchObjectsTool = new SearchObjectsTool(null);
@@ -83,6 +86,7 @@ class AgentToolConfigTest {
         exportFileTool = new ExportFileTool(null);
 
         allTools = List.of(
+                getConnectionsTool,
                 getDatabasesTool,
                 getSchemasTool,
                 searchObjectsTool,
@@ -235,15 +239,35 @@ class AgentToolConfigTest {
     }
 
     @Test
-    void buildToolBundle_exposesOptionalDescriptionForBackgroundToolWithoutMakingItRequired() {
-        AgentToolConfig.ToolBundle toolBundle = config.buildToolBundle(List.of(getDatabasesTool));
-        ToolSpecification specification = toolBundle.executors().keySet().iterator().next();
+    void buildToolBundle_requiresDescriptionForUiRenderedTools() {
+        AgentToolConfig.ToolBundle toolBundle = config.buildToolBundle(List.of(
+                getConnectionsTool,
+                getDatabasesTool,
+                getSchemasTool,
+                searchObjectsTool,
+                getObjectDetailTool,
+                executeSqlTool,
+                chartTool,
+                exportFileTool,
+                readMemoryTool,
+                updateMemoryTool
+        ));
 
-        assertEquals("getDatabases", specification.name());
-        assertTrue(specification.parameters().properties().containsKey("description"));
-        assertEquals(ToolDescriptionParam.UI_STEP_DESCRIPTION,
-                specification.parameters().properties().get("description").description());
-        assertFalse(specification.parameters().required().contains("description"));
+        Map<String, ToolSpecification> specifications = toolBundle.executors().keySet().stream()
+                .collect(java.util.stream.Collectors.toMap(ToolSpecification::name, specification -> specification));
+
+        assertRequiredUiDescription(specifications.get("getConnections"), ToolDescriptionParam.UI_STEP_DESCRIPTION);
+        assertRequiredUiDescription(specifications.get("getDatabases"), ToolDescriptionParam.UI_STEP_DESCRIPTION);
+        assertRequiredUiDescription(specifications.get("getSchemas"), ToolDescriptionParam.UI_STEP_DESCRIPTION);
+        assertRequiredUiDescription(specifications.get("searchObjects"), ToolDescriptionParam.UI_STEP_DESCRIPTION);
+        assertRequiredUiDescription(specifications.get("getObjectDetail"), ToolDescriptionParam.UI_STEP_DESCRIPTION);
+        assertRequiredUiDescription(specifications.get("executeSelectSql"), ToolDescriptionParam.UI_STEP_DESCRIPTION);
+        assertRequiredUiDescription(specifications.get("executeNonSelectSql"), ToolDescriptionParam.UI_STEP_DESCRIPTION);
+        assertRequiredUiDescription(specifications.get("renderChart"),
+                "必填。面向用户的图表说明。因为图表工具成功后不应再追加助手文本，所以洞察或阅读指引都写在这里。");
+        assertRequiredUiDescription(specifications.get("exportFile"), ToolDescriptionParam.UI_STEP_DESCRIPTION);
+        assertRequiredUiDescription(specifications.get("readMemory"), ToolDescriptionParam.UI_STEP_DESCRIPTION);
+        assertRequiredUiDescription(specifications.get("updateMemory"), ToolDescriptionParam.UI_STEP_DESCRIPTION);
     }
 
     @Test
@@ -295,5 +319,15 @@ class AgentToolConfigTest {
         public String immediateEcho(@P("Echo value") String value) {
             return "immediate:" + value;
         }
+    }
+
+    private static void assertRequiredUiDescription(ToolSpecification specification,
+                                                    String expectedDescription) {
+        assertTrue(specification.parameters().properties().containsKey("description"),
+                specification.name() + " should expose a description parameter");
+        assertEquals(expectedDescription,
+                specification.parameters().properties().get("description").description());
+        assertTrue(specification.parameters().required().contains("description"),
+                specification.name() + " should require description");
     }
 }

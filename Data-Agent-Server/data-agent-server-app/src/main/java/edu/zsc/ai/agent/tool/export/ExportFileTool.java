@@ -27,19 +27,19 @@ public class ExportFileTool {
     private final FileExportService exportFileService;
 
     @Tool({
-            "Value: turns prepared tabular data into a downloadable file for the user.",
-            "Use When: verified tabular data is ready and the user wants a file.",
-            "Preconditions: format must be supported, headers must be present, and every row must match the header column count.",
-            "Result: downloadable file card.",
-            "Boundary: supported formats are CSV, XLSX, DOCX, and PDF; do not export unverified data."
+            "价值：把已准备好的表格数据导出成用户可下载的文件。",
+            "使用时机：表格数据已验证，且用户需要文件。",
+            "前置条件：format 必须受支持，headers 必须存在，每行单元格数量必须匹配表头列数。",
+            "结果：下载文件卡片就是本轮最终交付物。",
+            "边界：支持 CSV、XLSX、DOCX、PDF；成功后不要再输出助手文本。"
     })
     @DisallowInPlanMode(ToolNameEnum.EXPORT_FILE)
     public AgentToolResult exportFile(
-            @P("Export format. Supported values: CSV, XLSX, DOCX, PDF.") String format,
-            @P("Column headers for the exported table.") List<String> headers,
-            @P("Table rows shaped as { cells: [...] }; each row must match the header count.")
+            @P("导出格式，支持 CSV、XLSX、DOCX、PDF。") String format,
+            @P("导出表格的列头。") List<String> headers,
+            @P("表格行，格式为 { cells: [...] }；每行单元格数量必须匹配表头列数。")
             List<ExportRowInput> rows,
-            @P(value = ToolDescriptionParam.UI_STEP_DESCRIPTION, required = false) String description,
+            @P(ToolDescriptionParam.UI_STEP_DESCRIPTION) String description,
             InvocationParameters parameters) {
         Long userId = RequestContext.getUserId();
         if (userId == null) {
@@ -57,8 +57,8 @@ public class ExportFileTool {
         log.info("[Tool done] exportFile, fileId={}, format={}, sizeBytes={}",
                 payload.getFileId(), payload.getFormat(), payload.getSizeBytes());
         return AgentToolResult.success(payload, ToolMessageSupport.sentence(
-                "Export file is ready for download.",
-                "Use the returned file card as the delivery artifact and keep any follow-up explanation consistent with the preview."
+                "导出文件已可下载。",
+                "文件卡片就是本轮最终答案。立即结束本轮，不要在工具调用后输出任何描述、总结或评论导出文件的助手文本。"
         ));
     }
 

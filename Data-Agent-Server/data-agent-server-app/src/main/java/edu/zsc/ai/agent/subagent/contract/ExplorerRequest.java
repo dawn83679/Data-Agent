@@ -5,9 +5,6 @@ import lombok.Data;
 
 import java.util.List;
 
-/**
- * Contract DTO for Explorer SubAgent request.
- */
 @Data
 @Builder
 public class ExplorerRequest {

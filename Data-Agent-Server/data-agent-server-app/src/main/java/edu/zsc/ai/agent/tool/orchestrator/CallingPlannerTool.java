@@ -25,10 +25,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Delegates SQL plan generation to Planner SubAgent.
- * Trace/span management is handled by SubAgentObservabilityListener (AgentListener).
- */
 @AgentTool
 @Slf4j
 @RequiredArgsConstructor
@@ -40,16 +36,16 @@ public class CallingPlannerTool extends SubAgentToolSupport {
     private final SchemaSummaryResolver schemaSummaryResolver;
 
     @Tool({
-            "Value: turns verified schema context into SQL blocks and plan steps.",
-            "Use When: usable schema exists and the task needs SQL generation, optimization, or a multi-step execution plan.",
-            "Preconditions: schemaSummaryJson is required and must already contain the objects relevant to the requested SQL.",
-            "Result: summaryText, planSteps, sqlBlocks, and rawResponse.",
-            "Boundary: instruction must describe one concrete SQL outcome; use Explorer for broad object discovery."
+            "价值：把已验证 schema 上下文转成 SQL 块和计划步骤。",
+            "使用时机：已有可用 schema，且任务需要生成 SQL、优化 SQL 或产出多步骤执行计划。",
+            "前置条件：schemaSummaryJson 必填，且必须已经包含本次 SQL 需求相关对象。",
+            "结果：summaryText、planSteps、sqlBlocks 和 rawResponse。",
+            "边界：instruction 必须描述一个具体 SQL 产出；宽泛对象发现应使用探索子代理。"
     })
     public AgentToolResult callingPlannerSubAgent(
-            @P("One concrete SQL goal for this planner invocation.") String instruction,
-            @P("Verified SchemaSummary JSON containing the relevant objects.") String schemaSummaryJson,
-            @P(value = "Optional timeout seconds; values below 180 are raised to 180.", required = false) Long timeoutSeconds,
+            @P("本次规划子代理调用的一个具体 SQL 目标。") String instruction,
+            @P("已验证的 SchemaSummary JSON，必须包含相关对象。") String schemaSummaryJson,
+            @P(value = "可选超时时间，单位秒；小于 180 会提升到 180。", required = false) Long timeoutSeconds,
             InvocationParameters parameters) {
         RequestContextInfo requestContextSnapshot = RequestContext.snapshot();
         String taskId = buildTaskId("plan", requestContextSnapshot);
@@ -82,9 +78,9 @@ public class CallingPlannerTool extends SubAgentToolSupport {
             throw AgentToolExecuteException.preconditionFailed(
                     ToolNameEnum.CALLING_PLANNER_SUB_AGENT,
                     ToolMessageSupport.sentence(
-                            "schemaSummaryJson is required for callingPlannerSubAgent.",
-                            "Call callingExplorerSubAgent first to gather schema context.",
-                            "Do not generate SQL plans until the required schema summary is available."
+                            "callingPlannerSubAgent 必须提供 schemaSummaryJson。",
+                            "先调用 callingExplorerSubAgent 获取 schema 上下文。",
+                            "必要 schema 摘要可用前不要生成 SQL 计划。"
                     )
             );
         }
@@ -96,8 +92,8 @@ public class CallingPlannerTool extends SubAgentToolSupport {
             throw AgentToolExecuteException.invalidInput(
                     ToolNameEnum.CALLING_PLANNER_SUB_AGENT,
                     ToolMessageSupport.sentence(
-                            "Failed to parse schemaSummaryJson: " + StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getSimpleName()) + ".",
-                            "Fix the schema summary payload before retrying callingPlannerSubAgent."
+                            "解析 schemaSummaryJson 失败：" + StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getSimpleName()) + "。",
+                            "重试 callingPlannerSubAgent 前先修正 schema 摘要 payload。"
                     )
             );
         }
@@ -118,9 +114,9 @@ public class CallingPlannerTool extends SubAgentToolSupport {
             throw AgentToolExecuteException.preconditionFailed(
                     ToolNameEnum.CALLING_PLANNER_SUB_AGENT,
                     ToolMessageSupport.sentence(
-                            "schemaSummaryJson does not contain any successful explorer task results.",
-                            "Call callingExplorerSubAgent again or fix the failed tasks first.",
-                            "Do not continue to SQL planning until successful explorer output is available."
+                            "schemaSummaryJson 不包含任何成功的探索任务结果。",
+                            "先再次调用 callingExplorerSubAgent 或修复失败任务。",
+                            "成功的探索输出可用前不要继续 SQL 规划。"
                     )
             );
         }
@@ -201,15 +197,15 @@ public class CallingPlannerTool extends SubAgentToolSupport {
         int planStepCount = CollectionUtils.size(plan.getPlanSteps());
         if (sqlBlockCount == 0) {
             return ToolMessageSupport.sentence(
-                    "SQL planning completed, but the planner did not return executable SQL blocks.",
-                    "Review the plan summary and gather more schema context before attempting execution."
+                    "SQL 规划已完成，但规划子代理没有返回可执行 SQL 块。",
+                    "尝试执行前先检查计划摘要，并补充更多 schema 上下文。"
             );
         }
         return ToolMessageSupport.sentence(
-                "SQL plan is available with " + planStepCount + " plan step(s) and " + sqlBlockCount + " SQL block(s).",
-                "Review the plan against the user's goal before executing it.",
-                "For write SQL, if executeNonSelectSql returns REQUIRES_CONFIRMATION, wait for the user's confirmation and then retry executeNonSelectSql with the exact same SQL.",
-                "For read SQL, execute only after the target objects and filters are verified."
+                "SQL 计划已生成，包含 " + planStepCount + " 个计划步骤和 " + sqlBlockCount + " 个 SQL 块。",
+                "执行前按用户目标复核计划。",
+                "对于写入 SQL，如果 executeNonSelectSql 返回 REQUIRES_CONFIRMATION，等待用户确认后用完全相同的 SQL 重试 executeNonSelectSql。",
+                "对于只读 SQL，只在目标对象和过滤条件已验证后执行。"
         );
     }
 

@@ -210,7 +210,7 @@ public class PlannerSubAgent extends AbstractSubAgent<PlannerRequest, SqlPlan> i
             return plan;
 
         } catch (TimeoutException e) {
-            String errorSummary = errorSummary(e, "Planner SubAgent timed out", timeoutSeconds);
+            String errorSummary = errorSummary(e, "Planner 子 Agent 超时", timeoutSeconds);
             observer.emitError(errorSummary);
             runtimeLog.error("planner_invoke_failed conversationId={} taskId={} parentToolCallId={} elapsedMs={} rootCauseClass={} rootCauseMessage={} instructionPreview={}",
                     conversationId,
@@ -221,9 +221,9 @@ public class PlannerSubAgent extends AbstractSubAgent<PlannerRequest, SqlPlan> i
                     rootCauseMessage(e),
                     preview(request.getInstruction()),
                     e);
-            throw new RuntimeException("Planner SubAgent timed out: " + errorSummary, e);
+            throw new RuntimeException("Planner 子 Agent 超时：" + errorSummary, e);
         } catch (Exception e) {
-            String errorSummary = errorSummary(e, "Planner SubAgent failed", timeoutSeconds);
+            String errorSummary = errorSummary(e, "Planner 子 Agent 失败", timeoutSeconds);
             observer.emitError(errorSummary);
             log.error("[Planner] invoke failed, conversationId={}, taskId={}, parentToolCallId={}, elapsedMs={}, rootCauseClass={}, rootCauseMessage={}, instructionPreview={}, objectPreview={}",
                     conversationId,
@@ -253,17 +253,17 @@ public class PlannerSubAgent extends AbstractSubAgent<PlannerRequest, SqlPlan> i
                         "assistant tool_calls were emitted but matching tool messages were not present in the next model request",
                         "inspect planner-side message assembly or tool-result replay for this task");
             }
-            throw new RuntimeException("Planner SubAgent failed: " + errorSummary, e);
+            throw new RuntimeException("Planner 子 Agent 失败：" + errorSummary, e);
         }
     }
 
     private String buildMessage(PlannerRequest request) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("## Instruction\n");
+        sb.append("## 指令\n");
         sb.append(request.getInstruction()).append("\n\n");
 
-        sb.append("## Schema Summary\n");
+        sb.append("## Schema 摘要\n");
         sb.append(serializeSchemaSummary(request.getSchemaSummary())).append("\n");
 
         return sb.toString();
@@ -271,7 +271,7 @@ public class PlannerSubAgent extends AbstractSubAgent<PlannerRequest, SqlPlan> i
 
     private String serializeSchemaSummary(SchemaSummary summary) {
         if (summary == null) {
-            return "(no schema information available)\n";
+            return "(没有可用 schema 信息)\n";
         }
 
         StringBuilder sb = new StringBuilder();
@@ -287,10 +287,10 @@ public class PlannerSubAgent extends AbstractSubAgent<PlannerRequest, SqlPlan> i
                 sb.append("\n");
 
                 if (StringUtils.isNotBlank(object.getCatalog())) {
-                    sb.append("Catalog: ").append(object.getCatalog()).append("\n");
+                    sb.append("catalog：").append(object.getCatalog()).append("\n");
                 }
                 if (StringUtils.isNotBlank(object.getSchema())) {
-                    sb.append("Schema: ").append(object.getSchema()).append("\n");
+                    sb.append("schema：").append(object.getSchema()).append("\n");
                 }
                 if (StringUtils.isNotBlank(object.getObjectDdl())) {
                     sb.append("DDL:\n");
@@ -300,10 +300,10 @@ public class PlannerSubAgent extends AbstractSubAgent<PlannerRequest, SqlPlan> i
                 sb.append("\n");
             }
         } else {
-            sb.append("(no structured objects available)\n\n");
+            sb.append("(没有可用结构化对象)\n\n");
         }
         if (StringUtils.isNotBlank(summary.getRawResponse())) {
-            sb.append("## Explorer Raw Response\n");
+            sb.append("## Explorer 原始响应\n");
             sb.append(summary.getRawResponse()).append("\n");
         }
         return sb.toString();

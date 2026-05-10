@@ -59,22 +59,22 @@ public class ConversationMemoryWriterImpl implements ConversationMemoryWriter {
 
         AiMemory workingMemory = memoryService.getConversationWorkingMemory(userId, conversationId);
         if (workingMemory == null || workingMemory.getUpdatedAt() == null || workingMemory.getUpdatedAt().isBefore(startedAt)) {
-            throw new IllegalStateException("Memory writer did not persist the current conversation working memory");
+            throw new IllegalStateException("记忆写入 Agent 没有持久化当前会话工作记忆");
         }
     }
 
     private String buildInstruction(MemoryWriteContext context) {
         StringBuilder builder = new StringBuilder();
-        builder.append("Update the background memory state for this conversation.\n");
-        builder.append("This is a strict JSON draft generation task for CONVERSATION_WORKING_MEMORY.\n");
-        builder.append("You must first read the current conversation working memory, then write exactly one updated JSON draft via updateMemory.\n\n");
-        builder.append("Required top-level JSON fields: currentTask, activeScope, resolvedMilestones, highPriorityCandidates, userConfirmedFacts, verifiedFindings, decisionPriorities, openQuestions.\n");
-        builder.append("Keep unresolved retrieved information only in highPriorityCandidates.\n");
-        builder.append("Keep user-confirmed information only in userConfirmedFacts.\n");
-        builder.append("Keep verified outcomes only in verifiedFindings.\n");
-        builder.append("verifiedFindings.exactValue must be precise and must not use ~, 约, 大约, 可能, 左右.\n");
-        builder.append("resolvedMilestones only stores solved items that still affect the next turn.\n\n");
-        builder.append("New conversation slice:\n");
+        builder.append("更新当前会话的后台记忆状态。\n");
+        builder.append("这是 CONVERSATION_WORKING_MEMORY 的严格 JSON 草稿生成任务。\n");
+        builder.append("你必须先读取当前会话工作记忆，然后通过 updateMemory 写入且只写入一个更新后的 JSON 草稿。\n\n");
+        builder.append("必填顶层 JSON 字段：currentTask、activeScope、resolvedMilestones、highPriorityCandidates、userConfirmedFacts、verifiedFindings、decisionPriorities、openQuestions。\n");
+        builder.append("未确认的检索信息只能放入 highPriorityCandidates。\n");
+        builder.append("用户确认的信息只能放入 userConfirmedFacts。\n");
+        builder.append("已验证结果只能放入 verifiedFindings。\n");
+        builder.append("verifiedFindings.exactValue 必须精确，不得使用 ~、约、大约、可能、左右。\n");
+        builder.append("resolvedMilestones 只保存已经解决且仍会影响下一轮的事项。\n\n");
+        builder.append("新的会话片段：\n");
         for (StoredChatMessage message : context.newMessages()) {
             if (!PROMPT_ROLES.contains(message.getRole())) {
                 continue;
@@ -84,11 +84,11 @@ public class ConversationMemoryWriterImpl implements ConversationMemoryWriter {
                 continue;
             }
             String normalized = text.length() > MAX_MESSAGE_CHARS
-                    ? text.substring(0, MAX_MESSAGE_CHARS) + "...(truncated)"
+                    ? text.substring(0, MAX_MESSAGE_CHARS) + "...(已截断)"
                     : text;
             builder.append("[").append(message.getRole()).append("] ").append(normalized).append("\n\n");
         }
-        builder.append("Remember: the conversation working memory write is mandatory every run, USER memory is optional.");
+        builder.append("记住：每次运行都必须写入会话工作记忆，USER 记忆是可选项。");
         return builder.toString();
     }
 
@@ -109,7 +109,7 @@ public class ConversationMemoryWriterImpl implements ConversationMemoryWriter {
 
     private String preview(String value) {
         if (StringUtils.isBlank(value)) {
-            return "(empty)";
+            return "(空)";
         }
         return StringUtils.abbreviate(value.replace('\n', ' '), 160);
     }

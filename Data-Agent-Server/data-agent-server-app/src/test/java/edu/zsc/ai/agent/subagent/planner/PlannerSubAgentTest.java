@@ -112,7 +112,7 @@ class PlannerSubAgentTest {
 
             String message = invokeBuildMessage(request);
 
-            assertTrue(message.contains("no schema information"), "Should handle null schema");
+            assertTrue(message.contains("没有可用 schema 信息"), "Should handle null schema");
         }
 
         @Test
@@ -129,7 +129,7 @@ class PlannerSubAgentTest {
 
             String message = invokeBuildMessage(request);
 
-            assertTrue(message.contains("Explorer Raw Response"), "Should contain raw response section");
+            assertTrue(message.contains("Explorer 原始响应"), "Should contain raw response section");
             assertTrue(message.contains("order_items joins to orders"), "Should contain raw response content");
         }
 
@@ -165,14 +165,14 @@ class PlannerSubAgentTest {
         void promptFile_isAccessible() {
             String content = PromptConfig.getPrompt(PromptEnum.PLANNER);
             assertNotNull(content);
-            assertTrue(content.contains("<identity>"));
+            assertTrue(content.contains("<身份>"));
         }
 
         @Test
         void promptFile_identityUnderThreeLines() {
             String content = PromptConfig.getPrompt(PromptEnum.PLANNER);
-            int start = content.indexOf("<identity>");
-            int end = content.indexOf("</identity>");
+            int start = content.indexOf("<身份>");
+            int end = content.indexOf("</身份>");
             String identity = content.substring(start, end);
             long lines = identity.lines().filter(l -> !l.isBlank() && !l.contains("<")).count();
             assertTrue(lines <= 3, "Identity should be ≤3 lines, got " + lines);
@@ -181,9 +181,9 @@ class PlannerSubAgentTest {
         @Test
         void promptFile_usesPitfallsFormat() {
             String content = PromptConfig.getPrompt(PromptEnum.PLANNER);
-            assertTrue(content.contains("<dql-pitfalls"), "Should have DQL pitfalls");
-            assertTrue(content.contains("<dml-pitfalls"), "Should have DML pitfalls");
-            assertTrue(content.contains("<ddl-pitfalls"), "Should have DDL pitfalls");
+            assertTrue(content.contains("<DQL常见陷阱"), "Should have DQL pitfalls");
+            assertTrue(content.contains("<DML常见陷阱"), "Should have DML pitfalls");
+            assertTrue(content.contains("<DDL常见陷阱"), "Should have DDL pitfalls");
         }
 
         @Test

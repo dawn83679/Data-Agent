@@ -17,8 +17,8 @@ public class AgentContextSystemPromptStrategy extends AbstractSystemPromptHandle
 
     @Override
     protected String buildContent(SystemPromptAssemblyContext context) {
-        return "agent_type: " + PromptTextUtil.escape(context.getAgentType().getCode()) + "\n"
-                + "language: " + PromptTextUtil.escape(context.getLanguage()) + "\n"
-                + "model_name: " + PromptTextUtil.escape(context.getModelName());
+        return "agent 类型：" + PromptTextUtil.escape(context.getAgentType().getCode()) + "\n"
+                + "语言：" + PromptTextUtil.escape(context.getLanguage()) + "\n"
+                + "模型名称：" + PromptTextUtil.escape(context.getModelName());
     }
 }

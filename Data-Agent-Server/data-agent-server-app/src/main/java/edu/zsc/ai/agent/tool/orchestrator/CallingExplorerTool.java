@@ -27,11 +27,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-/**
- * Delegates schema exploration to Explorer SubAgent(s).
- * Accepts a list of ExplorerTask — each task spawns one Explorer SubAgent.
- * Multiple tasks run concurrently; results are returned task-by-task to MainAgent.
- */
 @AgentTool
 @Slf4j
 public class CallingExplorerTool extends SubAgentToolSupport {
@@ -50,21 +45,21 @@ public class CallingExplorerTool extends SubAgentToolSupport {
     }
 
     @Tool({
-            "Value: runs one or more Explorer sub-agents for schema/object discovery.",
-            "Use When: schema context is missing and the search space is broad enough to benefit from focused or parallel exploration.",
-            "Preconditions: each task needs connectionId and one narrow, verifiable instruction with named targets when possible.",
-            "Result: taskResults with taskId, summaryText, objects, and rawResponse.",
-            "Boundary: split broad goals into focused tasks before calling this tool."
+            "价值：运行一个或多个探索子代理，完成 schema 或对象发现。",
+            "使用时机：缺少 schema 上下文，且搜索空间足够大，适合做聚焦或并行探索。",
+            "前置条件：每个任务都需要 connectionId 和一个窄而可验证的 instruction；可能时写明目标名称。",
+            "结果：taskResults，包含 taskId、summaryText、objects 和 rawResponse。",
+            "边界：宽泛目标要先拆成聚焦任务，再调用此工具。"
     })
     public AgentToolResult callingExplorerSubAgent(
-            @P("Explorer tasks. Each item needs connectionId and a narrow instruction; context and timeoutSeconds are optional.") List<ExplorerTask> tasks,
-            @P(value = "Optional default timeout seconds; values below 180 are raised to 180.", required = false) Long timeoutSeconds,
+            @P("探索任务列表。每项需要 connectionId 和窄范围 instruction；context 和 timeoutSeconds 可选。") List<ExplorerTask> tasks,
+            @P(value = "可选默认超时时间，单位秒；小于 180 会提升到 180。", required = false) Long timeoutSeconds,
             InvocationParameters parameters) {
         RequestContextInfo requestContextSnapshot = RequestContext.snapshot();
         if (CollectionUtils.isEmpty(tasks)) {
             throw AgentToolExecuteException.invalidInput(
                     ToolNameEnum.CALLING_EXPLORER_SUB_AGENT,
-                    "tasks is required. Provide a list of {connectionId, instruction, context?}."
+                    "tasks 必填。请提供 {connectionId, instruction, context?} 列表。"
             );
         }
         validateTasks(tasks);
@@ -160,8 +155,8 @@ public class CallingExplorerTool extends SubAgentToolSupport {
                     rootCauseMessage(e));
             throw AgentToolExecuteException.executionFailed(
                     ToolNameEnum.CALLING_EXPLORER_SUB_AGENT,
-                    "Explorer timed out after " + timeout + "s",
-                    "Concurrent Explorer timed out after " + timeout + "s",
+                    "探索子代理在 " + timeout + " 秒后超时",
+                    "并发探索子代理在 " + timeout + " 秒后超时",
                     true,
                     e
             );
@@ -173,8 +168,8 @@ public class CallingExplorerTool extends SubAgentToolSupport {
                     e);
             throw AgentToolExecuteException.executionFailed(
                     ToolNameEnum.CALLING_EXPLORER_SUB_AGENT,
-                    "Concurrent Explorer failed: " + StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getSimpleName()),
-                    "Concurrent Explorer orchestration failed",
+                    "并发探索子代理失败：" + StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getSimpleName()),
+                    "并发探索子代理编排失败",
                     true,
                     e
             );
@@ -200,25 +195,25 @@ public class CallingExplorerTool extends SubAgentToolSupport {
             if (task == null) {
                 throw AgentToolExecuteException.invalidInput(
                         ToolNameEnum.CALLING_EXPLORER_SUB_AGENT,
-                        "tasks[" + index + "] is required."
+                        "tasks[" + index + "] 必填。"
                 );
             }
             if (task.getConnectionId() == null || task.getConnectionId() <= 0) {
                 throw AgentToolExecuteException.invalidInput(
                         ToolNameEnum.CALLING_EXPLORER_SUB_AGENT,
-                        "tasks[" + index + "].connectionId must be a positive number."
+                        "tasks[" + index + "].connectionId 必须是正数。"
                 );
             }
             if (StringUtils.isBlank(task.getInstruction())) {
                 throw AgentToolExecuteException.invalidInput(
                         ToolNameEnum.CALLING_EXPLORER_SUB_AGENT,
-                        "tasks[" + index + "].instruction is required."
+                        "tasks[" + index + "].instruction 必填。"
                 );
             }
             if (task.getTimeoutSeconds() != null && task.getTimeoutSeconds() <= 0) {
                 throw AgentToolExecuteException.invalidInput(
                         ToolNameEnum.CALLING_EXPLORER_SUB_AGENT,
-                        "tasks[" + index + "].timeoutSeconds must be a positive number."
+                        "tasks[" + index + "].timeoutSeconds 必须是正数。"
                 );
             }
             connectionAccessService.assertReadable(task.getConnectionId());
@@ -345,8 +340,8 @@ public class CallingExplorerTool extends SubAgentToolSupport {
     private String buildExplorerMessage(List<ExplorerTask> tasks, List<ExplorerTaskResult> results) {
         if (CollectionUtils.isEmpty(results)) {
             return ToolMessageSupport.sentence(
-                    "Explorer finished without returning any task results.",
-                    "Retry the exploration request before attempting SQL planning."
+                    "探索子代理已结束，但没有返回任何任务结果。",
+                    "尝试 SQL 规划前先重试探索请求。"
             );
         }
         List<String> failedTasks = new ArrayList<>();
@@ -365,22 +360,22 @@ public class CallingExplorerTool extends SubAgentToolSupport {
         if (failedTasks.isEmpty()) {
             if (discoveredObjectCount == 0) {
                 return ToolMessageSupport.sentence(
-                        "Explorer completed for " + successCount + " task(s) but did not return any matching objects.",
-                        "Review the exploration scope and retry, or ask the user to clarify the target before planning SQL."
+                        "探索子代理完成了 " + successCount + " 个任务，但没有返回匹配对象。",
+                        "规划 SQL 前，先检查探索范围并重试，或询问用户明确目标。"
                 );
             }
             return ToolMessageSupport.sentence(
-                    "Explorer results are available for " + successCount + " task(s) with " + discoveredObjectCount + " discovered object(s).",
-                    "Use the returned summaries and objects to continue planning or direct inspection.",
-                    "If one returned target already looks sufficient, you can continue with getObjectDetail or executeSelectSql in that scope.",
-                    "If multiple targets remain plausible, ask the user to confirm the intended object or data scope before generating SQL."
+                    "探索子代理已返回 " + successCount + " 个任务结果，共发现 " + discoveredObjectCount + " 个对象。",
+                    "使用返回摘要和对象继续规划或直接检查。",
+                    "如果某个返回目标已经足够明确，可以在该范围内继续 getObjectDetail 或 executeSelectSql。",
+                    "如果仍有多个可能目标，生成 SQL 前先让用户确认目标对象或数据范围。"
             );
         }
         return ToolMessageSupport.sentence(
-                "Explorer returned partial results. Failed tasks: " + String.join("; ", failedTasks) + ".",
-                "Successful tasks returned " + discoveredObjectCount + " object(s).",
-                ToolMessageSupport.continueOnlyWith("those successful results"),
-                ToolMessageSupport.askUserWhether("switch connections, narrow the scope, or retry later"),
+                "探索子代理返回了部分结果。失败任务：" + String.join("; ", failedTasks) + "。",
+                "成功任务返回了 " + discoveredObjectCount + " 个对象。",
+                ToolMessageSupport.continueOnlyWith("这些成功结果"),
+                ToolMessageSupport.askUserWhether("切换连接、缩小范围或稍后重试"),
                 ToolMessageSupport.DO_NOT_CONTINUE_OBJECT_DISCOVERY_UNTIL_USER_REPLIES
         );
     }
@@ -388,14 +383,14 @@ public class CallingExplorerTool extends SubAgentToolSupport {
     private String describeTaskFailure(ExplorerTask task, ExplorerTaskResult result) {
         StringBuilder builder = new StringBuilder();
         builder.append("connectionId=")
-                .append(task != null ? task.getConnectionId() : "unknown");
+                .append(task != null ? task.getConnectionId() : "未知");
         if (task != null && StringUtils.isNotBlank(task.getInstruction())) {
             builder.append(", instruction=\"")
                     .append(preview(task.getInstruction()))
                     .append("\"");
         }
-        builder.append(", error=")
-                .append(StringUtils.defaultIfBlank(result.getErrorMessage(), "unknown error"));
+        builder.append(", 错误=")
+                .append(StringUtils.defaultIfBlank(result.getErrorMessage(), "未知错误"));
         return builder.toString();
     }
 

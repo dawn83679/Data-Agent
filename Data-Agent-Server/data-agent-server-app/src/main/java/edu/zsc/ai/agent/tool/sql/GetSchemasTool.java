@@ -25,16 +25,16 @@ public class GetSchemasTool {
     private final SchemaService schemaService;
 
     @Tool({
-            "Value: returns the schemas within a specific database on a connection.",
-            "Use When: connection and database are known and schema scope is still missing.",
-            "Preconditions: connectionId and databaseName are required.",
-            "Result: schema names for that database; MySQL may return empty.",
-            "Boundary: skip schema scope when the database type does not use schemas."
+            "价值：返回指定连接和数据库下的 schema 列表。",
+            "使用时机：连接和数据库已确定，但 schema 范围缺失。",
+            "前置条件：connectionId 和 databaseName 必填。",
+            "结果：该数据库下的 schema 名称列表；不支持 schema 的数据库类型可能返回空。",
+            "边界：根据数据库类型判断是否需要 schema 范围，不要机械追问不存在的层级。"
     })
     public AgentToolResult getSchemas(
-            @P("The connection ID") Long connectionId,
-            @P("The database (catalog) name") String databaseName,
-            @P(value = ToolDescriptionParam.UI_STEP_DESCRIPTION, required = false) String description,
+            @P("连接 ID") Long connectionId,
+            @P("数据库或 catalog 名称") String databaseName,
+            @P(ToolDescriptionParam.UI_STEP_DESCRIPTION) String description,
             InvocationParameters parameters) {
         log.info("[Tool] getSchemas connectionId={}, database={}", connectionId, databaseName);
         try {
@@ -59,22 +59,22 @@ public class GetSchemasTool {
 
     private String buildSuccessMessage(Long connectionId, String databaseName, int schemaCount) {
         return ToolMessageSupport.sentence(
-                "Found " + schemaCount + " schema(s) in database '" + databaseName + "' on connection " + connectionId + ".",
-                "Use askUserQuestion to ask the user which schema should be used before continuing."
+                "连接 " + connectionId + " 的数据库 `" + databaseName + "` 中找到 " + schemaCount + " 个 schema。",
+                "继续前使用 askUserQuestion 询问用户要使用哪个 schema。"
         );
     }
 
     private String buildEmptyMessage(Long connectionId, String databaseName) {
         return ToolMessageSupport.sentence(
-                "No schemas found in database '" + databaseName + "' on connection " + connectionId + ".",
-                "Use askUserQuestion to ask the user whether another database should be used or whether schema scope can be skipped before continuing."
+                "连接 " + connectionId + " 的数据库 `" + databaseName + "` 中没有找到 schema。",
+                "继续前使用 askUserQuestion 询问用户是否要改用其他数据库，或该数据库类型是否可以跳过 schema 范围。"
         );
     }
 
     private String buildFailureMessage(Long connectionId, String databaseName, String errorMessage) {
         return ToolMessageSupport.sentence(
-                "Failed to get schemas in database '" + databaseName + "' on connection " + connectionId + ": " + errorMessage + ".",
-                "Use askUserQuestion to ask the user whether to retry with another database or connection before continuing."
+                "获取连接 " + connectionId + " 的数据库 `" + databaseName + "` 下的 schema 失败：" + errorMessage + "。",
+                "继续前使用 askUserQuestion 询问用户是否要改用其他数据库或连接。"
         );
     }
 }

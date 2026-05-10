@@ -11,37 +11,31 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-/**
- * Single todo item. Used as domain model and as tool parameter (LLM passes title and optional fields).
- * Server fills createdAt/updatedAt when persisting.
- */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Description("A single todo task. Used as an element in the list when updating the todo list.")
+@Description("单个 todo 任务。更新 todo 列表时作为 items 中的元素。")
 public class Todo {
 
-    @Description("Title of the task. Required.")
+    @Description("任务标题。必填。")
     private String title;
 
-    @Description("Optional detailed description of the task.")
+    @Description("可选的任务详细说明。")
     @JsonProperty(required = false)
     private String description;
 
-    @Description("Optional. One of: NOT_STARTED, IN_PROGRESS, PAUSED, COMPLETED. Defaults to NOT_STARTED if omitted.")
+    @Description("可选。取值：NOT_STARTED、IN_PROGRESS、PAUSED、COMPLETED。省略时默认 NOT_STARTED。")
     @JsonProperty(required = false)
     @Builder.Default
     private String status = TodoStatusEnum.NOT_STARTED.name();
 
-    @Description("Optional. One of: LOW, MEDIUM, HIGH. Defaults to MEDIUM if omitted.")
+    @Description("可选。取值：LOW、MEDIUM、HIGH。省略时默认 MEDIUM。")
     @JsonProperty(required = false)
     @Builder.Default
     private String priority = TodoPriorityEnum.MEDIUM.name();
 
-    /** Set by server when persisting; not required from LLM. */
     private LocalDateTime createdAt;
 
-    /** Set by server when persisting; not required from LLM. */
     private LocalDateTime updatedAt;
 }

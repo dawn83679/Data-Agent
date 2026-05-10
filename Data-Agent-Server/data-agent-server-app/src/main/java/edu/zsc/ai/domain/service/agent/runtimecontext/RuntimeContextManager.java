@@ -44,6 +44,6 @@ public class RuntimeContextManager {
             }
         });
         return new PromptRenderResult<>(rendered, sections, estimatedTokens,
-                "Rendered runtime context sections: " + joiner);
+                "已渲染运行时上下文层级：" + joiner);
     }
 }

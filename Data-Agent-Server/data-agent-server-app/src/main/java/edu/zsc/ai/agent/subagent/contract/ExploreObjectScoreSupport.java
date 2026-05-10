@@ -5,9 +5,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * Normalizes and sorts explorer object relevance scores.
- */
 public final class ExploreObjectScoreSupport {
 
     public static final int DEFAULT_RELEVANCE_SCORE = 50;

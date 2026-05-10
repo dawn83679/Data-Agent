@@ -42,8 +42,8 @@ class CompressionServiceImplTest {
     }
 
     @Test
-    void defaultCompressionModel_isQwen35Plus() {
-        assertEquals("qwen3.5-plus", aiModelCatalog.compressionModelName());
+    void defaultCompressionModel_isQwen36Plus() {
+        assertEquals("qwen3.6-plus", aiModelCatalog.compressionModelName());
     }
 
     private void stubModelResponse(String responseText) {
@@ -63,22 +63,22 @@ class CompressionServiceImplTest {
     @Test
     void compress_databaseExplorationWithToolCalls_serializesToolStructure() {
         String expectedSummary = """
-                ## Execution State
-                - Task: explore orders table structure
-                - Stage: discovery
-                - Focus: inspect the verified orders schema
-                - Progress: relevant environment scope and key relationships identified
+                ## 执行状态
+                - 任务： explore orders table structure
+                - 阶段：发现
+                - 焦点： inspect the verified orders schema
+                - 进展： relevant environment scope and key relationships identified
 
-                ## Grounded Facts
-                - Scope: [conn-1, mydb, public]
-                - Object: orders -> id (int8, PK), customer_id (int8, FK→customers.id), total (numeric), created_at (timestamp)
-                - Object: customers -> id (int8, PK), name (varchar)
+                ## 已验证事实
+                - 范围： [conn-1, mydb, public]
+                - 对象： orders -> id (int8, PK), customer_id (int8, FK→customers.id), total (numeric), created_at (timestamp)
+                - 对象： customers -> id (int8, PK), name (varchar)
 
-                ## Pending / Blocking
-                - Ambiguity: none
-                - Write confirmation: not_needed
-                - Blocker: none
-                - Next step: answer with the verified schema summary
+                ## 待处理 / 阻塞
+                - 歧义：无
+                - 写操作确认：不需要
+                - 阻塞：无
+                - 下一步： answer with the verified schema summary
                 """;
         stubModelResponse(expectedSummary);
 
@@ -129,20 +129,20 @@ class CompressionServiceImplTest {
     @Test
     void compress_sqlExecutionWithRetry_containsFailureAndSuccess() {
         String expectedSummary = """
-                ## Execution State
-                - Task: show top 10 customers by revenue
-                - Stage: execution
-                - Focus: reuse the corrected revenue query
-                - Progress: the failed query was corrected and a verified result is available
+                ## 执行状态
+                - 任务： show top 10 customers by revenue
+                - 阶段：执行
+                - 焦点： reuse the corrected revenue query
+                - 进展： the failed query was corrected and a verified result is available
 
-                ## Reusable Artifacts
+                ## 可复用产物
                 - SQL [verified]: `SELECT c.name, SUM(o.total) as revenue FROM customers c JOIN orders o ON c.id = o.customer_id GROUP BY c.name ORDER BY revenue DESC LIMIT 10` -> 10 rows, top customers by revenue
 
-                ## Pending / Blocking
-                - Ambiguity: none
-                - Write confirmation: not_needed
-                - Blocker: none
-                - Next step: answer using the verified query result
+                ## 待处理 / 阻塞
+                - 歧义：无
+                - 写操作确认：不需要
+                - 阻塞：无
+                - 下一步： answer using the verified query result
                 """;
         stubModelResponse(expectedSummary);
 
@@ -188,20 +188,20 @@ class CompressionServiceImplTest {
     @Test
     void compress_askUserQuestionFlow_preservesQuestionAndAnswer() {
         String expectedSummary = """
-                ## Execution State
-                - Task: clean up old orders from before 2023
-                - Stage: execution
-                - Focus: the confirmed delete has already run
-                - Progress: delete target counted, user confirmed, and write executed successfully
+                ## 执行状态
+                - 任务： clean up old orders from before 2023
+                - 阶段：执行
+                - 焦点： the confirmed delete has already run
+                - 进展： delete target counted, user confirmed, and write executed successfully
 
-                ## Reusable Artifacts
+                ## 可复用产物
                 - SQL [verified]: `DELETE FROM orders WHERE created_at < '2023-01-01'` -> executed, affectedRows=5230
 
-                ## Pending / Blocking
-                - Ambiguity: none
-                - Write confirmation: executed
-                - Blocker: none
-                - Next step: report the completed write outcome
+                ## 待处理 / 阻塞
+                - 歧义：无
+                - 写操作确认：已执行
+                - 阻塞：无
+                - 下一步： report the completed write outcome
                 """;
         stubModelResponse(expectedSummary);
 
@@ -269,17 +269,17 @@ class CompressionServiceImplTest {
     @Test
     void compress_messagesWithInjectedXmlTags_includesTagsForModelToDiscard() {
         stubModelResponse("""
-                ## Execution State
-                - Task: query user stats
-                - Stage: execution
-                - Focus: report the verified user count
-                - Progress: active user count query completed
+                ## 执行状态
+                - 任务： query user stats
+                - 阶段：执行
+                - 焦点： report the verified user count
+                - 进展： active user count query completed
 
-                ## Pending / Blocking
-                - Ambiguity: none
-                - Write confirmation: not_needed
-                - Blocker: none
-                - Next step: answer with the verified count
+                ## 待处理 / 阻塞
+                - 歧义：无
+                - 写操作确认：不需要
+                - 阻塞：无
+                - 下一步： answer with the verified count
                 """);
 
         List<ChatMessage> messages = List.of(
@@ -303,9 +303,9 @@ class CompressionServiceImplTest {
         String prompt = capturePromptText();
         // XML 标签应出现在序列化消息中，由压缩提示词指导模型丢弃
         assertTrue(prompt.contains("memory_context"), "Serialized messages should contain the XML tags");
-        assertTrue(prompt.contains("Aggressively Discard"), "Prompt template should instruct to discard XML tags");
-        assertTrue(prompt.contains("<scope_hints>"), "Prompt should discard current runtime support wrappers as well");
-        assertTrue(prompt.contains("<task>"), "Prompt should discard current task wrapper as well");
+        assertTrue(prompt.contains("强制丢弃"), "Prompt template should instruct to discard XML tags");
+        assertTrue(prompt.contains("<范围提示>"), "Prompt should discard current runtime support wrappers as well");
+        assertTrue(prompt.contains("<任务>"), "Prompt should discard current task wrapper as well");
     }
 
     // ==================== 场景 5: 多轮 searchObjects 探索 ====================
@@ -313,20 +313,20 @@ class CompressionServiceImplTest {
     @Test
     void compress_multipleSearchObjectsCalls_allToolCallsSerialized() {
         stubModelResponse("""
-                ## Execution State
-                - Task: find all tables related to orders
-                - Stage: discovery
-                - Focus: compare candidate order-related tables
-                - Progress: multiple relevant objects identified
+                ## 执行状态
+                - 任务： find all tables related to orders
+                - 阶段：发现
+                - 焦点： compare candidate order-related tables
+                - 进展： multiple relevant objects identified
 
-                ## Reusable Artifacts
-                - Explorer: high-relevance objects include user_orders, order_items, and order_status_log
+                ## 可复用产物
+                - 探索： high-relevance objects include user_orders, order_items, and order_status_log
 
-                ## Pending / Blocking
-                - Ambiguity: determine which order-related table best matches the user's intent
-                - Write confirmation: not_needed
-                - Blocker: none
-                - Next step: continue schema inspection or clarify the target object
+                ## 待处理 / 阻塞
+                - 歧义：判断哪个订单相关表最符合用户意图
+                - 写操作确认：不需要
+                - 阻塞：无
+                - 下一步： continue schema inspection or clarify the target object
                 """);
 
         List<ChatMessage> messages = List.of(
@@ -379,20 +379,20 @@ class CompressionServiceImplTest {
     @Test
     void compress_renderChartCall_containsChartMetadata() {
         stubModelResponse("""
-                ## Execution State
-                - Task: show a chart of monthly revenue for 2024
-                - Stage: answering
-                - Focus: present the verified revenue trend visually
-                - Progress: query completed and chart meaning is ready to report
+                ## 执行状态
+                - 任务： show a chart of monthly revenue for 2024
+                - 阶段：回答
+                - 焦点： present the verified revenue trend visually
+                - 进展： query completed and chart meaning is ready to report
 
-                ## Reusable Artifacts
-                - Chart: bar chart of monthly revenue showing growth from Jan ($50k) to Jun ($120k)
+                ## 可复用产物
+                - 图表： bar chart of monthly revenue showing growth from Jan ($50k) to Jun ($120k)
 
-                ## Pending / Blocking
-                - Ambiguity: none
-                - Write confirmation: not_needed
-                - Blocker: none
-                - Next step: answer with the verified chart interpretation
+                ## 待处理 / 阻塞
+                - 歧义：无
+                - 写操作确认：不需要
+                - 阻塞：无
+                - 下一步： answer with the verified chart interpretation
                 """);
 
         List<ChatMessage> messages = List.of(
@@ -431,17 +431,17 @@ class CompressionServiceImplTest {
     @Test
     void compress_nearWindowLimit_handlesMaxMessages() {
         stubModelResponse("""
-                ## Execution State
-                - Task: continue the long multi-query investigation
-                - Stage: execution
-                - Focus: keep the latest verified query trail available
-                - Progress: a long conversation handoff was compressed successfully
+                ## 执行状态
+                - 任务： continue the long multi-query investigation
+                - 阶段：执行
+                - 焦点： keep the latest verified query trail available
+                - 进展： a long conversation handoff was compressed successfully
 
-                ## Pending / Blocking
-                - Ambiguity: none
-                - Write confirmation: not_needed
-                - Blocker: none
-                - Next step: continue from the latest verified work state
+                ## 待处理 / 阻塞
+                - 歧义：无
+                - 写操作确认：不需要
+                - 阻塞：无
+                - 下一步： continue from the latest verified work state
                 """);
 
         List<ChatMessage> messages = new ArrayList<>();
@@ -464,17 +464,17 @@ class CompressionServiceImplTest {
         CompressionResult result = compressionService.compress(messages);
 
         assertEquals("""
-                ## Execution State
-                - Task: continue the long multi-query investigation
-                - Stage: execution
-                - Focus: keep the latest verified query trail available
-                - Progress: a long conversation handoff was compressed successfully
+                ## 执行状态
+                - 任务： continue the long multi-query investigation
+                - 阶段：执行
+                - 焦点： keep the latest verified query trail available
+                - 进展： a long conversation handoff was compressed successfully
 
-                ## Pending / Blocking
-                - Ambiguity: none
-                - Write confirmation: not_needed
-                - Blocker: none
-                - Next step: continue from the latest verified work state
+                ## 待处理 / 阻塞
+                - 歧义：无
+                - 写操作确认：不需要
+                - 阻塞：无
+                - 下一步： continue from the latest verified work state
                 """, result.summary());
 
         String prompt = capturePromptText();
@@ -500,20 +500,20 @@ class CompressionServiceImplTest {
 
         String prompt = capturePromptText();
         // 验证压缩提示词围绕“执行状态交接”组织
-        assertTrue(prompt.contains("execution-state handoff"), "Missing execution-state handoff objective");
-        assertTrue(prompt.contains("Preserve Execution State"), "Missing section: Preserve Execution State");
-        assertTrue(prompt.contains("Tool-Specific Compression"), "Missing section: Tool-Specific Compression");
-        assertTrue(prompt.contains("Conflict And Ambiguity Handling"), "Missing section: Conflict And Ambiguity Handling");
-        assertTrue(prompt.contains("Aggressively Discard"), "Missing section: Aggressively Discard");
+        assertTrue(prompt.contains("执行状态交接"), "Missing 执行状态交接 objective");
+        assertTrue(prompt.contains("保留执行状态"), "Missing section: 保留执行状态");
+        assertTrue(prompt.contains("按工具压缩"), "Missing section: 按工具压缩");
+        assertTrue(prompt.contains("冲突和歧义处理"), "Missing section: 冲突和歧义处理");
+        assertTrue(prompt.contains("强制丢弃"), "Missing section: 强制丢弃");
 
         // 验证新的输出格式章节都在模板中
-        assertTrue(prompt.contains("Execution State"), "Missing output section: Execution State");
-        assertTrue(prompt.contains("Grounded Facts"), "Missing output section: Grounded Facts");
-        assertTrue(prompt.contains("Reusable Artifacts"), "Missing output section: Reusable Artifacts");
-        assertTrue(prompt.contains("Pending / Blocking"), "Missing output section: Pending / Blocking");
-        assertTrue(prompt.contains("Stage: [discovery|planning|execution|confirmation|answering]"),
+        assertTrue(prompt.contains("执行状态"), "Missing output section: 执行状态");
+        assertTrue(prompt.contains("已验证事实"), "Missing output section: 已验证事实");
+        assertTrue(prompt.contains("可复用产物"), "Missing output section: 可复用产物");
+        assertTrue(prompt.contains("待处理 / 阻塞"), "Missing output section: 待处理 / 阻塞");
+        assertTrue(prompt.contains("阶段：[发现|规划|执行|确认|回答]"),
                 "Missing stage contract");
-        assertTrue(prompt.contains("Write confirmation: [not_needed|required|confirmed|executed]"),
+        assertTrue(prompt.contains("写操作确认：[不需要|需要|已确认|已执行]"),
                 "Missing write confirmation contract");
 
         // 验证工具和子代理压缩规则提到了关键工具名
@@ -528,9 +528,9 @@ class CompressionServiceImplTest {
         assertTrue(prompt.contains("callingPlannerSubAgent"), "Missing tool rule: callingPlannerSubAgent");
         assertFalse(prompt.contains("readMemory"), "Compression prompt should no longer mention readMemory");
         assertFalse(prompt.contains("updateMemory"), "Compression prompt should no longer mention updateMemory");
-        assertTrue(prompt.contains("<system_context>"), "Missing current runtime wrapper discard rule");
-        assertTrue(prompt.contains("<scope_hints>"), "Missing current scope wrapper discard rule");
-        assertTrue(prompt.contains("<task>"), "Missing current task wrapper discard rule");
+        assertTrue(prompt.contains("<系统上下文>"), "Missing current runtime wrapper discard rule");
+        assertTrue(prompt.contains("<范围提示>"), "Missing current scope wrapper discard rule");
+        assertTrue(prompt.contains("<任务>"), "Missing current task wrapper discard rule");
         assertTrue(prompt.contains("<memory_context>"), "Missing legacy wrapper discard rule");
     }
 }

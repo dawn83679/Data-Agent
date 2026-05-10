@@ -172,7 +172,7 @@ public class ConversationMemoryAutoWriteCoordinator {
             if (!writerSucceeded) {
                 log.error("[MemAutoWrite] Memory writer failed after {} attempts: conversationId={}, elapsedMs={}",
                         MAX_MEMORY_WRITER_ATTEMPTS, conversationId, writerElapsed, lastFailure);
-                throw new RuntimeException("Memory writer failed", lastFailure);
+                throw new RuntimeException("记忆写入 Agent 失败", lastFailure);
             }
 
             advanceCursor(cursor, processedUpTo);

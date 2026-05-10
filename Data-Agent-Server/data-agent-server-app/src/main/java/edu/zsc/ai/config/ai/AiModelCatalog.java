@@ -39,6 +39,7 @@ public class AiModelCatalog {
             model.setModelName(source.getModelName().trim());
             model.setApiModelName(StringUtils.defaultIfBlank(source.getApiModelName(), source.getModelName()).trim());
             model.setSupportThinking(source.isSupportThinking());
+            model.setChatVisible(source.isChatVisible());
             model.setMaxContextTokens(source.getMaxContextTokens());
             model.setMemoryThreshold(source.getMemoryThreshold());
 
@@ -57,6 +58,12 @@ public class AiModelCatalog {
 
     public List<AiModelProperties.ModelDefinition> listSupportedModels() {
         return supportedModels;
+    }
+
+    public List<AiModelProperties.ModelDefinition> listChatVisibleModels() {
+        return supportedModels.stream()
+                .filter(AiModelProperties.ModelDefinition::isChatVisible)
+                .toList();
     }
 
     public AiModelProperties.ModelDefinition resolve(String requestedModel) {

@@ -25,15 +25,15 @@ public class GetDatabasesTool {
     private final DatabaseService databaseService;
 
     @Tool({
-            "Value: returns the databases (catalogs) available on a specific connection.",
-            "Use When: connection is known and database/catalog scope is still missing.",
-            "Preconditions: connectionId is required.",
-            "Result: database names for that connection.",
-            "Boundary: do not call this to rediscover scope that is already explicit."
+            "价值：返回指定连接上的数据库或 catalog 列表。",
+            "使用时机：连接已确定，但数据库或 catalog 范围缺失。",
+            "前置条件：connectionId 必填。",
+            "结果：该连接上的数据库名称列表。",
+            "边界：范围已经明确时不要重复调用它重新发现范围。"
     })
     public AgentToolResult getDatabases(
-            @P("The connection ID to get databases for") Long connectionId,
-            @P(value = ToolDescriptionParam.UI_STEP_DESCRIPTION, required = false) String description,
+            @P("要查询数据库列表的连接 ID") Long connectionId,
+            @P(ToolDescriptionParam.UI_STEP_DESCRIPTION) String description,
             InvocationParameters parameters) {
         log.info("[Tool] getDatabases connectionId={}", connectionId);
         try {
@@ -56,22 +56,22 @@ public class GetDatabasesTool {
 
     private String buildSuccessMessage(Long connectionId, int databaseCount) {
         return ToolMessageSupport.sentence(
-                "Found " + databaseCount + " database(s) on connection " + connectionId + ".",
-                "Use askUserQuestion to ask the user which database should be used before continuing."
+                "连接 " + connectionId + " 上找到 " + databaseCount + " 个数据库。",
+                "继续前使用 askUserQuestion 询问用户要使用哪个数据库。"
         );
     }
 
     private String buildEmptyMessage(Long connectionId) {
         return ToolMessageSupport.sentence(
-                "No databases found on connection " + connectionId + ".",
-                "Use askUserQuestion to ask the user whether another connection should be used before continuing."
+                "连接 " + connectionId + " 上没有找到数据库。",
+                "继续前使用 askUserQuestion 询问用户是否要改用其他连接。"
         );
     }
 
     private String buildFailureMessage(Long connectionId, String errorMessage) {
         return ToolMessageSupport.sentence(
-                "Failed to get databases on connection " + connectionId + ": " + errorMessage + ".",
-                "Use askUserQuestion to ask the user whether to verify the connection or try another connection before continuing."
+                "获取连接 " + connectionId + " 上的数据库失败：" + errorMessage + "。",
+                "继续前使用 askUserQuestion 询问用户是否要检查连接或尝试其他连接。"
         );
     }
 }

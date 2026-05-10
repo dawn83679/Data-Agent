@@ -18,7 +18,7 @@ public final class ExplorerResponseParser {
 
     public static SchemaSummary parse(String responseText) {
         if (StringUtils.isBlank(responseText)) {
-            throw new IllegalArgumentException("Explorer response is blank");
+            throw new IllegalArgumentException("Explorer 响应为空");
         }
 
         String json = extractJsonObject(responseText);
@@ -26,12 +26,12 @@ public final class ExplorerResponseParser {
         try {
             summary = JsonUtil.json2Object(json, SchemaSummary.class);
         } catch (RuntimeException e) {
-            throw new IllegalArgumentException("Explorer response must match the expected JSON schema", e);
+            throw new IllegalArgumentException("Explorer 响应必须匹配预期 JSON schema", e);
         }
         if (StringUtils.isBlank(summary.getSummaryText())
                 && CollectionUtils.isEmpty(summary.getObjects())
                 && StringUtils.isBlank(summary.getRawResponse())) {
-            throw new IllegalArgumentException("Explorer response JSON does not contain summaryText, objects, or rawResponse");
+            throw new IllegalArgumentException("Explorer 响应 JSON 不包含 summaryText、objects 或 rawResponse");
         }
         ExploreObjectScoreSupport.normalizeAndSort(summary.getObjects());
         return summary;
@@ -52,13 +52,13 @@ public final class ExplorerResponseParser {
         int start = trimmed.indexOf('{');
         int end = trimmed.lastIndexOf('}');
         if (start < 0 || end <= start) {
-            throw new IllegalArgumentException("Explorer response must contain a JSON object");
+            throw new IllegalArgumentException("Explorer 响应必须包含 JSON 对象");
         }
 
         String candidate = trimmed.substring(start, end + 1);
         JsonNode node = JsonUtil.readTree(candidate);
         if (!node.isObject()) {
-            throw new IllegalArgumentException("Explorer response root must be a JSON object");
+            throw new IllegalArgumentException("Explorer 响应根节点必须是 JSON 对象");
         }
         return candidate;
     }

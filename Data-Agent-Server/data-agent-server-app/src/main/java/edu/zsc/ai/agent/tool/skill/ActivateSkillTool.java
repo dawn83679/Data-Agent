@@ -21,21 +21,21 @@ public class ActivateSkillTool {
     private final AgentSkillConfig agentSkillConfig;
 
     @Tool({
-            "Value: loads capability-specific guidance and templates that improve later tool use.",
-            "Use When: a skill listed in <skill_available> is clearly needed for the current task.",
-            "Preconditions: skillName must match a listed skill and should not already be loaded.",
-            "Result: loaded skill instructions.",
-            "Boundary: do not present skill activation itself as the user-facing result."
+            "价值：加载特定能力的指导和模板，帮助后续工具使用。",
+            "使用时机：当前任务明确需要可用技能列表中列出的某个技能。",
+            "前置条件：skillName 必须匹配已列出的技能，且不应重复加载已加载的技能。",
+            "结果：已加载技能的说明。",
+            "边界：不要把技能激活本身当成面向用户的结果。"
     })
     public String activateSkill(
-            @P("Skill name from <skill_available>.") String skillName) {
+            @P("来自可用技能列表的技能名称。") String skillName) {
         SkillEnum skill = SkillEnum.fromName(skillName);
         if (skill == null) {
             return ToolMessageSupport.sentence(
-                    "Skill '" + skillName + "' is not available.",
-                    "Valid values: " + SkillEnum.validNames() + ".",
-                    "Do not assume the skill is loaded.",
-                    "Choose a valid skill and retry only if the task still needs it."
+                    "技能 `" + skillName + "` 不可用。",
+                    "有效值：" + SkillEnum.validNames() + "。",
+                    "不要假设该技能已加载。",
+                    "只有任务仍需要时，才选择有效技能并重试。"
             );
         }
 
@@ -43,9 +43,9 @@ public class ActivateSkillTool {
         AgentModeEnum agentMode = AgentModeEnum.fromRequest(AgentRequestContext.getAgentMode());
         if (!agentSkillConfig.supports(agentType, agentMode, skillName)) {
             return ToolMessageSupport.sentence(
-                    "Skill '" + skill.getSkillName() + "' is not available for the current agent.",
-                    "Only use skills listed in <skill_available> of the current system prompt.",
-                    "Do not assume the skill is loaded."
+                    "技能 `" + skill.getSkillName() + "` 不适用于当前代理。",
+                    "只能使用当前系统提示词可用技能列表中列出的技能。",
+                    "不要假设该技能已加载。"
             );
         }
 

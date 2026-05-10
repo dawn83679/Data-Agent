@@ -22,10 +22,6 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Batch retrieve DDL, row count, and indexes for tables/views.
- * Explorer SubAgent uses this for schema structure discovery.
- */
 @AgentTool
 @Slf4j
 @Component
@@ -35,22 +31,22 @@ public class GetObjectDetailTool {
     private final DiscoveryService discoveryService;
 
     @Tool({
-            "Value: fetches verified DDL, row counts, indexes, and effective scope for concrete objects.",
-            "Use When: objects are narrowed down and SQL generation, execution, join planning, or write-impact review needs real structure.",
-            "Preconditions: provide at least one concrete object; omitted connection/database/schema default to current context when available.",
-            "Result: one detail item per requested object, with success or failure per item.",
-            "Boundary: do not plan SQL against objects whose detail lookup failed."
+            "价值：获取具体对象的 DDL、行数、索引和生效范围。",
+            "使用时机：对象已缩小到具体候选，且生成 SQL、执行 SQL、规划 JOIN 或评估写入影响需要真实结构。",
+            "前置条件：至少提供一个具体对象；缺省的连接、数据库或 schema 会在可用时使用当前上下文。",
+            "结果：每个请求对象返回一条详情，并标记该对象成功或失败。",
+            "边界：详情查询失败的对象不能用于 SQL 规划。"
     })
     public AgentToolResult getObjectDetail(
-            @P("List of objects to retrieve details for") List<ObjectQueryItem> objects,
-            @P(value = ToolDescriptionParam.UI_STEP_DESCRIPTION, required = false) String description,
+            @P("要获取详情的对象列表") List<ObjectQueryItem> objects,
+            @P(ToolDescriptionParam.UI_STEP_DESCRIPTION) String description,
             InvocationParameters parameters) {
         log.info("[Tool] getObjectDetail, objectCount={}", CollectionUtils.size(objects));
         if (CollectionUtils.isEmpty(objects)) {
             throw AgentToolExecuteException.invalidInput(
                     ToolNameEnum.GET_OBJECT_DETAIL,
-                    "objects list must not be empty. Provide at least one object before retrying getObjectDetail. "
-                            + "Do not continue planning until the required object details are available."
+                    "objects 列表不能为空。重试 getObjectDetail 前至少提供一个对象。"
+                            + "必要对象详情可用前不要继续规划。"
             );
         }
 
@@ -103,21 +99,21 @@ public class GetObjectDetailTool {
     private String buildObjectDetailMessage(List<NamedObjectDetail> results) {
         List<String> failedObjects = results.stream()
                 .filter(detail -> !detail.success())
-                .map(detail -> StringUtils.defaultIfBlank(detail.objectName(), "unknown_object")
-                        + " (" + StringUtils.defaultIfBlank(detail.error(), "unknown error") + ")")
+                .map(detail -> StringUtils.defaultIfBlank(detail.objectName(), "未知对象")
+                        + " (" + StringUtils.defaultIfBlank(detail.error(), "未知错误") + ")")
                 .toList();
         String failedSummary = String.join(", ", failedObjects);
         if (failedObjects.size() < results.size()) {
             return ToolMessageSupport.sentence(
-                    "Object detail lookup is only partially available. Failed objects: " + failedSummary + ".",
-                    "Do not assume the structure of failed objects.",
-                    "Ask the user whether these objects are still required before continuing.",
+                    "对象详情只有部分可用。失败对象：" + failedSummary + "。",
+                    "不要假设失败对象的结构。",
+                    "继续前询问用户这些对象是否仍然需要。",
                     ToolMessageSupport.DO_NOT_CONTINUE_OBJECT_DISCOVERY_UNTIL_USER_REPLIES
             );
         }
         return ToolMessageSupport.sentence(
-                "Object detail lookup failed for all requested objects: " + failedSummary + ".",
-                ToolMessageSupport.askUserWhether("retry with another object or connection"),
+                "所有请求对象的详情查询都失败：" + failedSummary + "。",
+                ToolMessageSupport.askUserWhether("改用其他对象或连接重试"),
                 ToolMessageSupport.DO_NOT_CONTINUE_OBJECT_DISCOVERY_UNTIL_USER_REPLIES
         );
     }
@@ -125,13 +121,13 @@ public class GetObjectDetailTool {
     private String buildObjectDetailSuccessMessage(List<NamedObjectDetail> results) {
         List<String> successfulObjects = results.stream()
                 .filter(NamedObjectDetail::success)
-                .map(detail -> StringUtils.defaultIfBlank(detail.objectName(), "unknown_object"))
+                .map(detail -> StringUtils.defaultIfBlank(detail.objectName(), "未知对象"))
                 .limit(3)
                 .toList();
         String suffix = results.size() > successfulObjects.size() ? ", ..." : "";
         return ToolMessageSupport.sentence(
-                "Object details are available for " + String.join(", ", successfulObjects) + suffix + ".",
-                "Use the returned DDL, row counts, indexes, and effective scope to verify object structure before generating or executing SQL."
+                "已获取这些对象的详情：" + String.join(", ", successfulObjects) + suffix + "。",
+                "生成或执行 SQL 前，使用返回的 DDL、行数、索引和生效范围验证对象结构。"
         );
     }
 }

@@ -6,16 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Standardized return type for agent tool methods.
- *
- * <p>Three states:
- * <ul>
- *   <li>{@link #success} — tool executed and returned data; model should continue answering.</li>
- *   <li>{@link #empty}   — tool executed but found nothing; model should reconsider parameters.</li>
- *   <li>{@link #fail}    — tool threw an error; model should reconsider or escalate to user.</li>
- * </ul>
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -23,13 +13,13 @@ import lombok.NoArgsConstructor;
 public class AgentToolResult {
 
     private static final String DEFAULT_SUCCESS_MESSAGE =
-            "The tool completed successfully. Use this result for the next step.";
+            "工具已成功完成。下一步使用这个结果。";
 
     private static final String DEFAULT_EMPTY_MESSAGE =
-            "No matching results were found. Adjust the scope or ask the user to clarify the target before proceeding.";
+            "没有找到匹配结果。继续前调整范围，或询问用户明确目标。";
 
     private static final String DEFAULT_FAIL_MESSAGE =
-            "The tool failed. Review the current inputs and context before retrying.";
+            "工具执行失败。重试前检查当前输入和上下文。";
 
     private boolean success;
 
@@ -66,9 +56,9 @@ public class AgentToolResult {
         return AgentToolResult.builder()
                 .success(false)
                 .message(ToolMessageSupport.sentence(
-                        "Internal error: user session context is not available.",
-                        "This is a system issue - do not retry.",
-                        "Report the problem to the user."
+                        "内部错误：用户会话上下文不可用。",
+                        "这是系统问题，不要重试。",
+                        "向用户说明该问题。"
                 ))
                 .build();
     }
@@ -84,7 +74,7 @@ public class AgentToolResult {
         return AgentToolResult.builder()
                 .success(false)
                 .message(defaultMessage(customMessage, DEFAULT_FAIL_MESSAGE)
-                        + " Error: " + defaultMessage(errorDetail, "unknown error"))
+                        + " 错误：" + defaultMessage(errorDetail, "未知错误"))
                 .build();
     }
 

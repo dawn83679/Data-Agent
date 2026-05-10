@@ -110,7 +110,7 @@ class AgentToolContextAspectTest {
 
         AgentToolResult failWithUiDescription(
                 String value,
-                @P(value = ToolDescriptionParam.UI_STEP_DESCRIPTION, required = false) String description,
+                @P(ToolDescriptionParam.UI_STEP_DESCRIPTION) String description,
                 InvocationParameters parameters) {
             throw new IllegalArgumentException("bad value");
         }

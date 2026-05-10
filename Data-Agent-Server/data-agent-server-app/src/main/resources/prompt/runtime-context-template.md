@@ -1,23 +1,23 @@
-<system_context purpose="runtime_environment" apply_to="time_interpretation" strength="reference">
+<系统上下文 purpose="运行时环境" apply_to="时间解释" strength="参考">
 {{SYSTEM_CONTEXT}}
-</system_context>
+</系统上下文>
 
-<current_conversation_memory purpose="current_task_working_memory" apply_to="scope_tracking,continuation" strength="highest">
+<当前会话记忆 purpose="当前任务工作记忆" apply_to="范围追踪,任务延续" strength="最高">
 {{CURRENT_CONVERSATION_MEMORY}}
-</current_conversation_memory>
+</当前会话记忆>
 
-<scope_hints purpose="query_scope_guidance" apply_to="tool_selection,object_search,sql_scope" strength="strong">
+<范围提示 purpose="查询范围提示" apply_to="工具选择,对象检索,SQL范围" strength="强">
 {{SCOPE_HINTS}}
-</scope_hints>
+</范围提示>
 
-<response_preferences purpose="final_response_preferences" apply_to="language,format,visualization" strength="default">
+<回答偏好 purpose="最终回答偏好" apply_to="语言,格式,可视化" strength="默认">
 {{RESPONSE_PREFERENCES}}
-</response_preferences>
+</回答偏好>
 
-<durable_facts purpose="verified_background_facts" apply_to="reasoning,sql_generation" strength="reference">
+<持久事实 purpose="已验证背景事实" apply_to="推理,SQL生成" strength="参考">
 {{DURABLE_FACTS}}
-</durable_facts>
+</持久事实>
 
-<explicit_references purpose="user_explicit_object_selection" apply_to="scope_resolution,object_priority" strength="highest">
+<显式引用 purpose="用户显式引用对象" apply_to="范围确定,对象优先级" strength="最高">
 {{EXPLICIT_REFERENCES}}
-</explicit_references>
+</显式引用>

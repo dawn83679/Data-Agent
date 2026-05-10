@@ -79,12 +79,12 @@ class ToolDescriptionAndPromptSeparationTest {
                 0,
                 String.class);
 
-        assertTrue(explorerTasks.contains("Explorer tasks."));
-        assertTrue(explorerTasks.length() <= 130);
-        assertTrue(plannerInstruction.contains("One concrete SQL goal"));
+        assertTrue(explorerTasks.contains("探索任务列表"));
+        assertTrue(explorerTasks.length() <= 160);
+        assertTrue(plannerInstruction.contains("具体 SQL 目标"));
         assertTrue(plannerInstruction.length() <= 80);
-        assertTrue(skillName.contains("<skill_available>"));
-        assertTrue(skillName.length() <= 50);
+        assertTrue(skillName.contains("可用技能列表"));
+        assertTrue(skillName.length() <= 60);
     }
 
     @Test
@@ -93,34 +93,24 @@ class ToolDescriptionAndPromptSeparationTest {
 
         String content = strategy.handle(new PromptHandleRequest<>(
                 SystemPromptAssemblyContext.builder()
-                        .promptEnum(PromptEnum.EN)
+                        .promptEnum(PromptEnum.ZH)
                         .agentType(AgentTypeEnum.MAIN)
                         .agentMode(AgentModeEnum.AGENT)
-                        .language("en")
+                        .language("zh")
                         .availableSkills(List.of())
                         .build(),
                 SystemPromptSection.TOOL_USAGE_RULES)).content();
 
-        assertTrue(content.contains("no optional skills are available"));
-        assertTrue(content.contains("internal tool names"));
-        assertTrue(content.contains("Tool purpose, parameters, preconditions, result semantics"));
+        assertTrue(content.contains("本轮没有可选技能可激活"));
+        assertTrue(content.contains("内部工具名"));
+        assertTrue(content.contains("工具的用途、参数、前置条件、结果语义"));
     }
 
     @Test
-    void toolUsageRulesUseToolContractsByLanguage() {
+    void toolUsageRulesAlwaysUseChineseToolContracts() {
         ToolUsageRulesSystemPromptStrategy strategy = new ToolUsageRulesSystemPromptStrategy();
 
-        String englishContent = strategy.handle(new PromptHandleRequest<>(
-                SystemPromptAssemblyContext.builder()
-                        .promptEnum(PromptEnum.EN)
-                        .agentType(AgentTypeEnum.MAIN)
-                        .agentMode(AgentModeEnum.AGENT)
-                        .language("en")
-                        .availableSkills(List.of())
-                        .build(),
-                SystemPromptSection.TOOL_USAGE_RULES)).content();
-
-        String chineseContent = strategy.handle(new PromptHandleRequest<>(
+        String content = strategy.handle(new PromptHandleRequest<>(
                 SystemPromptAssemblyContext.builder()
                         .promptEnum(PromptEnum.ZH)
                         .agentType(AgentTypeEnum.MAIN)
@@ -132,30 +122,27 @@ class ToolDescriptionAndPromptSeparationTest {
 
         String planContent = strategy.handle(new PromptHandleRequest<>(
                 SystemPromptAssemblyContext.builder()
-                        .promptEnum(PromptEnum.EN_PLAN)
+                        .promptEnum(PromptEnum.ZH_PLAN)
                         .agentType(AgentTypeEnum.MAIN)
                         .agentMode(AgentModeEnum.PLAN)
-                        .language("en")
+                        .language("zh")
                         .availableSkills(List.of())
                         .build(),
                 SystemPromptSection.TOOL_USAGE_RULES)).content();
 
-        assertTrue(englishContent.contains("Tool purpose, parameters, preconditions, result semantics"));
-        assertTrue(englishContent.contains("description, schema, runtime permissions"));
-        assertTrue(englishContent.contains("follow its returned state instead of fabricating results"));
-        assertTrue(chineseContent.contains("工具的用途、参数、前置条件、结果语义"));
-        assertTrue(chineseContent.contains("description、schema、runtime 权限"));
-        assertTrue(chineseContent.contains("按工具返回状态继续"));
-        assertTrue(planContent.contains("In Plan mode, do not execute SQL or writes"));
+        assertTrue(content.contains("工具的用途、参数、前置条件、结果语义"));
+        assertTrue(content.contains("以工具自身描述、参数结构、运行时权限和工具返回消息为准"));
+        assertTrue(content.contains("按工具返回状态继续，不要伪造结果"));
+        assertTrue(planContent.contains("计划模式下不要执行 SQL 或写操作"));
     }
 
     private static void assertShortContractDescription(String description) {
         assertEquals(5, description.lines().count());
-        assertTrue(description.contains("Value:"));
-        assertTrue(description.contains("Use When:"));
-        assertTrue(description.contains("Preconditions:"));
-        assertTrue(description.contains("Result:"));
-        assertTrue(description.contains("Boundary:"));
+        assertTrue(description.contains("价值："));
+        assertTrue(description.contains("使用时机："));
+        assertTrue(description.contains("前置条件："));
+        assertTrue(description.contains("结果："));
+        assertTrue(description.contains("边界："));
     }
 
     private static String readToolDescription(Class<?> toolClass,

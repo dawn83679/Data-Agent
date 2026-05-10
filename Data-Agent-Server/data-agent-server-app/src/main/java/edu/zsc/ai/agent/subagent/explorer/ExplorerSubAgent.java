@@ -210,7 +210,7 @@ public class ExplorerSubAgent extends AbstractSubAgent<SubAgentRequest, SchemaSu
             return summary;
 
         } catch (Exception e) {
-            String errorSummary = errorSummary(e, "Explorer SubAgent failed", timeoutSeconds);
+            String errorSummary = errorSummary(e, "Explorer 子 Agent 失败", timeoutSeconds);
             observer.emitError(errorSummary);
             log.error("[Explorer] invoke failed, conversationId={}, taskId={}, parentToolCallId={}, elapsedMs={}, rootCauseClass={}, rootCauseMessage={}",
                     conversationId,
@@ -238,7 +238,7 @@ public class ExplorerSubAgent extends AbstractSubAgent<SubAgentRequest, SchemaSu
                         "assistant tool_calls were emitted but matching tool messages were not present in the next model request",
                         "inspect message assembly around streamBridge/tool-result replay for this task");
             }
-            throw new RuntimeException("Explorer SubAgent failed: " + errorSummary, e);
+            throw new RuntimeException("Explorer 子 Agent 失败：" + errorSummary, e);
         }
     }
 

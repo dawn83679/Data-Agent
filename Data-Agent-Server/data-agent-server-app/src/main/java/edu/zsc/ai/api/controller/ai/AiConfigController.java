@@ -25,7 +25,7 @@ public class AiConfigController {
      */
     @GetMapping("/models")
     public ApiResponse<List<ModelOptionResponse>> listModels() {
-        List<ModelOptionResponse> list = aiModelCatalog.listSupportedModels().stream()
+        List<ModelOptionResponse> list = aiModelCatalog.listChatVisibleModels().stream()
                 .map(m -> ModelOptionResponse.builder()
                         .modelName(m.getModelName())
                         .supportThinking(m.isSupportThinking())

@@ -45,20 +45,20 @@ public class ExecuteSqlTool {
     private final ConnectionAccessService connectionAccessService;
 
     @Tool({
-        "Value: executes read-only SQL and returns real database results.",
-        "Use When: scope, objects, and SQL are verified and the user needs actual query evidence.",
-        "Preconditions: sqls is required and every statement must be read-only; use WHERE or LIMIT for large tables.",
-        "Result: database result sets; use them as the only source of truth for the answer.",
-        "Boundary: never use for writes or unverified object structure."
+        "价值：执行只读 SQL 并返回真实数据库结果。",
+        "使用时机：范围、对象和 SQL 已验证，且用户需要真实查询证据。",
+        "前置条件：sqls 必填，且每条语句必须只读；大表查询需要 WHERE 或 LIMIT。",
+        "结果：数据库结果集；回答只能以这些结果为事实来源。",
+        "边界：不要用于写入操作，也不要针对未验证对象结构执行。"
     })
     @DisallowInPlanMode(ToolNameEnum.EXECUTE_SELECT_SQL)
     public AgentSqlResult executeSelectSql(
-            @P("Connection id from current session context") Long connectionId,
-            @P("Database (catalog) name from current session context") String databaseName,
-            @P(value = "Schema name from current session context; omit if not used", required = false) String schemaName,
-            @P("List of read-only SQL statements to execute.")
+            @P("当前会话范围内的连接 ID") Long connectionId,
+            @P("当前会话范围内的数据库或 catalog 名称") String databaseName,
+            @P(value = "当前会话范围内的 schema 名称；数据库类型不使用 schema 时省略", required = false) String schemaName,
+            @P("要执行的只读 SQL 语句列表。")
             List<String> sqls,
-            @P(value = ToolDescriptionParam.UI_STEP_DESCRIPTION, required = false) String description,
+            @P(ToolDescriptionParam.UI_STEP_DESCRIPTION) String description,
             InvocationParameters parameters) {
         log.info("{} executeSelectSql, connectionId={}, database={}, schema={}, sqlCount={}",
                 "[Tool]", connectionId, databaseName, schemaName,
@@ -93,20 +93,20 @@ public class ExecuteSqlTool {
     }
 
     @Tool({
-        "Value: executes write SQL when permission already allows it, otherwise returns a structured confirmation payload for the frontend.",
-        "Use When: write SQL is finalized and ready for execution or explicit confirmation.",
-        "Preconditions: sqls is required and must contain write statements only.",
-        "Result: EXECUTED means the write ran; REQUIRES_CONFIRMATION means nothing ran yet and the frontend must ask the user.",
-        "Boundary: never use for read-only queries or guessed write SQL."
+        "价值：在权限已允许时执行写入 SQL；否则返回前端确认所需的结构化 payload。",
+        "使用时机：写入 SQL 已最终确定，可以执行或需要明确确认。",
+        "前置条件：sqls 必填，且只能包含写入语句。",
+        "结果：EXECUTED 表示写入已执行；REQUIRES_CONFIRMATION 表示尚未执行，需要前端询问用户。",
+        "边界：不要用于只读查询或猜测性的写入 SQL。"
     })
     @DisallowInPlanMode(ToolNameEnum.EXECUTE_NON_SELECT_SQL)
     public ExecuteNonSelectToolResult executeNonSelectSql(
-            @P("Connection id from current session context") Long connectionId,
-            @P("Database (catalog) name from current session context") String databaseName,
-            @P(value = "Schema name from current session context; omit if not used", required = false) String schemaName,
-            @P("List of non-SELECT SQL statements to execute (INSERT, UPDATE, DELETE, DDL, etc.).")
+            @P("当前会话范围内的连接 ID") Long connectionId,
+            @P("当前会话范围内的数据库或 catalog 名称") String databaseName,
+            @P(value = "当前会话范围内的 schema 名称；数据库类型不使用 schema 时省略", required = false) String schemaName,
+            @P("要执行的非 SELECT SQL 语句列表，例如 INSERT、UPDATE、DELETE、DDL。")
             List<String> sqls,
-            @P(value = ToolDescriptionParam.UI_STEP_DESCRIPTION, required = false) String description,
+            @P(ToolDescriptionParam.UI_STEP_DESCRIPTION) String description,
             InvocationParameters parameters) {
         log.info("{} executeNonSelectSql, connectionId={}, database={}, schema={}, sqlCount={}",
                 "[Tool]", connectionId, databaseName, schemaName,
@@ -150,8 +150,8 @@ public class ExecuteSqlTool {
                 ruleMatched,
                 AgentSqlResult.fromBatch(responses),
                 ruleMatched
-                        ? "Write SQL executed using a default-allow permission."
-                        : "Write SQL executed after explicit user approval."
+                        ? "写入 SQL 已基于默认允许权限执行。"
+                        : "写入 SQL 已在用户明确确认后执行。"
         );
     }
 
@@ -222,7 +222,7 @@ public class ExecuteSqlTool {
             if (sqls != null && i >= 0 && i < sqls.size()) {
                 sqlPreview = StringUtils.defaultString(StringUtils.normalizeSpace(sqls.get(i)));
             }
-            String currentError = StringUtils.defaultIfBlank(response.getErrorMessage(), "unknown database error");
+            String currentError = StringUtils.defaultIfBlank(response.getErrorMessage(), "未知数据库错误");
             response.setErrorMessage(SqlToolMessageSupport.failureMessage(
                     writeOperation,
                     connectionId,

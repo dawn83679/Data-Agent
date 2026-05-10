@@ -10,18 +10,18 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ObjectQueryItem {
 
-    @Description("Object type: TABLE, VIEW, FUNCTION, PROCEDURE, TRIGGER")
+    @Description("对象类型：TABLE、VIEW、FUNCTION、PROCEDURE、TRIGGER。")
     private String objectType;
 
-    @Description("Exact object name")
+    @Description("精确对象名。")
     private String objectName;
 
-    @Description("Connection id")
+    @Description("连接 ID。")
     private Long connectionId;
 
-    @Description("Database (catalog) name")
+    @Description("数据库或 catalog 名称。")
     private String databaseName;
 
-    @Description("Schema name; omit if not used")
+    @Description("schema 名称；数据库类型不使用 schema 时省略。")
     private String schemaName;
 }

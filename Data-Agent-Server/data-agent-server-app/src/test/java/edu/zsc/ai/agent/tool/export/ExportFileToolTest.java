@@ -38,7 +38,7 @@ class ExportFileToolTest {
                 InvocationParameters.from(Map.of())
         );
         assertFalse(result.isSuccess());
-        assertTrue(result.getMessage().contains("user session context is not available"));
+        assertTrue(result.getMessage().contains("用户会话上下文不可用"));
     }
 
     @Test
@@ -63,5 +63,7 @@ class ExportFileToolTest {
         );
         assertTrue(result.isSuccess());
         assertTrue(String.valueOf(result.getResult()).contains("/api/ai/files/f-1"));
+        assertTrue(result.getMessage().contains("文件卡片就是本轮最终答案"));
+        assertTrue(result.getMessage().contains("不要在工具调用后输出任何描述"));
     }
 }

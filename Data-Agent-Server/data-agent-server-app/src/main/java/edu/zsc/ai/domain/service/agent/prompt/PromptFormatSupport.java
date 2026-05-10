@@ -1,7 +1,6 @@
 package edu.zsc.ai.domain.service.agent.prompt;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -13,12 +12,8 @@ public final class PromptFormatSupport {
     private PromptFormatSupport() {
     }
 
-    public static boolean isChinese(String language) {
-        return StringUtils.defaultString(language).trim().toLowerCase(Locale.ROOT).startsWith("zh");
-    }
-
     public static String title(String language, String zhTitle, String enTitle) {
-        return isChinese(language) ? zhTitle : enTitle;
+        return zhTitle;
     }
 
     public static String renderBlock(String language, String zhTitle, String enTitle, List<String> lines) {

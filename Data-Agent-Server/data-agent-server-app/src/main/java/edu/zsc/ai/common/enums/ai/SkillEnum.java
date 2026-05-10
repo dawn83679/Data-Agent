@@ -7,9 +7,6 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * Available skills that can be loaded via the activateSkill tool.
- */
 @Getter
 @RequiredArgsConstructor
 public enum SkillEnum {
@@ -17,7 +14,7 @@ public enum SkillEnum {
     CHART(
             "chart",
             "skills/chart/SKILL.md",
-            "Generate chart rendering guidance for final structured visualization output."
+            "为最终结构化图表输出提供图表渲染指导。"
     );
 
     private final String skillName;

@@ -12,6 +12,6 @@ import java.util.List;
 @AllArgsConstructor
 public class ExportRowInput {
 
-    @Description("Cell values for this row. The number of cells must exactly match headers.")
+    @Description("本行单元格值。单元格数量必须和 headers 精确一致。")
     private List<Object> cells;
 }

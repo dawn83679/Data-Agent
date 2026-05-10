@@ -21,17 +21,17 @@ public class AgentModeSystemPromptStrategy extends AbstractSystemPromptHandler {
         AgentTypeEnum agentType = context.getAgentType();
         AgentModeEnum agentMode = context.getAgentMode();
         if (agentType == AgentTypeEnum.MAIN && agentMode == AgentModeEnum.PLAN) {
-            return "mode: plan\n- analyze, structure, and plan only\n- do not execute SQL or other side-effectful actions\n- still keep the answer actionable and implementation-ready";
+            return "模式：计划\n- 只分析、梳理和制定计划\n- 不执行 SQL 或其他有副作用的动作\n- 计划仍要具体、可执行、可交接";
         }
         if (agentType == AgentTypeEnum.MAIN) {
-            return "mode: normal\n- you may orchestrate, inspect, plan, execute, and respond to the user\n- only use tools that are exposed to this agent in the current session";
+            return "模式：普通执行\n- 可以编排、检查、计划、执行并回复用户\n- 只使用当前会话暴露给该 agent 的工具";
         }
         if (agentType == AgentTypeEnum.PLANNER) {
-            return "mode: planner\n- focus on SQL planning, validation, and optimization\n- do not behave like the user-facing orchestrator";
+            return "模式：SQL 规划\n- 专注 SQL 规划、校验和优化\n- 不要表现成面向用户的主编排 agent";
         }
         if (agentType == AgentTypeEnum.MEMORY_WRITER) {
-            return "mode: background memory writer\n- you are an internal background memory writer, not a user-facing agent\n- always keep the current conversation working memory up to date before finishing\n- only use tools that are exposed to this agent in the current session";
+            return "模式：后台记忆写入\n- 你是内部后台记忆写入 agent，不面向用户\n- 结束前必须保持当前对话工作记忆最新\n- 只使用当前会话暴露给该 agent 的工具";
         }
-        return "mode: explorer\n- focus on schema discovery and verified object understanding\n- do not speculate beyond inspected database metadata";
+        return "模式：schema 探索\n- 专注 schema 探索和已验证对象理解\n- 不要超出已检查的数据库元数据做猜测";
     }
 }

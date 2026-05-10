@@ -7,9 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/**
- * callingExplorerSubAgent final payload returned to MainAgent.
- */
 @Data
 @Builder
 @NoArgsConstructor

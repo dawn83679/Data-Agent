@@ -26,10 +26,6 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Pattern (fuzzy) search across connections for tables/views/functions.
- * Explorer SubAgent uses this for schema discovery.
- */
 @AgentTool
 @Slf4j
 @Component
@@ -38,15 +34,15 @@ public class SearchObjectsTool {
     private final DiscoveryService discoveryService;
 
     @Tool({
-            "Value: finds candidate tables, views, and other objects by SQL wildcard pattern.",
-            "Use When: object scope is not yet exact but connection/database/schema scope is narrow enough for lightweight discovery.",
-            "Preconditions: objectNamePattern is required. databaseNamePattern requires connectionId. schemaNamePattern requires connectionId plus databaseNamePattern.",
-            "Result: up to 100 matches; if objectType is omitted, TABLE and VIEW are searched.",
-            "Boundary: broad or ambiguous matches are candidates, not verified schema."
+            "价值：按 SQL 通配模式查找候选表、视图和其他数据库对象。",
+            "使用时机：对象范围尚未精确，但连接、数据库或 schema 范围已经足够窄，可以做轻量发现。",
+            "前置条件：objectNamePattern 必填。databaseNamePattern 需要同时提供 connectionId。schemaNamePattern 需要同时提供 connectionId 和 databaseNamePattern。",
+            "结果：最多返回 100 条匹配；未指定 objectType 时检索 TABLE 和 VIEW。",
+            "边界：宽泛或有歧义的匹配只能视为候选，不是已验证 schema。"
     })
     public AgentToolResult searchObjects(
-            @P("Search query parameters") ObjectSearchQuery query,
-            @P(value = ToolDescriptionParam.UI_STEP_DESCRIPTION, required = false) String description,
+            @P("对象搜索参数") ObjectSearchQuery query,
+            @P(ToolDescriptionParam.UI_STEP_DESCRIPTION) String description,
             InvocationParameters parameters) {
         String objectNamePattern = query.getObjectNamePattern();
         String objectType = query.getObjectType();
@@ -86,15 +82,15 @@ public class SearchObjectsTool {
         if (StringUtils.isNotBlank(schemaNamePattern) && StringUtils.isBlank(databaseNamePattern)) {
             throw AgentToolExecuteException.invalidInput(
                     ToolNameEnum.SEARCH_OBJECTS,
-                    "schemaNamePattern requires databaseNamePattern to be specified. Add databaseNamePattern before retrying searchObjects. "
-                            + "Do not continue object discovery until the scope is valid."
+                    "schemaNamePattern 需要同时指定 databaseNamePattern。重试 searchObjects 前先补充 databaseNamePattern。"
+                            + "范围有效前不要继续对象发现。"
             );
         }
         if (StringUtils.isNotBlank(databaseNamePattern) && connectionId == null) {
             throw AgentToolExecuteException.invalidInput(
                     ToolNameEnum.SEARCH_OBJECTS,
-                    "databaseNamePattern requires connectionId to be specified. Add connectionId before retrying searchObjects. "
-                            + "Do not continue object discovery until the scope is valid."
+                    "databaseNamePattern 需要同时指定 connectionId。重试 searchObjects 前先补充 connectionId。"
+                            + "范围有效前不要继续对象发现。"
             );
         }
 
@@ -136,17 +132,17 @@ public class SearchObjectsTool {
                                       String schemaNamePattern) {
         String errorSummary = String.join("; ", response.errors());
         String scope = buildScopeLabel(objectNamePattern, connectionId, databaseNamePattern, schemaNamePattern);
-        String baseMessage = "Object search encountered scope failures for " + scope + ". Scope failures: " + errorSummary + ".";
+        String baseMessage = "对象搜索在范围 " + scope + " 上遇到失败。失败信息：" + errorSummary + "。";
         if (CollectionUtils.isNotEmpty(response.results())) {
             return ToolMessageSupport.sentence(
                     baseMessage,
-                    "Use askUserQuestion to ask the user to clarify the target scope before continuing."
+                    "继续前使用 askUserQuestion 询问用户明确目标范围。"
             );
         }
 
         return ToolMessageSupport.sentence(
                 baseMessage,
-                "Use askUserQuestion to ask the user to clarify the target scope before continuing."
+                "继续前使用 askUserQuestion 询问用户明确目标范围。"
         );
     }
 
@@ -157,17 +153,17 @@ public class SearchObjectsTool {
                                              String schemaNamePattern) {
         String scope = buildScopeLabel(objectNamePattern, connectionId, databaseNamePattern, schemaNamePattern);
         String truncation = response.truncated()
-                ? " The result set is truncated, so refine the search before assuming all matches are visible."
+                ? " 结果已被截断，假设已看到全部匹配前必须先缩小搜索范围。"
                 : "";
         if (isFuzzyPattern(objectNamePattern)) {
             return ToolMessageSupport.sentence(
-                    "Object search found " + response.totalCount() + " candidate(s) for " + scope + ".",
-                    "Use askUserQuestion to ask the user to narrow the target object before continuing." + truncation
+                    "对象搜索在范围 " + scope + " 中找到 " + response.totalCount() + " 个候选。",
+                    "继续前使用 askUserQuestion 询问用户缩小目标对象范围。" + truncation
             );
         }
         return ToolMessageSupport.sentence(
-                "Object search found " + response.totalCount() + " candidate(s) for " + scope + ".",
-                "Use askUserQuestion to ask the user to narrow the target object before continuing." + truncation
+                "对象搜索在范围 " + scope + " 中找到 " + response.totalCount() + " 个候选。",
+                "继续前使用 askUserQuestion 询问用户缩小目标对象范围。" + truncation
         );
     }
 
@@ -176,9 +172,9 @@ public class SearchObjectsTool {
                                            String databaseNamePattern,
                                            String schemaNamePattern) {
         return ToolMessageSupport.sentence(
-                "Object search returned no matches for "
-                        + buildScopeLabel(objectNamePattern, connectionId, databaseNamePattern, schemaNamePattern) + ".",
-                "Use askUserQuestion to ask the user to clarify the target before continuing."
+                "对象搜索在范围 "
+                        + buildScopeLabel(objectNamePattern, connectionId, databaseNamePattern, schemaNamePattern) + " 中没有匹配结果。",
+                "继续前使用 askUserQuestion 询问用户明确目标。"
         );
     }
 
@@ -187,16 +183,16 @@ public class SearchObjectsTool {
                                    String databaseNamePattern,
                                    String schemaNamePattern) {
         StringBuilder builder = new StringBuilder();
-        builder.append("pattern=")
-                .append(StringUtils.defaultIfBlank(objectNamePattern, "<blank>"));
+        builder.append("对象名模式=")
+                .append(StringUtils.defaultIfBlank(objectNamePattern, "<空>"));
         if (connectionId != null) {
             builder.append(", connectionId=").append(connectionId);
         }
         if (StringUtils.isNotBlank(databaseNamePattern)) {
-            builder.append(", databasePattern=").append(databaseNamePattern);
+            builder.append(", 数据库模式=").append(databaseNamePattern);
         }
         if (StringUtils.isNotBlank(schemaNamePattern)) {
-            builder.append(", schemaPattern=").append(schemaNamePattern);
+            builder.append(", schema模式=").append(schemaNamePattern);
         }
         return builder.toString();
     }

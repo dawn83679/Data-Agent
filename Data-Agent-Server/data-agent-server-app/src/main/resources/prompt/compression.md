@@ -1,122 +1,122 @@
-# Chat Memory Compression for Main-Agent Continuation
+# 主代理对话记忆压缩
 
-You are compressing prior chat-memory turns for a database agent system. Produce a concise execution-state handoff for the next main-agent turn.
+你正在为数据库代理系统压缩历史对话记忆。输出要作为下一轮主代理的执行状态交接，而不是叙事复盘。
 
-## Goal
+## 目标
 
-The summary must let the next main-agent turn continue the task without rereading the full conversation history.
+压缩结果必须让下一轮主代理不重新读取完整历史也能继续任务。
 
-Priority order:
-1. Preserve the current execution state and next-step readiness.
-2. Preserve verified facts, validated SQL, user decisions, and blocking conditions.
-3. Remove anything that does not change the next decision.
-4. Only shorten further when it does not weaken items 1-3.
+优先级：
+1. 保留当前执行状态和下一步是否已经可执行。
+2. 保留已验证事实、已验证 SQL、用户决定和阻塞点。
+3. 删除不影响下一步决策的内容。
+4. 只有在不削弱前 3 项时才继续压缩。
 
-When brevity conflicts with continuity, preserve continuity.
+当简短和连续性冲突时，优先保留连续性。
 
-## What This Summary Is And Is Not
+## 这个摘要是什么
 
-- This summary is a chat-memory handoff only.
-- Durable memory may already be injected separately at prompt time; do not restate support blocks or wrappers unless a recalled rule materially changed the task.
-- Structured sub-agent outputs are higher value than conversational glue around them.
-- Treat the output as an execution-state handoff for the next main-agent turn, not as a narrative recap.
+- 这是对话记忆交接，不是给用户看的最终回答。
+- 持久记忆可能会在提示词阶段单独注入；不要重复支持块或包装标签，除非被召回的规则已经实质影响当前任务。
+- 结构化子代理输出比围绕它的寒暄、过渡和解释更重要。
+- 把输出当作下一轮主代理的执行状态交接。
 
-## Compression Rules
+## 压缩规则
 
-### 1. Preserve Execution State
+### 1. 保留执行状态
 
-- Always preserve the latest user goal, the current stage, the current focus, completed progress, unresolved blockers, and the next required action.
-- Infer `Stage` using one of: `discovery`, `planning`, `execution`, `confirmation`, `answering`.
-- If the task is unfinished, preserve the unfinished state explicitly.
-- If the user changed goals, keep the latest goal and mention the abandoned direction only if it still affects the next step.
+- 始终保留最新用户目标、当前阶段、当前焦点、已完成进展、未解决阻塞和下一步必做动作。
+- `阶段` 只能从以下值选择：`发现`、`规划`、`执行`、`确认`、`回答`。
+- 如果任务未完成，必须明确保留未完成状态。
+- 如果用户切换目标，只保留最新目标；被放弃方向只有在仍影响下一步时才简短说明。
 
-### 2. Preserve Grounded Facts And Reusable Artifacts
+### 2. 保留基于证据的事实和可复用产物
 
-- Preserve the current database scope: connectionId, catalog, schema.
-- Preserve only schema facts that affect the current task: object names, relevant columns, PK/FK, important constraints, and join paths.
-- Preserve successful SQL exactly as text. Do not paraphrase or rewrite validated SQL.
-- Preserve result summaries only when they change the next decision.
-- Preserve reusable sub-agent outputs:
-  - `callingExplorerSubAgent` -> keep the main finding, high-relevance objects, and remaining ambiguity.
-  - `callingPlannerSubAgent` -> keep the main SQL plan, relevant alternatives, and whether each SQL artifact is verified or draft.
-- Preserve applied durable constraints only as their effect on the task, not as copied support blocks.
+- 保留当前数据库范围：connectionId、catalog、schema。
+- 只保留影响当前任务的 schema 事实：对象名、相关字段、主键/外键、重要约束和关联路径。
+- 已成功验证的 SQL 必须原样保留，不要改写或转述。
+- 查询结果摘要只有在会改变下一步决策时才保留。
+- 保留可复用子代理输出：
+  - `callingExplorerSubAgent`：保留核心发现、高相关对象和剩余歧义。
+  - `callingPlannerSubAgent`：保留主要 SQL 计划、相关备选，以及每个 SQL 产物是已验证还是草稿。
+- 持久约束只保留其对当前任务的影响，不复制原始支持块。
 
-### 3. Tool-Specific Compression
+### 3. 按工具压缩
 
-**Completely remove:**
-- Internal reasoning / thinking traces.
-- Raw tool call JSON parameters unless exact SQL text must be preserved.
-- Raw tool payloads, full result rows, full DDL, repeated retries already superseded, pleasantries, and filler.
+**完全删除：**
+- 内部推理或思考痕迹。
+- 原始工具调用 JSON 参数，除非必须保留精确 SQL。
+- 原始工具大 payload、完整结果行、完整 DDL、已经被后续修正覆盖的重试、寒暄和填充文本。
 
-**Keep only the decision-relevant fields:**
-- `getDatabases` / `getSchemas` -> final relevant scope only.
-- `searchObjects` -> high-relevance candidates; if multiple plausible targets remain, write them under blocking / ambiguity.
-- `getObjectDetail` -> task-relevant structure only.
-- `executeSelectSql` -> exact SQL, row count, conclusion, and whether the result is verified.
-- `executeNonSelectSql` -> exact SQL, confirmation status, execution status, affected rows, and whether a default allow was saved.
-- `renderChart` -> chart type plus the business meaning of the visualization.
-- `askUserQuestion` -> the question, the user's answer, and how it changed the task.
-- Other tools -> one-line impact summary only if it changes the next step.
+**只保留影响决策的字段：**
+- `getDatabases` / `getSchemas`：只保留最终相关范围。
+- `searchObjects`：保留高相关候选；如果仍有多个可能目标，写入阻塞或歧义。
+- `getObjectDetail`：只保留任务相关结构。
+- `executeSelectSql`：保留精确 SQL、行数、结论，以及结果是否已验证。
+- `executeNonSelectSql`：保留精确 SQL、确认状态、执行状态、影响行数，以及是否保存了默认允许规则。
+- `renderChart`：保留图表类型和可视化的业务含义。
+- `askUserQuestion`：保留问题、用户回答，以及该回答如何改变任务。
+- 其他工具：只有在影响下一步时保留一行影响摘要。
 
-### 4. Conflict And Ambiguity Handling
+### 4. 冲突和歧义处理
 
-- If a later step corrected an earlier failure or misconception, keep only the final state plus one short correction note when needed.
-- If there are multiple candidate objects, do not collapse them into one fact.
-- If planner output exists but has not been executed or verified, mark it as draft rather than verified.
-- If write SQL is awaiting approval, preserve that state explicitly.
-- If execution failed and is not yet recovered, keep the failure visible in blocking.
+- 如果后续步骤纠正了早先失败或误解，只保留最终状态；必要时附一条短纠正说明。
+- 如果有多个候选对象，不要合并成单一事实。
+- 如果已有规划专家输出但尚未执行或验证，标记为草稿，不要标成已验证。
+- 如果写 SQL 正在等待用户审批，必须明确保留该状态。
+- 如果执行失败且尚未恢复，阻塞里必须可见。
 
-### 5. Aggressively Discard
+### 5. 强制丢弃
 
-- Support wrappers such as `<system_context>`, `<task>`, `<response_preferences>`, `<scope_hints>`, `<durable_facts>`, `<explicit_references>`.
-- Injected legacy wrappers such as `<user_memory>`, `<user_preferences>`, `<user_mention>`, `<user_question>`, `<memory_context>`, `<candidate_context>`, `<user_query>`.
-- Repeated facts already captured elsewhere.
-- Full raw rows when an aggregate or decision summary is enough.
-- Narration that does not affect the next action.
+- 支持包装标签，例如 `<系统上下文>`、`<任务>`、`<回答偏好>`、`<范围提示>`、`<持久事实>`、`<显式引用>`。
+- 旧注入包装标签，例如 `<user_memory>`、`<user_preferences>`、`<user_mention>`、`<user_question>`、`<memory_context>`、`<candidate_context>`、`<user_query>`。
+- 其他位置已经捕获的重复事实。
+- 聚合或决策摘要已经足够时的完整原始行。
+- 不影响下一步动作的叙述。
 
-## Output Format
+## 输出格式
 
-Produce a structured Markdown summary. Use bullets, not paragraphs.
+输出结构化 Markdown 摘要，使用条目，不写长段落。
 
-- Always output `## Execution State` and `## Pending / Blocking`.
-- Omit `## Grounded Facts` or `## Reusable Artifacts` only if there is truly nothing useful to retain.
+- 始终输出 `## 执行状态` 和 `## 待处理 / 阻塞`。
+- 只有确实没有可保留内容时，才省略 `## 已验证事实` 或 `## 可复用产物`。
 
 ```
-## Execution State
-- Task: [latest user goal]
-- Stage: [discovery|planning|execution|confirmation|answering]
-- Focus: [current immediate focus]
-- Progress: [what is already completed]
-- Constraints Applied: [only if durable constraints materially changed the task]
+## 执行状态
+- 任务：[最新用户目标]
+- 阶段：[发现|规划|执行|确认|回答]
+- 焦点：[当前直接焦点]
+- 进展：[已完成内容]
+- 已应用约束：[只有持久约束实质影响任务时填写]
 
-## Grounded Facts
-- Scope: [connectionId, catalog, schema]
-- Object: [object] -> [task-relevant structure]
-- Finding: [verified fact that affects the next step]
+## 已验证事实
+- 范围：[connectionId, catalog, schema]
+- 对象：[对象] -> [任务相关结构]
+- 结论：[影响下一步的已验证事实]
 
-## Reusable Artifacts
-- Explorer: [main schema-discovery conclusion or high-value objects]
-- Planner: [main plan conclusion]
-- SQL [verified|draft|failed]: `[exact SQL]` -> [result / status]
-- Chart: [chart type + business meaning]
+## 可复用产物
+- 探索：[主要 schema 探索结论或高价值对象]
+- 规划：[主要计划结论]
+- SQL [已验证|草稿|失败]：`[精确 SQL]` -> [结果或状态]
+- 图表：[图表类型 + 业务含义]
 
-## Pending / Blocking
-- Ambiguity: [remaining object or requirement ambiguity, or "none"]
-- Write confirmation: [not_needed|required|confirmed|executed]
-- Blocker: [current unresolved blocker, or "none"]
-- Next step: [what the next main-agent turn should do]
+## 待处理 / 阻塞
+- 歧义：[剩余对象或需求歧义，或 "无"]
+- 写操作确认：[不需要|需要|已确认|已执行]
+- 阻塞：[当前未解决阻塞，或 "无"]
+- 下一步：[下一轮主代理应做什么]
 ```
 
-## Compression Checklist
+## 压缩检查清单
 
-Before finalizing, verify:
-- the next main-agent turn can continue without rereading the raw history
-- exact validated SQL is preserved when still useful
-- unresolved ambiguity remains visible
-- unfinished work is not summarized as completed
+最终输出前确认：
+- 下一轮主代理可以不读原始历史继续执行。
+- 仍有用的已验证 SQL 被精确保留。
+- 未解决歧义仍然可见。
+- 未完成工作没有被总结成已完成。
 
-## Conversation History
+## 对话历史
 
 %s
 
-## Execution-State Handoff
+## 执行状态交接

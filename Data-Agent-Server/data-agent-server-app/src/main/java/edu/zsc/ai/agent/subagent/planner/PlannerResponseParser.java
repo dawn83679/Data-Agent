@@ -17,7 +17,7 @@ public final class PlannerResponseParser {
 
     public static SqlPlan parse(String responseText) {
         if (StringUtils.isBlank(responseText)) {
-            throw new IllegalArgumentException("Planner response is blank");
+            throw new IllegalArgumentException("Planner 响应为空");
         }
 
         String json = extractJsonObject(responseText);
@@ -25,14 +25,14 @@ public final class PlannerResponseParser {
         try {
             plan = JsonUtil.json2Object(json, SqlPlan.class);
         } catch (RuntimeException e) {
-            throw new IllegalArgumentException("Planner response must match the expected JSON schema", e);
+            throw new IllegalArgumentException("Planner 响应必须匹配预期 JSON schema", e);
         }
 
         if (StringUtils.isBlank(plan.getSummaryText())
                 && CollectionUtils.isEmpty(plan.getPlanSteps())
                 && CollectionUtils.isEmpty(plan.getSqlBlocks())
                 && StringUtils.isBlank(plan.getRawResponse())) {
-            throw new IllegalArgumentException("Planner response JSON does not contain summaryText, planSteps, sqlBlocks, or rawResponse");
+            throw new IllegalArgumentException("Planner 响应 JSON 不包含 summaryText、planSteps、sqlBlocks 或 rawResponse");
         }
         return plan;
     }
@@ -52,13 +52,13 @@ public final class PlannerResponseParser {
         int start = trimmed.indexOf('{');
         int end = trimmed.lastIndexOf('}');
         if (start < 0 || end <= start) {
-            throw new IllegalArgumentException("Planner response must contain a JSON object");
+            throw new IllegalArgumentException("Planner 响应必须包含 JSON 对象");
         }
 
         String candidate = trimmed.substring(start, end + 1);
         JsonNode node = JsonUtil.readTree(candidate);
         if (!node.isObject()) {
-            throw new IllegalArgumentException("Planner response root must be a JSON object");
+            throw new IllegalArgumentException("Planner 响应根节点必须是 JSON 对象");
         }
         return candidate;
     }

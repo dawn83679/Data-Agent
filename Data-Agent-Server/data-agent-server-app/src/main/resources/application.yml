@@ -69,29 +69,27 @@ ai:
     model-name: text-embedding-v4
     dimension: 1024
   models:
-    default-model: qwen3.5-plus
-    compression-model: qwen3.5-plus
+    default-model: qwen3.6-max-preview
+    compression-model: qwen3.6-plus
     supported:
-      - model-name: qwen3.5-plus
-        api-model-name: qwen3.5-plus
-        support-thinking: false
-        max-context-tokens: 1048576
-        memory-threshold: 900000
+      - model-name: qwen3.6-max-preview
+        api-model-name: qwen3.6-max-preview
+        support-thinking: true
+        chat-visible: true
+        max-context-tokens: 262144
+        memory-threshold: 230000
+      - model-name: qwen3-max-2026-01-23
+        api-model-name: qwen3-max-2026-01-23
+        support-thinking: true
+        chat-visible: true
+        max-context-tokens: 258048
+        memory-threshold: 230000
       - model-name: qwen3.6-plus
         api-model-name: qwen3.6-plus
         support-thinking: false
+        chat-visible: false
         max-context-tokens: 1000000
         memory-threshold: 900000
-      - model-name: qwen3-max-2026-01-23
-        api-model-name: qwen3-max-2026-01-23
-        support-thinking: false
-        max-context-tokens: 256000
-        memory-threshold: 230000
-      - model-name: qwen3-max-thinking
-        api-model-name: qwen3-max-2026-01-23
-        support-thinking: true
-        max-context-tokens: 256000
-        memory-threshold: 230000
 # 全局通用线程池（发现、异步任务等共用）
 app:
   executor:

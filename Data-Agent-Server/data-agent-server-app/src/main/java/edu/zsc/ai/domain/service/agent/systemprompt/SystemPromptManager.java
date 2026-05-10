@@ -35,6 +35,6 @@ public class SystemPromptManager {
             }
         });
         return new PromptRenderResult<>(rendered, sections, estimatedTokens,
-                "Rendered system prompt sections: " + joiner);
+                "已渲染系统提示词层级：" + joiner);
     }
 }

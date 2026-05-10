@@ -23,9 +23,9 @@ public class ScopeHintsStrategy extends AbstractRuntimeContextHandler {
                 .filter(MemoryPromptProjectionSupport::isPromptInjectableNonPreferenceMemory)
                 .filter(MemoryPromptProjectionSupport::isScopeHintMemory)
                 .toList();
-        return "Helpful scope hints for this task:\n\n"
-                + "Treat the following as the preferred starting scope for this task.\n"
-                + "If the current hints are already specific enough, stay within that scope before considering broader discovery.\n\n"
+        return "当前任务的范围提示：\n\n"
+                + "把下面内容作为本任务优先起点范围。\n"
+                + "如果提示已经足够具体，在考虑更大范围发现前先留在该范围内验证。\n\n"
                 + MemoryPromptProjectionSupport.renderScopeHintList(scopeHintMemories);
     }
 }

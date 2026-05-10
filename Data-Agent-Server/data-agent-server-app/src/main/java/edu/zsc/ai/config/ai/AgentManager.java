@@ -13,7 +13,6 @@ import edu.zsc.ai.domain.service.agent.systemprompt.SystemPromptAssemblyContext;
 import edu.zsc.ai.domain.service.agent.systemprompt.SystemPromptManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -32,6 +31,7 @@ public class AgentManager {
     private final List<Object> agentTools;
     private final AgentSkillConfig agentSkillConfig;
     private final SystemPromptManager systemPromptManager;
+    private final TerminalToolResultPolicy terminalToolResultPolicy;
 
     @Bean
     @Primary
@@ -64,14 +64,11 @@ public class AgentManager {
                                       String systemPrompt) {
         List<Object> tools = agentToolConfig.resolveMainTools(agentTools, mode);
         AgentToolConfig.ToolBundle toolBundle = agentToolConfig.buildToolBundle(tools);
+        StreamingChatModel effectiveModel = new TerminalToolAwareStreamingChatModel(model, terminalToolResultPolicy);
 
         return AiServices.builder(ReActAgent.class)
-                .streamingChatModel(model)
+                .streamingChatModel(effectiveModel)
                 .systemMessage(systemPrompt)
-                .systemMessageTransformer((msg, ctx) -> {
-                    String suffix = ctx.invocationParameters().get("runtimeSystemPromptSuffix");
-                    return StringUtils.isNotBlank(suffix) ? msg + "\n" + suffix : msg;
-                })
                 .chatMemoryProvider(chatMemoryProvider)
                 .tools(toolBundle.executors(), toolBundle.immediateReturnToolNames())
                 .build();
@@ -85,10 +82,9 @@ public class AgentManager {
     }
 
     private PromptEnum resolveMainPrompt(String language, AgentModeEnum mode) {
-        PromptEnum base = PromptEnum.fromRequestLanguage(language);
         if (mode != AgentModeEnum.PLAN) {
-            return base;
+            return PromptEnum.ZH;
         }
-        return base == PromptEnum.ZH ? PromptEnum.ZH_PLAN : PromptEnum.EN_PLAN;
+        return PromptEnum.ZH_PLAN;
     }
 }

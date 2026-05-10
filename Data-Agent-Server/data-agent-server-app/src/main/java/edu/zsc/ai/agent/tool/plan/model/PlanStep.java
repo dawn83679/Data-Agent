@@ -5,23 +5,20 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * A single step in an execution plan.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class PlanStep {
 
-    @Description("Step order number (1-based)")
+    @Description("步骤序号，从 1 开始。")
     private int order;
 
-    @Description("What this step does")
+    @Description("这一步要做什么。")
     private String description;
 
-    @Description("The SQL statement to execute in this step")
+    @Description("这一步要执行的 SQL 语句。")
     private String sql;
 
-    @Description("The table or object name involved")
+    @Description("这一步涉及的表或对象名。")
     private String objectName;
 }

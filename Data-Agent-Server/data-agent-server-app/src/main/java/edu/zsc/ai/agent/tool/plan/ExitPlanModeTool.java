@@ -11,39 +11,31 @@ import edu.zsc.ai.agent.tool.plan.model.PlanStep;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 
-/**
- * Plan-mode exit tool: presents the structured execution plan to the user.
- * Uses IMMEDIATE return behavior to pause the agent stream and wait for user decision.
- * <p>
- * The full plan data is conveyed to the frontend via TOOL_CALL arguments (streamed via SSE).
- * The tool result stored in memory is kept minimal to save tokens on subsequent turns.
- */
 @AgentTool
 @Slf4j
 public class ExitPlanModeTool {
 
     @Tool(
             value = {
-                    "Value: delivers the final structured plan payload to the user at the end of a planning flow.",
-                    "Use When: call only when planning is complete and the plan is specific enough to execute without new design work.",
-                    "After Success: wait for the user's decision before executing the plan or changing its scope.",
-                    "After Failure: keep refining the plan in planning mode. Do not switch back to execution with an incomplete plan.",
-                    "Wait For User: once the plan is presented, do not execute or broaden the scope until the user responds.",
-                    "Result Consumption: the tool arguments carry the plan title and ordered steps that the frontend presents to the user."
+                    "价值：在规划流程结束时，把最终结构化计划交付给用户。",
+                    "使用时机：规划已经完成，且计划已经具体到无需新的设计工作即可执行。",
+                    "成功后：等待用户决定，再执行计划或改变范围。",
+                    "失败后：继续在计划模式中完善计划，不要带着不完整计划切回执行。",
+                    "等待用户：计划展示后，用户回应前不要执行，也不要扩大范围。",
+                    "结果消费：工具参数承载计划标题和有序步骤，前端会展示给用户。"
             },
             returnBehavior = ReturnBehavior.IMMEDIATE
     )
     public String exitPlanMode(
-            @P("Plan title / summary") String title,
-            @P("List of planned steps, each with order, description, SQL, and objectName") List<PlanStep> steps) {
+            @P("计划标题或摘要") String title,
+            @P("计划步骤列表，每项包含 order、description、SQL 和 objectName") List<PlanStep> steps) {
 
         int stepCount = CollectionUtils.size(steps);
         log.info("[Tool] exitPlanMode, title='{}', steps={}", title, stepCount);
 
-        // Minimal result for memory — full plan data is in the tool call arguments
         return ToolMessageSupport.sentence(
-                "Plan '" + title + "' was presented to the user with " + stepCount + " step(s).",
-                "Wait for the user's decision before executing the plan or changing its scope."
+                "计划 `" + title + "` 已展示给用户，包含 " + stepCount + " 个步骤。",
+                "执行计划或改变范围前，先等待用户决定。"
         );
     }
 }

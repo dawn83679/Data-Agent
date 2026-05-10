@@ -26,8 +26,8 @@ class ExplorerSubAgentTest {
         assertTrue(content.contains("summaryText"));
         assertTrue(content.contains("objects"));
         assertTrue(content.contains("rawResponse"));
-        assertTrue(content.contains("<role>"));
-        assertTrue(content.contains("<rule>"));
+        assertTrue(content.contains("<角色>"));
+        assertTrue(content.contains("<规则>"));
         assertTrue(content.contains("TodoTool"));
         assertTrue(content.contains("executeSelectSql"));
     }

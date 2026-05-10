@@ -33,7 +33,7 @@ class ChatServiceImplTest {
         request.setMessage("plan this");
 
         ChatSession session = new ChatSession(
-                "qwen3-max",
+                "qwen3.6-max-preview",
                 AgentModeEnum.AGENT,
                 mock(ReActAgent.class),
                 "memory-id",

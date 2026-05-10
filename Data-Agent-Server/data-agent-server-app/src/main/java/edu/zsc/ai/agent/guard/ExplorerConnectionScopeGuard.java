@@ -25,11 +25,11 @@ public final class ExplorerConnectionScopeGuard {
         List<Long> allowedConnectionIds = requireAllowedConnectionIds();
         if (connectionId == null) {
             throw new IllegalArgumentException(
-                    "Explorer scope requires a connectionId; allowedConnectionIds=" + allowedConnectionIds);
+                    "Explorer 范围必须提供 connectionId；allowedConnectionIds=" + allowedConnectionIds);
         }
         if (!allowedConnectionIds.contains(connectionId)) {
             throw new IllegalArgumentException(
-                    "connectionId " + connectionId + " is not allowed for this explorer task; allowedConnectionIds=" + allowedConnectionIds);
+                    "connectionId " + connectionId + " 不在当前 explorer 任务允许范围内；allowedConnectionIds=" + allowedConnectionIds);
         }
     }
 }

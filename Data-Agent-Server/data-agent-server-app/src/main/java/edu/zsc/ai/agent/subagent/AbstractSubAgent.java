@@ -10,9 +10,6 @@ import org.slf4j.Logger;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Shared execution helpers for concrete SubAgent implementations.
- */
 public abstract class AbstractSubAgent<I, O> implements SubAgent<I, O> {
 
     protected Long resolveConversationId() {
@@ -29,7 +26,7 @@ public abstract class AbstractSubAgent<I, O> implements SubAgent<I, O> {
         if (modelName != null && !modelName.isBlank()) {
             return modelName;
         }
-        logger.warn("No modelName in AgentRequestContext, falling back to default");
+        logger.warn("AgentRequestContext 中没有 modelName，使用默认模型");
         return aiModelCatalog.defaultModelName();
     }
 

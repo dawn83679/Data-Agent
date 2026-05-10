@@ -34,26 +34,22 @@ public class UpdateMemoryTool {
 
     private final MemoryService memoryService;
     @Tool({
-            "Use this tool only for durable memory that should affect future turns.",
-            "CREATE stores a new durable memory. UPDATE revises an existing one. DELETE disables an outdated or wrong one.",
-            "Write memory only for stable preferences, stable rules, verified facts, field definitions, object knowledge, or reusable SQL patterns.",
-            "Do not write memory for one-off requests, temporary context, guesses, or raw chat wording.",
-            "For UPDATE or DELETE, usually call readMemory first and use the returned memoryId.",
-            "content must be short, factual, reusable, and specific enough to apply later.",
-            "If the memory is about a concrete table, view, schema, or connection, include the exact identifiers you know.",
-            "Choose the narrowest valid scope. USER is for cross-conversation memory. CONVERSATION is only for memory that should stay inside this conversation.",
-            "Do not narrate the tool call to the user. Just continue the task with the updated memory state."
+            "价值：写入、更新或删除会影响后续轮次的持久记忆。",
+            "使用时机：需要保存稳定偏好、稳定规则、已验证事实、字段定义、对象知识或可复用 SQL 模式。",
+            "前置条件：UPDATE 或 DELETE 通常先调用 readMemory 获取 memoryId；content 必须简短、事实化、可复用、足够具体。",
+            "结果：返回记忆 ID、范围、记忆类型、记忆子类型和实际动作。",
+            "边界：不要写入一次性请求、临时上下文、猜测或原始聊天措辞；不要向用户叙述内部记忆写入过程。"
     })
     public AgentToolResult updateMemory(
-            @P("Operation: CREATE, UPDATE, or DELETE") MemoryOperationEnum operation,
-            @P(value = "Target memoryId. Required for UPDATE and DELETE. Omit for CREATE.", required = false) Long memoryId,
-            @P(value = "Memory scope: USER or CONVERSATION. Required for CREATE, optional for UPDATE, ignored for DELETE.", required = false) MemoryScopeEnum scope,
-            @P(value = "Memory type: PREFERENCE, BUSINESS_RULE, KNOWLEDGE_POINT, WORKFLOW_CONSTRAINT, or GOLDEN_SQL_CASE. Required for CREATE, optional for UPDATE, ignored for DELETE.", required = false) MemoryTypeEnum memoryType,
-            @P(value = "Memory subType. Must exactly match one of: RESPONSE_FORMAT, LANGUAGE_PREFERENCE, PRODUCT_RULE, DOMAIN_RULE, GOVERNANCE_RULE, SAFETY_RULE, ARCHITECTURE_KNOWLEDGE, DOMAIN_KNOWLEDGE, GLOSSARY, OBJECT_KNOWLEDGE, PROCESS_RULE, APPROVAL_RULE, IMPLEMENTATION_CONSTRAINT, REVIEW_CONSTRAINT, QUERY_PATTERN, JOIN_STRATEGY, VALIDATED_SQL, METRIC_CALCULATION. Required for CREATE, optional for UPDATE, ignored for DELETE.", required = false) MemorySubTypeEnum subType,
-            @P(value = "Short memory title. Optional for CREATE or UPDATE, ignored for DELETE.", required = false) String title,
-            @P(value = "Authoritative durable memory content. Required for CREATE and UPDATE. For object-level scope or concrete database knowledge, include exact identifiers when known: connectionId, connection name, catalog/database, schema, and object/table/view name.", required = false) String content,
-            @P(value = "Short reason explaining why this memory should persist, be revised, or be removed", required = false) String reason,
-            @P(value = ToolDescriptionParam.UI_STEP_DESCRIPTION, required = false) String description,
+            @P("操作类型：CREATE、UPDATE 或 DELETE。") MemoryOperationEnum operation,
+            @P(value = "目标 memoryId。UPDATE 和 DELETE 必填；CREATE 时省略。", required = false) Long memoryId,
+            @P(value = "记忆范围：USER 或 CONVERSATION。CREATE 必填，UPDATE 可选，DELETE 忽略。", required = false) MemoryScopeEnum scope,
+            @P(value = "记忆类型：PREFERENCE、BUSINESS_RULE、KNOWLEDGE_POINT、WORKFLOW_CONSTRAINT 或 GOLDEN_SQL_CASE。CREATE 必填，UPDATE 可选，DELETE 忽略。", required = false) MemoryTypeEnum memoryType,
+            @P(value = "记忆子类型。必须精确匹配枚举值，例如 RESPONSE_FORMAT、LANGUAGE_PREFERENCE、PRODUCT_RULE、DOMAIN_RULE、GOVERNANCE_RULE、SAFETY_RULE、ARCHITECTURE_KNOWLEDGE、DOMAIN_KNOWLEDGE、GLOSSARY、OBJECT_KNOWLEDGE、PROCESS_RULE、APPROVAL_RULE、IMPLEMENTATION_CONSTRAINT、REVIEW_CONSTRAINT、QUERY_PATTERN、JOIN_STRATEGY、VALIDATED_SQL、METRIC_CALCULATION。CREATE 必填，UPDATE 可选，DELETE 忽略。", required = false) MemorySubTypeEnum subType,
+            @P(value = "简短记忆标题。CREATE 或 UPDATE 可选，DELETE 忽略。", required = false) String title,
+            @P(value = "权威持久记忆内容。CREATE 和 UPDATE 必填。若是对象级范围或具体数据库知识，已知时包含精确标识：connectionId、连接名、catalog/数据库、schema、对象/表/视图名。", required = false) String content,
+            @P(value = "简短说明为什么要保留、修改或删除这条记忆。", required = false) String reason,
+            @P(ToolDescriptionParam.UI_STEP_DESCRIPTION) String description,
             InvocationParameters parameters) {
 
         AgentTypeEnum agentType = AgentTypeEnum.fromCode(AgentRequestContext.getAgentType());
@@ -61,8 +57,8 @@ public class UpdateMemoryTool {
         if (agentMode != AgentModeEnum.AGENT
                 || (agentType != AgentTypeEnum.MAIN && agentType != AgentTypeEnum.MEMORY_WRITER)) {
             return AgentToolResult.fail(ToolMessageSupport.sentence(
-                    "updateMemory is only available to the main agent or memory writer in normal execution mode.",
-                    "Do not attempt to mutate memory from this agent context."
+                    "updateMemory 只允许主 Agent 或记忆写入 Agent 在普通执行模式下使用。",
+                    "不要在当前 Agent 上下文中尝试变更记忆。"
             ));
         }
 
@@ -96,15 +92,15 @@ public class UpdateMemoryTool {
                     memory.getMemoryType(),
                     memory.getSubType());
             return AgentToolResult.success(result, ToolMessageSupport.sentence(
-                    "Memory mutation completed.",
-                    "Do not mention the internal memory mutation unless the user explicitly asks about memory management."
+                    "记忆变更已完成。",
+                    "除非用户明确询问记忆管理，否则不要提及内部记忆变更。"
             ));
         } catch (BusinessException e) {
             log.warn("updateMemory rejected: {}", e.getMessage());
             return AgentToolResult.fail(e.getMessage());
         } catch (Exception e) {
             log.error("updateMemory failed", e);
-            return AgentToolResult.fail("Failed to mutate memory. Review the memory classification, target memoryId, and content before retrying.");
+            return AgentToolResult.fail("变更记忆失败。重试前检查记忆分类、目标 memoryId 和内容。");
         }
     }
 

@@ -129,20 +129,20 @@ public class ToolErrorMapper {
 
     private String defaultUnexpectedMessage(String toolName) {
         return ToolMessageSupport.sentence(
-                "Tool " + toolName + " failed before it could return a usable result.",
-                "Review the current inputs and context, then retry.",
+                "工具 " + toolName + " 在返回可用结果前失败。",
+                "检查当前输入和上下文后再重试。",
                 ToolMessageSupport.IF_THE_TARGET_IS_STILL_UNCLEAR_ASK_THE_USER_BEFORE_PROCEEDING
         );
     }
 
     private String buildValidationMessage(String toolName, String rawMessage, String sanitizedArgs) {
-        String detail = StringUtils.defaultIfBlank(rawMessage, "invalid input or missing context");
+        String detail = StringUtils.defaultIfBlank(rawMessage, "输入无效或上下文缺失");
         String context = formatArgsForModel(sanitizedArgs);
         return ToolMessageSupport.sentence(
-                "Tool " + toolName + " rejected the current input" + context + ".",
-                "Error: " + detail + ".",
-                "Fix the parameters or missing context before retrying.",
-                "Do not continue with dependent steps until this is resolved."
+                "工具 " + toolName + " 拒绝了当前输入" + context + "。",
+                "错误：" + detail + "。",
+                "重试前修正参数或补齐缺失上下文。",
+                "问题解决前不要继续依赖它的后续步骤。"
         );
     }
 
@@ -154,9 +154,9 @@ public class ToolErrorMapper {
             return defaultUnexpectedMessage(toolName);
         }
         return ToolMessageSupport.sentence(
-                "Tool " + toolName + " failed" + context + ".",
-                "Error: " + detail + ".",
-                "Review the current scope and retry.",
+                "工具 " + toolName + " 执行失败" + context + "。",
+                "错误：" + detail + "。",
+                "检查当前范围后再重试。",
                 ToolMessageSupport.IF_THE_TARGET_IS_STILL_UNCLEAR_ASK_THE_USER_BEFORE_PROCEEDING
         );
     }
@@ -165,7 +165,7 @@ public class ToolErrorMapper {
         if (StringUtils.isBlank(sanitizedArgs)) {
             return StringUtils.EMPTY;
         }
-        return " while handling " + sanitizedArgs;
+        return "，处理参数：" + sanitizedArgs;
     }
 
     private String sanitizeValue(Object value) {
@@ -180,10 +180,10 @@ public class ToolErrorMapper {
             return String.valueOf(value);
         }
         if (value instanceof Collection<?> collection) {
-            return value.getClass().getSimpleName() + "(size=" + CollectionUtils.size(collection) + ")";
+            return value.getClass().getSimpleName() + "(数量=" + CollectionUtils.size(collection) + ")";
         }
         if (value.getClass().isArray()) {
-            return value.getClass().getComponentType().getSimpleName() + "Array(length=" + Array.getLength(value) + ")";
+            return value.getClass().getComponentType().getSimpleName() + "Array(长度=" + Array.getLength(value) + ")";
         }
         return Optional.ofNullable(value.getClass().getSimpleName()).filter(StringUtils::isNotBlank).orElse("Object");
     }

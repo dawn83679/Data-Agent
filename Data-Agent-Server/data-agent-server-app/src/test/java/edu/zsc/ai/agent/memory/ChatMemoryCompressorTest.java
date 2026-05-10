@@ -119,7 +119,7 @@ class ChatMemoryCompressorTest {
                 .tokenCount(6400)
                 .build());
         when(compressionService.compress(any())).thenReturn(new CompressionResult(
-                "## Execution State\n- Task: compressed",
+                "## 执行状态\n- 任务：compressed",
                 2100,
                 700
         ));
@@ -130,14 +130,14 @@ class ChatMemoryCompressorTest {
                 stored(conversationId, UserMessage.from("u4"))
         ));
 
-        CompressionDoneMetadata result = compressor.compressNow(conversationId, "qwen3.5-plus");
+        CompressionDoneMetadata result = compressor.compressNow(conversationId, "qwen3.6-plus");
 
         assertEquals(Boolean.TRUE, result.memoryCompressed());
         assertEquals(6400, result.tokenCountBefore());
         assertEquals(700, result.tokenCountAfter());
         assertEquals(3, result.compressedMessageCount());
         assertEquals(1, result.keptRecentCount());
-        assertEquals("## Execution State\n- Task: compressed", result.summary());
+        assertEquals("## 执行状态\n- 任务：compressed", result.summary());
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<ChatMessage>> captor = ArgumentCaptor.forClass((Class) List.class);
@@ -161,7 +161,7 @@ class ChatMemoryCompressorTest {
                 stored(conversationId, UserMessage.from("u3"))
         ));
 
-        CompressionDoneMetadata result = compressor.compressNow(conversationId, "qwen3.5-plus");
+        CompressionDoneMetadata result = compressor.compressNow(conversationId, "qwen3.6-plus");
 
         assertEquals(Boolean.FALSE, result.memoryCompressed());
         assertEquals(900, result.tokenCountBefore());
@@ -185,7 +185,7 @@ class ChatMemoryCompressorTest {
         ));
         when(compressionService.compress(any())).thenThrow(new IllegalStateException("boom"));
 
-        CompressionDoneMetadata result = compressor.compressNow(conversationId, "qwen3.5-plus");
+        CompressionDoneMetadata result = compressor.compressNow(conversationId, "qwen3.6-plus");
 
         assertEquals(Boolean.FALSE, result.memoryCompressed());
         assertEquals(4200, result.tokenCountBefore());

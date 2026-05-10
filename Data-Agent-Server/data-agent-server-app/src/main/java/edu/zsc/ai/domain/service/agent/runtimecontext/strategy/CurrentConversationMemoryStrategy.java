@@ -26,13 +26,13 @@ public class CurrentConversationMemoryStrategy extends AbstractRuntimeContextHan
             return PromptFormatSupport.renderBlock(
                     context.getLanguage(),
                     "当前会话工作记忆：",
-                    "Current conversation working memory:",
+                    "当前会话工作记忆：",
                     List.of(PromptConstant.NONE));
         }
         return PromptFormatSupport.title(
                 context.getLanguage(),
                 "当前会话工作记忆：",
-                "Current conversation working memory:")
+                "当前会话工作记忆：")
                 + "\n"
                 + markdown.strip();
     }

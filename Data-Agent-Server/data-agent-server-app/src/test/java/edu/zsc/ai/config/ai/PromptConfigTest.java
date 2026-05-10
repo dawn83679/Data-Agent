@@ -5,9 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Tests for PromptConfig — resource loading and placeholder injection.
- */
 class PromptConfigTest {
 
     @Test
@@ -46,7 +43,7 @@ class PromptConfigTest {
     @Test
     void memoryWriterPrompt_mentionsStructuredDraftConstraints() {
         String content = PromptConfig.getPrompt(PromptEnum.MEMORY_WRITER);
-        assertTrue(content.contains("strict JSON"));
+        assertTrue(content.contains("严格 JSON"));
         assertTrue(content.contains("currentTask"));
         assertTrue(content.contains("activeScope"));
         assertTrue(content.contains("resolvedMilestones"));

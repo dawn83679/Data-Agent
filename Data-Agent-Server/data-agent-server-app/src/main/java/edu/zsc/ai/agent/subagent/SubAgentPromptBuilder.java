@@ -6,9 +6,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 
-/**
- * Builds prompt text for SubAgent invocations.
- */
 public class SubAgentPromptBuilder {
 
     private String instruction;
@@ -45,14 +42,14 @@ public class SubAgentPromptBuilder {
 
     public String build() {
         StringBuilder sb = new StringBuilder();
-        sb.append("Instruction: ").append(StringUtils.defaultString(instruction)).append("\n");
-        sb.append("Connection: ").append(connectionId == null ? StringUtils.EMPTY : connectionId).append("\n");
+        sb.append("指令：").append(StringUtils.defaultString(instruction)).append("\n");
+        sb.append("连接：").append(connectionId == null ? StringUtils.EMPTY : connectionId).append("\n");
         if (CollectionUtils.isNotEmpty(allowedConnectionIds)) {
-            sb.append("AllowedConnections: ").append(ConnectionIdUtil.toCsv(allowedConnectionIds)).append("\n");
+            sb.append("允许连接：").append(ConnectionIdUtil.toCsv(allowedConnectionIds)).append("\n");
         }
 
         if (StringUtils.isNotBlank(context)) {
-            sb.append("\nContext:\n").append(context).append("\n");
+            sb.append("\n上下文：\n").append(context).append("\n");
         }
 
         return sb.toString();

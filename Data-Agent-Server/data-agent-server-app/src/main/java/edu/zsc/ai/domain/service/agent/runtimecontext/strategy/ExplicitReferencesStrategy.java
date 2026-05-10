@@ -36,14 +36,14 @@ public class ExplicitReferencesStrategy extends AbstractRuntimeContextHandler {
             return PromptFormatSupport.renderBlock(
                     context.getLanguage(),
                     "本轮用户显式引用：",
-                    "The user explicitly referenced:",
+                    "本轮用户显式引用：",
                     List.of(PromptConstant.NONE));
         }
 
         return PromptFormatSupport.renderBlock(
                 context.getLanguage(),
                 "本轮用户显式引用：",
-                "The user explicitly referenced:",
+                "本轮用户显式引用：",
                 mentions.stream()
                         .map(this::toPayload)
                         .map(this::toLine)
@@ -64,11 +64,11 @@ public class ExplicitReferencesStrategy extends AbstractRuntimeContextHandler {
 
     private String toLine(Map<String, Object> payload) {
         return "token: " + StringUtils.defaultString((String) payload.get("token"))
-                + "; object_type: " + StringUtils.defaultString((String) payload.get("objectType"))
-                + "; connection: " + StringUtils.defaultString((String) payload.get("connectionName"))
+                + "; 对象类型: " + StringUtils.defaultString((String) payload.get("objectType"))
+                + "; 连接: " + StringUtils.defaultString((String) payload.get("connectionName"))
                 + " (id=" + payload.get("connectionId") + ")"
                 + "; catalog: " + StringUtils.defaultString((String) payload.get("catalogName"))
                 + "; schema: " + StringUtils.defaultString((String) payload.get("schemaName"))
-                + "; object: " + StringUtils.defaultString((String) payload.get("objectName"));
+                + "; 对象: " + StringUtils.defaultString((String) payload.get("objectName"));
     }
 }

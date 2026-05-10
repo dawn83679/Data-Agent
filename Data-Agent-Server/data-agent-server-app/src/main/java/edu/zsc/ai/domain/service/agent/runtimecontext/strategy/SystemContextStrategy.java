@@ -23,10 +23,10 @@ public class SystemContextStrategy extends AbstractRuntimeContextHandler {
         return PromptFormatSupport.renderBlock(
                 context.getLanguage(),
                 "当前运行时环境：",
-                "Current runtime environment:",
+                "当前运行时环境：",
                 List.of(
-                        "today: " + (context.getCurrentDate() == null ? "" : context.getCurrentDate().toString()),
-                        "timezone: " + StringUtils.defaultString(context.getTimezone())
+                        "今天：" + (context.getCurrentDate() == null ? "" : context.getCurrentDate().toString()),
+                        "时区：" + StringUtils.defaultString(context.getTimezone())
                 ));
     }
 }

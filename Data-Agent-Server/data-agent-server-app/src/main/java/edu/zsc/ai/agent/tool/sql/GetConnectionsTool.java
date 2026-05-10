@@ -25,14 +25,14 @@ public class GetConnectionsTool {
     private final DbConnectionService dbConnectionService;
 
     @Tool({
-            "Value: returns the verified list of data-source connections currently available to the requesting user.",
-            "Use When: the connection scope is missing, or the user asks which connections are available.",
-            "Preconditions: none.",
-            "Result: each item contains id, name, and dbType only.",
-            "Boundary: do not invent hosts, ports, credentials, or hidden metadata."
+            "价值：返回当前用户可用的数据源连接列表。",
+            "使用时机：连接范围缺失，或用户询问有哪些连接可用。",
+            "前置条件：无。",
+            "结果：每项只包含 id、name 和 dbType。",
+            "边界：不要编造主机、端口、凭据或隐藏元数据。"
     })
     public AgentToolResult getConnections(
-            @P(value = ToolDescriptionParam.UI_STEP_DESCRIPTION, required = false) String description,
+            @P(ToolDescriptionParam.UI_STEP_DESCRIPTION) String description,
             InvocationParameters parameters) {
         log.info("[Tool] getConnections");
         try {
@@ -41,18 +41,18 @@ public class GetConnectionsTool {
                     .toList();
             if (connections.isEmpty()) {
                 log.info("[Tool done] getConnections -> empty");
-                return AgentToolResult.empty("No available connections were found for the current session.");
+                return AgentToolResult.empty("当前会话没有找到可用连接。");
             }
             log.info("[Tool done] getConnections count={}", connections.size());
             return AgentToolResult.success(connections,
                     ToolMessageSupport.sentence(
-                            "Returned " + connections.size() + " available connection(s) for the current session.",
-                            "If the current task still lacks a grounded connection scope, use askUserQuestion to ask the user which connection should be used before continuing."
+                            "已返回当前会话的 " + connections.size() + " 个可用连接。",
+                            "如果当前任务仍缺少明确连接范围，继续前使用 askUserQuestion 询问用户要使用哪个连接。"
                     ));
         } catch (Exception e) {
             log.warn("[Tool] getConnections failed: {}", e.getMessage());
             return AgentToolResult.fail(
-                    "Failed to list available connections: " + e.getMessage());
+                    "获取可用连接失败：" + e.getMessage());
         }
     }
 
