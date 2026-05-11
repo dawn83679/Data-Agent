@@ -137,7 +137,7 @@ class SearchObjectsToolTest {
         );
 
         assertFalse(result.isSuccess());
-        assertTrue(result.getMessage().contains("schemaNamePattern requires databaseNamePattern"));
+        assertTrue(result.getMessage().contains("schemaNamePattern 需要同时指定 databaseNamePattern"));
         verifyNoInteractions(discoveryService);
     }
 
@@ -172,7 +172,7 @@ class SearchObjectsToolTest {
         );
 
         assertFalse(result.isSuccess());
-        assertTrue(result.getMessage().contains("not allowed"));
+        assertTrue(result.getMessage().contains("不在当前 explorer 任务允许范围内"));
         verifyNoInteractions(discoveryService);
     }
 
@@ -192,10 +192,9 @@ class SearchObjectsToolTest {
         );
 
         assertTrue(result.isSuccess());
-        assertTrue(result.getMessage().contains("Object search encountered scope failures"));
-        assertTrue(result.getMessage().contains("pattern=%user%"));
+        assertTrue(result.getMessage().contains("对象搜索在范围 对象名模式=%user% 上遇到失败"));
         assertTrue(result.getMessage().contains("connectionId=7 timeout"));
-        assertTrue(result.getMessage().contains("Use askUserQuestion to ask the user to clarify the target scope before continuing."));
+        assertTrue(result.getMessage().contains("继续前使用 askUserQuestion 询问用户明确目标范围"));
     }
 
     @Test
@@ -209,10 +208,9 @@ class SearchObjectsToolTest {
         );
 
         assertTrue(result.isSuccess());
-        assertTrue(result.getMessage().contains("Object search encountered scope failures"));
-        assertTrue(result.getMessage().contains("pattern=%user%, connectionId=5"));
+        assertTrue(result.getMessage().contains("对象搜索在范围 对象名模式=%user%, connectionId=5 上遇到失败"));
         assertTrue(result.getMessage().contains("connectionId=5 closed"));
-        assertTrue(result.getMessage().contains("Use askUserQuestion to ask the user to clarify the target scope before continuing."));
+        assertTrue(result.getMessage().contains("继续前使用 askUserQuestion 询问用户明确目标范围"));
     }
 
     @Test
@@ -228,8 +226,8 @@ class SearchObjectsToolTest {
         );
 
         assertTrue(result.isSuccess());
-        assertTrue(result.getMessage().contains("Object search found 1 candidate(s)"));
-        assertTrue(result.getMessage().contains("Use askUserQuestion to ask the user to narrow the target object before continuing."));
+        assertTrue(result.getMessage().contains("对象搜索在范围 对象名模式=chat2db_user, connectionId=3, 数据库模式=enterprise_gateway_dev 中找到 1 个候选"));
+        assertTrue(result.getMessage().contains("继续前使用 askUserQuestion 询问用户缩小目标对象范围"));
     }
 
     @Test
@@ -254,8 +252,8 @@ class SearchObjectsToolTest {
         );
 
         assertTrue(result.isSuccess());
-        assertTrue(result.getMessage().contains("Object search found 2 candidate(s)"));
-        assertTrue(result.getMessage().contains("Use askUserQuestion to ask the user to narrow the target object before continuing."));
+        assertTrue(result.getMessage().contains("对象搜索在范围 对象名模式=%user%, connectionId=3, 数据库模式=enterprise_gateway_dev 中找到 2 个候选"));
+        assertTrue(result.getMessage().contains("继续前使用 askUserQuestion 询问用户缩小目标对象范围"));
     }
 
     private SearchObjectsTool proxiedTool() {

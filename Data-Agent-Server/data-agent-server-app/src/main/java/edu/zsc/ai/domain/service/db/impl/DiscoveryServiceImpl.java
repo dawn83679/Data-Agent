@@ -212,10 +212,17 @@ public class DiscoveryServiceImpl implements DiscoveryService {
     private List<String> resolveSchemas(Long connectionId, String database, String schemaNamePattern) {
         List<String> schemas = getSchemas(connectionId, database);
         if (CollectionUtils.isEmpty(schemas)) {
-            // No schemas (e.g. MySQL) → use null as placeholder to still search the database
-            return StringUtils.isBlank(schemaNamePattern) ? Collections.singletonList(null) : Collections.emptyList();
+            // No schemas (e.g. MySQL) -> use null as placeholder to still search the database.
+            return isBlankOrWildcardOnly(schemaNamePattern) ? Collections.singletonList(null) : Collections.emptyList();
         }
         return filterNamesBySqlPattern(schemas, schemaNamePattern);
+    }
+
+    private boolean isBlankOrWildcardOnly(String sqlPattern) {
+        if (StringUtils.isBlank(sqlPattern)) {
+            return true;
+        }
+        return sqlPattern.trim().chars().allMatch(ch -> ch == '%');
     }
 
     private List<String> filterNamesBySqlPattern(List<String> names, String sqlPattern) {

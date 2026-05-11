@@ -131,6 +131,27 @@ class DiscoveryServiceImplTest {
     }
 
     @Test
+    void searchObjects_treatsWildcardSchemaPatternAsNoSchemaForSchemaLessDatabase() {
+        when(dbConnectionService.getConnectionById(3L)).thenReturn(connection(3L));
+        when(databaseService.getDatabases(3L)).thenReturn(List.of("enterprise_gateway_dev"));
+        when(schemaService.listSchemas(3L, "enterprise_gateway_dev")).thenReturn(List.of());
+        when(databaseObjectService.searchObjects(
+                eq(DatabaseObjectTypeEnum.TABLE),
+                eq("%order%"),
+                eq(new DbContext(3L, "enterprise_gateway_dev", null)),
+                isNull()
+        )).thenReturn(List.of("order_item"));
+
+        ObjectSearchResponse response = discoveryService.searchObjects(
+                "%order%", DatabaseObjectTypeEnum.TABLE, 3L, "%", "%");
+
+        assertEquals(1, response.results().size());
+        assertEquals("order_item", response.results().get(0).objectName());
+        assertEquals("enterprise_gateway_dev", response.results().get(0).databaseName());
+        assertEquals(null, response.results().get(0).schemaName());
+    }
+
+    @Test
     void getObjectDetails_inExplorerScope_marksOutOfScopeItemsAsFailed() {
         RequestContext.set(RequestContextInfo.builder()
                 .connectionId(5L)
@@ -146,7 +167,7 @@ class DiscoveryServiceImplTest {
 
         assertEquals(1, results.size());
         assertFalse(results.get(0).success());
-        assertTrue(results.get(0).error().contains("not allowed"));
+        assertTrue(results.get(0).error().contains("不在当前 explorer 任务允许范围内"));
     }
 
     @Test
