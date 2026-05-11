@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MessageRole } from '../../../types/chat';
+import { MessageRole, type WaitingPromptMode } from '../../../types/chat';
 import { mergeAssistantToolPairs } from './mergeMessages';
 import { MessageAccumulator } from './MessageAccumulator';
 import { MessageListItem } from './MessageListItem';
@@ -21,6 +21,7 @@ export interface MessageListProps {
   messagesEndRef: React.Ref<HTMLDivElement>;
   isLoading?: boolean;
   isWaiting?: boolean;
+  waitingPromptMode?: WaitingPromptMode;
 }
 
 export function MessageList({
@@ -28,6 +29,7 @@ export function MessageList({
   messagesEndRef,
   isLoading = false,
   isWaiting = false,
+  waitingPromptMode = 'default',
 }: MessageListProps) {
   const { t } = useTranslation();
   const displayMessages = useMemo(() => mergeAssistantToolPairs(messages), [messages]);
@@ -50,9 +52,20 @@ export function MessageList({
     [displayMessages]
   );
   const hiddenCount = displayMessages.length - visibleMessages.length;
+  let lastVisibleRoleBeforeWindow: MessageRole | null = null;
+  if (hiddenCount > 0) {
+    for (let i = hiddenCount - 1; i >= 0; i--) {
+      const previous = displayMessages[i];
+      if (previous && !isHiddenAskUserAnswerMessage(previous)) {
+        lastVisibleRoleBeforeWindow = previous.role;
+        break;
+      }
+    }
+  }
+  let previousVisibleRole = lastVisibleRoleBeforeWindow;
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-6 bg-[color:var(--bg-panel)]">
+    <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-1.5 bg-[color:var(--bg-panel)]">
       {hiddenCount > 0 && (
         <div className="text-center text-xs theme-text-secondary py-2 opacity-60">
           {hiddenCount} {t('ai.messages_hidden', { defaultValue: 'earlier messages hidden' })}
@@ -62,6 +75,10 @@ export function MessageList({
         if (isHiddenAskUserAnswerMessage(msg)) {
           return null;
         }
+
+        const showAssistantHeader =
+          msg.role !== MessageRole.ASSISTANT || previousVisibleRole !== MessageRole.ASSISTANT;
+        previousVisibleRole = msg.role;
 
         const actualIndex = hiddenCount + msgIndex;
         const isLastMessage = actualIndex === displayMessages.length - 1;
@@ -127,6 +144,8 @@ export function MessageList({
             totalCount={displayMessages.length}
             isLoading={isLoading}
             isWaiting={isLastAssistantStreaming ? isWaiting : false}
+            waitingPromptMode={waitingPromptMode}
+            showAssistantHeader={showAssistantHeader}
             segments={segments}
             overrideTodoBoxes={overrideTodoBoxes}
             hideTodoInThisMessage={hideTodoInMessage}
@@ -140,7 +159,7 @@ export function MessageList({
       {showPlanningRow && (
         <div className="flex flex-col w-full">
           <div className="text-xs theme-text-primary">
-            <PlanningIndicator />
+            <PlanningIndicator mode={waitingPromptMode} className="mt-0.5" />
           </div>
         </div>
       )}
@@ -219,6 +238,7 @@ const MemoizedMessageListItem = React.memo(
 
     if (
       prevProps.isWaiting !== nextProps.isWaiting ||
+      prevProps.waitingPromptMode !== nextProps.waitingPromptMode ||
       prevProps.hideTodoInThisMessage !== nextProps.hideTodoInThisMessage ||
       prevProps.showAllCompletedPrompt !== nextProps.showAllCompletedPrompt
     ) {

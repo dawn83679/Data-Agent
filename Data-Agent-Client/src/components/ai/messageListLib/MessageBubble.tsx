@@ -1,4 +1,4 @@
-import { MessageRole } from '../../../types/chat';
+import { MessageRole, type WaitingPromptMode } from '../../../types/chat';
 import { UserBubble } from './UserBubble';
 import { AssistantBubble } from './AssistantBubble';
 import { CompactSummaryBubble } from './CompactSummaryBubble';
@@ -11,6 +11,8 @@ export interface MessageBubbleProps {
   segments: Segment[];
   isLastAssistantStreaming: boolean;
   isWaiting: boolean;
+  waitingPromptMode: WaitingPromptMode;
+  showAssistantHeader?: boolean;
   /** When true, do not render raw todo segments (we show boxes from overrideTodoBoxes where applicable). */
   hideTodoInThisMessage?: boolean;
   /** Todo boxes to show in this message (one per todoId that first appeared here). */
@@ -23,6 +25,8 @@ export function MessageBubble({
   segments,
   isLastAssistantStreaming,
   isWaiting,
+  waitingPromptMode,
+  showAssistantHeader = true,
   hideTodoInThisMessage = false,
   overrideTodoBoxes = [],
   showElapsedTextForSubAgent = true,
@@ -41,6 +45,8 @@ export function MessageBubble({
       overrideTodoBoxes={overrideTodoBoxes}
       isLastAssistantStreaming={isLastAssistantStreaming}
       isWaiting={isWaiting}
+      waitingPromptMode={waitingPromptMode}
+      showAssistantHeader={showAssistantHeader}
       showElapsedTextForSubAgent={showElapsedTextForSubAgent}
     />
   );

@@ -1,6 +1,7 @@
 import { MessageList, type Message } from './MessageList';
 import { MessageQueuePanel } from './MessageQueuePanel';
 import { ChatErrorStrip } from './ChatErrorStrip';
+import type { WaitingPromptMode } from '../../types/chat';
 
 export interface AIAssistantContentProps {
   error?: Error;
@@ -8,6 +9,7 @@ export interface AIAssistantContentProps {
   messagesEndRef: React.Ref<HTMLDivElement>;
   isLoading: boolean;
   isWaiting: boolean;
+  waitingPromptMode: WaitingPromptMode;
   queue: string[];
   onRemoveFromQueue: (index: number) => void;
 }
@@ -18,6 +20,7 @@ export function AIAssistantContent({
   messagesEndRef,
   isLoading,
   isWaiting,
+  waitingPromptMode,
   queue,
   onRemoveFromQueue,
 }: AIAssistantContentProps) {
@@ -29,6 +32,7 @@ export function AIAssistantContent({
         messagesEndRef={messagesEndRef}
         isLoading={isLoading}
         isWaiting={isWaiting}
+        waitingPromptMode={waitingPromptMode}
       />
       <MessageQueuePanel
         queue={queue}

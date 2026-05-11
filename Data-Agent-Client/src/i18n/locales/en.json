@@ -243,6 +243,20 @@
     "today": "Today",
     "yesterday": "Yesterday",
     "copy": "Copy",
+    "waiting": {
+      "default": [
+        "Processing your request...",
+        "Still working on it...",
+        "This is taking a little longer...",
+        "Still processing..."
+      ],
+      "answer": [
+        "The model is processing your answer...",
+        "Still working with your answer...",
+        "This is taking a little longer...",
+        "Still processing..."
+      ]
+    },
     "askUserQuestion": {
       "label": "Question",
       "inputPlaceholder": "Enter your answer",

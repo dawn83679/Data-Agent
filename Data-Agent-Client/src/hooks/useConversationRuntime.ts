@@ -8,7 +8,14 @@ import {
     ensureValidAccessToken,
     refreshAccessToken,
 } from '../lib/authToken';
-import type { ChatRequest, ChatMessage, ChatResponseBlock, DoneMetadata, SubmitMessageOptions } from '../types/chat';
+import type {
+    ChatRequest,
+    ChatMessage,
+    ChatResponseBlock,
+    DoneMetadata,
+    SubmitMessageOptions,
+    WaitingPromptMode,
+} from '../types/chat';
 import { isContentBlockType, MessageRole } from '../types/chat';
 import {
     CHAT_STREAM_API,
@@ -62,6 +69,7 @@ interface ConversationRuntime {
     queue: QueuedMessage[];
     isLoading: boolean;
     isWaiting: boolean;
+    waitingPromptMode: WaitingPromptMode;
     submitting: boolean;
     abortController: AbortController | null;
     lastStreamEventAt: number;
@@ -100,6 +108,7 @@ interface UseConversationRuntimeReturn {
     messages: ChatMessage[];
     isLoading: boolean;
     isWaiting: boolean;
+    waitingPromptMode: WaitingPromptMode;
     queue: string[];
 
     // Actions
@@ -253,6 +262,7 @@ export function useConversationRuntime(
                 queue: [],
                 isLoading: false,
                 isWaiting: false,
+                waitingPromptMode: 'default',
                 submitting: false,
                 abortController: null,
                 lastStreamEventAt: 0,
@@ -453,6 +463,7 @@ export function useConversationRuntime(
             runtime.submitting = true;
             runtime.isLoading = true;
             runtime.isWaiting = true;
+            runtime.waitingPromptMode = submitOptions?.waitingPromptMode ?? 'default';
 
             touchRuntime(runtime);
             if (!submitOptions?.hideUserMessage) {
@@ -582,6 +593,7 @@ export function useConversationRuntime(
             } finally {
                 runtime.submitting = false;
                 runtime.isLoading = false;
+                runtime.waitingPromptMode = 'default';
                 cancelWaiting(runtime);
                 forceUpdate();
 
@@ -623,6 +635,7 @@ export function useConversationRuntime(
         runtime.abortController?.abort();
         runtime.submitting = false;
         runtime.isLoading = false;
+        runtime.waitingPromptMode = 'default';
         touchRuntime(runtime);
         cancelWaiting(runtime);
         forceUpdate();
@@ -759,6 +772,7 @@ export function useConversationRuntime(
         activeConversationTokenCount: activeRuntime.tokenCount,
         isLoading: activeRuntime.isLoading,
         isWaiting: activeRuntime.isWaiting,
+        waitingPromptMode: activeRuntime.waitingPromptMode,
         queue: activeRuntime.queue.map((item) => item.text),
         submitMessage,
         stop,

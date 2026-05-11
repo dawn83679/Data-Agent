@@ -38,7 +38,11 @@ export interface ChatRequest {
 export interface SubmitMessageOptions {
   /** Send the message to the backend without inserting a visible user bubble locally. */
   hideUserMessage?: boolean;
+  /** Controls the waiting prompt shown while this request is being processed. */
+  waitingPromptMode?: WaitingPromptMode;
 }
+
+export type WaitingPromptMode = 'default' | 'answer';
 
 /** Aligned with backend MessageBlockEnum */
 export const MessageBlockType = {
@@ -169,6 +173,8 @@ export interface UseChatReturn {
   isLoading: boolean;
   /** True when loading and no block received recently — used to show Planning indicator. */
   isWaiting: boolean;
+  /** Waiting prompt mode for the active request. */
+  waitingPromptMode: WaitingPromptMode;
   stop: () => void;
   reload: () => Promise<void>;
   error?: Error;

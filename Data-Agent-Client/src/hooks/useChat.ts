@@ -14,6 +14,7 @@ import type {
   UseChatReturn,
   ChatResponseBlock,
   SubmitMessageOptions,
+  WaitingPromptMode,
 } from '../types/chat';
 import { isContentBlockType, MessageRole } from '../types/chat';
 import {
@@ -119,6 +120,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isWaiting, setIsWaiting] = useState(false);
+  const [waitingPromptMode, setWaitingPromptMode] = useState<WaitingPromptMode>('default');
   const [error, setError] = useState<Error>();
 
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -145,10 +147,11 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   }, []);
 
   const processStream = useCallback(
-    async (request: ChatRequest) => {
+    async (request: ChatRequest, promptMode: WaitingPromptMode = 'default') => {
       abortControllerRef.current = new AbortController();
       setIsLoading(true);
       setIsWaiting(true);
+      setWaitingPromptMode(promptMode);
       setError(undefined);
 
       try {
@@ -194,6 +197,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
       } finally {
         submittingRef.current = false;
         setIsLoading(false);
+        setWaitingPromptMode('default');
         cancelWaiting();
       }
     },
@@ -238,7 +242,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
         ...bodyOverrides,
         ...clientWorkspace,
       };
-      await processStream(request);
+      await processStream(request, submitOptions?.waitingPromptMode ?? 'default');
     },
     [appendMessage, processStream, options.body]
   );
@@ -267,6 +271,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
     abortControllerRef.current?.abort();
     submittingRef.current = false;
     setIsLoading(false);
+    setWaitingPromptMode('default');
     cancelWaiting();
   }, []);
 
@@ -295,6 +300,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
     submitMessage,
     isLoading,
     isWaiting,
+    waitingPromptMode,
     stop,
     reload,
     error,

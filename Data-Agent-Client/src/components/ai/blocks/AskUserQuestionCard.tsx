@@ -4,6 +4,7 @@ import { I18N_KEYS } from '../../../constants/i18nKeys';
 import { AskUserQuestionPayload, normalizeToQuestions, SingleQuestion } from './askUserQuestionTypes';
 import { HelpCircle, Check } from 'lucide-react';
 import { useAIAssistantContext } from '../AIAssistantContext';
+import type { SubmitMessageOptions } from '../../../types/chat';
 import {
     buildAskUserQuestionAnswerMessage,
     buildAskUserQuestionDeclinedMessage,
@@ -14,6 +15,11 @@ export interface AskUserQuestionCardProps {
     askUserPayload: AskUserQuestionPayload;
     toolCallId?: string;
 }
+
+export const ASK_USER_ANSWER_SUBMIT_OPTIONS: SubmitMessageOptions = {
+    hideUserMessage: true,
+    waitingPromptMode: 'answer',
+};
 
 export function AskUserQuestionCard({ askUserPayload, toolCallId }: AskUserQuestionCardProps) {
     const { t } = useTranslation();
@@ -68,13 +74,13 @@ export function AskUserQuestionCard({ askUserPayload, toolCallId }: AskUserQuest
 
         const formattedAnswer = buildAskUserQuestionAnswerMessage(questions, answers, toolCallId);
 
-        submitMessage(formattedAnswer, undefined, { hideUserMessage: true });
+        submitMessage(formattedAnswer, undefined, ASK_USER_ANSWER_SUBMIT_OPTIONS);
         setIsSubmitted(true);
     };
 
     const handleReject = () => {
         const msg = buildAskUserQuestionDeclinedMessage(questions, toolCallId);
-        submitMessage(msg, undefined, { hideUserMessage: true });
+        submitMessage(msg, undefined, ASK_USER_ANSWER_SUBMIT_OPTIONS);
         setIsSubmitted(true);
     };
 

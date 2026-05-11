@@ -2,6 +2,7 @@ import { MessageBubble } from './MessageBubble';
 import { TodoDetailsPrompt } from './TodoDetailsPrompt';
 import type { Message, Segment, TodoBoxSpec } from './types';
 import type { TodoItem } from '../blocks';
+import type { WaitingPromptMode } from '../../../types/chat';
 
 export interface MessageListItemProps {
   msg: Message;
@@ -9,6 +10,8 @@ export interface MessageListItemProps {
   totalCount: number;
   isLoading: boolean;
   isWaiting: boolean;
+  waitingPromptMode: WaitingPromptMode;
+  showAssistantHeader: boolean;
   segments: Segment[];
   overrideTodoBoxes: TodoBoxSpec[];
   hideTodoInThisMessage: boolean;
@@ -24,6 +27,8 @@ export function MessageListItem({
   totalCount: _totalCount,
   isLoading: _isLoading,
   isWaiting,
+  waitingPromptMode,
+  showAssistantHeader,
   segments,
   overrideTodoBoxes,
   hideTodoInThisMessage,
@@ -40,6 +45,8 @@ export function MessageListItem({
           segments={segments}
           isLastAssistantStreaming={isLastAssistantStreaming}
           isWaiting={isWaiting}
+          waitingPromptMode={waitingPromptMode}
+          showAssistantHeader={showAssistantHeader}
           hideTodoInThisMessage={hideTodoInThisMessage}
           overrideTodoBoxes={overrideTodoBoxes}
           showElapsedTextForSubAgent={showElapsedTextForSubAgent}

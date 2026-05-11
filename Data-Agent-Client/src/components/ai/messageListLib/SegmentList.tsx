@@ -6,6 +6,7 @@ import { findLastTodoSegmentIndex, isTodoSegment } from './segmentTodoUtils';
 import type { TodoBoxSpec } from './types';
 import type { Segment } from './types';
 import { SegmentKind } from './types';
+import type { WaitingPromptMode } from '../../../types/chat';
 
 export interface SegmentListProps {
   /** Segments to render in order (from MessageAccumulator). Same pipeline for streaming and history. */
@@ -20,6 +21,7 @@ export interface SegmentListProps {
   isLastAssistantStreaming?: boolean;
   /** When true, show Planning indicator (no block received recently). */
   isWaiting?: boolean;
+  waitingPromptMode?: WaitingPromptMode;
   /** Historical sub-agent blocks can hide elapsed/timeout text while remaining visible. */
   showElapsedTextForSubAgent?: boolean;
 }
@@ -43,6 +45,7 @@ export function SegmentList({
   overrideTodoBoxes = [],
   isLastAssistantStreaming = false,
   isWaiting = false,
+  waitingPromptMode = 'default',
   showElapsedTextForSubAgent = true,
 }: SegmentListProps): React.ReactElement {
   const markdownComponents = useMarkdownComponents();
@@ -50,7 +53,7 @@ export function SegmentList({
   // Phase B: empty assistant message, waiting for first block
   if (segments.length === 0) {
     if (isWaiting) {
-      return <PlanningIndicator />;
+      return <PlanningIndicator mode={waitingPromptMode} className="mt-0.5" />;
     }
     return (
       <div className="space-y-1">
@@ -90,7 +93,7 @@ export function SegmentList({
       {isLastAssistantStreaming && isWaiting &&
         lastSeg?.kind !== SegmentKind.TOOL_RUN &&
         !(lastSeg?.kind === SegmentKind.TOOL_GROUP && lastSeg.pending) &&
-        <PlanningIndicator />}
+        <PlanningIndicator mode={waitingPromptMode} className="mt-0.5" />}
     </div>
   );
 }

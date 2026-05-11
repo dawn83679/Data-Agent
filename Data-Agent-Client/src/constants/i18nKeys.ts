@@ -325,6 +325,10 @@ export const I18N_KEYS = {
     RENAME_SUCCESS: 'ai.rename_success',
     DELETE: 'ai.delete',
     DELETE_SUCCESS: 'ai.delete_success',
+    WAITING: {
+      DEFAULT: 'ai.waiting.default',
+      ANSWER: 'ai.waiting.answer',
+    },
     ASK_USER_QUESTION: {
       LABEL: 'ai.askUserQuestion.label',
       REJECT_MESSAGE: 'ai.askUserQuestion.rejectMessage',

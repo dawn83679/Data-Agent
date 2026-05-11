@@ -105,6 +105,7 @@ export function AIAssistant({ onClosePanel, historyAsLeftSidebar = false }: AIAs
     activeConversationTokenCount,
     isLoading,
     isWaiting,
+    waitingPromptMode,
     queue,
     submitMessage,
     stop,
@@ -469,6 +470,7 @@ export function AIAssistant({ onClosePanel, historyAsLeftSidebar = false }: AIAs
         messagesEndRef={messagesEndRef}
         isLoading={isLoading}
         isWaiting={isWaiting}
+        waitingPromptMode={waitingPromptMode}
         queue={queue}
         onRemoveFromQueue={removeFromQueue}
       />
