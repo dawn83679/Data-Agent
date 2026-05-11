@@ -2,6 +2,7 @@ package edu.zsc.ai.agent.memory;
 
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import org.junit.jupiter.api.Test;
 
@@ -14,55 +15,62 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CustomChatMemoryStoreTest {
 
     @Test
-    void moveSummaryToFront_returnsSameReference_whenNoSummary() {
+    void moveCompactionContextToFront_returnsSameReference_whenNoCompactionContext() {
         List<ChatMessage> input = List.of(
                 UserMessage.from("u1"),
                 AiMessage.from("a1"),
-                UserMessage.from("u2")
+                UserMessage.from("[CONVERSATION_SUMMARY]\nlegacy is normal now")
         );
 
-        List<ChatMessage> result = CustomChatMemoryStore.moveSummaryToFront(input);
+        List<ChatMessage> result = CustomChatMemoryStore.moveCompactionContextToFront(input);
 
         assertSame(input, result);
     }
 
     @Test
-    void moveSummaryToFront_returnsSameReference_whenSummaryAlreadyFirst() {
+    void moveCompactionContextToFront_returnsSameReference_whenCompactionContextAlreadyFirst() {
         List<ChatMessage> input = List.of(
-                summary("old history"),
+                compactionContext("old history"),
                 UserMessage.from("u1"),
                 AiMessage.from("a1")
         );
 
-        List<ChatMessage> result = CustomChatMemoryStore.moveSummaryToFront(input);
+        List<ChatMessage> result = CustomChatMemoryStore.moveCompactionContextToFront(input);
 
         assertSame(input, result);
     }
 
     @Test
-    void moveSummaryToFront_movesSummaryFromEndToFront() {
-        ChatMessage summary = summary("history");
+    void moveCompactionContextToFront_movesCompactionContextFromEndToFront() {
+        ChatMessage summary = compactionContext("history");
         ChatMessage u1 = UserMessage.from("u1");
         ChatMessage a1 = AiMessage.from("a1");
         ChatMessage u2 = UserMessage.from("u2");
         List<ChatMessage> input = List.of(u1, a1, u2, summary);
 
-        List<ChatMessage> result = CustomChatMemoryStore.moveSummaryToFront(input);
+        List<ChatMessage> result = CustomChatMemoryStore.moveCompactionContextToFront(input);
 
         assertEquals(4, result.size());
-        assertTrue(ChatMemoryCompressor.isSummaryMessage(result.get(0)));
+        assertTrue(ChatMemoryCompressor.isCompactionContextMessage(result.get(0)));
         assertSame(u1, result.get(1));
         assertSame(a1, result.get(2));
         assertSame(u2, result.get(3));
     }
 
     @Test
-    void moveSummaryToFront_handlesEmptyList() {
-        List<ChatMessage> result = CustomChatMemoryStore.moveSummaryToFront(List.of());
+    void moveCompactionContextToFront_handlesEmptyList() {
+        List<ChatMessage> result = CustomChatMemoryStore.moveCompactionContextToFront(List.of());
         assertTrue(result.isEmpty());
     }
 
-    private static ChatMessage summary(String body) {
-        return UserMessage.from("[CONVERSATION_SUMMARY]\n" + body);
+    @Test
+    void shouldPersistRuntimeMessage_filtersPlainSystemButKeepsCompactionSystem() {
+        assertTrue(CustomChatMemoryStore.shouldPersistRuntimeMessage(UserMessage.from("u1")));
+        assertTrue(CustomChatMemoryStore.shouldPersistRuntimeMessage(compactionContext("history")));
+        assertEquals(false, CustomChatMemoryStore.shouldPersistRuntimeMessage(SystemMessage.from("runtime prompt")));
+    }
+
+    private static ChatMessage compactionContext(String body) {
+        return SystemMessage.from(CompactionContextSupport.buildContinuationMessage(body, true, true));
     }
 }

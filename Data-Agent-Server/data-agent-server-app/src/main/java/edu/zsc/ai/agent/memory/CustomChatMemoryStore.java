@@ -42,29 +42,29 @@ public class CustomChatMemoryStore implements ChatMemoryStore {
         List<ChatMessage> messages = stored.stream()
                 .map(item -> ChatMessageDeserializer.messageFromJson(item.getData()))
                 .toList();
-        List<ChatMessage> ordered = moveSummaryToFront(messages);
+        List<ChatMessage> ordered = moveCompactionContextToFront(messages);
 
         return compressor.compressIfNeeded(idInfo.conversationId(), idInfo.modelName(), ordered);
     }
 
-    static List<ChatMessage> moveSummaryToFront(List<ChatMessage> messages) {
+    static List<ChatMessage> moveCompactionContextToFront(List<ChatMessage> messages) {
         if (messages.isEmpty()) {
             return messages;
         }
-        int summaryIdx = -1;
+        int compactionContextIdx = -1;
         for (int i = 0; i < messages.size(); i++) {
-            if (ChatMemoryCompressor.isSummaryMessage(messages.get(i))) {
-                summaryIdx = i;
+            if (ChatMemoryCompressor.isCompactionContextMessage(messages.get(i))) {
+                compactionContextIdx = i;
                 break;
             }
         }
-        if (summaryIdx <= 0) {
+        if (compactionContextIdx <= 0) {
             return messages;
         }
         List<ChatMessage> reordered = new ArrayList<>(messages.size());
-        reordered.add(messages.get(summaryIdx));
+        reordered.add(messages.get(compactionContextIdx));
         for (int i = 0; i < messages.size(); i++) {
-            if (i != summaryIdx) {
+            if (i != compactionContextIdx) {
                 reordered.add(messages.get(i));
             }
         }
@@ -85,14 +85,19 @@ public class CustomChatMemoryStore implements ChatMemoryStore {
 
         aiConversationService.checkAccess(idInfo.userId(), idInfo.conversationId());
 
-        List<ChatMessage> nonSystemMessages = messages.stream()
-                .filter(m -> m.type() != ChatMessageType.SYSTEM)
+        List<ChatMessage> persistableMessages = messages.stream()
+                .filter(CustomChatMemoryStore::shouldPersistRuntimeMessage)
                 .toList();
 
         List<ChatMessage> toPersist = compressor.compressIfNeeded(
-                idInfo.conversationId(), idInfo.modelName(), nonSystemMessages);
+                idInfo.conversationId(), idInfo.modelName(), persistableMessages);
 
         aiMessageService.replaceConversationMessages(idInfo.conversationId(), toPersist);
+    }
+
+    static boolean shouldPersistRuntimeMessage(ChatMessage message) {
+        return message.type() != ChatMessageType.SYSTEM
+                || ChatMemoryCompressor.isCompactionContextMessage(message);
     }
 
     @Override

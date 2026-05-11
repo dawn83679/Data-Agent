@@ -92,6 +92,20 @@ class ToolDescriptionAndPromptSeparationTest {
     }
 
     @Test
+    void askUserQuestionDescriptionRequiresToolCallWhenAnswerBlocksProgress() throws Exception {
+        String description = readToolDescription(
+                AskUserQuestionTool.class,
+                "askUserQuestion",
+                List.class,
+                InvocationParameters.class);
+
+        assertTrue(description.contains("继续执行依赖用户回答"));
+        assertTrue(description.contains("立即暂停本轮"));
+        assertTrue(description.contains("不要在最终答复中列问题替代本工具"));
+        assertTrue(description.contains("freeTextHint"));
+    }
+
+    @Test
     void toolUsageRulesRenderNoSkillBoundaryAndToolContracts() {
         ToolUsageRulesSystemPromptStrategy strategy = new ToolUsageRulesSystemPromptStrategy();
 

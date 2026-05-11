@@ -2,6 +2,7 @@ package edu.zsc.ai.agent.memory;
 
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ChatMessageSerializer;
+import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import edu.zsc.ai.config.ai.AiModelCatalog;
 import edu.zsc.ai.config.ai.AiModelProperties;
@@ -20,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -75,7 +78,12 @@ class ChatMemoryCompressorTest {
 
         verify(aiConversationService).updateTokenCount(conversationId, 1350);
         assertEquals(2, result.size());
-        assertTrue(ChatMemoryCompressor.isSummaryMessage(result.get(0)));
+        assertTrue(ChatMemoryCompressor.isCompactionContextMessage(result.get(0)));
+        SystemMessage compactionContext = assertInstanceOf(SystemMessage.class, result.get(0));
+        assertTrue(compactionContext.text().contains(CompactionContextSupport.PREAMBLE));
+        assertTrue(compactionContext.text().contains("Summary:\n## Active Context\n- compressed"));
+        assertTrue(compactionContext.text().contains(CompactionContextSupport.RECENT_MESSAGES_PRESERVED));
+        assertTrue(compactionContext.text().contains(CompactionContextSupport.DIRECT_RESUME));
         assertEquals("u4", ((UserMessage) result.get(1)).singleText());
     }
 
@@ -144,8 +152,56 @@ class ChatMemoryCompressorTest {
         verify(aiMessageService).replaceConversationMessages(eq(conversationId), captor.capture());
         verify(aiConversationService).updateTokenCount(conversationId, 700);
         assertEquals(2, captor.getValue().size());
-        assertTrue(ChatMemoryCompressor.isSummaryMessage(captor.getValue().get(0)));
+        assertTrue(ChatMemoryCompressor.isCompactionContextMessage(captor.getValue().get(0)));
+        assertInstanceOf(SystemMessage.class, captor.getValue().get(0));
         assertTrue(compressor.consumeDoneMetadata(conversationId).isEmpty());
+    }
+
+    @Test
+    void isCompactionContextMessage_onlyRecognizesNewSystemCompactionContext() {
+        assertTrue(ChatMemoryCompressor.isCompactionContextMessage(SystemMessage.from(
+                CompactionContextSupport.buildContinuationMessage("current facts", true, true)
+        )));
+        assertFalse(ChatMemoryCompressor.isCompactionContextMessage(UserMessage.from("[CONVERSATION_SUMMARY]\nold facts")));
+        assertFalse(ChatMemoryCompressor.isCompactionContextMessage(SystemMessage.from("Summary:\nplain system message")));
+    }
+
+    @Test
+    void compressIfNeeded_recompressesExistingContextWithoutSendingContinuationAsHistory() {
+        Long conversationId = 816L;
+        when(aiConversationService.getById(conversationId)).thenReturn(AiConversation.builder()
+                .id(conversationId)
+                .tokenCount(740470)
+                .build());
+        when(compressionService.compress(any())).thenReturn(new CompressionResult(
+                "new summary",
+                1200,
+                600
+        ));
+        ChatMessage existingContext = SystemMessage.from(CompactionContextSupport.buildContinuationMessage(
+                "old summary",
+                true,
+                true
+        ));
+
+        List<ChatMessage> result = compressor.compressIfNeeded(conversationId, "qwen3-max-2026-01-23", List.of(
+                existingContext,
+                UserMessage.from("u1"),
+                UserMessage.from("u2"),
+                UserMessage.from("u3")
+        ));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ChatMessage>> compressCaptor = ArgumentCaptor.forClass((Class) List.class);
+        verify(compressionService).compress(compressCaptor.capture());
+        assertEquals(List.of(UserMessage.from("u1"), UserMessage.from("u2")), compressCaptor.getValue());
+
+        SystemMessage newContext = assertInstanceOf(SystemMessage.class, result.get(0));
+        assertTrue(newContext.text().contains("## Previously compacted context"));
+        assertTrue(newContext.text().contains("old summary"));
+        assertTrue(newContext.text().contains("## Newly compacted context"));
+        assertTrue(newContext.text().contains("new summary"));
+        assertEquals("u3", ((UserMessage) result.get(1)).singleText());
     }
 
     @Test

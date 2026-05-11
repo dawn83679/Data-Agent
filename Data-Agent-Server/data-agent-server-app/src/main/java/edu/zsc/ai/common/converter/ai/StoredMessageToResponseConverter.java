@@ -1,7 +1,6 @@
 package edu.zsc.ai.common.converter.ai;
 
 import dev.langchain4j.data.message.*;
-import edu.zsc.ai.agent.memory.ChatMemoryCompressor;
 import edu.zsc.ai.agent.memory.MemoryUtil;
 import edu.zsc.ai.common.enums.ai.MessageRoleEnum;
 import edu.zsc.ai.common.enums.ai.MessageStatusEnum;
@@ -64,11 +63,6 @@ public class StoredMessageToResponseConverter {
     }
 
     private String resolveMessageStatus(Integer statusCode, ChatMessage message) {
-        if (statusCode != null
-                && statusCode == MessageStatusEnum.COMPRESSED.getCode()
-                && ChatMemoryCompressor.isSummaryMessage(message)) {
-            return MessageStatusEnum.COMPRESSION_SUMMARY.name();
-        }
         if (statusCode == null) {
             return MessageStatusEnum.NORMAL.name();
         }

@@ -63,22 +63,18 @@ class CompressionServiceImplTest {
     @Test
     void compress_databaseExplorationWithToolCalls_serializesToolStructure() {
         String expectedSummary = """
-                ## 执行状态
+                <summary>
+                ## Current handoff
                 - 任务： explore orders table structure
                 - 阶段：发现
-                - 焦点： inspect the verified orders schema
-                - 进展： relevant environment scope and key relationships identified
-
-                ## 已验证事实
                 - 范围： [conn-1, mydb, public]
-                - 对象： orders -> id (int8, PK), customer_id (int8, FK→customers.id), total (numeric), created_at (timestamp)
-                - 对象： customers -> id (int8, PK), name (varchar)
-
-                ## 待处理 / 阻塞
-                - 歧义：无
-                - 写操作确认：不需要
+                - 已验证事实： orders -> id (int8, PK), customer_id (int8, FK→customers.id), total (numeric), created_at (timestamp); customers -> id (int8, PK), name (varchar)
+                - 可复用 SQL：无
+                - 用户确认：无
+                - 写操作状态：不需要
                 - 阻塞：无
                 - 下一步： answer with the verified schema summary
+                </summary>
                 """;
         stubModelResponse(expectedSummary);
 
@@ -129,20 +125,19 @@ class CompressionServiceImplTest {
     @Test
     void compress_sqlExecutionWithRetry_containsFailureAndSuccess() {
         String expectedSummary = """
-                ## 执行状态
+                <summary>
+                ## Current handoff
                 - 任务： show top 10 customers by revenue
                 - 阶段：执行
-                - 焦点： reuse the corrected revenue query
-                - 进展： the failed query was corrected and a verified result is available
-
-                ## 可复用产物
-                - SQL [verified]: `SELECT c.name, SUM(o.total) as revenue FROM customers c JOIN orders o ON c.id = o.customer_id GROUP BY c.name ORDER BY revenue DESC LIMIT 10` -> 10 rows, top customers by revenue
-
-                ## 待处理 / 阻塞
-                - 歧义：无
-                - 写操作确认：不需要
+                - 范围： [未知, 未知, 未知]
+                - 已验证事实： amount column failed; total column query succeeded with 10 rows and identifies top customers by revenue
+                - 可复用 SQL：
+                  - 已验证 `SELECT c.name, SUM(o.total) as revenue FROM customers c JOIN orders o ON c.id = o.customer_id GROUP BY c.name ORDER BY revenue DESC LIMIT 10` -> 10 rows, top customers by revenue
+                - 用户确认：无
+                - 写操作状态：不需要
                 - 阻塞：无
                 - 下一步： answer using the verified query result
+                </summary>
                 """;
         stubModelResponse(expectedSummary);
 
@@ -188,20 +183,19 @@ class CompressionServiceImplTest {
     @Test
     void compress_askUserQuestionFlow_preservesQuestionAndAnswer() {
         String expectedSummary = """
-                ## 执行状态
+                <summary>
+                ## Current handoff
                 - 任务： clean up old orders from before 2023
                 - 阶段：执行
-                - 焦点： the confirmed delete has already run
-                - 进展： delete target counted, user confirmed, and write executed successfully
-
-                ## 可复用产物
-                - SQL [verified]: `DELETE FROM orders WHERE created_at < '2023-01-01'` -> executed, affectedRows=5230
-
-                ## 待处理 / 阻塞
-                - 歧义：无
-                - 写操作确认：已执行
+                - 范围： [5, sales, public]
+                - 已验证事实： old-order delete target counted 5230 rows before execution; write later executed successfully
+                - 可复用 SQL：
+                  - 已验证 `DELETE FROM orders WHERE created_at < '2023-01-01'` -> executed, affectedRows=5230
+                - 用户确认： user confirmed retrying the exact same SQL
+                - 写操作状态：已执行
                 - 阻塞：无
                 - 下一步： report the completed write outcome
+                </summary>
                 """;
         stubModelResponse(expectedSummary);
 
@@ -269,17 +263,19 @@ class CompressionServiceImplTest {
     @Test
     void compress_messagesWithInjectedXmlTags_includesTagsForModelToDiscard() {
         stubModelResponse("""
-                ## 执行状态
+                <summary>
+                ## Current handoff
                 - 任务： query user stats
                 - 阶段：执行
-                - 焦点： report the verified user count
-                - 进展： active user count query completed
-
-                ## 待处理 / 阻塞
-                - 歧义：无
-                - 写操作确认：不需要
+                - 范围： [未知, 未知, 未知]
+                - 已验证事实： active user count query completed
+                - 可复用 SQL：
+                  - 已验证 `SELECT COUNT(*) FROM users WHERE status = 'active'` -> 8421 active users
+                - 用户确认：无
+                - 写操作状态：不需要
                 - 阻塞：无
                 - 下一步： answer with the verified count
+                </summary>
                 """);
 
         List<ChatMessage> messages = List.of(
@@ -313,20 +309,18 @@ class CompressionServiceImplTest {
     @Test
     void compress_multipleSearchObjectsCalls_allToolCallsSerialized() {
         stubModelResponse("""
-                ## 执行状态
+                <summary>
+                ## Current handoff
                 - 任务： find all tables related to orders
                 - 阶段：发现
-                - 焦点： compare candidate order-related tables
-                - 进展： multiple relevant objects identified
-
-                ## 可复用产物
-                - 探索： high-relevance objects include user_orders, order_items, and order_status_log
-
-                ## 待处理 / 阻塞
-                - 歧义：判断哪个订单相关表最符合用户意图
-                - 写操作确认：不需要
+                - 范围： [未知, 未知, 未知]
+                - 已验证事实： high-relevance objects include user_orders, order_items, and order_status_log
+                - 可复用 SQL：无
+                - 用户确认：无
+                - 写操作状态：不需要
                 - 阻塞：无
-                - 下一步： continue schema inspection or clarify the target object
+                - 下一步： continue schema inspection or clarify which order-related object best matches the user intent
+                </summary>
                 """);
 
         List<ChatMessage> messages = List.of(
@@ -379,20 +373,19 @@ class CompressionServiceImplTest {
     @Test
     void compress_renderChartCall_containsChartMetadata() {
         stubModelResponse("""
-                ## 执行状态
+                <summary>
+                ## Current handoff
                 - 任务： show a chart of monthly revenue for 2024
                 - 阶段：回答
-                - 焦点： present the verified revenue trend visually
-                - 进展： query completed and chart meaning is ready to report
-
-                ## 可复用产物
-                - 图表： bar chart of monthly revenue showing growth from Jan ($50k) to Jun ($120k)
-
-                ## 待处理 / 阻塞
-                - 歧义：无
-                - 写操作确认：不需要
+                - 范围： [未知, 未知, 未知]
+                - 已验证事实： monthly revenue query completed; bar chart shows growth from Jan ($50k) to Jun ($120k)
+                - 可复用 SQL：
+                  - 已验证 `SELECT DATE_TRUNC('month', created_at) as month, SUM(total) as revenue FROM orders WHERE created_at >= '2024-01-01' AND created_at < '2025-01-01' GROUP BY month ORDER BY month` -> 6 monthly rows
+                - 用户确认：无
+                - 写操作状态：不需要
                 - 阻塞：无
                 - 下一步： answer with the verified chart interpretation
+                </summary>
                 """);
 
         List<ChatMessage> messages = List.of(
@@ -431,17 +424,18 @@ class CompressionServiceImplTest {
     @Test
     void compress_nearWindowLimit_handlesMaxMessages() {
         stubModelResponse("""
-                ## 执行状态
+                <summary>
+                ## Current handoff
                 - 任务： continue the long multi-query investigation
                 - 阶段：执行
-                - 焦点： keep the latest verified query trail available
-                - 进展： a long conversation handoff was compressed successfully
-
-                ## 待处理 / 阻塞
-                - 歧义：无
-                - 写操作确认：不需要
+                - 范围： [未知, 未知, 未知]
+                - 已验证事实： a long conversation handoff was compressed successfully
+                - 可复用 SQL： latest verified query trail is available in the newly compacted context
+                - 用户确认：无
+                - 写操作状态：不需要
                 - 阻塞：无
                 - 下一步： continue from the latest verified work state
+                </summary>
                 """);
 
         List<ChatMessage> messages = new ArrayList<>();
@@ -464,17 +458,18 @@ class CompressionServiceImplTest {
         CompressionResult result = compressionService.compress(messages);
 
         assertEquals("""
-                ## 执行状态
+                <summary>
+                ## Current handoff
                 - 任务： continue the long multi-query investigation
                 - 阶段：执行
-                - 焦点： keep the latest verified query trail available
-                - 进展： a long conversation handoff was compressed successfully
-
-                ## 待处理 / 阻塞
-                - 歧义：无
-                - 写操作确认：不需要
+                - 范围： [未知, 未知, 未知]
+                - 已验证事实： a long conversation handoff was compressed successfully
+                - 可复用 SQL： latest verified query trail is available in the newly compacted context
+                - 用户确认：无
+                - 写操作状态：不需要
                 - 阻塞：无
                 - 下一步： continue from the latest verified work state
+                </summary>
                 """, result.summary());
 
         String prompt = capturePromptText();
@@ -506,15 +501,34 @@ class CompressionServiceImplTest {
         assertTrue(prompt.contains("冲突和歧义处理"), "Missing section: 冲突和歧义处理");
         assertTrue(prompt.contains("强制丢弃"), "Missing section: 强制丢弃");
 
-        // 验证新的输出格式章节都在模板中
-        assertTrue(prompt.contains("执行状态"), "Missing output section: 执行状态");
+        // 验证新的 <summary> 输出格式和 Data-Agent 交接字段都在模板中
+        assertTrue(prompt.contains("必须只输出一个 `<summary>...</summary>` 块"),
+                "Missing summary wrapper contract");
+        assertTrue(prompt.contains("不要输出 `<analysis>`"), "Missing analysis suppression contract");
+        assertTrue(prompt.contains("Current handoff"), "Missing output section: Current handoff");
+        assertTrue(prompt.contains("Data-Agent 专用结构"), "Missing Data-Agent handoff contract");
+        assertTrue(prompt.contains("任务"), "Missing handoff field: 任务");
+        assertTrue(prompt.contains("范围"), "Missing handoff field: 范围");
         assertTrue(prompt.contains("已验证事实"), "Missing output section: 已验证事实");
-        assertTrue(prompt.contains("可复用产物"), "Missing output section: 可复用产物");
-        assertTrue(prompt.contains("待处理 / 阻塞"), "Missing output section: 待处理 / 阻塞");
+        assertTrue(prompt.contains("可复用 SQL"), "Missing output section: 可复用 SQL");
+        assertTrue(prompt.contains("用户确认"), "Missing handoff field: 用户确认");
+        assertTrue(prompt.contains("阻塞"), "Missing handoff field: 阻塞");
+        assertTrue(prompt.contains("下一步"), "Missing handoff field: 下一步");
         assertTrue(prompt.contains("阶段：[发现|规划|执行|确认|回答]"),
                 "Missing stage contract");
-        assertTrue(prompt.contains("写操作确认：[不需要|需要|已确认|已执行]"),
+        assertTrue(prompt.contains("写操作状态：[不需要|需要确认|已确认待执行|已执行|失败]"),
                 "Missing write confirmation contract");
+        assertTrue(prompt.contains("Previously compacted context"),
+                "Missing previous compaction output section");
+        assertTrue(prompt.contains("Newly compacted context"),
+                "Missing newly compacted output section");
+        assertTrue(prompt.contains("compaction context 或 previous summary"),
+                "Missing second-pass compaction semantics");
+        assertTrue(prompt.contains("不要把旧摘要当成新的用户目标"),
+                "Missing previous summary is not user request rule");
+        assertFalse(prompt.contains("[CONVERSATION_SUMMARY]"),
+                "Compression prompt should not describe legacy conversation summary format");
+        assertTrue(prompt.contains("claude-code 的 key files"), "Missing key files exclusion rule");
 
         // 验证工具和子代理压缩规则提到了关键工具名
         assertTrue(prompt.contains("getObjectDetail"), "Missing tool rule: getObjectDetail");

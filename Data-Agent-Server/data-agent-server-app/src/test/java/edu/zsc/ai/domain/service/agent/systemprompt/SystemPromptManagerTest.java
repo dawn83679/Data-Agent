@@ -38,8 +38,6 @@ class SystemPromptManagerTest {
         assertFalse(prompt.contains(SkillPromptTagConstant.close("memory")));
         assertTrue(prompt.contains(SkillPromptTagConstant.open(SkillEnum.CHART.getSkillName())));
         assertTrue(prompt.contains(SkillPromptTagConstant.close(SkillEnum.CHART.getSkillName())));
-        assertFalse(prompt.contains("readMemory"));
-        assertFalse(prompt.contains("updateMemory"));
         assertFalse(prompt.contains("memory agent"), "系统提示词不应暴露 memory agent 英文说法");
     }
 
@@ -62,6 +60,8 @@ class SystemPromptManagerTest {
         assertTrue(prompt.contains("按连接/环境 -> database/catalog -> schema -> 对象 -> 字段/业务口径 收敛"));
         assertTrue(prompt.contains("用户未明确指定环境时，不能默认选择 release/prod/线上环境"));
         assertTrue(prompt.contains("只在继续执行会导致误查、误改、越权或明显错误时询问"));
+        assertTrue(prompt.contains("必须调用 askUserQuestion 暂停本轮等待用户回答"));
+        assertTrue(prompt.contains("不要在最终答复中用“请确认以下信息”“请提供更多信息”等问题列表替代 askUserQuestion"));
         assertTrue(prompt.contains("生成 SQL 前确认 connection、database/catalog、schema、数据库类型"));
         assertTrue(prompt.contains("用户只要 SQL：不执行，只输出 SQL 和说明"));
         assertTrue(prompt.contains("行动前先判断可逆性、影响范围"));

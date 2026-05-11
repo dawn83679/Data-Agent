@@ -93,9 +93,9 @@ public class AiMessageServiceImpl extends ServiceImpl<AiMessageMapper, StoredCha
         List<StoredChatMessage> activeStored = storedAll.stream()
                 .filter(message -> !isCompressed(message) && !isDeleted(message))
                 .toList();
-        List<ChatMessage> normalizedIncoming = moveSummaryToEnd(messages.stream()
+        List<ChatMessage> normalizedIncoming = messages.stream()
                 .map(MemoryUtil::normalizeUserMessage)
-                .toList());
+                .toList();
 
         if (activeStored.isEmpty()) {
             appendMessages(conversationId, normalizedIncoming, nextBaseTime(storedAll));
@@ -166,14 +166,14 @@ public class AiMessageServiceImpl extends ServiceImpl<AiMessageMapper, StoredCha
             return false;
         }
 
-        List<ChatMessage> keptMessages = normalizedIncoming.subList(0, normalizedIncoming.size() - 1);
+        List<ChatMessage> keptMessages = normalizedIncoming.subList(1, normalizedIncoming.size());
         int suffixStart = findSuffixStart(activeExisting, keptMessages);
         if (suffixStart < 0) {
             return false;
         }
 
         markCompressed(activeStored.subList(0, suffixStart));
-        appendMessages(conversationId, normalizedIncoming.subList(normalizedIncoming.size() - 1, normalizedIncoming.size()), nextBaseTime(storedAll));
+        appendMessages(conversationId, normalizedIncoming.subList(0, 1), nextBaseTime(storedAll));
         return true;
     }
 
@@ -219,6 +219,10 @@ public class AiMessageServiceImpl extends ServiceImpl<AiMessageMapper, StoredCha
         if (ids.isEmpty()) {
             return;
         }
+        markCompressedByIds(ids);
+    }
+
+    protected void markCompressedByIds(List<Long> ids) {
         LambdaUpdateWrapper<StoredChatMessage> wrapper = new LambdaUpdateWrapper<>();
         wrapper.in(StoredChatMessage::getId, ids)
                 .set(StoredChatMessage::getStatus, MessageStatusEnum.COMPRESSED.getCode())
@@ -237,35 +241,11 @@ public class AiMessageServiceImpl extends ServiceImpl<AiMessageMapper, StoredCha
 
     private boolean isCompressionSync(List<ChatMessage> normalizedIncoming) {
         return !normalizedIncoming.isEmpty()
-                && ChatMemoryCompressor.isSummaryMessage(normalizedIncoming.get(normalizedIncoming.size() - 1));
-    }
-
-    static List<ChatMessage> moveSummaryToEnd(List<ChatMessage> messages) {
-        if (messages.isEmpty()) {
-            return messages;
-        }
-        int summaryIdx = -1;
-        for (int i = 0; i < messages.size(); i++) {
-            if (ChatMemoryCompressor.isSummaryMessage(messages.get(i))) {
-                summaryIdx = i;
-                break;
-            }
-        }
-        if (summaryIdx < 0 || summaryIdx == messages.size() - 1) {
-            return messages;
-        }
-        List<ChatMessage> reordered = new ArrayList<>(messages.size());
-        for (int i = 0; i < messages.size(); i++) {
-            if (i != summaryIdx) {
-                reordered.add(messages.get(i));
-            }
-        }
-        reordered.add(messages.get(summaryIdx));
-        return reordered;
+                && ChatMemoryCompressor.isCompactionContextMessage(normalizedIncoming.get(0));
     }
 
     private int resolveStatus(ChatMessage message) {
-        return ChatMemoryCompressor.isSummaryMessage(message)
+        return ChatMemoryCompressor.isCompactionContextMessage(message)
                 ? MessageStatusEnum.COMPRESSION_SUMMARY.getCode()
                 : MessageStatusEnum.NORMAL.getCode();
     }

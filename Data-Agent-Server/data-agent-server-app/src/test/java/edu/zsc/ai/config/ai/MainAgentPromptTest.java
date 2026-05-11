@@ -45,6 +45,8 @@ class MainAgentPromptTest {
         assertTrue(promptContent.contains("按连接/环境 -> database/catalog -> schema -> 对象 -> 字段/业务口径 收敛"));
         assertTrue(promptContent.contains("用户未明确指定环境时，不能默认选择 release/prod/线上环境"));
         assertTrue(promptContent.contains("只在继续执行会导致误查、误改、越权或明显错误时询问"));
+        assertTrue(promptContent.contains("必须调用 askUserQuestion 暂停本轮等待用户回答"));
+        assertTrue(promptContent.contains("不要在最终答复中用“请确认以下信息”“请提供更多信息”等问题列表替代 askUserQuestion"));
         assertTrue(promptContent.contains("4. 记忆工具使用"));
         assertTrue(promptContent.contains("readMemory 用于读取会影响当前决策的持久记忆"));
         assertTrue(promptContent.contains("稳定用户偏好、业务规则、字段语义、对象知识、历史确认事实和可复用 SQL 模式"));

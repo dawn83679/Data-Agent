@@ -5,7 +5,7 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ChatMessageDeserializer;
 import dev.langchain4j.data.message.ChatMessageSerializer;
 import dev.langchain4j.data.message.ChatMessageType;
-import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.data.message.SystemMessage;
 import edu.zsc.ai.common.constant.CompressionLogConstant;
 import edu.zsc.ai.config.ai.AiModelCatalog;
 import edu.zsc.ai.domain.event.MemoryCompressionStartedEvent;
@@ -36,8 +36,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ChatMemoryCompressor {
 
     private static final Logger runtimeLog = LoggerFactory.getLogger(CompressionLogConstant.LOGGER_NAME);
-
-    static final String SUMMARY_PREFIX = "[CONVERSATION_SUMMARY]\n";
 
     private static final double COMPRESSION_RATIO = 0.75;
     private static final int MIN_MESSAGES_FOR_COMPRESSION = 4;
@@ -190,8 +188,8 @@ public class ChatMemoryCompressor {
         }
     }
 
-    public static boolean isSummaryMessage(ChatMessage message) {
-        return message instanceof UserMessage um && um.singleText().startsWith(SUMMARY_PREFIX);
+    public static boolean isCompactionContextMessage(ChatMessage message) {
+        return CompactionContextSupport.isCompactionContextMessage(message);
     }
 
     private CompressionCheck getCompressionCheck(Long conversationId, String modelName) {
@@ -215,19 +213,26 @@ public class ChatMemoryCompressor {
         int splitIndex = findCleanSplitPoint(messages,
                 (int) Math.ceil(messages.size() * COMPRESSION_RATIO));
 
-        List<ChatMessage> toCompress = messages.subList(0, splitIndex);
+        List<ChatMessage> compactedWindow = messages.subList(0, splitIndex);
+        String existingCompactedSummary = CompactionContextSupport.extractExistingCompactedSummary(
+                compactedWindow.isEmpty() ? null : compactedWindow.get(0)
+        );
+        List<ChatMessage> toCompress = existingCompactedSummary == null
+                ? compactedWindow
+                : compactedWindow.subList(1, compactedWindow.size());
         List<ChatMessage> toKeep = messages.subList(splitIndex, messages.size());
         logRuntimeInfo("compression_payload", conversationId, fieldsOf(
                 "modelName", modelName,
                 "splitIndex", splitIndex,
-                "toCompressCount", toCompress.size(),
+                "toCompressCount", compactedWindow.size(),
                 "toKeepCount", toKeep.size(),
+                "hasExistingCompactedSummary", existingCompactedSummary != null,
                 "toCompressMessages", toCompress.stream().map(ChatMessageSerializer::messageToJson).toList(),
                 "toKeepMessages", toKeep.stream().map(ChatMessageSerializer::messageToJson).toList()
         ));
 
         CompressionResult compressionResult = compressionService.compress(toCompress);
-        String summary = compressionResult.summary();
+        String summary = mergeSummaries(existingCompactedSummary, compressionResult.summary());
         Integer tokenCountAfter = updateConversationTokenCount
                 ? normalizePositive(compressionResult.outputTokens())
                 : null;
@@ -236,7 +241,14 @@ public class ChatMemoryCompressor {
         }
 
         if (shouldRememberDoneMetadata) {
-            rememberDoneMetadata(conversationId, tokenCountBefore, tokenCountAfter, compressionResult, toCompress.size(), toKeep.size());
+            rememberDoneMetadata(
+                    conversationId,
+                    tokenCountBefore,
+                    tokenCountAfter,
+                    new CompressionResult(summary, compressionResult.totalTokens(), compressionResult.outputTokens()),
+                    compactedWindow.size(),
+                    toKeep.size()
+            );
         }
         recordCompressionEvent(conversationId, CompressionLogConstant.EVENT_COMPRESSION_COMPLETED, fieldsOf(
                 CompressionLogConstant.FIELD_DECISION, CompressionLogConstant.DECISION_COMPRESSED,
@@ -245,7 +257,7 @@ public class ChatMemoryCompressor {
                 CompressionLogConstant.FIELD_TOKEN_COUNT_AFTER, tokenCountAfter,
                 CompressionLogConstant.FIELD_THRESHOLD, threshold,
                 CompressionLogConstant.FIELD_MESSAGE_COUNT, messages.size(),
-                CompressionLogConstant.FIELD_COMPRESSED_MESSAGE_COUNT, toCompress.size(),
+                CompressionLogConstant.FIELD_COMPRESSED_MESSAGE_COUNT, compactedWindow.size(),
                 CompressionLogConstant.FIELD_KEPT_RECENT_COUNT, toKeep.size(),
                 CompressionLogConstant.FIELD_SUMMARY_LENGTH, summary.length(),
                 CompressionLogConstant.FIELD_OUTPUT_TOKENS, compressionResult.outputTokens(),
@@ -262,20 +274,24 @@ public class ChatMemoryCompressor {
                 tokenCountBefore,
                 tokenCountAfter,
                 threshold,
-                toCompress.size(),
+                compactedWindow.size(),
                 toKeep.size(),
                 summary.length(),
                 compressionResult.outputTokens(),
                 compressionResult.totalTokens());
 
         List<ChatMessage> compressedMessages = new ArrayList<>(toKeep.size() + 1);
-        compressedMessages.add(UserMessage.from(SUMMARY_PREFIX + summary));
+        compressedMessages.add(SystemMessage.from(CompactionContextSupport.buildContinuationMessage(
+                summary,
+                true,
+                !toKeep.isEmpty()
+        )));
         compressedMessages.addAll(toKeep);
         return new ManualCompressionResult(
                 compressedMessages,
                 tokenCountBefore,
                 tokenCountAfter,
-                toCompress.size(),
+                compactedWindow.size(),
                 toKeep.size(),
                 summary,
                 compressionResult.outputTokens(),
@@ -307,6 +323,21 @@ public class ChatMemoryCompressor {
         }
         int threshold = aiModelCatalog.resolveMemoryThreshold(modelName);
         return threshold;
+    }
+
+    private String mergeSummaries(String existingSummary, String newSummary) {
+        String normalizedExisting = CompactionContextSupport.summaryBody(existingSummary);
+        String normalizedNew = CompactionContextSupport.summaryBody(newSummary);
+        if (normalizedExisting.isBlank()) {
+            return normalizedNew;
+        }
+        if (normalizedNew.isBlank()) {
+            return normalizedExisting;
+        }
+        return "## Previously compacted context\n"
+                + normalizedExisting
+                + "\n\n## Newly compacted context\n"
+                + normalizedNew;
     }
 
     private void rememberDoneMetadata(Long conversationId,
