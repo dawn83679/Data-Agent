@@ -23,6 +23,7 @@ import edu.zsc.ai.agent.tool.sql.GetDatabasesTool;
 import edu.zsc.ai.agent.tool.sql.GetObjectDetailTool;
 import edu.zsc.ai.agent.tool.sql.GetSchemasTool;
 import edu.zsc.ai.agent.tool.sql.SearchObjectsTool;
+import edu.zsc.ai.agent.tool.thinking.ThinkingTool;
 import edu.zsc.ai.agent.tool.todo.TodoTool;
 import edu.zsc.ai.common.enums.ai.AgentModeEnum;
 import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
@@ -63,6 +64,7 @@ class AgentToolConfigTest {
     private ReadMemoryTool readMemoryTool;
     private UpdateMemoryTool updateMemoryTool;
     private ExportFileTool exportFileTool;
+    private ThinkingTool thinkingTool;
 
     @BeforeEach
     void setUp() {
@@ -84,6 +86,7 @@ class AgentToolConfigTest {
         readMemoryTool = new ReadMemoryTool(null, null);
         updateMemoryTool = new UpdateMemoryTool(null);
         exportFileTool = new ExportFileTool(null);
+        thinkingTool = new ThinkingTool();
 
         allTools = List.of(
                 getConnectionsTool,
@@ -101,7 +104,8 @@ class AgentToolConfigTest {
                 chartTool,
                 readMemoryTool,
                 updateMemoryTool,
-                exportFileTool
+                exportFileTool,
+                thinkingTool
         );
     }
 
@@ -126,6 +130,7 @@ class AgentToolConfigTest {
             assertTrue(tools.contains(exportFileTool));
             assertTrue(tools.contains(readMemoryTool));
             assertTrue(tools.contains(updateMemoryTool));
+            assertTrue(tools.contains(thinkingTool));
 
             assertFalse(tools.contains(exitPlanModeTool));
         }
@@ -146,6 +151,7 @@ class AgentToolConfigTest {
             assertFalse(tools.contains(chartTool));
             assertFalse(tools.contains(readMemoryTool));
             assertFalse(tools.contains(updateMemoryTool));
+            assertFalse(tools.contains(thinkingTool));
             assertFalse(tools.contains(exportFileTool));
             assertFalse(tools.contains(searchObjectsTool));
             assertFalse(tools.contains(getObjectDetailTool));
@@ -192,6 +198,7 @@ class AgentToolConfigTest {
             assertFalse(tools.contains(chartTool), "Planner should NOT have ChartTool");
             assertFalse(tools.contains(readMemoryTool), "Planner should NOT have ReadMemoryTool");
             assertFalse(tools.contains(updateMemoryTool), "Planner should NOT have UpdateMemoryTool");
+            assertFalse(tools.contains(thinkingTool), "Planner should NOT have ThinkingTool");
             assertFalse(tools.contains(exitPlanModeTool), "Planner should NOT have ExitPlanModeTool");
         }
 
@@ -214,6 +221,7 @@ class AgentToolConfigTest {
             assertFalse(tools.contains(activateSkillTool), "Memory writer should NOT have ActivateSkillTool");
             assertFalse(tools.contains(chartTool), "Memory writer should NOT have ChartTool");
             assertFalse(tools.contains(exportFileTool), "Memory writer should NOT have ExportFileTool");
+            assertFalse(tools.contains(thinkingTool), "Memory writer should NOT have ThinkingTool");
         }
 
         @Test
@@ -250,7 +258,8 @@ class AgentToolConfigTest {
                 chartTool,
                 exportFileTool,
                 readMemoryTool,
-                updateMemoryTool
+                updateMemoryTool,
+                thinkingTool
         ));
 
         Map<String, ToolSpecification> specifications = toolBundle.executors().keySet().stream()
@@ -268,6 +277,7 @@ class AgentToolConfigTest {
         assertRequiredUiDescription(specifications.get("exportFile"), ToolDescriptionParam.UI_STEP_DESCRIPTION);
         assertRequiredUiDescription(specifications.get("readMemory"), ToolDescriptionParam.UI_STEP_DESCRIPTION);
         assertRequiredUiDescription(specifications.get("updateMemory"), ToolDescriptionParam.UI_STEP_DESCRIPTION);
+        assertRequiredUiDescription(specifications.get("thinking"), ToolDescriptionParam.UI_STEP_DESCRIPTION);
     }
 
     @Test

@@ -44,6 +44,9 @@ public enum ToolNameEnum {
     // ── Task management ──
     TODO_WRITE("todoWrite"),
 
+    // ── Data decision record ──
+    THINKING("thinking"),
+
     // ── Skill ──
     ACTIVATE_SKILL("activateSkill"),
 

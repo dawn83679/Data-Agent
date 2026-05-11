@@ -24,10 +24,12 @@ import edu.zsc.ai.agent.tool.sql.GetObjectDetailTool;
 import edu.zsc.ai.agent.tool.sql.GetSchemasTool;
 import edu.zsc.ai.agent.tool.sql.SearchObjectsTool;
 import edu.zsc.ai.agent.tool.sql.model.ObjectSearchQuery;
+import edu.zsc.ai.agent.tool.thinking.ThinkingTool;
 import edu.zsc.ai.agent.tool.todo.TodoActionEnum;
 import edu.zsc.ai.agent.tool.todo.TodoTool;
 import edu.zsc.ai.common.enums.ai.AgentModeEnum;
 import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
+import edu.zsc.ai.common.enums.ai.ThinkingStageEnum;
 import edu.zsc.ai.common.enums.ai.PromptEnum;
 import edu.zsc.ai.domain.service.agent.prompt.PromptHandleRequest;
 import edu.zsc.ai.domain.service.agent.systemprompt.strategy.ToolUsageRulesSystemPromptStrategy;
@@ -50,7 +52,9 @@ class ToolDescriptionAndPromptSeparationTest {
                 readToolDescription(TodoTool.class, "todoWrite", TodoActionEnum.class, String.class, List.class),
                 readToolDescription(ActivateSkillTool.class, "activateSkill", String.class),
                 readToolDescription(ChartTool.class, "renderChart", String.class, String.class, String.class),
-                readToolDescription(ExportFileTool.class, "exportFile", String.class, List.class, List.class, String.class, InvocationParameters.class)
+                readToolDescription(ExportFileTool.class, "exportFile", String.class, List.class, List.class, String.class, InvocationParameters.class),
+                readToolDescription(ThinkingTool.class, "thinking", ThinkingStageEnum.class, String.class,
+                        List.class, List.class, List.class, List.class, String.class, String.class, InvocationParameters.class)
         );
 
         descriptions.forEach(ToolDescriptionAndPromptSeparationTest::assertShortContractDescription);

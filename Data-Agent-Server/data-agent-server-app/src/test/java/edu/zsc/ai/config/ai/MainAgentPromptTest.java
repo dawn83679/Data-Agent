@@ -45,6 +45,18 @@ class MainAgentPromptTest {
         assertTrue(promptContent.contains("按连接/环境 -> database/catalog -> schema -> 对象 -> 字段/业务口径 收敛"));
         assertTrue(promptContent.contains("用户未明确指定环境时，不能默认选择 release/prod/线上环境"));
         assertTrue(promptContent.contains("只在继续执行会导致误查、误改、越权或明显错误时询问"));
+        assertTrue(promptContent.contains("4. 记忆工具使用"));
+        assertTrue(promptContent.contains("readMemory 用于读取会影响当前决策的持久记忆"));
+        assertTrue(promptContent.contains("稳定用户偏好、业务规则、字段语义、对象知识、历史确认事实和可复用 SQL 模式"));
+        assertTrue(promptContent.contains("当前上下文缺少这类稳定信息，且它会影响查询/写入/对象选择/结果解释时，优先调用 readMemory"));
+        assertTrue(promptContent.contains("updateMemory 用于保存后续轮次可复用的稳定信息"));
+        assertTrue(promptContent.contains("调用 updateMemory 前，优先先用 readMemory 查找已有记忆"));
+        assertTrue(promptContent.contains("不要写入一次性请求、临时订单号、临时筛选条件、当前执行进度、原始工具输出或未经验证猜测"));
+        assertTrue(promptContent.contains("5. 数据决策记录工具"));
+        assertTrue(promptContent.contains("thinking 用于记录用户可见、可审计的数据任务判断，不是隐藏推理链"));
+        assertTrue(promptContent.contains("这些是推荐使用场景，不是唯一允许场景"));
+        assertTrue(promptContent.contains("已确认事实、证据、未决问题、风险和下一步动作"));
+        assertTrue(promptContent.contains("不要把无证据猜测、内部草稿、情绪化措辞或与当前数据任务无关的想法写入 thinking"));
         assertTrue(promptContent.contains("在已确认范围内查看表、视图、函数、存储过程"));
         assertTrue(promptContent.contains("生成 SQL 前确认 connection、database/catalog、schema、数据库类型"));
         assertTrue(promptContent.contains("用户只要 SQL：不执行，只输出 SQL 和说明"));

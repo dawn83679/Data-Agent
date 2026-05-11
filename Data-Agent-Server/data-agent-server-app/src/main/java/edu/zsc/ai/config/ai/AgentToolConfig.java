@@ -22,6 +22,7 @@ import edu.zsc.ai.agent.tool.sql.GetDatabasesTool;
 import edu.zsc.ai.agent.tool.sql.GetSchemasTool;
 import edu.zsc.ai.agent.tool.sql.SearchObjectsTool;
 import edu.zsc.ai.agent.tool.sql.ExecuteSqlTool;
+import edu.zsc.ai.agent.tool.thinking.ThinkingTool;
 import edu.zsc.ai.agent.tool.todo.TodoTool;
 import edu.zsc.ai.common.enums.ai.AgentModeEnum;
 import edu.zsc.ai.common.enums.ai.AgentTypeEnum;
@@ -59,7 +60,8 @@ public class AgentToolConfig {
                     ActivateSkillTool.class,
                     ExportFileTool.class,
                     ReadMemoryTool.class,
-                    UpdateMemoryTool.class
+                    UpdateMemoryTool.class,
+                    ThinkingTool.class
             ),
             ToolScope.MAIN_PLAN, Set.of(
                     GetDatabasesTool.class,
