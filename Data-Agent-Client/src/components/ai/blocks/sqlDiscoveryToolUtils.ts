@@ -8,6 +8,7 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   executeNonSelectSql: 'Execute Write SQL',
   readMemory: 'Read Memory',
   updateMemory: 'Update Memory',
+  thinking: 'Thinking',
 };
 
 export function getToolDisplayName(toolName: string): string {

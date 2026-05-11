@@ -118,11 +118,11 @@ export function BackgroundToolGroupBlock({
       : `Completed ${completedCount} steps`;
 
   return (
-    <div className="mb-1.5 last:mb-0 text-[11px] theme-text-secondary">
+    <div className="mb-px last:mb-0 text-[11px] theme-text-secondary">
       <button
         type="button"
         onClick={() => setCollapsed((current) => !current)}
-        className="flex w-full items-center gap-1.5 py-0.5 text-left transition-opacity hover:opacity-80"
+        className="flex w-full items-center gap-1.5 py-0 text-left leading-4 transition-opacity hover:opacity-80"
         aria-expanded={!collapsed}
       >
         {failedCount > 0 ? (

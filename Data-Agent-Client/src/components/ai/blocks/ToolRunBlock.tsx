@@ -24,7 +24,6 @@ import type { SubAgentProgressEvent } from './subAgentTypes';
 import { AskUserQuestionCard } from './AskUserQuestionCard';
 import { WriteExecutionConfirmCard } from './WriteExecutionConfirmCard';
 import { ExitPlanModeCard } from './ExitPlanModeCard';
-import { ThoughtBlock } from './ThoughtBlock';
 import { useWorkspaceStore } from '../../../store/workspaceStore';
 import { useAIAssistantContext } from '../AIAssistantContext';
 import { useTranslation } from 'react-i18next';
@@ -79,6 +78,7 @@ export function ToolRunBlock({
 }: ToolRunBlockProps) {
   const toolType = getToolType(toolName);
   const formattedParameters = formatParameters(parametersData);
+  const shouldExpandGenericTool = toolName === 'thinking';
   const executeNonSelectPayload = toolName === 'executeNonSelectSql'
     ? parseExecuteNonSelectToolResult(responseData)
     : null;
@@ -97,16 +97,6 @@ export function ToolRunBlock({
         showElapsedText={showElapsedText}
       />
     );
-  }
-
-  // 0a. Thinking tool — render as thought block at every lifecycle stage
-  if (toolType === ToolType.THINKING) {
-    const isStreaming = executionState === ToolExecutionState.STREAMING_ARGUMENTS
-      || executionState === ToolExecutionState.EXECUTING
-      || (pending && !executionState);
-    const analysis = extractThinkingAnalysis(parametersData);
-    if (!analysis) return null;
-    return <ThoughtBlock data={analysis} defaultExpanded={isStreaming} />;
   }
 
   // 0b. ExitPlanMode — stream into plan tab, render action card in chat when complete
@@ -159,6 +149,7 @@ export function ToolRunBlock({
         formattedParameters={formattedParameters}
         responseData={executeNonSelectExecutionData}
         responseError={responseError}
+        defaultExpanded={shouldExpandGenericTool}
       />
     );
   }
@@ -259,6 +250,7 @@ export function ToolRunBlock({
           formattedParameters={formattedParameters}
           responseData={executeNonSelectExecutionData}
           responseError={responseError}
+          defaultExpanded={shouldExpandGenericTool}
         />
       );
   }
@@ -407,37 +399,4 @@ function extractSkillName(parametersData: string): string {
     if (match?.[1]) return match[1];
   }
   return 'unknown';
-}
-
-/** Extract the "analysis" field from thinking tool call arguments. */
-function extractThinkingAnalysis(parametersData: string): string | null {
-  if (!parametersData) return null;
-  try {
-    let parsed: unknown = JSON.parse(parametersData);
-    // Handle double-encoded JSON string
-    if (typeof parsed === 'string') parsed = JSON.parse(parsed) as unknown;
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
-    const obj = parsed as Record<string, unknown>;
-    // Try nested request.analysis first, then top-level analysis
-    if (obj.request && typeof obj.request === 'object') {
-      const req = obj.request as Record<string, unknown>;
-      if (typeof req.analysis === 'string' && req.analysis) return req.analysis;
-    }
-    if (typeof obj.analysis === 'string' && obj.analysis) return obj.analysis;
-    // Fallback: if only goal is available during streaming, show that
-    if (typeof obj.goal === 'string' && obj.goal) return obj.goal;
-    if (obj.request && typeof obj.request === 'object') {
-      const req = obj.request as Record<string, unknown>;
-      if (typeof req.goal === 'string' && req.goal) return req.goal;
-    }
-    return null;
-  } catch {
-    // During streaming, parametersData may be partial/incomplete JSON.
-    // Try to extract analysis text with regex as fallback.
-    const match = parametersData.match(/"analysis"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-    if (match?.[1]) return match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
-    const goalMatch = parametersData.match(/"goal"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-    if (goalMatch?.[1]) return goalMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
-    return null;
-  }
 }

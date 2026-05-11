@@ -101,6 +101,26 @@ describe('groupBackgroundToolSegments', () => {
     expect(grouped.every((segment) => segment.kind === SegmentKind.TOOL_RUN)).toBe(true);
   });
 
+  it('groups thinking with background tools', () => {
+    const grouped = groupBackgroundToolSegments([
+      toolRun('getDatabases'),
+      toolRun('thinking'),
+      toolRun('getSchemas'),
+    ]);
+
+    expect(grouped).toHaveLength(1);
+    expect(grouped[0]).toMatchObject({
+      kind: SegmentKind.TOOL_GROUP,
+      groupType: 'background-tools',
+    });
+    expect(grouped[0]?.kind === SegmentKind.TOOL_GROUP
+      ? grouped[0].nestedToolRuns
+        .filter((segment) => segment.kind === SegmentKind.TOOL_RUN)
+        .map((segment) => segment.toolName)
+      : [])
+      .toEqual(['getDatabases', 'thinking', 'getSchemas']);
+  });
+
   it('marks the tail group as pending while the last assistant turn is still streaming', () => {
     const grouped = groupBackgroundToolSegments([
       toolRun('getDatabases'),

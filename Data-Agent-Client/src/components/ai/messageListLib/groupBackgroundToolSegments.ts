@@ -23,7 +23,6 @@ function isBackgroundToolCandidate(segment: Segment): segment is ToolRunSegment 
   return toolType !== ToolType.TODO
     && toolType !== ToolType.ASK_USER
     && toolType !== ToolType.CHART
-    && toolType !== ToolType.THINKING
     && toolType !== ToolType.EXIT_PLAN
     && toolType !== ToolType.FILE_EXPORT
     && toolType !== ToolType.CALLING_SUB_AGENT;

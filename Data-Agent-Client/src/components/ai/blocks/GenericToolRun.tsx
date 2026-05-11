@@ -16,6 +16,7 @@ export interface GenericToolRunProps {
   formattedParameters: string;
   responseData: string;
   responseError: boolean;
+  defaultExpanded?: boolean;
 }
 
 /**
@@ -27,8 +28,9 @@ export function GenericToolRun({
   formattedParameters,
   responseData,
   responseError,
+  defaultExpanded = false,
 }: GenericToolRunProps) {
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(!defaultExpanded);
 
   return (
     <div className={getToolCardClassName(!collapsed)}>

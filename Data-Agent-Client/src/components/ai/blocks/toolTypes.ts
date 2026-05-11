@@ -4,7 +4,6 @@ import { isExitPlanModeTool } from './exitPlanModeTypes';
 import { isCallingSubAgentTool } from './subAgentTypes';
 
 const CHART_TOOL_NAMES = new Set(['renderChart']);
-const THINKING_TOOL_NAMES = new Set(['thinking']);
 const SKILL_TOOL_NAMES = new Set(['activateSkill']);
 const FILE_EXPORT_TOOL_NAMES = new Set(['exportFile']);
 const EXECUTE_SELECT_TOOL_NAMES = new Set(['executeSelectSql']);
@@ -26,8 +25,6 @@ export enum ToolType {
   ASK_USER = 'ASK_USER',
   /** Built-in chart rendering tool. */
   CHART = 'CHART',
-  /** Thinking tool - renders as collapsible thought block. */
-  THINKING = 'THINKING',
   /** ExitPlanMode tool - renders as plan card with action buttons. */
   EXIT_PLAN = 'EXIT_PLAN',
   /** ActivateSkill tool - renders response as markdown. */
@@ -54,7 +51,6 @@ export function getToolType(toolName: string): ToolType {
   if (isTodoTool(toolName)) return ToolType.TODO;
   if (isAskUserQuestionTool(toolName)) return ToolType.ASK_USER;
   if (CHART_TOOL_NAMES.has(toolName)) return ToolType.CHART;
-  if (THINKING_TOOL_NAMES.has(toolName)) return ToolType.THINKING;
   if (isExitPlanModeTool(toolName)) return ToolType.EXIT_PLAN;
   if (SKILL_TOOL_NAMES.has(toolName)) return ToolType.SKILL;
   if (FILE_EXPORT_TOOL_NAMES.has(toolName)) return ToolType.FILE_EXPORT;
